@@ -3,8 +3,10 @@ import { Navbar } from '@/app/components/Navbar';
 import { Footer } from '@/app/components/Footer';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/app/components/ui/accordion';
 import { Card } from '@/app/components/ui/card';
-import { CheckCircle2, AlertCircle, Home, MessageCircle, HelpCircle, ShieldCheck, ClipboardCheck, Mail, Phone } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Home, MessageCircle, HelpCircle, ShieldCheck, ClipboardCheck, Mail, Phone, FileText } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
+import { useState, useEffect } from 'react';
+import api from '@/app/utils/api';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -180,6 +182,22 @@ const checklist = [
 ];
 
 export function PolicyPage() {
+  const [policies, setPolicies] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchPolicies = async () => {
+      try {
+        const res = await api.get('/api/settings/public');
+        if (res.status === 200 && res.data.policies) {
+          setPolicies(res.data.policies);
+        }
+      } catch (error) {
+        console.error("Failed to fetch policies");
+      }
+    };
+    fetchPolicies();
+  }, []);
+
   return (
     <div className="min-h-screen w-screen bg-gradient-to-br from-green-50 via-blue-50 to-indigo-100 flex flex-col">
       <Navbar />
@@ -202,11 +220,11 @@ export function PolicyPage() {
             </motion.div>
             <h1 className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight">
               <span className="bg-gradient-to-r from-green-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Trợ Giúp & Hướng Dẫn
+                Trợ Giúp & Pháp Lý
               </span>
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Mọi kiến thức và công cụ cần thiết để bạn tìm được tổ ấm an toàn, minh bạch cùng MapHome.
+              Mọi kiến thức, công cụ và quy định cần thiết để bạn an tâm cùng MapHome.
             </p>
           </motion.div>
 
@@ -215,30 +233,70 @@ export function PolicyPage() {
             variants={staggerContainer}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16"
+            className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16"
           >
             {[
-              { icon: MessageCircle, title: "Câu hỏi thường gặp", desc: "Giải đáp mọi thắc mắc", color: "blue", link: "#faq" },
-              { icon: ShieldCheck, title: "Checklist an toàn", desc: "Các bước kiểm tra trọ", color: "green", link: "#checklist" },
-              { icon: ClipboardCheck, title: "Hướng dẫn đăng trọ", desc: "Dành cho chủ nhà trọ", color: "purple", link: "#guide" },
+              { icon: MessageCircle, title: "FAQ", desc: "Hỏi đáp nhanh", color: "blue", link: "#faq" },
+              { icon: ShieldCheck, title: "Checklist", desc: "Đảm bảo an toàn", color: "green", link: "#checklist" },
+              { icon: ClipboardCheck, title: "Điều khoản", desc: "Quy định sử dụng", color: "purple", link: "#terms" },
+              { icon: FileText, title: "Bảo mật", desc: "Chính sách dữ liệu", color: "rose", link: "#privacy" },
             ].map((item, idx) => (
               <motion.div key={idx} variants={fadeInUp}>
                 <Card 
-                  className="p-8 hover:shadow-2xl transition-all duration-300 cursor-pointer group border-white/50 bg-white/80 backdrop-blur-sm hover:-translate-y-2"
-                  onClick={() => document.getElementById(item.link.substring(1))?.scrollIntoView({ behavior: 'smooth' })}
+                  className="p-6 hover:shadow-2xl transition-all duration-300 cursor-pointer group border-white/50 bg-white/80 backdrop-blur-sm hover:-translate-y-2"
+                  onClick={() => {
+                    const el = document.getElementById(item.link.substring(1));
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
                 >
                   <div className="flex flex-col items-center text-center">
-                    <div className={`bg-${item.color}-100 p-5 rounded-2xl mb-5 group-hover:scale-110 transition-transform duration-300 shadow-inner`}>
-                      <item.icon className={`size-8 text-${item.color}-600`} />
+                    <div className={`p-4 rounded-xl mb-4 group-hover:scale-110 transition-transform duration-300 shadow-inner bg-slate-50`}>
+                      <item.icon className={`size-6 text-slate-600`} />
                     </div>
-                    <h3 className="font-bold text-xl mb-2 text-gray-900">{item.title}</h3>
-                    <p className="text-sm text-gray-500 font-medium">{item.desc}</p>
-                    <div className={`mt-4 w-8 h-1 bg-${item.color}-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity`} />
+                    <h3 className="font-bold text-sm mb-1 text-gray-900">{item.title}</h3>
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{item.desc}</p>
                   </div>
                 </Card>
               </motion.div>
             ))}
           </motion.div>
+
+          {/* Dynamic Policies Section */}
+          {(policies?.termsOfService || policies?.privacyPolicy) && (
+            <div className="space-y-12 mb-20">
+              {policies.termsOfService && (
+                <motion.section id="terms" variants={fadeInUp} initial="hidden" animate="visible">
+                  <div className="bg-white rounded-[42px] shadow-xl p-8 md:p-12 border border-white">
+                    <h2 className="text-3xl font-black mb-8 flex items-center gap-4 text-slate-800">
+                      <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600">
+                        <ClipboardCheck className="size-8" />
+                      </div>
+                      Điều khoản Dịch vụ
+                    </h2>
+                    <div className="prose prose-slate max-w-none text-slate-600 whitespace-pre-line leading-relaxed font-medium">
+                      {policies.termsOfService}
+                    </div>
+                  </div>
+                </motion.section>
+              )}
+
+              {policies.privacyPolicy && (
+                <motion.section id="privacy" variants={fadeInUp} initial="hidden" animate="visible">
+                  <div className="bg-white rounded-[42px] shadow-xl p-8 md:p-12 border border-white">
+                    <h2 className="text-3xl font-black mb-8 flex items-center gap-4 text-slate-800">
+                      <div className="p-3 rounded-2xl bg-blue-50 text-blue-600">
+                        <ShieldCheck className="size-8" />
+                      </div>
+                      Chính sách Bảo mật
+                    </h2>
+                    <div className="prose prose-slate max-w-none text-slate-600 whitespace-pre-line leading-relaxed font-medium">
+                      {policies.privacyPolicy}
+                    </div>
+                  </div>
+                </motion.section>
+              )}
+            </div>
+          )}
 
           {/* FAQ Section */}
           <motion.section 

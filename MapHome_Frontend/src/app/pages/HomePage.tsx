@@ -574,7 +574,7 @@ export function HomePage() {
               </h2>
 
               <p className="text-sm md:text-base lg:text-lg text-emerald-950/70 font-medium max-w-2xl mx-auto">
-                Lắng nghe những câu chuyện tìm thấy \" tổ ấm\" thực sự từ hàng nghìn khách hàng của chúng tôi.
+                Lắng nghe những câu chuyện tìm thấy " tổ ấm" thực sự từ hàng nghìn khách hàng của chúng tôi.
               </p>
             </div>
 

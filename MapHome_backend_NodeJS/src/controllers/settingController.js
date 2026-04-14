@@ -26,6 +26,10 @@ const updateSettings = async (req, res) => {
       pricing,
       broadcastMessage,
       isBroadcastEnabled,
+      banners,
+      seo,
+      policies,
+      automation,
     } = req.body;
 
     let settings = await SystemSetting.findOne();
@@ -40,6 +44,10 @@ const updateSettings = async (req, res) => {
     if (pricing !== undefined) settings.pricing = pricing;
     if (broadcastMessage !== undefined) settings.broadcastMessage = broadcastMessage;
     if (isBroadcastEnabled !== undefined) settings.isBroadcastEnabled = isBroadcastEnabled;
+    if (banners !== undefined) settings.banners = banners;
+    if (seo !== undefined) settings.seo = seo;
+    if (policies !== undefined) settings.policies = policies;
+    if (automation !== undefined) settings.automation = automation;
 
     settings.updatedBy = req.user?._id;
     await settings.save();

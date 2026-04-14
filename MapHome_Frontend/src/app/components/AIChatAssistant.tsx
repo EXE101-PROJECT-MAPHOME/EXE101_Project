@@ -84,52 +84,95 @@ export const AIChatAssistant: React.FC = () => {
     setMessages((prev) => [...prev, newUserMsg]);
     setIsLoading(true);
 
+    // Prepare an empty assistant message for streaming
+    const assistantMsgPlaceholder: Message = {
+      text: "",
+      role: "assistant",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, assistantMsgPlaceholder]);
+
     try {
-      const response = await api.post("/api/ai/chat", {
-        message: userMessage,
-        propertyId: currentPropertyId,
-        history: messages
-          .filter((_, idx) => idx > 0)
-          .map(m => ({
-            role: m.role === "user" ? "user" : "assistant",
-            content: m.text
-          })),
+      const token = localStorage.getItem("token");
+      const API_BASE = (import.meta as any).env?.VITE_API_BASE || "http://localhost:5000";
+
+      const response = await fetch(`${API_BASE}/api/ai/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          propertyId: currentPropertyId,
+          history: messages
+            .filter((_, idx) => idx > 0)
+            .map(m => ({
+              role: m.role === "user" ? "user" : "assistant",
+              content: m.text
+            })),
+        }),
       });
 
-      const { answer, isLeadCaptured } = response.data;
-      const answerText = answer || "Xin lỗi, tôi không thể trả lời lúc này.";
+      if (!response.body) throw new Error("No response body");
 
-      const newMessages: Message[] = [
-        {
-          text: answerText,
-          role: "assistant",
-          timestamp: new Date(),
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let finished = false;
+      let accumulatedText = "";
+
+      setIsLoading(false); // Hide thinking indicator once streaming starts
+
+      while (!finished) {
+        const { value, done } = await reader.read();
+        finished = done;
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const dataStr = line.slice(6).trim();
+            if (dataStr === "[DONE]") {
+              finished = true;
+              break;
+            }
+
+            try {
+              const data = JSON.parse(dataStr);
+              if (data.content) {
+                accumulatedText += data.content;
+                // Update the last message (the assistant's placeholder)
+                setMessages((prev) => {
+                  const newMsgs = [...prev];
+                  const lastIdx = newMsgs.length - 1;
+                  newMsgs[lastIdx] = {
+                    ...newMsgs[lastIdx],
+                    text: accumulatedText,
+                  };
+                  return newMsgs;
+                });
+              }
+            } catch (err) {
+              // Ignore partial JSON or noise
+            }
+          }
         }
-      ];
-
-      // If a lead was captured, add a special system acknowledgment
-      if (isLeadCaptured) {
-        newMessages.push({
-          text: "✨ **MapHome đã ghi nhận nhu cầu của bạn!** Chúng tôi đang kết nối với các chủ trọ uy tín để tìm cho bạn căn phòng phù hợp nhất. Bạn sẽ sớm nhận được đề xuất!",
-          role: "assistant",
-          timestamp: new Date(),
-        });
       }
-
-      setMessages((prev) => [...prev, ...newMessages]);
-      setIsLoading(false);
 
     } catch (error) {
       console.error("AI Chat Error:", error);
       setIsLoading(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          text: "Xin lỗi, tôi đang gặp chút sự cố kỹ thuật. Vui lòng thử lại sau giây lát!",
-          role: "assistant",
-          timestamp: new Date(),
-        },
-      ]);
+      setMessages((prev) => {
+        const newMsgs = [...prev];
+        // Replace last placeholder with error if it was empty
+        const lastIdx = newMsgs.length - 1;
+        if (newMsgs[lastIdx].text === "") {
+          newMsgs[lastIdx].text = "Xin lỗi, tôi đang gặp chút sự cố kỹ thuật. Vui lòng thử lại sau giây lát!";
+        }
+        return newMsgs;
+      });
     }
   };
 

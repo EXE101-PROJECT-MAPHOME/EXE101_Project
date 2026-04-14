@@ -12,6 +12,28 @@ export interface User {
   avatar?: string; // user profile picture URL
   verificationLevel?: number;
   createdAt?: string;
+
+  // Personalized settings
+  searchPreferences?: {
+    districts: string[];
+    priceRange: {
+      min: number;
+      max: number;
+    };
+  };
+  privacySettings?: {
+    showPhoneBeforeBooking: boolean;
+  };
+  security?: {
+    twoFactorEnabled: boolean;
+    loginHistory: {
+      device: string;
+      ip: string;
+      browser: string;
+      os: string;
+      lastLogin: string;
+    }[];
+  };
 }
 
 interface AuthContextType {
@@ -133,6 +155,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (res.status === 200 || res.status === 201) {
+        const payload = res.data;
+        if (payload.user) {
+          setUser(payload.user);
+          localStorage.setItem("auth", JSON.stringify(payload.user));
+        }
+        if (payload.token) {
+          localStorage.setItem("token", payload.token);
+        }
         return { success: true };
       }
       return { success: false, message: "Đăng ký thất bại" };
@@ -141,7 +171,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
     setUser(null);
     localStorage.removeItem("auth");
     localStorage.removeItem("token");

@@ -53,6 +53,9 @@ import {
   Newspaper,
   Plus,
   Edit,
+  DollarSign,
+  Zap,
+  Save,
 } from "lucide-react";
 import { RevenueView } from "./RevenueView";
 import { InspectionsView } from "@/app/components/InspectionsView";
@@ -74,6 +77,7 @@ type AdminView =
   | "transactions"
   | "analytics"
   | "subscriptions"
+  | "global_pricing"
   | "blog"
   | "settings";
 
@@ -600,6 +604,7 @@ export function AdminPage() {
               title: "Hệ thống",
               items: [
                 { id: "subscriptions", label: "Gói dịch vụ", icon: Ticket },
+                { id: "global_pricing", label: "Dịch vụ & Giá", icon: DollarSign },
                 { id: "settings", label: "Cài đặt", icon: Settings },
               ],
             },
@@ -720,6 +725,7 @@ export function AdminPage() {
                 {activeView === "transactions" && "Lịch sử Giao dịch"}
                 {activeView === "analytics" && "Phân tích & Thống kê"}
                 {activeView === "subscriptions" && "Gói dịch vụ hệ thống"}
+                {activeView === "global_pricing" && "Cấu hình Dịch vụ & Giá"}
                 {activeView === "blog" && "Kiểm duyệt Blog"}
                 {activeView === "revenue" && "Báo cáo Doanh Thu"}
                 {activeView === "inspections" && "Kiểm tra thực địa"}
@@ -906,7 +912,10 @@ export function AdminPage() {
                     <AdvancedAnalyticsView stats={stats} />
                   )}
                   {activeView === "subscriptions" && (
-                    <SubscriptionsAdminView plans={subscriptionPlans} />
+                    <SubscriptionsAdminView plans={subscriptionPlans} onRefresh={fetchData} />
+                  )}
+                  {activeView === "global_pricing" && (
+                    <GlobalPricingView onRefresh={fetchData} />
                   )}
                    {activeView === "blog" && (
                      <BlogAdminView 
@@ -3811,55 +3820,643 @@ const AdvancedAnalyticsView = ({ stats }: { stats: any }) => {
 };
 
 // 3. Subscriptions Admin View
-const SubscriptionsAdminView = ({ plans }: { plans: any[] }) => {
+const SubscriptionsAdminView = ({ plans, onRefresh }: { plans: any[]; onRefresh: () => void }) => {
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleEdit = (plan: any) => {
+    setEditingPlan(plan);
+    setIsEditorOpen(true);
+  };
+
+  const handleAdd = () => {
+    setEditingPlan(null);
+    setIsEditorOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xoá (ngừng kích hoạt) gói này không?")) return;
+    try {
+      const res = await api.delete(`/api/admin/subscriptions/plans/${id}`);
+      if (res.status === 200) {
+        toast.success("Đã xoá gói dịch vụ thành công! 🗑️");
+        onRefresh();
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Không thể xoá gói dịch vụ");
+    }
+  };
+
+  const handleSave = async (data: any) => {
+    setIsSaving(true);
+    try {
+      if (editingPlan) {
+        await api.put(`/api/admin/subscriptions/plans/${editingPlan._id}`, data);
+        toast.success("Cập nhật gói dịch vụ thành công! ✨");
+      } else {
+        await api.post("/api/admin/subscriptions/plans", data);
+        toast.success("Thêm mới gói dịch vụ thành công! 🎉");
+      }
+      setIsEditorOpen(false);
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Không thể lưu thông tin gói");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className="space-y-8"
     >
-      <div className="flex items-center justify-between">
-         <div>
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Gói dịch vụ hệ thống</h3>
-            <p className="text-sm text-slate-500 font-medium">Cấu hình các gói Listing dành cho Landlord</p>
-         </div>
-         <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl gap-2 h-12 px-6">
+        <div className="flex items-center justify-between mb-12">
+          <div>
+            <h3 className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tighter mb-2">
+              Gói dịch vụ hệ thống
+            </h3>
+            <p className="text-sm font-bold text-slate-400">
+              Cấu hình các gói Listing dành cho Landlord
+            </p>
+          </div>
+          <Button
+            onClick={handleAdd}
+            className="bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 hover:scale-105 transition-all text-white rounded-[22px] h-14 px-8 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-none shadow-xl shadow-blue-200/50"
+          >
             <Plus className="size-5" /> Thêm gói mới
-         </Button>
-      </div>
+          </Button>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {plans.map((plan) => (
-          <div key={plan._id} className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-[35px] p-8 shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <div className={`p-3 rounded-2xl bg-${plan.name === 'Premium' ? 'indigo' : 'slate'}-50`}>
-                <Ticket className={`size-6 text-${plan.name === 'Premium' ? 'indigo' : 'slate'}-600`} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {plans.map((plan) => (
+            <motion.div
+              key={plan._id}
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="bg-white/80 backdrop-blur-3xl rounded-[42px] border border-white/60 p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative overflow-hidden group"
+            >
+              {/* Decorative Background Glow */}
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors" />
+
+              <div className="flex justify-between items-start mb-10">
+                <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-4 rounded-[22px] shadow-lg shadow-blue-100/50 text-white">
+                  <Ticket className="size-8" />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(plan)}
+                    className="p-3 bg-slate-50 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-2xl transition-all"
+                  >
+                    <Edit className="size-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(plan._id)}
+                    className="p-3 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
               </div>
-              <Button variant="ghost" size="icon" className="rounded-xl hover:bg-slate-100">
-                <Edit className="size-4 text-slate-400" />
+
+              <div className="mb-8">
+                <h4 className="text-2xl font-black text-slate-800 tracking-tight mb-2">
+                  {plan.name}
+                </h4>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black bg-gradient-to-br from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                    {Number(plan.price).toLocaleString("vi-VN")}
+                  </span>
+                  <span className="text-sm font-black text-slate-400 uppercase tracking-widest">
+                    đ / tháng
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-4 mb-10">
+                {(plan.features || []).map((f: any, i: number) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="mt-1 bg-emerald-100/50 p-1 rounded-lg text-emerald-600 flex-shrink-0">
+                      <CheckCircle className="size-3" />
+                    </div>
+                    <span className="text-[13px] font-bold text-slate-600 leading-relaxed">
+                      {typeof f === "string" ? f : f.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-8 border-t border-slate-50 flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Landlord đang dùng
+                </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-lg font-black text-slate-800">
+                    {plan.activeUsers || 0}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+      <PlanEditorDialog 
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        onSave={handleSave}
+        initialData={editingPlan}
+        isSaving={isSaving}
+      />
+    </motion.div>
+  );
+};
+
+// Plan Editor Dialog Content
+const PlanEditorDialog = ({ isOpen, onClose, onSave, initialData, isSaving }: any) => {
+  const [formData, setFormData] = useState<any>({
+    name: "",
+    planId: "",
+    price: 0,
+    yearlyPrice: 0,
+    description: "",
+    badge: "",
+    badgeColor: "bg-blue-100 text-blue-700",
+    icon: "Star",
+    cta: "Chọn gói",
+    ctaVariant: "default",
+    features: [],
+  });
+
+  const [newFeature, setNewFeature] = useState("");
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || "",
+        planId: initialData.planId || "",
+        price: initialData.price || 0,
+        yearlyPrice: initialData.yearlyPrice || 0,
+        description: initialData.description || "",
+        badge: initialData.badge || "",
+        badgeColor: initialData.badgeColor || "bg-blue-100 text-blue-700",
+        icon: initialData.icon || "Star",
+        cta: initialData.cta || "Chọn gói",
+        ctaVariant: initialData.ctaVariant || "default",
+        features: initialData.features || [],
+      });
+    } else {
+      setFormData({
+        name: "",
+        planId: "",
+        price: 0,
+        yearlyPrice: 0,
+        description: "",
+        badge: "",
+        badgeColor: "bg-blue-100 text-blue-700",
+        icon: "Star",
+        cta: "Chọn gói",
+        ctaVariant: "default",
+        features: [],
+      });
+    }
+  }, [initialData, isOpen]);
+
+  const addFeature = () => {
+    if (!newFeature.trim()) return;
+    setFormData({
+      ...formData,
+      features: [...formData.features, { text: newFeature.trim(), included: true }]
+    });
+    setNewFeature("");
+  };
+
+  const removeFeature = (index: number) => {
+    setFormData({
+      ...formData,
+      features: formData.features.filter((_: any, i: number) => i !== index)
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+            className="relative bg-white rounded-[44px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-white/20"
+          >
+            {/* Modal Header */}
+            <div className="p-10 pb-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tighter">
+                  {initialData ? "Cập nhật Gói Dịch Vụ" : "Thiết kế Gói Dịch Vụ Mới"}
+                </h3>
+                <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">
+                  Thông tin cơ bản & Đặc quyền quyền lợi
+                </p>
+              </div>
+              <button 
+                onClick={onClose}
+                className="w-12 h-12 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-rose-500 rounded-2xl transition-all"
+              >
+                <XCircle className="size-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-10 pb-10 custom-scrollbar space-y-8">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">
+                    Tên gói dịch vụ
+                  </label>
+                  <input
+                    value={formData.name}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
+                    placeholder="VD: Premium, Platinum..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">
+                    Giá tiền (VNĐ/tháng)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        price: Number(e.target.value),
+                      })
+                    }
+                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">
+                    Giá năm (VNĐ)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.yearlyPrice}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        yearlyPrice: Number(e.target.value),
+                      })
+                    }
+                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">
+                    Mã định danh (Plan ID)
+                  </label>
+                  <input
+                    value={formData.planId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, planId: e.target.value })
+                    }
+                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
+                    placeholder="v.d: gold-2026"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">
+                  Mô tả ngắn gọn
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full h-24 bg-slate-50 border border-slate-100 rounded-[22px] p-6 text-sm font-bold text-slate-600 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none"
+                  placeholder="Mô tả tóm tắt quyền lợi của gói..."
+                />
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between ml-2">
+                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                    Danh sách Đặc quyền
+                  </label>
+                  <div className="flex gap-2">
+                    <input 
+                      className="h-10 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold"
+                      placeholder="Tính năng mới..."
+                      value={newFeature}
+                      onChange={e => setNewFeature(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addFeature();
+                        }
+                      }}
+                    />
+                    <Button
+                      onClick={addFeature}
+                      type="button"
+                      variant="outline"
+                      className="h-10 px-4 rounded-xl border-dashed border-slate-200 text-emerald-600 font-black text-[10px] uppercase tracking-widest hover:border-emerald-500 hover:bg-emerald-50 transition-all shadow-none"
+                    >
+                      <Plus className="size-3 mr-1.5" /> Thêm
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {formData.features.map((feature: any, idx: number) => (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      key={idx}
+                      className="flex items-center gap-3 group"
+                    >
+                      <div className="flex-1 relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500">
+                          <CheckCircle className="size-4" />
+                        </div>
+                        <input
+                          value={typeof feature === 'string' ? feature : feature.text}
+                          onChange={(e) => {
+                            const newFeatures = [...formData.features];
+                            if (typeof newFeatures[idx] === 'string') {
+                              newFeatures[idx] = e.target.value;
+                            } else {
+                              newFeatures[idx] = { ...newFeatures[idx], text: e.target.value };
+                            }
+                            setFormData({ ...formData, features: newFeatures });
+                          }}
+                          className="w-full h-12 bg-slate-50 border border-slate-100 rounded-2xl pl-12 pr-4 text-xs font-bold text-slate-600 focus:border-emerald-500 focus:bg-white outline-none transition-all group-hover:bg-slate-100/50"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFeature(idx)}
+                        className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </motion.div>
+                  ))}
+                  {formData.features.length === 0 && (
+                    <p className="text-[10px] text-slate-400 font-bold text-center py-4 italic">Chưa có tính năng nào được thêm</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-10 pt-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-4">
+              <Button
+                variant="ghost"
+                onClick={onClose}
+                className="h-12 px-8 rounded-[22px] font-black text-xs uppercase tracking-widest text-slate-500"
+              >
+                Huỷ bỏ
+              </Button>
+              <Button
+                onClick={() => onSave(formData)}
+                disabled={isSaving}
+                className="h-12 px-10 rounded-[22px] bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white font-black text-xs uppercase tracking-widest border-none shadow-xl shadow-blue-200/50 hover:scale-105 transition-all text-white"
+              >
+                {isSaving ? "Đang lưu..." : (initialData ? "Lưu thay đổi" : "Khởi tạo Gói")}
               </Button>
             </div>
-            <h4 className="text-lg font-black text-slate-800">{plan.name}</h4>
-            <div className="text-2xl font-black text-indigo-600 mt-1 mb-6">
-               {plan.price.toLocaleString("vi-VN")}đ
-               <span className="text-xs text-slate-400 font-bold"> / tháng</span>
-            </div>
-            <div className="space-y-3 flex-1">
-               {plan.features.map((f: string, idx: number) => (
-                 <div key={idx} className="flex items-center gap-2 text-xs text-slate-600 font-medium">
-                   <div className="size-1 bg-emerald-500 rounded-full" />
-                   {f}
-                 </div>
-               ))}
-            </div>
-            <div className="mt-8 pt-8 border-t border-slate-50">
-               <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  <span>Landlord đang dùng</span>
-                  <span className="text-slate-800 font-black">{plan.activeUsers || 0}</span>
-               </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// 3.5 Global Pricing View (New Dedicated Page)
+const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
+  const [settings, setSettings] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/api/admin/settings");
+      if (res.status === 200) {
+        setSettings(res.data);
+      }
+    } catch (error) {
+      toast.error("Không thể tải cấu hình giá");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const handleUpdate = async () => {
+    try {
+      setSaving(true);
+      const res = await api.put("/api/admin/settings", settings);
+      if (res.status === 200) {
+        toast.success("Đã cập nhật biểu phí dịch vụ thành công! ✨");
+        onRefresh();
+      }
+    } catch (error) {
+      toast.error("Lỗi khi cập nhật biểu phí");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading || !settings) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Đang tải biểu phí...</p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-10"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tighter">
+            Quản trị Biểu phí & Dịch vụ
+          </h3>
+          <p className="text-sm font-bold text-slate-400 mt-1">
+            Thiết lập chi phí vận hành cho toàn bộ hệ thống MapHome
+          </p>
+        </div>
+        <Button
+          onClick={handleUpdate}
+          disabled={saving}
+          className="bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 hover:scale-105 transition-all text-white rounded-[22px] h-14 px-10 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-none shadow-xl shadow-blue-200/50"
+        >
+          {saving ? <RefreshCw className="size-5 animate-spin" /> : <Save className="size-5" />}
+          {saving ? "Đang xử lý..." : "Lưu cấu hình"}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-10">
+        {/* Verification Fees */}
+        <PricingCard
+          title="Xác thực Cơ bản"
+          icon={<Zap className="size-6" />}
+          color="blue"
+          value={settings.pricing.basicVerification}
+          description="Áp dụng xác minh qua SĐT/Zalo"
+          onChange={(val) => setSettings({
+            ...settings,
+            pricing: { ...settings.pricing, basicVerification: parseInt(val) || 0 }
+          })}
+        />
+
+        <PricingCard
+          title="Xác thực Thực địa"
+          icon={<ShieldCheck className="size-6" />}
+          color="amber"
+          value={settings.pricing.premiumVerification}
+          description="Nhân viên MapHome đến kiểm tra tận nơi"
+          onChange={(val) => setSettings({
+            ...settings,
+            pricing: { ...settings.pricing, premiumVerification: parseInt(val) || 0 }
+          })}
+        />
+
+        {/* Posting Fees */}
+        <PricingCard
+          title="Phí Đăng Bài"
+          icon={<Plus className="size-6" />}
+          color="emerald"
+          value={settings.pricing.postRoomFee || 0}
+          description="Áp dụng cho mỗi tin đăng mới"
+          onChange={(val) => setSettings({
+            ...settings,
+            pricing: { ...settings.pricing, postRoomFee: parseInt(val) || 0 }
+          })}
+        />
+
+        <PricingCard
+          title="Phí Đẩy Bài (Push)"
+          icon={<TrendingUp className="size-6" />}
+          color="violet"
+          value={settings.pricing.pushRoomFee || 0}
+          description="Dịch vụ đẩy tin lên đầu trang"
+          onChange={(val) => setSettings({
+            ...settings,
+            pricing: { ...settings.pricing, pushRoomFee: parseInt(val) || 0 }
+          })}
+        />
+
+        <PricingCard
+          title="Tin Đăng Gấp"
+          icon={<AlertTriangle className="size-6" />}
+          color="rose"
+          value={settings.pricing.urgentRoomFee || 0}
+          description="Gắn nhãn 'Gấp' cho tin đăng"
+          onChange={(val) => setSettings({
+            ...settings,
+            pricing: { ...settings.pricing, urgentRoomFee: parseInt(val) || 0 }
+          })}
+        />
+
+        {/* Commissions */}
+        <PricingCard
+          title="Hoa hồng Giao dịch"
+          icon={<span className="font-black text-lg">%</span>}
+          color="indigo"
+          value={settings.pricing.commissionRate || 0}
+          description="Tỷ lệ thu phí trên mỗi giao dịch"
+          unit="%"
+          onChange={(val) => setSettings({
+            ...settings,
+            pricing: { ...settings.pricing, commissionRate: parseInt(val) || 0 }
+          })}
+        />
+      </div>
+    </motion.div>
+  );
+};
+
+const PricingCard = ({ title, icon, color, value, description, onChange, unit = "VNĐ" }: any) => {
+  const colorClasses: any = {
+    blue: "text-blue-600 bg-blue-50/50",
+    amber: "text-amber-600 bg-amber-50/50",
+    emerald: "text-emerald-600 bg-emerald-50/50",
+    violet: "text-violet-600 bg-violet-50/50",
+    rose: "text-rose-600 bg-rose-50/50",
+    indigo: "text-indigo-600 bg-indigo-50/50",
+  };
+
+  return (
+    <motion.div
+      whileHover={{ y: -5 }}
+      className="bg-white/80 backdrop-blur-3xl rounded-[42px] border border-white/60 p-8 shadow-[0_20px_50px_rgba(0,0,0,0.02)] flex flex-col justify-between group"
+    >
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <div className={`p-4 rounded-[22px] ${colorClasses[color]} flex items-center justify-center shadow-inner border border-white`}>
+            {icon}
+          </div>
+          <div>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+              Phân loại dịch vụ
+            </h4>
+            <span className="text-lg font-black text-slate-800 tracking-tight">
+              {title}
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">
+            Mức phí thiết lập ({unit})
+          </label>
+          <div className="relative group/input">
+            <input
+              type="number"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-xl font-black text-slate-700 focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 focus:bg-white outline-none transition-all"
+            />
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300 uppercase">
+              {unit}
             </div>
           </div>
-        ))}
+        </div>
+      </div>
+
+      <div className="mt-8 pt-6 border-t border-slate-50">
+        <p className="text-[11px] font-bold text-slate-400 leading-relaxed italic">
+          * {description}
+        </p>
       </div>
     </motion.div>
   );

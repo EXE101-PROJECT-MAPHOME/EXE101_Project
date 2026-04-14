@@ -6,6 +6,31 @@ const Landlord = require("../models/Landlord");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const generateTokens = (userId, role) => {
+  const accessToken = jwt.sign(
+    { id: userId, role },
+    process.env.JWT_SECRET || "secret",
+    { expiresIn: "15m" }
+  );
+
+  const refreshToken = jwt.sign(
+    { id: userId },
+    process.env.REFRESH_TOKEN_SECRET || "refresh_secret",
+    { expiresIn: "30d" }
+  );
+
+  return { accessToken, refreshToken };
+};
+
+const setRefreshTokenCookie = (res, refreshToken) => {
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
+};
+
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
@@ -51,11 +76,8 @@ const register = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET || "secret",
-      { expiresIn: "7d" },
-    );
+    const { accessToken, refreshToken } = generateTokens(user._id, user.role);
+    setRefreshTokenCookie(res, refreshToken);
 
     const userSafe = {
       id: user._id,
@@ -68,15 +90,18 @@ const register = async (req, res) => {
       verificationLevel: user.verificationLevel,
     };
 
-    res.status(201).json({ message: "User registered", user: userSafe, token });
+    res.status(201).json({ 
+      message: "User registered", 
+      user: userSafe, 
+      token: accessToken 
+    });
   } catch (error) {
-    console.error("[Auth Error]:", error.message);
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
 // POST /api/auth/login
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
     const { usernameOrEmail, username, email, password } = req.body;
     const identifier = (
@@ -104,11 +129,8 @@ const login = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET || "secret",
-      { expiresIn: "7d" },
-    );
+    const { accessToken, refreshToken } = generateTokens(user._id, user.role);
+    setRefreshTokenCookie(res, refreshToken);
 
     const userSafe = {
       id: user._id,
@@ -121,10 +143,39 @@ const login = async (req, res) => {
       verificationLevel: user.verificationLevel,
     };
 
-    res.status(200).json({ user: userSafe, token });
+    // Record login history
+    const userAgent = req.headers["user-agent"] || "Unknown";
+    const ip = req.ip || req.connection.remoteAddress;
+    
+    // Simple parsing for demo (real world would use 'useragent' lib)
+    let browser = "Other";
+    if (userAgent.includes("Chrome")) browser = "Chrome";
+    else if (userAgent.includes("Firefox")) browser = "Firefox";
+    else if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) browser = "Safari";
+    
+    let os = "Other";
+    if (userAgent.includes("Windows")) os = "Windows";
+    else if (userAgent.includes("iPhone") || userAgent.includes("iPad")) os = "iOS";
+    else if (userAgent.includes("Android")) os = "Android";
+    else if (userAgent.includes("Mac OS")) os = "MacOS";
+
+    user.security.loginHistory.unshift({
+      device: userAgent.substring(0, 50),
+      ip,
+      browser,
+      os,
+      lastLogin: new Date(),
+    });
+
+    // Keep only last 10 records
+    if (user.security.loginHistory.length > 10) {
+      user.security.loginHistory = user.security.loginHistory.slice(0, 10);
+    }
+    await user.save();
+
+    res.status(200).json({ user: userSafe, token: accessToken });
   } catch (error) {
-    console.error("[Auth Error]:", error.message);
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
@@ -335,11 +386,8 @@ const googleLogin = async (req, res) => {
         .json({ message: "Account is blocked. Please contact support." });
     }
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET || "secret",
-      { expiresIn: "7d" },
-    );
+    const { accessToken: generatedAccessToken, refreshToken } = generateTokens(user._id, user.role);
+    setRefreshTokenCookie(res, refreshToken);
 
     const userSafe = {
       id: user._id,
@@ -353,11 +401,37 @@ const googleLogin = async (req, res) => {
       picture,
     };
 
-    res.status(200).json({ user: userSafe, token });
+    res.status(200).json({ user: userSafe, token: generatedAccessToken });
   } catch (error) {
-    console.error("[Auth Error]:", error.message);
-    res.status(500).json({ message: error.message });
+    next(error);
   }
+};
+
+// GET /api/auth/refresh
+const refresh = async (req, res, next) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) return res.status(401).json({ message: "Refresh token missing" });
+
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET || "refresh_secret");
+    const user = await User.findById(decoded.id);
+
+    if (!user) return res.status(401).json({ message: "Invalid refresh token" });
+    if (user.status === "blocked") return res.status(403).json({ message: "Account is blocked" });
+
+    const tokens = generateTokens(user._id, user.role);
+    setRefreshTokenCookie(res, tokens.refreshToken);
+
+    res.status(200).json({ token: tokens.accessToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/auth/logout
+const logout = async (req, res) => {
+  res.clearCookie("refreshToken");
+  res.status(200).json({ message: "Logged out successfully" });
 };
 
 module.exports = {
@@ -368,4 +442,6 @@ module.exports = {
   verifyResetCode,
   resetPassword,
   googleLogin,
+  refresh,
+  logout
 };

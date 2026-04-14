@@ -5,7 +5,10 @@ const connectDB = require("./config/db");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 const path = require("path");
+const cookieParser = require("cookie-parser");
+const rateLimit = require("express-rate-limit");
 const { initCronJobs } = require("./utils/cronJobs");
+const errorHandler = require("./middleware/errorMiddleware");
 
 // Load env vars
 dotenv.config();
@@ -13,8 +16,27 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  credentials: true // Allow cookies
+}));
 app.use(express.json());
+app.use(cookieParser());
+
+// Rate Limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Limit each IP to 20 login/register requests per windowMs
+  message: { message: "Quá nhiều yêu cầu đăng nhập. Vui lòng thử lại sau 15 phút." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const aiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 10, // Limit each IP to 10 AI requests per minute
+  message: { message: "Bạn đang hỏi quá nhanh. Vui lòng đợi một chút." },
+});
 
 // Cloudinary is now used for all images, no local /uploads static serving needed.
 
@@ -27,7 +49,7 @@ app.use("/api/landlords", require("./routes/landlordRoutes"));
 app.use("/api/landlord", require("./routes/landlordDashboardRoutes"));
 app.use("/api/verifications", require("./routes/verificationRoutes"));
 app.use("/api/reviews", require("./routes/reviewRoutes"));
-app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/auth", authLimiter, require("./routes/authRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/user", require("./routes/userRoutes")); // alias for singular
@@ -35,13 +57,14 @@ app.use("/api/bookings", require("./routes/bookingRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/uploads", require("./routes/uploadRoutes"));
 app.use("/api/upload", require("./routes/uploadRoutes")); // alias for singular
+app.use("/api/settings", require("./routes/settingRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/subscriptions", require("./routes/subscriptionRoutes"));
 app.use("/api/transactions", require("./routes/transactionRoutes"));
 app.use("/api/reports", require("./routes/reportRoutes"));
 app.use("/api/blogs", require("./routes/blogRoutes"));
 app.use("/api/contacts", require("./routes/contactRoutes"));
-app.use("/api/ai", require("./routes/aiRoutes"));
+app.use("/api/ai", aiLimiter, require("./routes/aiRoutes"));
 app.use("/api/map", require("./routes/mapRoutes"));
 
 
@@ -55,12 +78,7 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.use((req, res) => res.status(404).json({ message: "Not Found" }));
 
 // Error handler
-app.use((err, req, res, next) => {
-  console.error(err && err.stack ? err.stack : err);
-  res.status(err && err.status ? err.status : 500).json({
-    message: err && err.message ? err.message : "Internal Server Error",
-  });
-});
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 

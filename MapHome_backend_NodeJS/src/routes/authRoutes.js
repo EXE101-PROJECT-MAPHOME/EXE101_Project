@@ -8,6 +8,8 @@ const {
   verifyResetCode,
   resetPassword,
   googleLogin,
+  refresh,
+  logout,
 } = require("../controllers/authController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const {
@@ -121,6 +123,36 @@ router.post("/register", registerRules, validate, register);
  *         description: Invalid credentials
  */
 router.post("/login", loginRules, validate, login);
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   get:
+ *     summary: Refresh access token
+ *     description: Get a new access token using a valid refresh token from cookies
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       200:
+ *         description: New access token generated
+ *       401:
+ *         description: Refresh token missing or invalid
+ */
+router.get("/refresh", refresh);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: User logout
+ *     description: Clear authentication cookies
+ *     tags:
+ *       - Authentication
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ */
+router.post("/logout", logout);
 
 /**
  * @swagger

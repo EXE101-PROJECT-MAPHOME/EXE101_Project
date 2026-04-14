@@ -39,6 +39,7 @@ const TIME_SLOTS = [
   { value: '16:00', label: '16:00 - 17:00' },
   { value: '17:00', label: '17:00 - 18:00' },
   { value: '18:00', label: '18:00 - 19:00' },
+  { value: '19:00', label: '19:00 - 20:00' },
 ];
 
 export function BookingDialog({ open, onOpenChange, property }: BookingDialogProps) {
