@@ -228,6 +228,45 @@ const getLandlordAnalytics = async (req, res) => {
       { $sort: { "_id": 1 } }
     ]);
 
+    // Trend: 7 Days comparison
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    const propertiesThisWeek = await Property.countDocuments({
+      landlordId: landlord._id,
+      createdAt: { $gte: sevenDaysAgo },
+    });
+    const propertiesLastWeek = await Property.countDocuments({
+      landlordId: landlord._id,
+      createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo },
+    });
+    const totalPostsTrend = propertiesThisWeek - propertiesLastWeek;
+
+    const approvedThisWeek = await Property.countDocuments({
+      landlordId: landlord._id,
+      status: "approved",
+      createdAt: { $gte: sevenDaysAgo },
+    });
+    const approvedLastWeek = await Property.countDocuments({
+      landlordId: landlord._id,
+      status: "approved",
+      createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo },
+    });
+    const approvedPostsTrend = approvedThisWeek - approvedLastWeek;
+
+    const pendingThisWeek = await Property.countDocuments({
+      landlordId: landlord._id,
+      status: "pending",
+      createdAt: { $gte: sevenDaysAgo },
+    });
+    const pendingLastWeek = await Property.countDocuments({
+      landlordId: landlord._id,
+      status: "pending",
+      createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo },
+    });
+    const pendingPostsTrend = pendingThisWeek - pendingLastWeek;
+
     res.status(200).json({
       totalProperties,
       approvedProperties,
@@ -237,7 +276,12 @@ const getLandlordAnalytics = async (req, res) => {
       verifiedProperties,
       totalViews: propertyStats[0]?.totalViews || 0,
       totalFavorites: propertyStats[0]?.totalFavorites || 0,
-      bookingTrend
+      bookingTrend,
+      trends: {
+        totalPostsTrend,
+        approvedPostsTrend,
+        pendingPostsTrend
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

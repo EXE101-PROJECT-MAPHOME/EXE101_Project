@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/app/components/ConfirmDialog";
+import CalendarView from "@/app/components/CalendarView";
 
 // Active tab type
 type DashboardTab =
@@ -75,6 +76,12 @@ const menuItems: Array<{
   { id: "settings", label: "Cài đặt", icon: Settings },
 ];
 
+const formatTrendNumber = (num: number) => {
+  if (num > 0) return `+${num}`;
+  if (num < 0) return `${num}`;
+  return "0";
+};
+
 export function LandlordDashboardV2() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -99,6 +106,11 @@ export function LandlordDashboardV2() {
     pendingPosts: 0,
     totalViews: 0,
     totalFavorites: 0,
+    trends: {
+      totalPostsTrend: 0,
+      approvedPostsTrend: 0,
+      pendingPostsTrend: 0,
+    },
   });
   const [verificationPricing, setVerificationPricing] = useState({
     basicVerification: 0,
@@ -202,6 +214,11 @@ export function LandlordDashboardV2() {
             pendingPosts: data.pendingProperties || 0,
             totalViews: data.totalViews || 0,
             totalFavorites: data.totalFavorites || 0,
+            trends: data.trends || {
+              totalPostsTrend: 0,
+              approvedPostsTrend: 0,
+              pendingPostsTrend: 0,
+            },
           });
         } else if (activeTab === "posts") {
           const response = await api.get("/api/landlord/properties");
@@ -319,6 +336,25 @@ export function LandlordDashboardV2() {
       });
     } finally {
       setIsRenewing(false);
+    }
+  };
+
+  const handleUpdateBookingStatus = async (bookingId: string, status: string) => {
+    const loadingToast = toast.loading("Đang cập nhật trạng thái...");
+    try {
+      const res = await api.put(`/api/bookings/${bookingId}/status`, { status });
+      if (res.status === 200) {
+        const statusText = 
+          status === "confirmed" ? "đã xác nhận" : 
+          status === "completed" ? "đã hoàn thành" : "đã huỷ";
+        
+        toast.success(`Lịch hẹn ${statusText}! ✨`, { id: loadingToast });
+        
+        // Cập nhật state local để UI phản hồi ngay lập tức
+        setBookings(prev => prev.map(b => (b._id || b.id) === bookingId ? { ...b, status } : b));
+      }
+    } catch (err) {
+      toast.error("Không thể cập nhật trạng thái. ❌", { id: loadingToast });
     }
   };
 
@@ -840,177 +876,35 @@ export function LandlordDashboardV2() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="space-y-10"
+            className="space-y-8"
           >
-            <div>
-              <h2 className="text-4xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent tracking-tight">
-                Lịch hẹn xem phòng
-              </h2>
-              <p className="text-indigo-400/90 text-lg font-black mt-1 drop-shadow-sm">
-                Quản lý và điều phối các yêu cầu gặp mặt từ khách hàng
-              </p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <div>
+                <h2 className="text-4xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent tracking-tight">
+                  Lịch hẹn thông minh
+                </h2>
+                <p className="text-indigo-400/90 text-lg font-black mt-1 drop-shadow-sm">
+                  Giao diện lịch biểu giúp bạn quản lý thời gian xem phòng tối ưu
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                   <div className="size-3 rounded-full bg-amber-500 shadow-sm" />
+                   <span className="text-[10px] font-black uppercase text-slate-500">Chờ duyệt</span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                   <div className="size-3 rounded-full bg-emerald-500 shadow-sm" />
+                   <span className="text-[10px] font-black uppercase text-slate-500">Đã xác nhận</span>
+                </div>
+              </div>
             </div>
 
             {bookings.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-20">
-                {bookings.map((booking) => (
-                  <div
-                    key={booking._id}
-                    className="bg-white border border-gray-100 rounded-[2.5rem] p-8 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
-                  >
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="flex-1">
-                        <div className="p-3 bg-white/60 rounded-2xl w-fit mb-4">
-                          <Home className="size-6 text-blue-600" />
-                        </div>
-                        <h4 className="font-black text-2xl text-gray-900 group-hover:text-blue-600 transition-colors leading-tight mb-2">
-                          {booking.propertyId?.name || "Căn hộ/Phòng trọ"}
-                        </h4>
-                        <p className="text-sm font-bold text-gray-400 flex items-center gap-1">
-                          <MapPin className="size-4" />{" "}
-                          {booking.propertyId?.address || "Hồ Chí Minh"}
-                        </p>
-                      </div>
-                      <span
-                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${
-                          booking.status === "confirmed"
-                            ? "bg-blue-100 text-blue-700 border border-blue-200"
-                            : booking.status === "completed"
-                              ? "bg-green-100 text-green-700 border border-green-200"
-                              : booking.status === "cancelled"
-                                ? "bg-rose-100 text-rose-700 border border-rose-200"
-                                : "bg-orange-100 text-orange-700 border border-orange-200 animate-pulse"
-                        }`}
-                      >
-                        {booking.status === "confirmed"
-                          ? "Đã xác nhận"
-                          : booking.status === "completed"
-                            ? "Hoàn thành"
-                            : booking.status === "cancelled"
-                              ? "Đã huỷ"
-                              : "Đang chờ"}
-                      </span>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-3xl p-6 mb-8 grid grid-cols-1 sm:grid-cols-2 gap-6 border border-gray-100">
-                      <div className="space-y-1">
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
-                          Thời gian dự kiến
-                        </p>
-                        <p className="font-black text-gray-900 flex items-center gap-2">
-                          <Clock className="size-5 text-emerald-500" />
-                          {booking.bookingTime} •{" "}
-                          {formatDateVietnamese(booking.bookingDate)}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">
-                          Khách hàng
-                        </p>
-                        <p className="font-black text-gray-900 flex items-center gap-2">
-                          <User className="size-5 text-blue-500" />
-                          {booking.customerName}
-                        </p>
-                        <p className="text-xs font-bold text-gray-400 ml-7">
-                          {booking.customerPhone}
-                        </p>
-                      </div>
-                      {booking.note && (
-                        <div className="col-span-full pt-4 border-t border-gray-100/50">
-                          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">
-                            Ghi chú thêm
-                          </p>
-                          <p className="text-sm text-gray-600 font-medium italic bg-white/30 p-4 rounded-2xl border border-white/20 leading-relaxed">
-                            "{booking.note}"
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-4 pt-2">
-                      {booking.status === "pending" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            className="flex-1 py-7 rounded-2xl font-black text-rose-500 hover:bg-rose-50 border-2 border-transparent hover:border-rose-100 transition-all"
-                            onClick={async () => {
-                              try {
-                                const res = await api.put(
-                                  `/api/bookings/${booking._id}/status`,
-                                  { status: "cancelled" },
-                                );
-                                if (res.status === 200) {
-                                  toast.success("Đã từ chối lịch hẹn. ❌");
-                                  setTimeout(
-                                    () => window.location.reload(),
-                                    1000,
-                                  );
-                                }
-                              } catch (err) {
-                                toast.error("Không thể cập nhật trạng thái.");
-                              }
-                            }}
-                          >
-                            <Trash2 className="size-5 mr-2" />
-                            Từ chối
-                          </Button>
-                          <Button
-                            className="flex-1 py-7 bg-gray-900 hover:bg-black text-white rounded-2xl font-black shadow-xl transition-all hover:scale-[1.02] active:scale-95"
-                            onClick={async () => {
-                              try {
-                                const res = await api.put(
-                                  `/api/bookings/${booking._id}/status`,
-                                  { status: "confirmed" },
-                                );
-                                if (res.status === 200) {
-                                  toast.success("Đã xác nhận lịch hẹn! 📅");
-                                  setTimeout(
-                                    () => window.location.reload(),
-                                    1000,
-                                  );
-                                }
-                              } catch (err) {
-                                toast.error("Không thể xác nhận lịch hẹn.");
-                              }
-                            }}
-                          >
-                            <CheckCircle className="size-5 mr-2" />
-                            Xác nhận lịch
-                          </Button>
-                        </>
-                      )}
-
-                      {booking.status === "confirmed" && (
-                        <Button
-                          className="w-full py-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black shadow-xl shadow-emerald-100 transition-all hover:scale-[1.02] active:scale-95"
-                          onClick={async () => {
-                            try {
-                              const res = await api.put(
-                                `/api/bookings/${booking._id}/status`,
-                                { status: "completed" },
-                              );
-                              if (res.status === 200) {
-                                toast.success(
-                                  "Đã hoàn thành lượt xem phòng! ✨",
-                                );
-                                setTimeout(
-                                  () => window.location.reload(),
-                                  1000,
-                                );
-                              }
-                            } catch (err) {
-                              toast.error("Không thể cập nhật trạng thái.");
-                            }
-                          }}
-                        >
-                          <CheckCircle className="size-5 mr-2" />
-                          Đã hoàn thành xem phòng
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <CalendarView 
+                bookings={bookings} 
+                onUpdateStatus={handleUpdateBookingStatus} 
+              />
             ) : (
               <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm p-20 text-center mx-auto">
                 <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner -rotate-3">
@@ -1218,6 +1112,11 @@ export function LandlordDashboardV2() {
                               const uploadRes = await api.post(
                                 "/api/upload/single",
                                 formData,
+                                {
+                                  headers: {
+                                    "Content-Type": "multipart/form-data",
+                                  },
+                                }
                               );
 
                               if (
@@ -1226,7 +1125,7 @@ export function LandlordDashboardV2() {
                               ) {
                                 const { url } = uploadRes.data;
                                 const updateRes = await api.put(
-                                  `/api/user/${user?.id}`,
+                                  `/api/user/${(user as any)?._id || user?.id}`,
                                   { avatar: url },
                                 );
 
@@ -1272,7 +1171,7 @@ export function LandlordDashboardV2() {
 
                       const updateToast = toast.loading("Đang cập nhật...");
                       try {
-                        const res = await api.put(`/api/user/${user?.id}`, {
+                        const res = await api.put(`/api/user/${(user as any)?._id || user?.id}`, {
                           fullName,
                           phone,
                         });
@@ -1493,35 +1392,35 @@ export function LandlordDashboardV2() {
                     value: stats.totalPosts,
                     icon: FileText,
                     color: "blue",
-                    trend: "+2",
+                    trend: formatTrendNumber(stats.trends.totalPostsTrend),
                   },
                   {
                     label: "Đã duyệt",
                     value: stats.approvedPosts,
                     icon: CheckCircle,
                     color: "emerald",
-                    trend: "0",
+                    trend: formatTrendNumber(stats.trends.approvedPostsTrend),
                   },
                   {
                     label: "Chờ duyệt",
                     value: stats.pendingPosts,
                     icon: Clock,
                     color: "orange",
-                    trend: "-1",
+                    trend: formatTrendNumber(stats.trends.pendingPostsTrend),
                   },
                   {
                     label: "Lượt xem",
                     value: stats.totalViews.toLocaleString(),
                     icon: Eye,
                     color: "purple",
-                    trend: "+12%",
+                    trend: "TỔNG",
                   },
                   {
                     label: "Yêu thích",
                     value: stats.totalFavorites,
                     icon: Star,
                     color: "amber",
-                    trend: "+5",
+                    trend: "TỔNG",
                   },
                 ].map((stat, idx) => (
                   <motion.div
@@ -1980,7 +1879,7 @@ export function LandlordDashboardV2() {
       <RequestVerificationDialog
         isOpen={showVerificationDialog}
         onClose={() => setShowVerificationDialog(false)}
-        landlordId={user?.id || "unknown"}
+        landlordId={(user as any)?._id || user?.id || "unknown"}
         landlordName={user?.fullName || user?.username || "Chủ trọ"}
         landlordPhone={user?.phone || "0123456789"}
       />

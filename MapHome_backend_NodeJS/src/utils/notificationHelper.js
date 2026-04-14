@@ -85,6 +85,33 @@ const notifyLandlordBookingCancelledByTenant = async ({ landlordUserId, property
   });
 };
 
+/**
+ * Notify BOTH LANDLORD AND TENANT 1 hour before the appointment
+ */
+const notifyBookingReminder = async ({ userId, propertyName, bookingTime, isLandlord, propertyId }) => {
+  const roleText = isLandlord ? "You have a viewing appointment" : "Don't forget your viewing appointment";
+  await createNotification({
+    userId,
+    title: "⏰ Appointment Reminder",
+    message: `${roleText} for "${propertyName}" at ${bookingTime}.`,
+    type: "info",
+    link: propertyId ? `/room/${propertyId}` : undefined,
+  });
+};
+
+/**
+ * Notify LANDLORD when their property listing is about to expire (3 days before)
+ */
+const notifyPropertyExpiryWarning = async ({ userId, propertyName, propertyId, daysRemaining = 3 }) => {
+  await createNotification({
+    userId,
+    title: "⚠️ Tin đăng sắp hết hạn!",
+    message: `Tin đăng "${propertyName}" của bạn sẽ hết hạn sau ${daysRemaining} ngày nữa. Hãy gia hạn ngay để không bị gián đoạn khách thuê!`,
+    type: "warning",
+    link: "/landlord-dashboard", // Lead to dashboard where they can renew
+  });
+};
+
 module.exports = {
   createNotification,
   notifyLandlordNewBooking,
@@ -92,4 +119,6 @@ module.exports = {
   notifyTenantBookingCancelled,
   notifyLandlordBookingCancelledByTenant,
   notifyTenantBookingCompleted,
+  notifyBookingReminder,
+  notifyPropertyExpiryWarning,
 };

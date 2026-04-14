@@ -65,8 +65,24 @@ const createBooking = async (req, res) => {
     let property = null;
     if (payload.propertyId) {
       property = await Property.findById(payload.propertyId);
-      if (property && !payload.landlordId) {
+      if (!property) return res.status(404).json({ message: "Property not found" });
+      
+      if (!payload.landlordId) {
         payload.landlordId = property.landlordId;
+      }
+
+      // ── Check for Overlapping Confirmed Bookings ──
+      const existingBooking = await Booking.findOne({
+        propertyId: payload.propertyId,
+        bookingDate: payload.bookingDate,
+        bookingTime: payload.bookingTime,
+        status: "confirmed"
+      });
+
+      if (existingBooking) {
+        return res.status(400).json({ 
+          message: `This time slot (${payload.bookingTime}) on this date is already booked and confirmed. Please choose another time.` 
+        });
       }
     }
 

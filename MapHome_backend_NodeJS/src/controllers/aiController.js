@@ -45,13 +45,9 @@ const buildGroqMessages = (message, history = [], propertyContext = "") => {
 exports.chatWithAI = async (req, res) => {
   try {
     const { message, history = [], propertyId } = req.body;
-    const userId = req.user ? req.user.id : null;
 
     if (!message || typeof message !== "string") {
-      return res.status(400).json({
-        error: "INVALID_MESSAGE",
-        message: "Tin nhắn không hợp lệ!"
-      });
+      return res.status(400).json({ error: "INVALID_MESSAGE", message: "Tin nhắn không hợp lệ!" });
     }
 
     let propertyContext = "";
@@ -78,25 +74,47 @@ exports.chatWithAI = async (req, res) => {
     }
 
     const groqKey = (process.env.GROQ_API_KEY || "").trim();
-    console.log(`[AI] Chatting with context: ${propertyContext ? "YES" : "NO"}`);
+    if (!groqKey) throw new Error("GROQ_API_KEY_MISSING");
 
-    const answer = await callGroq(groqKey, message, history, propertyContext);
+    const groq = new Groq({ apiKey: groqKey });
+    
+    // Limit history to last 10 messages
+    const limitedHistory = history.slice(-10);
+    const messages = buildGroqMessages(message, limitedHistory, propertyContext);
 
-    return res.status(200).json({
-      success: true,
-      answer,
-      provider: "groq",
-      hasContext: !!propertyContext
+    // Set SSE headers
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    const stream = await groq.chat.completions.create({
+      messages,
+      model: "llama-3.3-70b-versatile",
+      stream: true,
+      max_tokens: 1024,
     });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || "";
+      if (content) {
+        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      }
+    }
+
+    res.write("data: [DONE]\n\n");
+    res.end();
 
   } catch (error) {
     console.error("[AI SYSTEM ERROR]", error.message);
-
-    return res.status(500).json({
-      error: "AI_SYSTEM_ERROR",
-      message: error.message === "GROQ_API_KEY_MISSING" 
-        ? "Hệ thống AI chưa được cấu hình Key!" 
-        : "Hệ thống AI đang bận, thử lại sau!"
-    });
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: "AI_SYSTEM_ERROR",
+        message: error.message === "GROQ_API_KEY_MISSING" 
+          ? "Hệ thống AI chưa được cấu hình Key!" 
+          : "Hệ thống AI đang bận, thử lại sau!"
+      });
+    } else {
+      res.end();
+    }
   }
 };

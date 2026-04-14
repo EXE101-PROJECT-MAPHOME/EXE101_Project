@@ -1,6 +1,7 @@
 const Property = require("../models/Property");
 const User = require("../models/User");
 const Review = require("../models/Review");
+const SystemSetting = require("../models/SystemSetting");
 const axios = require("axios");
 
 const haversineKm = (lat1, lon1, lat2, lon2) => {
@@ -158,9 +159,12 @@ const createProperty = async (req, res) => {
       }
     }
 
-    // Set default expiry date (30 days from now)
+    // Set default expiry date from settings
+    const settings = await SystemSetting.findOne();
+    const expiryDays = settings?.automation?.defaultExpiryDays || 30;
+    
     const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
+    expiryDate.setDate(expiryDate.getDate() + expiryDays);
     payload.expiryDate = expiryDate;
 
     const property = await Property.create(payload);
@@ -630,9 +634,12 @@ const renewProperty = async (req, res) => {
       }
     }
 
-    // Set new expiry date (current date + 30 days)
+    // Set new expiry date from settings
+    const settings = await SystemSetting.findOne();
+    const expiryDays = settings?.automation?.defaultExpiryDays || 30;
+    
     const newExpiryDate = new Date();
-    newExpiryDate.setDate(newExpiryDate.getDate() + 30);
+    newExpiryDate.setDate(newExpiryDate.getDate() + expiryDays);
     
     property.expiryDate = newExpiryDate;
     property.status = "approved"; // Reset to approved if it was expired

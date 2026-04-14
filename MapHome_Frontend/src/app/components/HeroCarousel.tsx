@@ -5,15 +5,17 @@ import { useNavigate } from "react-router";
 import { Button } from "@/app/components/ui/button";
 import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import api from "@/app/utils/api";
 
-const heroSlides = [
+const defaultSlides = [
   {
     id: 1,
     title: "Tìm Phòng Trọ Hoàn Hảo",
     subtitle: "Hàng ngàn phòng trọ chất lượng đang chờ bạn khám phá",
     image:
       "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1920&h=800&fit=crop&q=80",
+    link: "/map",
   },
   {
     id: 2,
@@ -21,6 +23,7 @@ const heroSlides = [
     subtitle: "Trust is King - An toàn tuyệt đối cho mọi giao dịch",
     image:
       "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1920&h=800&fit=crop&q=80",
+    link: "/map",
   },
   {
     id: 3,
@@ -28,6 +31,7 @@ const heroSlides = [
     subtitle: "Bản đồ tương tác với các tiện ích xung quanh",
     image:
       "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1920&h=800&fit=crop&q=80",
+    link: "/map",
   },
   {
     id: 4,
@@ -35,6 +39,7 @@ const heroSlides = [
     subtitle: "Tìm được nhà trọ phù hợp với túi tiền của bạn",
     image:
       "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1920&h=800&fit=crop&q=80",
+    link: "/map",
   },
 ];
 
@@ -68,6 +73,32 @@ function PrevArrow(props: any) {
 export function HeroCarousel() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [slides, setSlides] = useState<any[]>(defaultSlides);
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const res = await api.get("/api/settings/public");
+        if (res.status === 200 && res.data.banners?.length > 0) {
+          const activeBanners = res.data.banners
+            .filter((b: any) => b.active)
+            .map((b: any, idx: number) => ({
+              id: `api-${idx}`,
+              title: b.title || "MapHome",
+              subtitle: b.title ? "Khám phá không gian sống lý tưởng" : "Nền tảng tìm kiếm trọ hàng đầu",
+              image: b.imageUrl,
+              link: b.link || "/map"
+            }));
+          if (activeBanners.length > 0) {
+            setSlides(activeBanners);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch banners, using defaults.");
+      }
+    };
+    fetchBanners();
+  }, []);
 
   const settings = {
     dots: true,
@@ -95,7 +126,7 @@ export function HeroCarousel() {
   return (
     <div className="hero-carousel-wrapper relative -mt-4 md:-mt-6">
       <Slider {...settings}>
-        {heroSlides.map((slide) => (
+        {slides.map((slide) => (
           <div key={slide.id} className="relative">
             <div className="relative h-[500px] md:h-[600px] lg:h-[700px] overflow-hidden">
               {/* Background Image */}
@@ -131,7 +162,7 @@ export function HeroCarousel() {
                       <div className="pt-4 md:pt-6">
                         <Button
                           size="lg"
-                          onClick={() => navigate("/map")}
+                          onClick={() => navigate(slide.link || "/map")}
                           className="text-base md:text-lg px-8 md:px-12 py-5 md:py-7 h-auto bg-white text-gray-900 hover:bg-gray-100 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
                         >
                           <MapPin className="size-5 md:size-6 mr-2" />

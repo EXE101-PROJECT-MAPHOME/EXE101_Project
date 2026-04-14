@@ -16,6 +16,31 @@ const SystemSettingSchema = new mongoose.Schema(
     },
     broadcastMessage: { type: String, default: "" },
     isBroadcastEnabled: { type: Boolean, default: false },
+    banners: [
+      {
+        title: { type: String },
+        imageUrl: { type: String, required: true },
+        link: { type: String },
+        active: { type: Boolean, default: true },
+        order: { type: Number, default: 0 },
+      },
+    ],
+    seo: {
+      title: { type: String, default: "MapHome - Tìm trọ thông minh" },
+      description: {
+        type: String,
+        default: "Nền tảng tìm kiếm và xác thực phòng trọ hàng đầu.",
+      },
+      keywords: { type: String, default: "phòng trọ, tìm trọ, maphome" },
+    },
+    policies: {
+      termsOfService: { type: String, default: "" },
+      privacyPolicy: { type: String, default: "" },
+    },
+    automation: {
+      defaultExpiryDays: { type: Number, default: 30 },
+      urgentDurationDays: { type: Number, default: 7 },
+    },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }

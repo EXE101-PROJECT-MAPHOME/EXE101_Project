@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -41,6 +41,11 @@ import {
   Sparkles,
   ArrowRight,
   RefreshCcw,
+  Mail,
+  Key,
+  Lock,
+  Activity,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import { amenityMeta } from "@/app/constants/amenities";
@@ -1490,349 +1495,533 @@ function InspectionsView({
  * Allows updating personal info and changing password
  */
 function SettingsView() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
-
-  const [fieldErrors, setFieldErrors] = useState({
-    fullName: "",
-    phone: "",
-    currentPassword: "",
-    newPassword: "",
+  const [activeTab, setActiveTab] = useState<"profile" | "search" | "privacy" | "security">("profile");
+  const [loading, setLoading] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  
+  // Local state for complex settings
+  const [localSettings, setLocalSettings] = useState({
+    searchPreferences: user?.searchPreferences || {
+      districts: [],
+      priceRange: { min: 0, max: 50000000 }
+    },
+    privacySettings: user?.privacySettings || {
+      showPhoneBeforeBooking: true
+    },
+    security: user?.security || {
+      twoFactorEnabled: false,
+      loginHistory: []
+    }
   });
 
+  const districtsList = [
+    "Quận 1", "Quận 2", "Quận 3", "Quận 4", "Quận 5", "Quận 6", "Quận 7", "Quận 8", "Quận 9", "Quận 10", "Quận 11", "Quận 12",
+    "Thủ Đức", "Bình Thạnh", "Tân Bình", "Phú Nhuận", "Gò Vấp", "Bình Tân", "Hóc Môn", "Củ Chi", "Nhà Bè", "Bình Chánh", "Cần Giờ"
+  ];
+
+  const handleSave = async (data: any) => {
+    setLoading(true);
+    try {
+      const res = await api.put(`/api/user/${user?.id}`, data);
+      if (res.status === 200) {
+        updateUser(res.data);
+        toast.success("Cập nhật thành công! ✨");
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Lỗi cập nhật. ❌");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleDistrict = (district: string) => {
+    const current = localSettings.searchPreferences?.districts || [];
+    const next = current.includes(district) 
+      ? current.filter((d: string) => d !== district)
+      : [...current, district];
+    
+    setLocalSettings({
+      ...localSettings,
+      searchPreferences: { ...localSettings.searchPreferences, districts: next }
+    });
+  };
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="text-center md:text-left mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Cài đặt tài khoản
-        </h2>
-        <p className="text-gray-600">
-          Quản lý thông tin cá nhân và bảo mật của bạn
-        </p>
+    <div className="flex flex-col lg:flex-row gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Sidebar Navigation */}
+      <div className="lg:w-72 shrink-0">
+        <div className="bg-white/60 backdrop-blur-md rounded-[32px] p-4 border border-white/50 shadow-xl space-y-2 sticky top-24">
+          <TabNav 
+            active={activeTab === "profile"} 
+            onClick={() => setActiveTab("profile")} 
+            icon={<User />} label="Hồ sơ cá nhân" 
+          />
+          <TabNav 
+            active={activeTab === "search"} 
+            onClick={() => setActiveTab("search")} 
+            icon={<Search />} label="Sở thích tìm kiếm" 
+          />
+          <TabNav 
+            active={activeTab === "privacy"} 
+            onClick={() => setActiveTab("privacy")} 
+            icon={<ShieldCheck />} label="Quyền riêng tư" 
+          />
+          <TabNav 
+            active={activeTab === "security"} 
+            onClick={() => setActiveTab("security")} 
+            icon={<Key />} label="Bảo mật & Đăng nhập" 
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Profile Information Section */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white/60 backdrop-blur-md rounded-2xl p-8 border border-white/50 shadow-xl"
-        >
-          <h3 className="font-black text-xl text-gray-900 mb-6 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-50 text-green-600">
-              <User className="size-5" />
-            </div>
-            Thông tin cá nhân
-          </h3>
+      {/* Main Form Content */}
+      <div className="flex-1">
+        <div className="bg-white/70 backdrop-blur-xl rounded-[42px] border border-white/60 shadow-2xl overflow-hidden min-h-[600px] flex flex-col">
+          <div className="p-8 md:p-12 flex-1 relative">
+            <AnimatePresence mode="wait">
+              {activeTab === "profile" && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-8"
+                >
+                  <SectionHeader title="Thông tin cá nhân" description="Cập nhật thông tin cơ bản để mọi người nhận diện bạn." />
+                  
+                  <div className="flex flex-col items-center gap-4 pb-8 border-b border-gray-100">
+                    <div className="relative group">
+                      <div className="w-32 h-32 rounded-[2.5rem] border-4 border-white shadow-2xl overflow-hidden bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white text-4xl font-black">
+                        {user?.avatar ? (
+                          <img src={getAvatarUrl(user.avatar) || ""} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          getInitials(user?.fullName, user?.username)
+                        )}
+                      </div>
+                      <label className="absolute -bottom-2 -right-2 p-3 bg-white text-green-600 rounded-2xl shadow-xl cursor-pointer hover:bg-green-600 hover:text-white transition-all transform hover:scale-110 border border-gray-100">
+                        <Camera className="size-5" />
+                        <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                           const file = e.target.files?.[0];
+                           if (!file) return;
+                           const formData = new FormData();
+                           formData.append("image", file);
+                           try {
+                             const uploadRes = await api.post("/api/upload/single", formData, { headers: { "Content-Type": "multipart/form-data" }});
+                             if (uploadRes.status === 200 || uploadRes.status === 201) {
+                               await handleSave({ avatar: uploadRes.data.url });
+                             }
+                           } catch (err) { toast.error("Lỗi upload ảnh."); }
+                        }} />
+                      </label>
+                    </div>
+                  </div>
 
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const target = e.target as any;
-              const fullName = target.fullName.value;
-              const phone = target.phone.value;
-
-              const fullNameValid = validateFullName(fullName);
-              const phoneValid = validatePhone(phone);
-
-              const newErrors = {
-                ...fieldErrors,
-                fullName: fullNameValid.error || "",
-                phone: phoneValid.error || "",
-              };
-              setFieldErrors(newErrors);
-
-              if (!fullNameValid.valid || !phoneValid.valid) {
-                toast.error("Vui lòng kiểm tra lại thông tin! ❌");
-                return;
-              }
-
-              try {
-                // Update user profile information via backend API using axios
-                const res = await api.put(`/api/user/${user?.id}`, {
-                  fullName,
-                  phone,
-                });
-
-                if (res.status === 200) {
-                  toast.success("Cập nhật thông tin thành công! ✨");
-                  setTimeout(() => window.location.reload(), 1000);
-                } else {
-                  toast.error(res.data.message || "Cập nhật thất bại. ❌");
-                }
-              } catch (err: any) {
-                console.error("Profile update error:", err);
-                toast.error(
-                  err.response?.data?.message || "Lỗi cập nhật thông tin. ❌",
-                );
-              }
-            }}
-            className="space-y-5"
-          >
-            {/* Avatar Upload Section */}
-            <div className="flex flex-col items-center gap-4 py-4 border-b border-gray-100 mb-6">
-              <div className="relative group">
-                <div className="w-24 h-24 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white text-3xl font-bold">
-                  {user?.avatar ? (
-                    <img
-                      src={getAvatarUrl(user.avatar) || ""}
-                      alt="Avatar"
-                      className="w-full h-full object-cover"
-                      style={{ imageRendering: "-webkit-optimize-contrast" }}
-                    />
-                  ) : (
-                    getInitials(user?.fullName, user?.username)
-                  )}
-                </div>
-                <label className="absolute bottom-0 right-0 p-2 bg-green-600 text-white rounded-full shadow-lg cursor-pointer hover:bg-green-700 transition-all transform hover:scale-110">
-                  <Camera className="size-4" />
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-
-                      const formData = new FormData();
-                      formData.append("image", file);
-                      try {
-                        // 1. Upload image to get URL
-                        const uploadRes = await api.post(
-                          "/api/upload/single",
-                          formData,
-                          {
-                            headers: { "Content-Type": "multipart/form-data" },
-                          },
-                        );
-
-                        if (
-                          uploadRes.status === 200 ||
-                          uploadRes.status === 201
-                        ) {
-                          const { url } = uploadRes.data;
-                          // 2. Update user profile with new avatar URL
-                          const updateRes = await api.put(
-                            `/api/user/${user?.id}`,
-                            { avatar: url },
-                          );
-
-                          if (updateRes.status === 200) {
-                            const updatedUser = updateRes.data;
-                            updateUser(updatedUser);
-                            toast.success("Đổi ảnh đại diện thành công! ✨");
-                            setTimeout(() => window.location.reload(), 1000);
-                          }
-                        }
-                      } catch (err: any) {
-                        console.error("Avatar upload error:", err);
-                        toast.error(
-                          err.response?.data?.message ||
-                            "Lỗi khi tải ảnh lên. ❌",
-                        );
-                      }
-                    }}
-                  />
-                </label>
-              </div>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                Nhấp vào icon để đổi ảnh
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
-                Họ và tên
-              </label>
-              <Input
-                name="fullName"
-                defaultValue={user?.fullName || user?.username}
-                className={`rounded-xl border-gray-100 bg-white/50 focus:bg-white transition-all h-12 ${fieldErrors.fullName ? "border-red-500" : ""}`}
-                onChange={() =>
-                  setFieldErrors({ ...fieldErrors, fullName: "" })
-                }
-                onBlur={(e) =>
-                  setFieldErrors({
-                    ...fieldErrors,
-                    fullName: validateFullName(e.target.value).error || "",
-                  })
-                }
-                required
-              />
-              {fieldErrors.fullName && (
-                <p className="text-[11px] text-red-500 mt-1 flex items-center gap-1 font-bold">
-                  <AlertCircle className="size-3" /> {fieldErrors.fullName}
-                </p>
+                  <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={(e) => {
+                    e.preventDefault();
+                    const form = new FormData(e.currentTarget);
+                    handleSave({
+                      fullName: form.get("fullName"),
+                      phone: form.get("phone")
+                    });
+                  }}>
+                    <InputGroup name="fullName" label="Họ và tên" defaultValue={user?.fullName || user?.username} icon={<User />} />
+                    <InputGroup name="phone" label="Số điện thoại" defaultValue={user?.phone || ""} icon={<Phone />} />
+                    <div className="md:col-span-2">
+                       <InputGroup name="email" label="Địa chỉ Email" defaultValue={user?.email || ""} icon={<Mail />} disabled />
+                    </div>
+                    <div className="md:col-span-2 pt-4">
+                      <Button type="submit" loading={loading} className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                        Lưu thay đổi hồ sơ
+                      </Button>
+                    </div>
+                  </form>
+                </motion.div>
               )}
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
-                Số điện thoại
-              </label>
-              <Input
-                name="phone"
-                defaultValue={user?.phone || ""}
-                placeholder="Nhập số điện thoại của bạn"
-                className={`rounded-xl border-gray-100 bg-white/50 focus:bg-white transition-all h-12 ${fieldErrors.phone ? "border-red-500" : ""}`}
-                onChange={() => setFieldErrors({ ...fieldErrors, phone: "" })}
-                onBlur={(e) =>
-                  setFieldErrors({
-                    ...fieldErrors,
-                    phone: validatePhone(e.target.value).error || "",
-                  })
-                }
-                required
-              />
-              {fieldErrors.phone && (
-                <p className="text-[11px] text-red-500 mt-1 flex items-center gap-1 font-bold">
-                  <AlertCircle className="size-3" /> {fieldErrors.phone}
-                </p>
+              {activeTab === "search" && (
+                <motion.div
+                  key="search"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-8"
+                >
+                  <SectionHeader title="Sở thích tìm kiếm" description="Chúng tôi sẽ ưu tiên hiển thị các phòng trọ phù hợp với tiêu chí của bạn." />
+                  
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <label className="text-xs font-black text-emerald-600/70 uppercase tracking-widest ml-1">Khu vực quan tâm (Quận/Huyện)</label>
+                      <div className="flex flex-wrap gap-2">
+                        {districtsList.map(d => (
+                          <button
+                            key={d}
+                            onClick={() => toggleDistrict(d)}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                              localSettings.searchPreferences?.districts?.includes(d)
+                                ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200"
+                                : "bg-white text-slate-500 border-slate-100 hover:border-emerald-200 hover:text-emerald-700"
+                            }`}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 pt-4">
+                      <div className="space-y-2">
+                         <label className="text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">Giá tối thiểu (VNĐ)</label>
+                         <div className="relative group">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
+                               <DollarSign className="size-5" />
+                            </div>
+                            <input 
+                              type="number"
+                              value={localSettings.searchPreferences?.priceRange?.min || 0}
+                              onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                searchPreferences: { 
+                                  ...localSettings.searchPreferences, 
+                                  priceRange: { ...localSettings.searchPreferences?.priceRange, min: Number(e.target.value) } 
+                                }
+                              })}
+                              className="w-full h-12 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner"
+                            />
+                         </div>
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">Giá tối đa (VNĐ)</label>
+                         <div className="relative group">
+                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
+                               <DollarSign className="size-5" />
+                            </div>
+                            <input 
+                              type="number"
+                              value={localSettings.searchPreferences?.priceRange?.max || 50000000}
+                              onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                searchPreferences: { 
+                                  ...localSettings.searchPreferences, 
+                                  priceRange: { ...localSettings.searchPreferences?.priceRange, max: Number(e.target.value) } 
+                                }
+                              })}
+                              className="w-full h-12 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner"
+                            />
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button 
+                    onClick={() => handleSave({ searchPreferences: localSettings.searchPreferences })}
+                    loading={loading}
+                    className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all mt-8"
+                  >
+                    Lưu cấu hình tìm kiếm
+                  </Button>
+                </motion.div>
               )}
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
-                Email (Read-only)
-              </label>
-              <Input
-                disabled
-                value={user?.email || ""}
-                className="rounded-xl border-gray-100 bg-gray-50 text-gray-400 h-12 cursor-not-allowed"
-              />
-            </div>
+              {activeTab === "privacy" && (
+                <motion.div
+                  key="privacy"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-8"
+                >
+                  <SectionHeader title="Quyền riêng tư" description="Kiểm soát thông tin nào chủ trọ có thể nhìn thấy." />
+                  
+                  <div className="bg-slate-50 rounded-[32px] p-8 border border-slate-100 space-y-6">
+                    <div className="flex items-center justify-between gap-6">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-slate-800 mb-1">Công khai số điện thoại</h4>
+                        <p className="text-sm text-slate-500">Cho phép chủ nhà xem số điện thoại của bạn ngay cả khi chưa xác nhận lịch hẹn.</p>
+                      </div>
+                      <Toggle 
+                        checked={localSettings.privacySettings?.showPhoneBeforeBooking ?? true} 
+                        onChange={(val) => setLocalSettings({
+                          ...localSettings,
+                          privacySettings: { ...localSettings.privacySettings, showPhoneBeforeBooking: val }
+                        })}
+                      />
+                    </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:shadow-lg hover:shadow-green-500/20 text-white font-bold h-12 rounded-xl mt-4 transition-all"
-            >
-              Lưu thay đổi
-            </Button>
-          </form>
-        </motion.div>
+                    <div className="pt-6 border-t border-slate-200">
+                       <p className="text-xs text-slate-400 italic">
+                         <Info className="size-3 inline mr-1 mb-0.5" />
+                         Lưu ý: MapHome luôn bảo vệ dữ liệu của bạn. Chúng tôi chỉ cung cấp thông tin liên hệ khi bạn có ý định xem phòng thực sự.
+                       </p>
+                    </div>
+                  </div>
 
-        {/* Security / Password Change Section */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white/60 backdrop-blur-md rounded-2xl p-8 border border-white/50 shadow-xl"
-        >
-          <h3 className="font-black text-xl text-gray-900 mb-6 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-50 text-orange-600">
-              <ShieldCheck className="size-5" />
-            </div>
-            Bảo mật & Mật khẩu
-          </h3>
-
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const target = e.target as any;
-              const currentPassword = target.currentPassword.value;
-              const newPassword = target.newPassword.value;
-
-              const newPasswordValid = validatePassword(newPassword);
-
-              if (!newPasswordValid.valid) {
-                setFieldErrors({
-                  ...fieldErrors,
-                  newPassword: newPasswordValid.error || "",
-                });
-                toast.error(
-                  newPasswordValid.error || "Mật khẩu không hợp lệ! ❌",
-                );
-                return;
-              }
-
-              try {
-                // Change user password via authentication API using axios
-                const res = await api.put("/api/auth/change-password", {
-                  currentPassword,
-                  newPassword,
-                });
-
-                if (res.status === 200) {
-                  toast.success(
-                    "Đổi mật khẩu thành công! Vui lòng đăng nhập lại. 🔐",
-                  );
-                  setTimeout(() => {
-                    logout();
-                    navigate("/login");
-                  }, 2000);
-                } else {
-                  toast.error(
-                    res.data.message || "Mật khẩu hiện tại không chính xác. ❌",
-                  );
-                }
-              } catch (err: any) {
-                console.error("Password change error:", err);
-                toast.error(
-                  err.response?.data?.message || "Lỗi đổi mật khẩu. ❌",
-                );
-              }
-            }}
-            className="space-y-5"
-          >
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
-                Mật khẩu hiện tại
-              </label>
-              <Input
-                type="password"
-                name="currentPassword"
-                placeholder="••••••••"
-                className="rounded-xl border-gray-100 bg-white/50 focus:bg-white transition-all h-12"
-                required
-                minLength={6}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">
-                Mật khẩu mới
-              </label>
-              <Input
-                type="password"
-                name="newPassword"
-                placeholder="••••••••"
-                className={`rounded-xl border-gray-100 bg-white/50 focus:bg-white transition-all h-12 ${fieldErrors.newPassword ? "border-red-500" : ""}`}
-                onChange={() =>
-                  setFieldErrors({ ...fieldErrors, newPassword: "" })
-                }
-                onBlur={(e) =>
-                  setFieldErrors({
-                    ...fieldErrors,
-                    newPassword: validatePassword(e.target.value).error || "",
-                  })
-                }
-                required
-              />
-              {fieldErrors.newPassword && (
-                <p className="text-[11px] text-red-500 mt-1 flex items-center gap-1 font-bold">
-                  <AlertCircle className="size-3" /> {fieldErrors.newPassword}
-                </p>
+                  <Button 
+                    onClick={() => handleSave({ privacySettings: localSettings.privacySettings })}
+                    loading={loading}
+                    className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all mt-8"
+                  >
+                    Cập nhật quyền riêng tư
+                  </Button>
+                </motion.div>
               )}
-            </div>
 
-            <div className="p-4 bg-orange-50 rounded-xl border border-orange-100">
-              <p className="text-[10px] text-orange-800 leading-relaxed">
-                <AlertCircle className="size-3 inline mr-1 mb-0.5" />
-                <strong>Lưu ý:</strong> Sau khi đổi mật khẩu thành công, bạn sẽ
-                bị đăng xuất khỏi hệ thống để đảm bảo an toàn bảo mật.
-              </p>
-            </div>
+              {activeTab === "security" && (
+                <motion.div
+                  key="security"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-10"
+                >
+                  <div>
+                    <SectionHeader title="Bảo mật tài khoản" description="Bảo vệ tài khoản của bạn bằng các lớp bảo mật mạnh mẽ." />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                      <div className="bg-amber-50 rounded-3xl p-6 border border-amber-100 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 bg-white rounded-2xl text-amber-600 shadow-sm">
+                            <ShieldCheck className="size-6" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-amber-900 leading-none mb-1">Xác thực 2 lớp (2FA)</p>
+                            <p className="text-[10px] text-amber-600 font-bold">Tăng cường bảo mật qua Email</p>
+                          </div>
+                        </div>
+                        <Toggle 
+                          color="amber"
+                          checked={localSettings.security?.twoFactorEnabled || false} 
+                          onChange={(val) => setLocalSettings({
+                            ...localSettings,
+                            security: { ...localSettings.security, twoFactorEnabled: val }
+                          })}
+                        />
+                      </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-gray-900 hover:bg-black text-white font-bold h-12 rounded-xl mt-4 transition-all shadow-lg"
-            >
-              Đổi mật khẩu
-            </Button>
-          </form>
-        </motion.div>
+                      <div className="bg-emerald-50 rounded-3xl p-6 border border-emerald-100 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 bg-white rounded-2xl text-emerald-600 shadow-sm">
+                            <Key className="size-6" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-emerald-900 leading-none mb-1">Đổi mật khẩu thủ công</p>
+                            <p className="text-[10px] text-emerald-600 font-bold">Cập nhật mật khẩu định kỳ</p>
+                          </div>
+                        </div>
+                        <Toggle 
+                          color="emerald"
+                          checked={showPasswordForm} 
+                          onChange={(val) => setShowPasswordForm(val)}
+                        />
+                      </div>
+
+                      <AnimatePresence>
+                        {showPasswordForm && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="md:col-span-2 overflow-hidden"
+                          >
+                            <div className="bg-slate-50/50 rounded-3xl p-8 border border-dashed border-slate-200 mt-2 space-y-6">
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className="p-2 bg-white rounded-xl text-emerald-600 shadow-sm">
+                                  <Key className="size-5" />
+                                </div>
+                                <h4 className="font-bold text-slate-800">Cài đặt mật khẩu mới</h4>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <InputGroup 
+                                  type="password" 
+                                  name="currentPassword" 
+                                  label="Mật khẩu hiện tại" 
+                                  placeholder="••••••••" 
+                                  icon={<Lock />} 
+                                />
+                                <InputGroup 
+                                  type="password" 
+                                  name="newPassword" 
+                                  label="Mật khẩu mới" 
+                                  placeholder="••••••••" 
+                                  icon={<Key />} 
+                                />
+                              </div>
+                              
+                              <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
+                                 <Info className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                                 <p className="text-[10px] text-amber-800 leading-relaxed font-bold">
+                                   Lưu ý: Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt. 
+                                   Bạn sẽ bị đăng xuất sau khi đổi thành công.
+                                 </p>
+                              </div>
+                              
+                              <Button
+                                type="button"
+                                variant="outline"
+                                loading={loading}
+                                onClick={async (e) => {
+                                  const container = (e.target as HTMLElement).closest('.space-y-6');
+                                  const currentPass = (container?.querySelector('input[name="currentPassword"]') as HTMLInputElement)?.value;
+                                  const newPass = (container?.querySelector('input[name="newPassword"]') as HTMLInputElement)?.value;
+                                  
+                                  if (!currentPass || !newPass) {
+                                    toast.error("Vui lòng nhập đầy đủ thông tin mật khẩu.");
+                                    return;
+                                  }
+                                  
+                                  if (newPass.length < 8) {
+                                    toast.error("Mật khẩu mới phải có ít nhất 8 ký tự.");
+                                    return;
+                                  }
+                                  
+                                  setLoading(true);
+                                  try {
+                                    const res = await api.put("/api/auth/change-password", {
+                                      currentPassword: currentPass,
+                                      newPassword: newPass
+                                    });
+                                    if (res.status === 200) {
+                                      toast.success("Đổi mật khẩu thành công! 🔐");
+                                      setTimeout(() => {
+                                        logout();
+                                        navigate("/login");
+                                      }, 2000);
+                                    }
+                                  } catch (err: any) {
+                                    const errorData = err.response?.data;
+                                    if (errorData?.errors && errorData.errors.length > 0) {
+                                      toast.error(errorData.errors[0].message);
+                                    } else {
+                                      toast.error(errorData?.message || "Mật khẩu hiện tại không chính xác.");
+                                    }
+                                  } finally {
+                                    setLoading(false);
+                                  }
+                                }}
+                                className="w-full h-12 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 rounded-2xl font-black text-xs shadow-sm"
+                              >
+                                Xác nhận đổi mật khẩu
+                              </Button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-black text-indigo-500/60 uppercase tracking-widest mb-6 px-1 flex items-center gap-2">
+                       Lịch sử đăng nhập (10 phiên gần nhất)
+                    </h4>
+                    <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-inner">
+                      <div className="divide-y divide-slate-100">
+                        {localSettings.security?.loginHistory?.length > 0 ? (
+                          localSettings.security.loginHistory.map((h: any, i: number) => (
+                            <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                              <div className="flex items-center gap-4">
+                                <div className={`p-2 rounded-xl ${h.os === 'Windows' ? 'bg-blue-50 text-blue-500' : 'bg-slate-100 text-slate-600'}`}>
+                                   <Activity className="size-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold text-slate-700 leading-none mb-1">{h.browser} on {h.os}</p>
+                                  <p className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{h.device}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[11px] font-black text-slate-600">{h.ip}</p>
+                                <p className="text-[9px] text-slate-400 font-bold">{new Date(h.lastLogin).toLocaleString()}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-10 text-center text-slate-400 font-medium italic">Chưa có lịch sử đăng nhập.</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    onClick={() => handleSave({ security: localSettings.security })}
+                    loading={loading}
+                    className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    Lưu thay đổi bảo mật
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+// ─── Interaction Helpers ──────────────────────────────────────────────────────
+
+function TabNav({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-[13px] font-black tracking-tight transition-all active:scale-95 ${
+        active ? "text-white" : "text-slate-400 hover:text-slate-700 hover:bg-slate-50"
+      }`}
+    >
+      {active && (
+        <motion.div layoutId="activeUserTab" className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl shadow-lg shadow-emerald-500/20" />
+      )}
+      <span className="relative z-10 [&>svg]:size-5">{active ? React.cloneElement(icon, { className: "text-white" }) : icon}</span>
+      <span className="relative z-10">{label}</span>
+      {active && <div className="absolute right-4 w-1.5 h-1.5 bg-white rounded-full relative z-10" />}
+    </button>
+  );
+}
+
+function SectionHeader({ title, description }: { title: string, description: string }) {
+  return (
+    <div>
+      <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">{title}</h3>
+      <p className="text-sm font-bold text-emerald-600/60 italic">{description}</p>
+    </div>
+  );
+}
+
+function InputGroup({ name, label, icon, defaultValue, value, onChange, type = "text", disabled = false }: any) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">{label}</label>
+      <div className="relative group">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors pointer-events-none [&>svg]:size-5">
+           {icon}
+        </div>
+        <input 
+          name={name}
+          type={type} 
+          disabled={disabled}
+          defaultValue={defaultValue}
+          value={value}
+          onChange={onChange}
+          className="w-full h-12 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner disabled:bg-slate-100 disabled:text-slate-400" 
+        />
+      </div>
+    </div>
+  );
+}
+
+function Toggle({ checked, onChange, color = "emerald" }: { checked: boolean, onChange: (val: boolean) => void, color?: string }) {
+  const colors: any = {
+    emerald: "peer-checked:bg-emerald-600",
+    amber: "peer-checked:bg-amber-600",
+    blue: "peer-checked:bg-blue-600"
+  };
+  return (
+    <label className="relative inline-flex items-center cursor-pointer scale-110">
+      <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <div className={`w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-7 after:transition-all ${colors[color]} shadow-inner`}></div>
+    </label>
   );
 }
 

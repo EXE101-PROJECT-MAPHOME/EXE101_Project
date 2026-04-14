@@ -156,10 +156,9 @@ const changePasswordRules = [
     .withMessage("Password must contain at least one special character"),
 
   body("confirmPassword")
-    .notEmpty()
-    .withMessage("Confirmation password is required")
+    .optional()
     .custom((value, { req }) => {
-      if (value !== req.body.newPassword) {
+      if (value && value !== req.body.newPassword) {
         throw new Error("Passwords do not match");
       }
       return true;

@@ -5,23 +5,24 @@ import {
   Phone,
   Mail,
   ShieldAlert,
-  DollarSign,
   Bell,
   Save,
   RotateCcw,
-  Zap,
   Info,
   Layers,
   Edit2,
   Trash2,
-  Plus,
   User,
   Camera,
   Key,
-  ShieldCheck,
   ChevronRight,
   CheckCircle,
-  TrendingUp,
+  Layout,
+  FileText,
+  Activity,
+  Plus,
+  Clock,
+  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -36,15 +37,13 @@ export function SettingsView() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<any>(null);
-  const [plans, setPlans] = useState<any[]>([]);
-  const [editingPlan, setEditingPlan] = useState<any>(null);
-  const [isCreating, setIsCreating] = useState(false);
   const { user, logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<
-    "general" | "pricing" | "broadcast" | "subscription_plans" | "account"
+    "general" | "broadcast" | "banners" | "seo" | "policies" | "automation" | "account"
   >("general");
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const fetchSettings = async () => {
     try {
@@ -60,20 +59,8 @@ export function SettingsView() {
     }
   };
 
-  const fetchPlans = async () => {
-    try {
-      const res = await api.get("/api/subscriptions/plans");
-      if (res.status === 200) {
-        setPlans(res.data);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   useEffect(() => {
     fetchSettings();
-    fetchPlans();
   }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -86,62 +73,10 @@ export function SettingsView() {
       }
     } catch (error) {
       console.error(error);
+      toast.error("Không thể lưu thay đổi.");
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleSavePlan = async () => {
-    try {
-      if (!editingPlan.name || editingPlan.price === undefined) {
-        toast.error("Vui lòng điền đủ tên và giá gói!");
-        return;
-      }
-      setSaving(true);
-      if (isCreating) {
-        const res = await api.post(
-          "/api/admin/subscriptions/plans",
-          editingPlan,
-        );
-        if (res.status === 201) toast.success("Thêm gói mới thành công! ✨");
-      } else {
-        const res = await api.put(
-          `/api/admin/subscriptions/plans/${editingPlan._id || editingPlan.planId}`,
-          editingPlan,
-        );
-        if (res.status === 200) toast.success("Cập nhật gói thành công! ✨");
-      }
-      setEditingPlan(null);
-      setIsCreating(false);
-      fetchPlans();
-    } catch (error) {
-      console.error(error);
-      toast.error("Có lỗi xảy ra, vui lòng thử lại!");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeletePlan = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDeleteConfirm({
-      open: true,
-      title: "Xác nhận xóa gói dịch vụ",
-      description:
-        "Bạn có chắc muốn xóa vĩnh viễn gói dịch vụ này? Thao tác không thể hoàn tác.",
-      onConfirm: async () => {
-        try {
-          const res = await api.delete(`/api/admin/subscriptions/plans/${id}`);
-          if (res.status === 200) {
-            toast.success("Đã xóa gói dịch vụ! 🗑️");
-            fetchPlans();
-          }
-        } catch (error) {
-          console.error(error);
-          toast.error("Không thể xóa lúc này.");
-        }
-      },
-    });
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,16 +88,12 @@ export function SettingsView() {
       const formData = new FormData();
       formData.append("image", file);
 
-      // 1. Upload to Cloudinary
       const uploadRes = await api.post("/api/upload/single", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (uploadRes.status === 201) {
         const imageUrl = uploadRes.data.url;
-
-        // 2. Update user profile
-        // Note: Backend might use _id, but our User interface uses id
         const userId = user?.id || (user as any)?._id;
         const updateRes = await api.put(`/api/user/${userId}`, {
           avatar: imageUrl,
@@ -175,12 +106,58 @@ export function SettingsView() {
       }
     } catch (error: any) {
       console.error("Avatar update failed:", error);
-      toast.error(
-        error.response?.data?.message || "Không thể cập nhật ảnh đại diện.",
-      );
+      toast.error(error.response?.data?.message || "Không thể cập nhật ảnh đại diện.");
     } finally {
       setUpdatingAvatar(false);
     }
+  };
+
+  const handleAddBanner = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingBanner(true);
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const uploadRes = await api.post("/api/upload/single", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (uploadRes.status === 201) {
+        const newBanner = {
+          title: "Slide mới",
+          imageUrl: uploadRes.data.url,
+          link: "/map",
+          active: true,
+          order: settings.banners?.length || 0,
+        };
+        
+        setSettings({
+          ...settings,
+          banners: [...(settings.banners || []), newBanner],
+        });
+        toast.success("Đã thêm banner mới! ✨");
+      }
+    } catch (error) {
+      console.error("Banner upload failed:", error);
+      toast.error("Không thể tải ảnh banner.");
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
+  const removeBanner = (index: number) => {
+    const newBanners = [...settings.banners];
+    newBanners.splice(index, 1);
+    setSettings({ ...settings, banners: newBanners });
+  };
+
+  const toggleBanner = (index: number) => {
+    const newBanners = [...settings.banners];
+    newBanners[index].active = !newBanners[index].active;
+    setSettings({ ...settings, banners: newBanners });
   };
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -229,7 +206,7 @@ export function SettingsView() {
             Cấu hình Hệ thống
           </h2>
           <p className="text-xs text-indigo-500/70 mt-1 font-medium">
-            Điều chỉnh các tham số vận hành cốt lõi của nền tảng
+            Điều chỉnh giao diện và quy tắc vận hành MapHome
           </p>
         </div>
         <div className="flex gap-3">
@@ -253,38 +230,16 @@ export function SettingsView() {
 
       <div className="grid grid-cols-[260px_1fr] gap-8 items-start">
         {/* Navigation Sidebar */}
-        <div className="bg-white rounded-[32px] border border-slate-100 p-3 shadow-sm space-y-2 sticky top-24">
-          <TabNav
-            active={activeTab === "general"}
-            onClick={() => setActiveTab("general")}
-            icon={<Globe />}
-            label="Chung"
-          />
-          <TabNav
-            active={activeTab === "pricing"}
-            onClick={() => setActiveTab("pricing")}
-            icon={<DollarSign />}
-            label="Dịch vụ & Giá"
-          />
-          <TabNav
-            active={activeTab === "broadcast"}
-            onClick={() => setActiveTab("broadcast")}
-            icon={<Bell />}
-            label="Truyền thông"
-          />
-          <TabNav
-            active={activeTab === "subscription_plans"}
-            onClick={() => setActiveTab("subscription_plans")}
-            icon={<Layers />}
-            label="Gói dịch vụ"
-          />
+        <div className="bg-white rounded-[32px] border border-slate-100 p-3 shadow-sm space-y-1.5 sticky top-24">
+          <TabNav active={activeTab === "general"} onClick={() => setActiveTab("general")} icon={<Globe />} label="Thông tin chung" />
+          <TabNav active={activeTab === "banners"} onClick={() => setActiveTab("banners")} icon={<Layout />} label="Banner & Slide" />
+          <TabNav active={activeTab === "seo"} onClick={() => setActiveTab("seo")} icon={<Layers />} label="SEO & Metadata" />
+          <TabNav active={activeTab === "broadcast"} onClick={() => setActiveTab("broadcast")} icon={<Bell />} label="Truyền thông" />
+          <TabNav active={activeTab === "policies"} onClick={() => setActiveTab("policies")} icon={<FileText />} label="Pháp lý & CS" />
+          <TabNav active={activeTab === "automation"} onClick={() => setActiveTab("automation")} icon={<Activity />} label="Tự động hóa" />
+          
           <div className="pt-2 mt-2 border-t border-slate-50">
-            <TabNav
-              active={activeTab === "account"}
-              onClick={() => setActiveTab("account")}
-              icon={<User />}
-              label="Tài khoản"
-            />
+            <TabNav active={activeTab === "account"} onClick={() => setActiveTab("account")} icon={<User />} label="Hồ sơ Admin" />
           </div>
         </div>
 
@@ -301,35 +256,11 @@ export function SettingsView() {
             >
               {activeTab === "general" && (
                 <div className="space-y-8">
-                  <SectionHeader
-                    title="Thông tin nền tảng"
-                    description="Cập nhật các thông tin hiển thị cơ bản của website."
-                  />
+                  <SectionHeader title="Thông tin nền tảng" description="Cấu hình danh tính và liên hệ chính thức." />
                   <div className="grid grid-cols-2 gap-8">
-                    <InputGroup
-                      label="Tên Website"
-                      value={settings.siteName}
-                      onChange={(val) =>
-                        setSettings({ ...settings, siteName: val })
-                      }
-                      icon={<Globe className="size-4" />}
-                    />
-                    <InputGroup
-                      label="Email Hỗ trợ"
-                      value={settings.contactEmail}
-                      onChange={(val) =>
-                        setSettings({ ...settings, contactEmail: val })
-                      }
-                      icon={<Mail className="size-4" />}
-                    />
-                    <InputGroup
-                      label="Hotline"
-                      value={settings.contactPhone}
-                      onChange={(val) =>
-                        setSettings({ ...settings, contactPhone: val })
-                      }
-                      icon={<Phone className="size-4" />}
-                    />
+                    <InputGroup label="Tên Website" value={settings.siteName} onChange={(val) => setSettings({ ...settings, siteName: val })} icon={<Globe className="size-4" />} />
+                    <InputGroup label="Email Hỗ trợ" value={settings.contactEmail} onChange={(val) => setSettings({ ...settings, contactEmail: val })} icon={<Mail className="size-4" />} />
+                    <InputGroup label="Hotline" value={settings.contactPhone} onChange={(val) => setSettings({ ...settings, contactPhone: val })} icon={<Phone className="size-4" />} />
                   </div>
 
                   <div className="pt-8 border-t border-slate-100">
@@ -339,229 +270,108 @@ export function SettingsView() {
                           <ShieldAlert className="size-6" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-black text-rose-900 uppercase tracking-widest">
-                            Chế độ Bảo trì
-                          </h4>
-                          <p className="text-xs text-rose-600 font-medium">
-                            Tạm khóa toàn bộ truy cập từ phía người dùng.
-                          </p>
+                          <h4 className="text-sm font-black text-rose-900 uppercase tracking-widest">Chế độ Bảo trì</h4>
+                          <p className="text-xs text-rose-600 font-medium">Tạm khóa toàn bộ truy cập từ người dùng.</p>
                         </div>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer scale-110">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={settings.maintenanceMode}
-                          onChange={(e) =>
-                            setSettings({
-                              ...settings,
-                              maintenanceMode: e.target.checked,
-                            })
-                          }
-                        />
-                        <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-7 after:transition-all peer-checked:bg-rose-600 shadow-inner"></div>
-                      </label>
+                      <Toggle checked={settings.maintenanceMode} onChange={(val) => setSettings({ ...settings, maintenanceMode: val })} color="rose" />
                     </div>
                   </div>
                 </div>
               )}
 
-              {activeTab === "pricing" && (
+              {activeTab === "banners" && (
                 <div className="space-y-8">
-                  <SectionHeader
-                    title="Cấu hình Giá Dịch vụ"
-                    description="Thiết lập chi phí cho các gói xác thực Tích Xanh."
-                  />
-                  <div className="grid grid-cols-2 gap-8">
-                    <div className="p-8 bg-blue-50/30 rounded-[32px] border border-blue-50 space-y-6">
-                      <div className="flex items-center gap-3 text-blue-700">
-                        <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-inner border border-blue-100">
-                          <Zap className="size-5" />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest">
-                          Xác thực Cơ bản
-                        </span>
-                      </div>
-                      <InputGroup
-                        label="Chi phí (VNĐ)"
-                        type="number"
-                        value={settings.pricing.basicVerification}
-                        onChange={(val) =>
-                          setSettings({
-                            ...settings,
-                            pricing: {
-                              ...settings.pricing,
-                              basicVerification: parseInt(val),
-                            },
-                          })
-                        }
-                      />
-                      <p className="text-[10px] text-blue-400 font-bold uppercase italic tracking-tighter">
-                        Áp dụng xác minh qua SĐT/Zalo
-                      </p>
-                    </div>
-
-                    <div className="p-8 bg-amber-50/30 rounded-[32px] border border-amber-50 space-y-6">
-                      <div className="flex items-center gap-3 text-amber-700">
-                        <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-inner border border-amber-100">
-                          <ShieldCheck className="size-5" />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest">
-                          Xác thực Thực địa
-                        </span>
-                      </div>
-                      <InputGroup
-                        label="Chi phí (VNĐ)"
-                        type="number"
-                        value={settings.pricing.premiumVerification}
-                        onChange={(val) =>
-                          setSettings({
-                            ...settings,
-                            pricing: {
-                              ...settings.pricing,
-                              premiumVerification: parseInt(val),
-                            },
-                          })
-                        }
-                      />
-                      <p className="text-[10px] text-amber-400 font-bold uppercase italic tracking-tighter">
-                        Xác minh tận nơi bởi MapHome
-                      </p>
-                    </div>
-
-                    <div className="p-8 bg-emerald-50/30 rounded-[32px] border border-emerald-50 space-y-6">
-                      <div className="flex items-center gap-3 text-emerald-700">
-                        <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-inner border border-emerald-100">
-                          <Plus className="size-5" />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest">
-                          Phí Đăng Bài
-                        </span>
-                      </div>
-                      <InputGroup
-                        label="Chi phí (VNĐ)"
-                        type="number"
-                        value={settings.pricing.postRoomFee || 0}
-                        onChange={(val) =>
-                          setSettings({
-                            ...settings,
-                            pricing: {
-                              ...settings.pricing,
-                              postRoomFee: parseInt(val),
-                            },
-                          })
-                        }
-                      />
-                      <p className="text-[10px] text-emerald-400 font-bold uppercase italic tracking-tighter">
-                        Áp dụng khi đăng tin nhà trọ mới
-                      </p>
-                    </div>
-
-                    <div className="p-8 bg-violet-50/30 rounded-[32px] border border-violet-50 space-y-6">
-                      <div className="flex items-center gap-3 text-violet-700">
-                        <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-inner border border-violet-100">
-                          <TrendingUp className="size-5" />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest">
-                          Phí Đẩy Bài (Push)
-                        </span>
-                      </div>
-                      <InputGroup
-                        label="Chi phí (VNĐ)"
-                        type="number"
-                        value={settings.pricing.pushRoomFee || 0}
-                        onChange={(val) =>
-                          setSettings({
-                            ...settings,
-                            pricing: {
-                              ...settings.pricing,
-                              pushRoomFee: parseInt(val),
-                            },
-                          })
-                        }
-                      />
-                      <p className="text-[10px] text-violet-400 font-bold uppercase italic tracking-tighter">
-                        Dịch vụ đưa tin đăng lên đầu trang
-                      </p>
-                    </div>
-
-                    <div className="p-8 bg-rose-50/30 rounded-[32px] border border-rose-50 space-y-6">
-                      <div className="flex items-center gap-3 text-rose-700">
-                        <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-inner border border-rose-100">
-                          <Zap className="size-5 text-rose-600" />
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest">
-                          Tin Đăng Gấp
-                        </span>
-                      </div>
-                      <InputGroup
-                        label="Chi phí (VNĐ)"
-                        type="number"
-                        value={settings.pricing.urgentRoomFee || 0}
-                        onChange={(val) =>
-                          setSettings({
-                            ...settings,
-                            pricing: {
-                              ...settings.pricing,
-                              urgentRoomFee: parseInt(val),
-                            },
-                          })
-                        }
-                      />
-                      <p className="text-[10px] text-rose-400 font-bold uppercase italic tracking-tighter">
-                        Phí gắn nhãn ưu tiên "Gấp"
-                      </p>
-                      <div className="p-8 bg-indigo-50/30 rounded-[32px] border border-indigo-50 space-y-6">
-                      <div className="flex items-center gap-3 text-indigo-700">
-                        <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-inner border border-indigo-100 font-black text-xs">
-                          %
-                        </div>
-                        <span className="text-xs font-black uppercase tracking-widest">
-                          Tỷ lệ Hoa hồng
-                        </span>
-                      </div>
-                      <InputGroup
-                        label="Tỷ lệ (%)"
-                        type="number"
-                        value={settings.pricing.commissionRate || 0}
-                        onChange={(val) =>
-                          setSettings({
-                            ...settings,
-                            pricing: {
-                              ...settings.pricing,
-                              commissionRate: parseInt(val),
-                            },
-                          })
-                        }
-                      />
-                      <p className="text-[10px] text-indigo-400 font-bold uppercase italic tracking-tighter">
-                        Phần trăm mỗi giao dịch thành công
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-between">
+                    <SectionHeader title="Quản lý Slider" description="Cấu hình các ảnh trình chiếu trên trang chủ." />
+                    <label className={`cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all ${uploadingBanner ? "opacity-50" : ""}`}>
+                      <Plus className="size-4" />
+                      {uploadingBanner ? "Đang tải..." : "Thêm Slide"}
+                      <input type="file" className="hidden" accept="image/*" onChange={handleAddBanner} disabled={uploadingBanner} />
+                    </label>
                   </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {(settings.banners || []).map((banner: any, idx: number) => (
+                      <div key={idx} className="p-5 bg-slate-50/50 rounded-[32px] border border-slate-100 flex gap-6 items-center group">
+                        <div className="w-40 h-24 rounded-2xl overflow-hidden bg-slate-200 shadow-sm shrink-0">
+                          <img src={banner.imageUrl} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <input 
+                              type="text" 
+                              value={banner.title} 
+                              onChange={(e) => {
+                                const newBanners = [...settings.banners];
+                                newBanners[idx].title = e.target.value;
+                                setSettings({...settings, banners: newBanners});
+                              }}
+                              className="w-full h-10 px-4 bg-white border border-slate-100 rounded-xl text-xs font-bold outline-none focus:border-emerald-500" 
+                              placeholder="Tiêu đề slide"
+                            />
+                            <input 
+                              type="text" 
+                              value={banner.link} 
+                              onChange={(e) => {
+                                const newBanners = [...settings.banners];
+                                newBanners[idx].link = e.target.value;
+                                setSettings({...settings, banners: newBanners});
+                              }}
+                              className="w-full h-10 px-4 bg-white border border-slate-100 rounded-xl text-xs font-bold outline-none focus:border-emerald-500" 
+                              placeholder="Link liên kết"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4 px-4 border-l border-slate-200">
+                          <Toggle checked={banner.active} onChange={() => toggleBanner(idx)} color="emerald" />
+                          <button onClick={() => removeBanner(idx)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
+                            <Trash2 className="size-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "seo" && (
+                <div className="space-y-8">
+                  <SectionHeader title="SEO & Metadata" description="Thiết lập cách website xuất hiện trên bộ máy tìm kiếm." />
+                  <div className="space-y-6">
+                    <InputGroup 
+                      label="Tiêu đề Trang chủ (Meta Title)" 
+                      value={settings.seo?.title} 
+                      onChange={(val) => setSettings({ ...settings, seo: { ...settings.seo, title: val } })} 
+                      icon={<Info className="size-4" />} 
+                    />
+                    <div className="space-y-2">
+                        <label className="text-[11px] font-black text-indigo-500/60 uppercase tracking-widest ml-1">Mô tả Website (Meta Description)</label>
+                        <textarea 
+                          value={settings.seo?.description} 
+                          onChange={(e) => setSettings({ ...settings, seo: { ...settings.seo, description: e.target.value } })}
+                          className="w-full h-24 p-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 focus:border-emerald-500 focus:bg-white transition-all outline-none resize-none"
+                        />
+                    </div>
+                    <InputGroup 
+                      label="Từ khóa (Keywords - phân cách bằng dấu phẩy)" 
+                      value={settings.seo?.keywords} 
+                      onChange={(val) => setSettings({ ...settings, seo: { ...settings.seo, keywords: val } })} 
+                      icon={<Plus className="size-4" />} 
+                    />
                   </div>
                 </div>
               )}
 
               {activeTab === "broadcast" && (
                 <div className="space-y-8">
-                  <SectionHeader
-                    title="Truyền thông Hệ thống"
-                    description="Gửi thông báo quan trọng đến toàn bộ người dùng."
-                  />
+                  <SectionHeader title="Truyền thông Hệ thống" description="Gửi thông báo quan trọng đến toàn bộ người dùng." />
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-[11px] font-black text-indigo-500/60 uppercase tracking-widest">
-                        Nội dung thông báo (Markdown)
-                      </label>
+                      <label className="text-[11px] font-black text-indigo-500/60 uppercase tracking-widest">Nội dung thông báo (Markdown)</label>
                       <textarea
                         value={settings.broadcastMessage}
-                        onChange={(e) =>
-                          setSettings({
-                            ...settings,
-                            broadcastMessage: e.target.value,
-                          })
-                        }
+                        onChange={(e) => setSettings({ ...settings, broadcastMessage: e.target.value })}
                         className="w-full min-h-[180px] p-6 bg-slate-50 border border-slate-100 rounded-[32px] text-sm font-bold text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner resize-none"
                         placeholder="Nhập nội dung thông báo..."
                       />
@@ -572,320 +382,72 @@ export function SettingsView() {
                           <Bell className="size-6" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-black text-emerald-900 uppercase tracking-widest">
-                            Hiển thị trên Trang chủ
-                          </h4>
-                          <p className="text-xs text-emerald-600 font-medium">
-                            Bật/tắt thanh thông báo ở đầu trang.
-                          </p>
+                          <h4 className="text-sm font-black text-emerald-900 uppercase tracking-widest">Hiển thị trên Trang chủ</h4>
+                          <p className="text-xs text-emerald-600 font-medium">Bật/tắt thanh thông báo ở đầu trang.</p>
                         </div>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer scale-110">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={settings.isBroadcastEnabled}
-                          onChange={(e) =>
-                            setSettings({
-                              ...settings,
-                              isBroadcastEnabled: e.target.checked,
-                            })
-                          }
-                        />
-                        <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-7 after:transition-all peer-checked:bg-emerald-600 shadow-inner"></div>
-                      </label>
+                      <Toggle checked={settings.isBroadcastEnabled} onChange={(val) => setSettings({ ...settings, isBroadcastEnabled: val })} color="emerald" />
                     </div>
                   </div>
                 </div>
               )}
 
-              {activeTab === "subscription_plans" && (
+              {activeTab === "policies" && (
                 <div className="space-y-8">
-                  <div className="flex items-center justify-between">
-                    <SectionHeader
-                      title="Gói Đăng ký Dịch vụ"
-                      description="Quản lý đặc quyền và mức phí dành cho Chủ trọ."
+                  <SectionHeader title="Quản lý Chính sách" description="Cập nhật Điều khoản và Bảo mật cho người dùng." />
+                  <div className="grid grid-cols-1 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-indigo-500/60 uppercase tracking-widest ml-1">Điều khoản Dịch vụ</label>
+                      <textarea 
+                        value={settings.policies?.termsOfService} 
+                        onChange={(e) => setSettings({ ...settings, policies: { ...settings.policies, termsOfService: e.target.value } })}
+                        className="w-full h-80 p-6 bg-slate-50 border border-slate-100 rounded-[32px] text-sm font-bold text-slate-700 focus:border-emerald-500 focus:bg-white transition-all outline-none resize-none"
+                        placeholder="Nội dung điều khoản..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-black text-indigo-500/60 uppercase tracking-widest ml-1">Chính sách Bảo mật</label>
+                      <textarea 
+                        value={settings.policies?.privacyPolicy} 
+                        onChange={(e) => setSettings({ ...settings, policies: { ...settings.policies, privacyPolicy: e.target.value } })}
+                        className="w-full h-80 p-6 bg-slate-50 border border-slate-100 rounded-[32px] text-sm font-bold text-slate-700 focus:border-emerald-500 focus:bg-white transition-all outline-none resize-none"
+                        placeholder="Nội dung chính sách bảo mật..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "automation" && (
+                <div className="space-y-8">
+                  <SectionHeader title="Tự động hóa & Quy tắc" description="Thiết lập các tham số thời gian tự động." />
+                  <div className="grid grid-cols-2 gap-8">
+                    <InputGroup 
+                      label="Thời hạn tin đăng mặc định (Ngày)" 
+                      type="number" 
+                      value={settings.automation?.defaultExpiryDays} 
+                      onChange={(val) => setSettings({ ...settings, automation: { ...settings.automation, defaultExpiryDays: Number(val) } })} 
+                      icon={<Clock className="size-4" />} 
                     />
-                    <Button
-                      onClick={() => {
-                        setIsCreating(true);
-                        setEditingPlan({
-                          planId: "",
-                          name: "",
-                          price: 0,
-                          yearlyPrice: 0,
-                          description: "",
-                          features: [{ text: "", included: true }],
-                          badge: "",
-                          badgeColor: "bg-gray-100",
-                          icon: "Star",
-                        });
-                      }}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl h-10 px-6 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-none transition-all shadow-lg shadow-emerald-100"
-                    >
-                      <Plus className="size-4" /> Thêm gói mới
-                    </Button>
+                    <InputGroup 
+                      label="Thời gian trạng thái 'Tin Gấp' (Ngày)" 
+                      type="number" 
+                      value={settings.automation?.urgentDurationDays} 
+                      onChange={(val) => setSettings({ ...settings, automation: { ...settings.automation, urgentDurationDays: Number(val) } })} 
+                      icon={<Zap className="size-4" />} 
+                    />
                   </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    {plans
-                      .filter((p) => p.isActive)
-                      .map((plan) => (
-                        <motion.div
-                          key={plan._id}
-                          whileHover={{ y: -4, scale: 1.01 }}
-                          className="flex items-center justify-between p-6 bg-white rounded-[32px] border border-slate-100 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-500/5 transition-all group"
-                        >
-                          <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 bg-slate-50 rounded-[22px] flex flex-col items-center justify-center text-emerald-600 border border-slate-100 shadow-inner group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                              <span className="text-sm font-black leading-none">
-                                {plan.price >= 1000
-                                  ? plan.price / 1000 + "k"
-                                  : plan.price}
-                              </span>
-                              <span className="text-[10px] uppercase font-black tracking-tighter mt-0.5 opacity-60">
-                                VNĐ
-                              </span>
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <h5 className="font-black bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent tracking-tight">
-                                  {plan.name}
-                                </h5>
-                                {plan.badge && (
-                                  <span
-                                    className={`text-[9px] px-2.5 py-1 rounded-lg font-black uppercase tracking-widest ${plan.badgeColor || "bg-slate-100 text-slate-500"}`}
-                                  >
-                                    {plan.badge}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-xs text-slate-400 font-bold max-w-sm truncate">
-                                {plan.description}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setEditingPlan(plan)}
-                              className="h-10 rounded-xl border-slate-100 text-slate-600 font-black text-[10px] uppercase tracking-widest px-4 hover:bg-slate-50"
-                            >
-                              Sửa
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) =>
-                                handleDeletePlan(plan._id || plan.planId, e)
-                              }
-                              className="h-10 rounded-xl text-slate-300 font-black text-[10px] uppercase tracking-widest px-4 hover:text-rose-500 hover:bg-rose-50"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </div>
-                        </motion.div>
-                      ))}
-                  </div>
-
-                  <AnimatePresence>
-                    {editingPlan && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                          onClick={() => setEditingPlan(null)}
-                        />
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                          className="relative bg-white rounded-[40px] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar p-10 border border-slate-100"
-                        >
-                          <h3 className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent mb-8">
-                            {isCreating
-                              ? "Thêm Gói Đặc Quyền Mới"
-                              : "Chỉnh sửa Gói"}
-                          </h3>
-
-                          <div className="space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
-                              <InputGroup
-                                label="Tên Gói (VD: Pro, V.I.P)"
-                                value={editingPlan.name}
-                                onChange={(val) =>
-                                  setEditingPlan({ ...editingPlan, name: val })
-                                }
-                              />
-                              <InputGroup
-                                label="Mô tả ngắn gọn"
-                                value={editingPlan.description}
-                                onChange={(val) =>
-                                  setEditingPlan({
-                                    ...editingPlan,
-                                    description: val,
-                                  })
-                                }
-                              />
-                              <InputGroup
-                                label="Icon (Lucide name)"
-                                value={editingPlan.icon || "Star"}
-                                onChange={(val) =>
-                                  setEditingPlan({ ...editingPlan, icon: val })
-                                }
-                              />
-                              <InputGroup
-                                label="Huy hiệu (Badge Text)"
-                                value={editingPlan.badge || ""}
-                                onChange={(val) =>
-                                  setEditingPlan({ ...editingPlan, badge: val })
-                                }
-                              />
-                              <InputGroup
-                                label="Giá Mỗi Tháng (VNĐ)"
-                                type="number"
-                                value={editingPlan.price}
-                                onChange={(val) =>
-                                  setEditingPlan({
-                                    ...editingPlan,
-                                    price: Number(val),
-                                  })
-                                }
-                              />
-                              <InputGroup
-                                label="Giá Mỗi Năm (VNĐ)"
-                                type="number"
-                                value={editingPlan.yearlyPrice}
-                                onChange={(val) =>
-                                  setEditingPlan({
-                                    ...editingPlan,
-                                    yearlyPrice: Number(val),
-                                  })
-                                }
-                              />
-                            </div>
-
-                            <div className="pt-6 border-t border-slate-100 space-y-4">
-                              <div className="flex items-center justify-between">
-                                <label className="text-[11px] font-black text-indigo-500/60 uppercase tracking-widest">
-                                  Danh sách Quyền lợi
-                                </label>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    setEditingPlan({
-                                      ...editingPlan,
-                                      features: [
-                                        ...(editingPlan.features || []),
-                                        { text: "", included: true },
-                                      ],
-                                    })
-                                  }
-                                  className="h-8 rounded-lg text-xs font-black"
-                                >
-                                  <Plus className="size-3 mr-1" /> Thêm quyền
-                                  lợi
-                                </Button>
-                              </div>
-                              {(editingPlan.features || []).map(
-                                (feature: any, idx: number) => (
-                                  <div
-                                    key={idx}
-                                    className="flex items-center gap-3"
-                                  >
-                                    <button
-                                      onClick={() => {
-                                        const newFeatures = [
-                                          ...editingPlan.features,
-                                        ];
-                                        newFeatures[idx].included =
-                                          !newFeatures[idx].included;
-                                        setEditingPlan({
-                                          ...editingPlan,
-                                          features: newFeatures,
-                                        });
-                                      }}
-                                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${feature.included ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-400"}`}
-                                    >
-                                      <CheckCircle className="size-4" />
-                                    </button>
-                                    <input
-                                      value={feature.text}
-                                      onChange={(e) => {
-                                        const newFeatures = [
-                                          ...editingPlan.features,
-                                        ];
-                                        newFeatures[idx].text = e.target.value;
-                                        setEditingPlan({
-                                          ...editingPlan,
-                                          features: newFeatures,
-                                        });
-                                      }}
-                                      className="flex-1 h-10 px-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-emerald-500"
-                                      placeholder="VD: Đăng ký tối đa 5 phòng"
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        const newFeatures =
-                                          editingPlan.features.filter(
-                                            (_: any, i: number) => i !== idx,
-                                          );
-                                        setEditingPlan({
-                                          ...editingPlan,
-                                          features: newFeatures,
-                                        });
-                                      }}
-                                      className="w-10 h-10 rounded-xl flex items-center justify-center text-rose-300 hover:bg-rose-50 hover:text-rose-500 transition-colors"
-                                    >
-                                      <Trash2 className="size-4" />
-                                    </button>
-                                  </div>
-                                ),
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-end gap-3 mt-10">
-                            <Button
-                              variant="outline"
-                              onClick={() => setEditingPlan(null)}
-                              className="h-12 rounded-2xl px-6 font-black text-xs uppercase tracking-widest text-slate-500"
-                            >
-                              Hủy
-                            </Button>
-                            <Button
-                              onClick={handleSavePlan}
-                              disabled={saving}
-                              className="h-12 rounded-2xl px-8 font-black text-xs uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-100"
-                            >
-                              {saving ? "Đang lưu..." : "Lưu Gói Dịch Vụ"}
-                            </Button>
-                          </div>
-                        </motion.div>
-                      </div>
-                    )}
-                  </AnimatePresence>
                 </div>
               )}
 
               {activeTab === "account" && (
                 <div className="space-y-10">
-                  <SectionHeader
-                    title="Quản trị viên"
-                    description="Thông tin cá nhân và bảo mật tài khoản."
-                  />
+                  <SectionHeader title="Hồ sơ quản trị" description="Thông tin cá nhân và bảo mật tài khoản." />
                   <div className="flex flex-col items-center gap-6 pb-10 border-b border-slate-50">
                     <div className="relative group">
                       <div className="w-32 h-32 rounded-[40px] border-[6px] border-white shadow-2xl overflow-hidden bg-gradient-to-br from-emerald-500 to-indigo-600 flex items-center justify-center text-white text-4xl font-black group-hover:scale-105 transition-transform duration-500 relative">
                         {user?.avatar ? (
-                          <img
-                            src={getAvatarUrl(user.avatar) || ""}
-                            className={`w-full h-full object-cover ${updatingAvatar ? "opacity-40" : ""}`}
-                          />
+                          <img src={getAvatarUrl(user.avatar) || ""} className={`w-full h-full object-cover ${updatingAvatar ? "opacity-40" : ""}`} />
                         ) : (
                           getInitials(user?.fullName, user?.username)
                         )}
@@ -895,62 +457,33 @@ export function SettingsView() {
                           </div>
                         )}
                       </div>
-                      <label 
-                        className={`absolute -bottom-2 -right-2 p-3 bg-white text-emerald-600 rounded-2xl shadow-xl transition-all transform hover:rotate-12 border border-slate-100 ${updatingAvatar ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-emerald-600 hover:text-white"}`}
-                      >
+                      <label className={`absolute -bottom-2 -right-2 p-3 bg-white text-emerald-600 rounded-2xl shadow-xl transition-all transform hover:rotate-12 border border-slate-100 ${updatingAvatar ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-emerald-600 hover:text-white"}`}>
                         <Camera className="size-5" />
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept="image/*"
-                          onChange={handleAvatarChange}
-                          disabled={updatingAvatar}
-                        />
+                        <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} disabled={updatingAvatar} />
                       </label>
                     </div>
                     <div className="text-center">
-                      <h4 className="text-xl font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                        {user?.fullName}
-                      </h4>
-                      <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mt-1">
-                        Super Administrator
-                      </p>
+                      <h4 className="text-xl font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">{user?.fullName}</h4>
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mt-1">Super Administrator</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-8">
-                    <InputGroup
-                      label="Email đăng nhập"
-                      value={user?.email || ""}
-                      onChange={() => {}}
-                      icon={<Mail className="size-4" />}
-                    />
-                    <InputGroup
-                      label="Số điện thoại"
-                      value={user?.phone || ""}
-                      onChange={() => {}}
-                      icon={<Phone className="size-4" />}
-                    />
+                    <InputGroup label="Email đăng nhập" value={user?.email || ""} onChange={() => {}} icon={<Mail className="size-4" />} />
+                    <InputGroup label="Số điện thoại" value={user?.phone || ""} onChange={() => {}} icon={<Phone className="size-4" />} />
                   </div>
 
                   <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100 flex items-center justify-between group">
                     <div className="flex items-center gap-4">
-                      <div className="bg-white p-4 rounded-2xl text-indigo-500 shadow-inner group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-500">
+                      <div className="bg-white p-4 rounded-2xl text-indigo-50 shadow-inner group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-500">
                         <Key className="size-6" />
                       </div>
                       <div>
-                        <h5 className="text-sm font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-widest">
-                          Bảo mật mật khẩu
-                        </h5>
-                        <p className="text-xs text-slate-400 font-bold mt-0.5">
-                          Yêu cầu xác nhận mật khẩu hiện tại
-                        </p>
+                        <h5 className="text-sm font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-widest">Bảo mật mật khẩu</h5>
+                        <p className="text-xs text-slate-400 font-bold mt-0.5">Yêu cầu xác nhận mật khẩu hiện tại</p>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      className="rounded-xl h-10 border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest px-6 hover:bg-white shadow-sm transition-all hover:scale-105"
-                    >
+                    <Button variant="outline" className="rounded-xl h-10 border-slate-200 text-slate-600 font-black text-[10px] uppercase tracking-widest px-6 hover:bg-white shadow-sm transition-all hover:scale-105">
                       Thay đổi ngay <ChevronRight className="size-4 ml-1" />
                     </Button>
                   </div>
@@ -958,21 +491,33 @@ export function SettingsView() {
               )}
             </motion.div>
           </AnimatePresence>
-          <ConfirmDialog
-            open={deleteConfirm.open}
-            title={deleteConfirm.title}
-            description={deleteConfirm.description}
-            confirmText="Xoá"
-            cancelText="Huỷ"
-            onConfirm={async () => {
-              await deleteConfirm.onConfirm?.();
-              setDeleteConfirm({ open: false });
-            }}
-            onCancel={() => setDeleteConfirm({ open: false })}
+          <ConfirmDialog 
+            open={deleteConfirm.open} 
+            title={deleteConfirm.title} 
+            description={deleteConfirm.description} 
+            confirmText="Xoá" 
+            cancelText="Huỷ" 
+            onConfirm={async () => { await deleteConfirm.onConfirm?.(); setDeleteConfirm({ open: false }); }} 
+            onCancel={() => setDeleteConfirm({ open: false })} 
           />
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function Toggle({ checked, onChange, color = "emerald" }: { checked: boolean, onChange: (val: boolean) => void, color?: string }) {
+  const colors: Record<string, string> = {
+    emerald: "peer-checked:bg-emerald-600",
+    rose: "peer-checked:bg-rose-600",
+    indigo: "peer-checked:bg-indigo-600"
+  };
+
+  return (
+    <label className="relative inline-flex items-center cursor-pointer scale-110">
+      <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <div className={`w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-7 after:transition-all ${colors[color]} shadow-inner`}></div>
+    </label>
   );
 }
 
@@ -1069,3 +614,4 @@ function InputGroup({
     </div>
   );
 }
+

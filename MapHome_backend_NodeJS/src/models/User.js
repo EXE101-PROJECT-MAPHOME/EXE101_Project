@@ -20,6 +20,30 @@ const UserSchema = new mongoose.Schema(
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Property' }],
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
+
+    // Personalized settings
+    searchPreferences: {
+      districts: [{ type: String }],
+      priceRange: {
+        min: { type: Number, default: 0 },
+        max: { type: Number, default: 50000000 },
+      },
+    },
+    privacySettings: {
+      showPhoneBeforeBooking: { type: Boolean, default: true },
+    },
+    security: {
+      twoFactorEnabled: { type: Boolean, default: false },
+      loginHistory: [
+        {
+          device: String,
+          ip: String,
+          browser: String,
+          os: String,
+          lastLogin: { type: Date, default: Date.now },
+        },
+      ],
+    },
   },
   { timestamps: true },
 );
