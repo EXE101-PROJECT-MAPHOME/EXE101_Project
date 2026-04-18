@@ -22,10 +22,14 @@ import {
   Heart,
   MessageCircle,
   Share2,
+  Plus,
 } from "lucide-react";
 import { Footer } from "@/app/components/Footer";
 import { Navbar } from "@/app/components/Navbar";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { BlogEditorDialog } from "@/app/components/BlogEditorDialog";
+import { toast } from "sonner";
 
 // ─── Blog Data ────────────────────────────────────────────────
 interface BlogPost {
@@ -35,175 +39,17 @@ interface BlogPost {
   excerpt: string;
   content?: string;
   author: string;
-  authorAvatar: string;
+  authorAvatar?: string;
   date: string;
-  image: string;
+  image?: string;
   category: string;
-  readTime: string;
-  views: number;
-  likes: number;
-  comments: number;
-  tags: string[];
+  readTime?: string;
+  views?: number;
+  likes?: number;
+  comments?: number;
+  tags?: string[];
   featured?: boolean;
 }
-
-
-const blogPosts: BlogPost[] = [
-  {
-    id: 1,
-    title: "10 Mẹo Tìm Phòng Trọ Ưng Ý Tại Hà Nội Cho Sinh Viên",
-    excerpt:
-      "Hướng dẫn chi tiết để bạn có thể tìm được phòng trọ phù hợp với nhu cầu và ngân sách của mình. Từ việc chọn khu vực, thương lượng giá đến các lưu ý khi ký hợp đồng thuê nhà.",
-    author: "Nguyễn Thị Lan",
-    authorAvatar: "TL",
-    date: "15/02/2026",
-    image:
-      "https://images.unsplash.com/photo-1547024842-a0e3d2127406?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwc3R1ZHlpbmclMjBhcGFydG1lbnQlMjBIYW5vaXxlbnwxfHx8fDE3NzE5MTU5NzJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Kinh nghiệm",
-    readTime: "8 phút",
-    views: 5420,
-    likes: 234,
-    comments: 45,
-    tags: ["tìm trọ", "sinh viên", "Hà Nội", "mẹo hay"],
-    featured: true,
-  },
-  {
-    id: 2,
-    title: 'Hệ Thống Xác Thực "Trust is King" — Chống Tin Ảo Hiệu Quả',
-    excerpt:
-      "Tìm hiểu về cơ chế xác thực 3 cấp độ giúp bạn tránh xa các tin đăng lừa đảo và thông tin không chính xác trên MapHome.",
-    author: "Trần Minh Đức",
-    authorAvatar: "MĐ",
-    date: "12/02/2026",
-    image:
-      "https://images.unsplash.com/photo-1657040899628-f4a028c62fbf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhcGFydG1lbnQlMjBzYWZldHklMjBzZWN1cml0eSUyMGxvY2t8ZW58MXx8fHwxNzcxOTE1OTczfDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Tính năng",
-    readTime: "6 phút",
-    views: 3810,
-    likes: 189,
-    comments: 32,
-    tags: ["xác thực", "Trust is King", "chống lừa đảo"],
-  },
-  {
-    id: 3,
-    title: "Top 5 Khu Vực Có Giá Phòng Trọ Hợp Lý Nhất Hà Nội 2026",
-    excerpt:
-      "Khảo sát thị trường phòng trọ tại 5 khu vực có mức giá phải chăng, thuận tiện cho sinh viên và người đi làm tại Hà Nội.",
-    author: "Lê Hoàng Nam",
-    authorAvatar: "HN",
-    date: "08/02/2026",
-    image:
-      "https://images.unsplash.com/photo-1536785438246-08198ab7dd6b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuZWlnaGJvcmhvb2QlMjBjb21tdW5pdHklMjBwZW9wbGV8ZW58MXx8fHwxNzcxOTE1OTc0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Thị trường",
-    readTime: "7 phút",
-    views: 7230,
-    likes: 312,
-    comments: 67,
-    tags: ["giá rẻ", "khu vực", "thị trường", "Hà Nội"],
-  },
-  {
-    id: 4,
-    title: "Quyền Lợi Và Trách Nhiệm Của Người Thuê Trọ Theo Pháp Luật",
-    excerpt:
-      "Hiểu rõ quyền lợi và nghĩa vụ khi thuê phòng trọ để tránh những rắc rối không đáng có. Hợp đồng, đặt cọc, và xử lý tranh chấp.",
-    author: "Phạm Thu Hà",
-    authorAvatar: "TH",
-    date: "05/02/2026",
-    image:
-      "https://images.unsplash.com/photo-1666018215790-867b14fe4822?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxob3VzZSUyMGtleSUyMGNvbnRyYWN0JTIwc2lnbmluZ3xlbnwxfHx8fDE3NzE5MTU5NzJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Pháp luật",
-    readTime: "10 phút",
-    views: 4150,
-    likes: 198,
-    comments: 53,
-    tags: ["pháp luật", "hợp đồng", "đặt cọc", "quyền lợi"],
-  },
-  {
-    id: 5,
-    title: "Cách Trang Trí Phòng Trọ Đẹp Với Chi Phí Dưới 500K",
-    excerpt:
-      "Biến phòng trọ nhỏ trở nên ấm cúng và xinh xắn với những mẹo decor đơn giản, tiết kiệm nhưng vô cùng hiệu quả.",
-    author: "Nguyễn Thị Lan",
-    authorAvatar: "TL",
-    date: "01/02/2026",
-    image:
-      "https://images.unsplash.com/photo-1718066236079-9085195c389e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3p5JTIwcm9vbSUyMGRlY29yYXRpb24lMjBwbGFudHN8ZW58MXx8fHwxNzcxOTE1OTczfDA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Mẹo hay",
-    readTime: "5 phút",
-    views: 6800,
-    likes: 421,
-    comments: 89,
-    tags: ["trang trí", "decor", "tiết kiệm", "phòng trọ đẹp"],
-  },
-  {
-    id: 6,
-    title: "Bí Quyết Tiết Kiệm Chi Phí Khi Sống Ở Phòng Trọ",
-    excerpt:
-      "Chia sẻ những cách tiết kiệm điện, nước, ăn uống thông minh cho sinh viên và người mới đi làm sống trong phòng trọ.",
-    author: "Trần Minh Đức",
-    authorAvatar: "MĐ",
-    date: "28/01/2026",
-    image:
-      "https://images.unsplash.com/photo-1561837581-abd854e0ee22?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidWRnZXQlMjBzYXZpbmclMjBtb25leSUyMHBpZ2d5YmFua3xlbnwxfHx8fDE3NzE5MTU5NzR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    category: "Kinh nghiệm",
-    readTime: "6 phút",
-    views: 3290,
-    likes: 156,
-    comments: 28,
-    tags: ["tiết kiệm", "chi phí", "sinh viên", "mẹo hay"],
-  },
-  {
-    id: 7,
-    title: "Hướng Dẫn Đặt Lịch Xem Phòng Online Trên MapHome",
-    excerpt:
-      "Tận dụng tính năng đặt lịch xem phòng trực tuyến để sắp xếp thời gian một cách khoa học và hiệu quả nhất.",
-    author: "Lê Hoàng Nam",
-    authorAvatar: "HN",
-    date: "25/01/2026",
-    image:
-      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-    category: "Hướng dẫn",
-    readTime: "4 phút",
-    views: 2100,
-    likes: 87,
-    comments: 15,
-    tags: ["đặt lịch", "xem phòng", "hướng dẫn", "MapHome"],
-  },
-  {
-    id: 8,
-    title: "Checklist Kiểm Tra Phòng Trọ Trước Khi Ký Hợp Đồng",
-    excerpt:
-      "Danh sách 20+ điều cần kiểm tra kỹ khi đi xem phòng: từ điện nước, cửa khóa, tường nứt đến hàng xóm xung quanh.",
-    author: "Phạm Thu Hà",
-    authorAvatar: "TH",
-    date: "20/01/2026",
-    image:
-      "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&q=80",
-    category: "Hướng dẫn",
-    readTime: "9 phút",
-    views: 4560,
-    likes: 267,
-    comments: 41,
-    tags: ["checklist", "kiểm tra phòng", "hợp đồng", "lưu ý"],
-  },
-  {
-    id: 9,
-    title: "Xu Hướng Thị Trường Phòng Trọ Hà Nội Đầu Năm 2026",
-    excerpt:
-      "Phân tích biến động giá thuê, nhu cầu tìm trọ và dự báo xu hướng thị trường nhà trọ tại Hà Nội trong năm 2026.",
-    author: "Trần Minh Đức",
-    authorAvatar: "MĐ",
-    date: "15/01/2026",
-    image:
-      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&q=80",
-    category: "Thị trường",
-    readTime: "8 phút",
-    views: 5670,
-    likes: 198,
-    comments: 36,
-    tags: ["xu hướng", "thị trường", "2026", "giá thuê"],
-  },
-];
 
 const ALL_CATEGORIES = [
   "Tất cả",
@@ -239,6 +85,9 @@ export function BlogPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated } = useAuth();
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
@@ -246,32 +95,78 @@ export function BlogPage() {
         const res = await api.get("/api/blogs");
         if (res.status === 200) {
           const data = res.data;
-          if (data.length > 0) {
-            setBlogs(data.map((b: any) => ({ ...b, id: b._id })));
-          } else {
-            setBlogs(blogPosts);
-          }
-        } else {
-          setBlogs(blogPosts);
+          setBlogs(data.map((b: any) => ({ ...b, id: b._id })));
         }
       } catch (err) {
         console.error("Failed to fetch blogs:", err);
-        setBlogs(blogPosts);
+        setBlogs([]);
       } finally {
         setLoading(false);
       }
     };
+
+    const fetchSavedBlogs = async () => {
+      if (!isAuthenticated) return;
+      try {
+        const res = await api.get("/api/blogs/me/saved");
+        if (res.status === 200) {
+          const savedIds = new Set<string | number>(res.data.map((b: any) => b._id));
+          setBookmarked(savedIds);
+        }
+      } catch (err) {
+        console.error("Failed to fetch saved blogs:", err);
+      }
+    };
+
     fetchBlogs();
-  }, []);
+    fetchSavedBlogs();
+  }, [isAuthenticated]);
 
-  const toggleBookmark = (id: number | string) => {
+  const toggleBookmark = async (id: number | string) => {
+    if (!isAuthenticated) {
+      toast.error("Vui lòng đăng nhập để lưu bài viết", {
+        action: {
+          label: "Đăng nhập",
+          onClick: () => navigate("/login")
+        }
+      });
+      return;
+    }
 
-    setBookmarked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    try {
+      const res = await api.post(`/api/blogs/${id}/save`);
+      if (res.status === 200) {
+        const { isSaved } = res.data;
+        setBookmarked((prev) => {
+          const next = new Set(prev);
+          if (isSaved) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+        toast.success(isSaved ? "Đã lưu bài viết" : "Đã bỏ lưu bài viết");
+      }
+    } catch (err) {
+      toast.error("Không thể lưu bài viết. Vui lòng thử lại sau.");
+    }
+  };
+
+  const handleCreateBlog = async (blogData: any) => {
+    try {
+      setIsSaving(true);
+      const res = await api.post("/api/blogs", blogData);
+      if (res.status === 201) {
+        toast.success(
+          blogData.status === "draft" 
+            ? "Đã lưu bản nháp thành công! ✨" 
+            : "Đã gửi bài viết! Chờ quản trị viên phê duyệt nhé. 🚀"
+        );
+        setIsEditorOpen(false);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Lỗi khi tạo bài viết");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Featured post
@@ -280,7 +175,7 @@ export function BlogPage() {
   // Filtered posts (excluding featured from grid)
   const filteredPosts = useMemo(() => {
     if (!blogs.length) return [];
-    
+
     return blogs
       .filter((p) => p.id !== (featuredPost?.id || featuredPost?._id))
 
@@ -293,7 +188,7 @@ export function BlogPage() {
         return (
           p.title.toLowerCase().includes(q) ||
           p.excerpt.toLowerCase().includes(q) ||
-          p.tags.some((t) => t.toLowerCase().includes(q))
+          (p.tags && p.tags.some((t) => t.toLowerCase().includes(q)))
         );
       });
   }, [activeCategory, searchQuery]);
@@ -322,53 +217,66 @@ export function BlogPage() {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Navbar />
 
       {/* ━━━ Hero Banner ━━━ */}
-      <section className="relative bg-gradient-to-br from-green-700 via-emerald-700 to-teal-700 text-white overflow-hidden py-14 md:py-20">
-        <motion.div 
+      <section className="relative bg-gradient-to-br from-maphome-700 via-emerald-600 to-green-600 text-white overflow-hidden py-14 md:py-20">
+        {/* Animated background elements */}
+        <motion.div
           initial={{ scale: 1.2, opacity: 0 }}
-          animate={{ scale: 1, opacity: 0.1 }}
+          animate={{ scale: 1, opacity: 0.08 }}
           transition={{ duration: 1.5, ease: "easeOut" }}
           className="absolute inset-0"
         >
-          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl opacity-30" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-green-300 rounded-full blur-3xl opacity-30" />
+          <motion.div
+            animate={{ x: [0, 20, 0], y: [0, -20, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl opacity-20"
+          />
+          <motion.div
+            animate={{ x: [0, -20, 0], y: [0, 20, 0] }}
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5,
+            }}
+            className="absolute bottom-10 right-10 w-96 h-96 bg-maphome-200 rounded-full blur-3xl opacity-15"
+          />
         </motion.div>
         <div className="relative max-w-7xl mx-auto px-4 text-center">
-          <motion.span 
+          <motion.span
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="inline-block bg-white/15 backdrop-blur-sm text-sm px-4 py-1.5 rounded-full mb-5 border border-white/20"
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="inline-block bg-white/10 backdrop-blur-xl text-sm px-4 py-1.5 rounded-full mb-5 border border-white/30 hover:bg-white/20 transition-colors duration-300"
           >
             Blog MapHome
           </motion.span>
-          <motion.h1 
-            initial={{ y: 20, opacity: 0 }}
+          <motion.h1
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4"
+            transition={{ delay: 0.4, duration: 0.6 }}
+            className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight"
           >
             Kiến Thức & Kinh Nghiệm
           </motion.h1>
-          <motion.p 
-            initial={{ y: 20, opacity: 0 }}
+          <motion.p
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-green-100 text-base md:text-lg max-w-2xl mx-auto mb-8"
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="text-maphome-100 text-base md:text-lg max-w-2xl mx-auto mb-8 leading-relaxed"
           >
             Chia sẻ thông tin hữu ích về việc tìm kiếm, thuê phòng trọ và cuộc
             sống tự lập tại Hà Nội
           </motion.p>
           {/* Search */}
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.8, duration: 0.6 }}
             className="max-w-xl mx-auto relative"
           >
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-gray-400" />
@@ -379,109 +287,175 @@ export function BlogPage() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-12 pr-4 h-12 rounded-full bg-white text-gray-900 border-0 shadow-xl text-base placeholder:text-gray-400 focus-visible:ring-2 focus-visible:ring-green-400 transition-all"
+              className="pl-12 pr-4 h-12 rounded-full bg-white/95 text-gray-900 border-0 shadow-2xl backdrop-blur-sm text-base placeholder:text-gray-500 focus-visible:ring-2 focus-visible:ring-maphome-300 transition-all duration-300 hover:bg-white"
             />
+          </motion.div>
+
+          {/* User Write Blog CTA */}
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.9, duration: 0.6 }}
+            className="mt-10"
+          >
+            <Button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  toast.error("Vui lòng đăng nhập để viết bài");
+                  navigate("/login");
+                  return;
+                }
+                setIsEditorOpen(true);
+              }}
+              className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white border border-white/40 rounded-full px-8 h-12 font-bold group"
+            >
+              <Plus className="size-5 mr-2 group-hover:rotate-90 transition-transform" />
+              Bạn muốn chia sẻ kinh nghiệm? Viết bài ngay
+            </Button>
           </motion.div>
         </div>
       </section>
 
       {/* ━━━ Featured Post ━━━ */}
-      <motion.section 
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.6, duration: 0.6 }}
-        className="max-w-7xl mx-auto px-4 -mt-6 relative z-10 mb-10"
-      >
-        <article
-          className="bg-white rounded-2xl shadow-2xl overflow-hidden cursor-pointer group border border-gray-100 hover:shadow-green-500/10 transition-shadow duration-500"
-          onClick={() => {}}
+      {featuredPost && (
+        <motion.section
+          initial={{ y: 40, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 1, duration: 0.6 }}
+          className="max-w-7xl mx-auto px-4 -mt-6 relative z-10 mb-10"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2">
-            <div className="relative h-64 lg:h-auto overflow-hidden">
-              <ImageWithFallback
-                src={featuredPost.image}
-                alt={featuredPost.title}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <span className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg z-10">
-                Nổi bật
-              </span>
-            </div>
-            <div className="p-6 md:p-8 lg:p-10 flex flex-col justify-center">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
-                  {featuredPost.category}
-                </span>
-                <span className="text-xs text-gray-400 flex items-center gap-1">
-                  <Clock className="size-3.5" />
-                  {featuredPost.readTime}
-                </span>
-              </div>
-              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-3 group-hover:text-green-700 transition-colors leading-tight">
-                {featuredPost.title}
-              </h2>
-              <p className="text-gray-500 text-sm md:text-base leading-relaxed mb-6 line-clamp-3">
-                {featuredPost.excerpt}
-              </p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold shadow-md">
-                    {featuredPost.authorAvatar}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {featuredPost.author}
-                    </p>
-                    <p className="text-xs text-gray-400">{featuredPost.date}</p>
-                  </div>
+          <article
+            className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden cursor-pointer group hover:shadow-2xl hover:shadow-maphome-500/10 transition-all duration-500"
+            onClick={() => {}}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              {featuredPost.image && (
+                <div className="relative h-64 lg:h-auto overflow-hidden bg-gradient-to-br from-maphome-50 to-green-50">
+                  <ImageWithFallback
+                    src={featuredPost.image}
+                    alt={featuredPost.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                  />
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    whileHover={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"
+                  />
+                  <motion.span
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 1.2, duration: 0.5 }}
+                    className="absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg z-10"
+                  >
+                    Nổi bật
+                  </motion.span>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-gray-400">
-                  <span className="flex items-center gap-1">
-                    <Eye className="size-3.5" />
-                    {featuredPost.views.toLocaleString()}
+              )}
+              <div className="p-6 md:p-8 lg:p-10 flex flex-col justify-center">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 1.1, duration: 0.5 }}
+                  className="flex items-center gap-3 mb-4"
+                >
+                  <span className="bg-maphome-100 text-maphome-700 text-xs font-semibold px-3 py-1 rounded-full">
+                    {featuredPost.category}
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Heart className="size-3.5" />
-                    {featuredPost.likes}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MessageCircle className="size-3.5" />
-                    {featuredPost.comments}
-                  </span>
-                </div>
+                  {featuredPost.readTime && (
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <Clock className="size-3.5" />
+                      {featuredPost.readTime}
+                    </span>
+                  )}
+                </motion.div>
+                <motion.h2
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.15, duration: 0.5 }}
+                  className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-3 group-hover:text-maphome-700 transition-colors leading-tight"
+                >
+                  {featuredPost.title}
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.2, duration: 0.5 }}
+                  className="text-gray-500 text-sm md:text-base leading-relaxed mb-6 line-clamp-3"
+                >
+                  {featuredPost.excerpt}
+                </motion.p>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.25, duration: 0.5 }}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-maphome-500 to-emerald-500 flex items-center justify-center text-white text-xs font-bold shadow-md">
+                      {featuredPost.authorAvatar || "A"}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {featuredPost.author}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {featuredPost.date}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Eye className="size-3.5" />
+                      {(featuredPost.views || 0).toLocaleString()}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Heart className="size-3.5" />
+                      {featuredPost.likes || 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageCircle className="size-3.5" />
+                      {featuredPost.comments || 0}
+                    </span>
+                  </div>
+                </motion.div>
               </div>
             </div>
-          </div>
-        </article>
-      </motion.section>
+          </article>
+        </motion.section>
+      )}
 
       {/* ━━━ Category Tabs ━━━ */}
-      <motion.section 
+      <motion.section
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.7 }}
+        transition={{ delay: 1.2, duration: 0.5 }}
         className="max-w-7xl mx-auto px-4 mb-8"
       >
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {ALL_CATEGORIES.map((cat) => (
-            <button
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          {ALL_CATEGORIES.map((cat, idx) => (
+            <motion.button
               key={cat}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.3 + idx * 0.05, duration: 0.4 }}
               onClick={() => {
                 setActiveCategory(cat);
                 setCurrentPage(1);
               }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               className={`
                 whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-300
                 ${
                   activeCategory === cat
-                    ? "bg-green-600 text-white shadow-lg scale-105"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-gradient-to-r from-maphome-600 to-emerald-600 text-white shadow-lg"
+                    : "bg-gray-100 text-gray-600 hover:bg-maphome-50 hover:text-maphome-700"
                 }
               `}
             >
               {cat}
-            </button>
+            </motion.button>
           ))}
         </div>
       </motion.section>
@@ -493,34 +467,42 @@ export function BlogPage() {
           <div className="lg:col-span-2">
             <AnimatePresence mode="wait">
               {paginatedPosts.length === 0 ? (
-                <motion.div 
+                <motion.div
                   key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-center py-20 bg-gradient-to-br from-maphome-50 to-green-50 rounded-2xl border-2 border-dashed border-maphome-200"
                 >
-                  <Search className="size-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-500 mb-2">
+                  <motion.div
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  >
+                    <Search className="size-12 text-maphome-300 mx-auto mb-4" />
+                  </motion.div>
+                  <h3 className="text-lg font-semibold text-maphome-800 mb-2">
                     Không tìm thấy bài viết
                   </h3>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-maphome-600">
                     Thử thay đổi từ khóa hoặc danh mục khác
                   </p>
                 </motion.div>
               ) : (
-                <motion.div 
+                <motion.div
                   key={activeCategory + searchQuery + currentPage}
                   initial="hidden"
                   animate="show"
+                  exit="hidden"
                   variants={{
                     hidden: { opacity: 0 },
                     show: {
                       opacity: 1,
                       transition: {
-                        staggerChildren: 0.1
-                      }
-                    }
+                        staggerChildren: 0.08,
+                        delayChildren: 0.1,
+                      },
+                    },
                   }}
                   className="grid grid-cols-1 md:grid-cols-2 gap-5"
                 >
@@ -528,47 +510,71 @@ export function BlogPage() {
                     <motion.article
                       key={post.id}
                       variants={{
-                        hidden: { y: 20, opacity: 0 },
-                        show: { y: 0, opacity: 1 }
+                        hidden: { y: 30, opacity: 0 },
+                        show: {
+                          y: 0,
+                          opacity: 1,
+                          transition: {
+                            duration: 0.5,
+                            ease: "easeOut",
+                          },
+                        },
                       }}
-                      className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer group border border-gray-100"
+                      whileHover={{ y: -4 }}
+                      className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl border border-gray-100 transition-all duration-400 cursor-pointer group"
                     >
-                      <div className="relative h-48 overflow-hidden">
-                        <ImageWithFallback
-                          src={post.image}
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-maphome-50 to-green-50">
+                        {post.image && (
+                          <ImageWithFallback
+                            src={post.image}
+                            alt={post.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                          />
+                        )}
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-t from-black/0 to-transparent"
+                          initial={{ opacity: 0 }}
+                          whileHover={{ opacity: 0.15 }}
+                          transition={{ duration: 0.3 }}
                         />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
-                        <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-lg text-green-700 shadow-sm z-10">
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.2 }}
+                          className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-lg text-maphome-700 shadow-sm z-10"
+                        >
                           {post.category}
-                        </span>
-                        <button
+                        </motion.span>
+                        <motion.button
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleBookmark(post.id);
                           }}
-                          className="absolute top-3 right-3 w-8 h-8 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-white transition-all shadow-sm z-10 hover:scale-110 active:scale-90"
+                          whileHover={{ scale: 1.15 }}
+                          whileTap={{ scale: 0.9 }}
+                          className="absolute top-3 right-3 w-8 h-8 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-white transition-all shadow-sm z-10"
                         >
                           {bookmarked.has(post.id) ? (
-                            <BookmarkCheck className="size-4 text-green-600" />
+                            <BookmarkCheck className="size-4 text-maphome-600" />
                           ) : (
                             <Bookmark className="size-4 text-gray-500" />
                           )}
-                        </button>
+                        </motion.button>
                       </div>
                       <div className="p-5">
                         <div className="flex items-center gap-3 text-xs text-gray-400 mb-2.5">
+                          {post.readTime && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="size-3.5 text-blue-500" />
+                              {post.readTime}
+                            </span>
+                          )}
                           <span className="flex items-center gap-1">
-                            <Clock className="size-3.5 text-blue-500" />
-                            {post.readTime}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="size-3.5 text-emerald-500" />
-                            {post.views.toLocaleString()}
+                            <Eye className="size-3.5 text-maphome-500" />
+                            {(post.views || 0).toLocaleString()}
                           </span>
                         </div>
-                        <h3 className="font-bold text-base mb-2 line-clamp-2 group-hover:text-green-700 transition-colors leading-snug">
+                        <h3 className="font-bold text-base mb-2 line-clamp-2 group-hover:text-maphome-700 transition-colors leading-snug">
                           {post.title}
                         </h3>
                         <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4">
@@ -576,8 +582,8 @@ export function BlogPage() {
                         </p>
                         <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white text-[10px] font-bold shadow-sm">
-                              {post.authorAvatar}
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-maphome-500 to-emerald-500 flex items-center justify-center text-white text-[10px] font-bold shadow-sm">
+                              {post.authorAvatar || "A"}
                             </div>
                             <div>
                               <p className="text-xs font-bold text-gray-800">
@@ -589,14 +595,20 @@ export function BlogPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-gray-400">
-                            <span className="flex items-center gap-1 group-hover:text-red-500 transition-colors">
+                            <motion.span
+                              className="flex items-center gap-1 group-hover:text-red-500 transition-colors"
+                              whileHover={{ scale: 1.2 }}
+                            >
                               <Heart className="size-3.5" />
-                              {post.likes}
-                            </span>
-                            <span className="flex items-center gap-1 group-hover:text-blue-500 transition-colors">
+                              {post.likes || 0}
+                            </motion.span>
+                            <motion.span
+                              className="flex items-center gap-1 group-hover:text-blue-500 transition-colors"
+                              whileHover={{ scale: 1.2 }}
+                            >
                               <MessageCircle className="size-3.5" />
-                              {post.comments}
-                            </span>
+                              {post.comments || 0}
+                            </motion.span>
                           </div>
                         </div>
                       </div>
@@ -608,144 +620,233 @@ export function BlogPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-8">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                  className="h-9 w-9"
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="flex items-center justify-center gap-2 mt-8"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <ChevronLeft className="size-4" />
-                </Button>
-                {Array.from({ length: totalPages }).map((_, i) => (
                   <Button
-                    key={i}
-                    variant={currentPage === i + 1 ? "default" : "outline"}
+                    variant="outline"
                     size="icon"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    className="h-9 w-9 border-maphome-300 text-maphome-700 hover:bg-maphome-50 hover:border-maphome-500"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+                </motion.div>
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <motion.button
+                    key={i}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => setCurrentPage(i + 1)}
-                    className={`h-9 w-9 ${currentPage === i + 1 ? "bg-green-600 hover:bg-green-700" : ""}`}
+                    className={`h-9 w-9 rounded-lg font-medium text-sm transition-all duration-300 ${
+                      currentPage === i + 1
+                        ? "bg-gradient-to-r from-maphome-600 to-emerald-500 text-white shadow-lg"
+                        : "border border-gray-200 text-gray-600 hover:border-maphome-300 hover:text-maphome-700 hover:bg-maphome-50"
+                    }`}
                   >
                     {i + 1}
-                  </Button>
+                  </motion.button>
                 ))}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                  className="h-9 w-9"
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <ChevronRight className="size-4" />
-                </Button>
-              </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    className="h-9 w-9 border-maphome-300 text-maphome-700 hover:bg-maphome-50 hover:border-maphome-500"
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </motion.div>
+              </motion.div>
             )}
           </div>
 
           {/* ── Sidebar ── */}
           <aside className="space-y-6">
             {/* Popular Posts */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 1.4, duration: 0.5 }}
+              className="bg-white rounded-2xl border border-gray-100 p-5 shadow-md hover:shadow-lg transition-shadow duration-300"
+            >
               <h3 className="font-bold text-base mb-4 flex items-center gap-2">
-                <TrendingUp className="size-5 text-orange-500" />
+                <motion.div
+                  animate={{ y: [0, -2, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <TrendingUp className="size-5 text-orange-500" />
+                </motion.div>
                 Bài viết phổ biến
               </h3>
               <div className="space-y-4">
                 {popularPosts.map((post, i) => (
-                  <div
+                  <motion.div
                     key={post.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1.5 + i * 0.08, duration: 0.4 }}
+                    whileHover={{ x: 4 }}
                     className="flex gap-3 cursor-pointer group"
                   >
-                    <span
+                    <motion.span
+                      whileHover={{ scale: 1.15 }}
                       className={`
-                      flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold
-                      ${i === 0 ? "bg-orange-100 text-orange-600" : i === 1 ? "bg-blue-100 text-blue-600" : i === 2 ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}
+                      flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all
+                      ${i === 0 ? "bg-orange-100 text-orange-600" : i === 1 ? "bg-blue-100 text-blue-600" : i === 2 ? "bg-maphome-100 text-maphome-600" : "bg-gray-100 text-gray-500"}
                     `}
                     >
                       {i + 1}
-                    </span>
+                    </motion.span>
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-semibold line-clamp-2 group-hover:text-green-700 transition-colors leading-snug">
+                      <h4 className="text-sm font-semibold line-clamp-2 group-hover:text-maphome-700 transition-colors leading-snug">
                         {post.title}
                       </h4>
                       <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-400">
                         <span className="flex items-center gap-0.5">
                           <Eye className="size-3" />
-                          {post.views.toLocaleString()}
+                          {(post.views || 0).toLocaleString()}
                         </span>
                         <span className="flex items-center gap-0.5">
                           <Heart className="size-3" />
-                          {post.likes}
+                          {post.likes || 0}
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Newsletter */}
-            <div className="bg-gradient-to-br from-green-600 to-emerald-700 rounded-2xl p-6 text-white shadow-lg">
-              <div className="w-12 h-12 bg-white/15 rounded-xl flex items-center justify-center mb-4">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 1.6, duration: 0.5 }}
+              whileHover={{ scale: 1.02 }}
+              className="bg-gradient-to-br from-maphome-700 via-maphome-600 to-emerald-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl hover:shadow-maphome-600/40 transition-all duration-300"
+            >
+              <motion.div
+                animate={{ rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+                className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-4"
+              >
                 <Mail className="size-6 text-white" />
-              </div>
-              <h3 className="font-bold text-lg mb-2">Nhận tin mới</h3>
-              <p className="text-green-100 text-sm mb-4 leading-relaxed">
+              </motion.div>
+              <h3 className="font-bold text-lg mb-2 text-white">
+                Nhận tin mới
+              </h3>
+              <p className="text-white/90 text-sm mb-5 leading-relaxed">
                 Đăng ký để nhận bài viết mới nhất về kinh nghiệm tìm trọ và xu
                 hướng thị trường
               </p>
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 <Input
                   placeholder="Email của bạn..."
-                  className="bg-white/15 border-white/20 text-white placeholder:text-green-200 h-10 rounded-lg"
+                  className="bg-white/20 border border-white/40 text-white placeholder:text-white/60 h-11 rounded-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-0 focus-visible:border-white transition-all backdrop-blur-sm"
                 />
-                <Button className="w-full bg-white text-green-700 hover:bg-green-50 h-10 font-semibold">
-                  Đăng ký
-                </Button>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    className="w-full bg-white hover:bg-white/95 active:bg-white/80 h-11 font-bold text-base transition-all shadow-md hover:shadow-lg !text-maphome-700"
+                    style={{ color: "#15803d" }}
+                  >
+                    Đăng ký
+                  </Button>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Tags */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 1.7, duration: 0.5 }}
+              className="bg-white rounded-2xl border border-gray-100 p-5 shadow-md hover:shadow-lg transition-shadow duration-300"
+            >
               <h3 className="font-bold text-base mb-4 flex items-center gap-2">
                 <Tag className="size-5 text-blue-500" />
                 Tags phổ biến
               </h3>
               <div className="flex flex-wrap gap-2">
-                {POPULAR_TAGS.map((tag) => (
-                  <button
+                {POPULAR_TAGS.map((tag, idx) => (
+                  <motion.button
                     key={tag}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 1.75 + idx * 0.03, duration: 0.3 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       setSearchQuery(tag);
                       setActiveCategory("Tất cả");
                       setCurrentPage(1);
                     }}
-                    className="bg-gray-50 hover:bg-green-50 hover:text-green-700 text-gray-600 text-xs px-3 py-1.5 rounded-full border border-gray-100 hover:border-green-200 transition-colors"
+                    className="bg-maphome-50 hover:bg-maphome-100 hover:text-maphome-700 text-gray-600 text-xs px-3 py-1.5 rounded-full border border-maphome-200 hover:border-maphome-400 transition-all duration-300"
                   >
                     #{tag}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* CTA */}
-            <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 text-center">
-              <h3 className="font-bold text-base mb-2">Bạn muốn đóng góp?</h3>
-              <p className="text-sm text-gray-500 mb-4">
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 1.8, duration: 0.5 }}
+              className="bg-gradient-to-br from-maphome-50 to-green-50 rounded-2xl p-5 border border-maphome-200 text-center shadow-sm hover:shadow-md transition-shadow duration-300"
+            >
+              <h3 className="font-bold text-base mb-2 text-maphome-900">
+                Bạn muốn đóng góp?
+              </h3>
+              <p className="text-sm text-maphome-700 mb-4">
                 Chia sẻ kinh nghiệm tìm trọ, mẹo sống tiết kiệm cho cộng đồng
               </p>
-              <Button
-                variant="outline"
-                className="border-green-600 text-green-700 hover:bg-green-50"
-                onClick={() => navigate("/contact")}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Viết bài
-                <ArrowRight className="size-4 ml-1.5" />
-              </Button>
-            </div>
+                <Button
+                  className="border-maphome-600 text-maphome-700 hover:bg-maphome-100"
+                  variant="outline"
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      toast.error("Vui lòng đăng nhập để viết bài");
+                      navigate("/login");
+                      return;
+                    }
+                    setIsEditorOpen(true);
+                  }}
+                >
+                  Viết bài
+                  <ArrowRight className="size-4 ml-1.5" />
+                </Button>
+              </motion.div>
+            </motion.div>
           </aside>
         </div>
       </main>
+
+      <BlogEditorDialog
+        isOpen={isEditorOpen}
+        onClose={() => setIsEditorOpen(false)}
+        onSave={handleCreateBlog}
+      />
 
       <Footer />
     </div>

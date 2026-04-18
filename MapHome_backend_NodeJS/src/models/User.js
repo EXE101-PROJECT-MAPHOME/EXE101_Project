@@ -18,6 +18,7 @@ const UserSchema = new mongoose.Schema(
     verificationLevel: { type: Number, default: 1 },
     status: { type: String, enum: ["active", "blocked"], default: "active" },
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Property' }],
+    savedBlogs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Blog' }],
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
 

@@ -1,58 +1,77 @@
-# Frontend API Endpoints & Integration Report
+# Báo Cáo API Endpoints & Tích Hợp Frontend
 
-## MapHome Rental Property Application - Frontend Codebase
+## Ứng Dụng Cho Thuê Nhà Trọ MapHome - Frontend Codebase
 
-**Date:** March 20, 2026  
-**Scope:** Nhà Trọ Thông Tin Giao Diện (Frontend)
-
----
-
-## Executive Summary
-
-The frontend codebase is **primarily mock-data driven** with minimal backend API integration. Data management relies on React Context API and local state management. The application does make some external API calls to third-party services for map rendering and image hosting.
+**Ngày:** 20 Tháng 3, 2026  
+**Phạm vi:** Giao Diện Nhà Trọ Thông Tin (Frontend)
 
 ---
 
-## 1. ACTUAL API CALLS FOUND
+## Tóm Tắt Chung
 
-### 1.1 External APIs
+Frontend codebase chủ yếu **dựa trên mock-data** với tích hợp tối thiểu backend API. Quản lý dữ liệu dựa vào React Context API và local state management. Ứng dụng có thực hiện một số cuộc gọi API bên ngoài đến các dịch vụ bên thứ ba cho hiển thị bản đồ và lưu trữ hình ảnh.
 
-#### OpenStreetMap Tiles API
+---
 
-**Purpose:** Map rendering and tile layers  
-**Endpoint:** `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`  
-**Method:** GET (implicit in Leaflet)  
-**Used In:**
+## 1. CÁC CUỘC GỌI API THỰC TẾ ĐÃ TÌM THẤY
 
-- [RentalMapView.tsx](src/app/components/RentalMapView.tsx#L258)
-- [RoomDetailPage.tsx](src/app/pages/RoomDetailPage.tsx#L173)
-- [LandlordPinMap.tsx](src/app/components/LandlordPinMap.tsx#L115)
+### 1.1 APIs Bên Ngoài
 
-**Details:**
+#### Goong Maps API
+
+**Mục đích:** Hiển thị bản đồ, tiles và dịch vụ vị trí  
+**Thư viện:** @goongmaps/goong-js v1.0.9  
+**Endpoint:** `https://tiles.goong.io/assets/{style}.json?api_key={key}`  
+**Phương thức:** GET (qua Goong JS SDK)  
+**Được sử dụng trong:**
+
+- [RentalMapView.tsx](src/app/components/RentalMapView.tsx)
+- [RoomDetailPage.tsx](src/app/pages/RoomDetailPage.tsx)
+- [LandlordPinMap.tsx](src/app/components/LandlordPinMap.tsx)
+- [PostRoomPage.tsx](src/app/pages/PostRoomPage.tsx)
+- [MapPage.tsx](src/app/pages/MapPage.tsx)
+- [SearchByWorkplace.tsx](src/app/components/SearchByWorkplace.tsx)
+
+**Chi tiết:**
 
 ```typescript
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution:
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-}).addTo(mapRef.current);
+import goongjs from "@goongmaps/goong-js";
+goongjs.accessToken = GOONG_MAPTILES_KEY;
+const map = new goongjs.Map({
+  style: getGoongStyleUrl("light"),
+  transformRequest: getGoongTransformRequest,
+});
 ```
 
-#### Unsplash Image URLs (CDN)
+**Kiểu Bản Đồ:**
 
-**Purpose:** Property images, blog images, carousel images  
-**Endpoint Pattern:** `https://images.unsplash.com/photo-{ID}?...parameters`  
-**Method:** GET  
-**Used In:**
+- light (Tiêu chuẩn): goong_map_web
+- dark (Tối): goong_map_dark
+- gray (Xám): goong_map_gray
+- satellite (Vệ tinh): goong
 
-- [mockData.ts](src/app/components/mockData.ts) - Multiple property images
-- [BlogPage.tsx](src/app/pages/BlogPage.tsx) - Blog post images
-- [HomePage.tsx](src/app/pages/HomePage.tsx) - Hero carousel and featured content
-- [HeroCarousel.tsx](src/app/components/HeroCarousel.tsx) - Carousel images
-- [LoginPage.tsx](src/app/pages/LoginPage.tsx) - Background images
-- [RoomDetailPage.tsx](src/app/pages/RoomDetailPage.tsx) - Room detail images
-- [PostRoomPage.tsx](src/app/pages/PostRoomPage.tsx) - Uploaded property images
+**Dịch vụ bổ sung (qua Backend Proxy):**
 
-**Sample URLs:**
+- Autocomplete: `/api/map/autocomplete`
+- Place Detail: `/api/map/place-detail`
+- Reverse Geocode: `/api/map/reverse-geocode`
+
+#### URLs Hình Ảnh Unsplash (CDN)
+
+**Mục đích:** Hình ảnh phòng trọ, hình ảnh blog, hình ảnh carousel  
+**Mẫu Endpoint:** `https://images.unsplash.com/photo-{ID}?...parameters`  
+**Phương thức:** GET  
+**Được sử dụng trong:**
+
+- [mockData.ts](src/app/components/mockData.ts) - Nhiều hình ảnh phòng trọ
+- [BlogPage.tsx](src/app/pages/BlogPage.tsx) - Hình ảnh bài viết blog
+- [HomePage.tsx](src/app/pages/HomePage.tsx) - Hero carousel và nội dung nổi bật
+- [HeroCarousel.tsx](src/app/components/HeroCarousel.tsx) - Hình ảnh carousel
+- [LoginPage.tsx](src/app/pages/LoginPage.tsx) - Hình ảnh nền
+- [RoomDetailPage.tsx](src/app/pages/RoomDetailPage.tsx) - Hình ảnh chi tiết phòng
+- [PostRoomPage.tsx](src/app/pages/PostRoomPage.tsx) - Hình ảnh phòng đã tải lên
+
+**URLs mẫu:**
 
 ```
 https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&h=1200&fit=crop&q=80
@@ -61,21 +80,21 @@ https://images.unsplash.com/photo-1662454419736-de132ff75638?crop=entropy&cs=tin
 
 ---
 
-## 2. PAYMENT INTEGRATION
+## 2. TÍCH HỢP THANH TOÁN
 
-### 2.1 VNPay Payment Gateway
+### 2.1 Cổng Thanh Toán VNPay
 
-**Status:** Implemented (UI-only, no actual payment processing)  
+**Trạng thái:** Đã triển khai (chỉ UI, không có xử lý thanh toán thực tế)  
 **Component:** [VNPayRedirectModal.tsx](src/app/components/VNPayRedirectModal.tsx)
 
-**Implementation Details:**
+**Chi tiết triển khai:**
 
-- Modal shows VNPay branding and progress simulation
-- Simulates 2.5 second redirect flow
-- Used in [CheckoutPage.tsx](src/app/pages/CheckoutPage.tsx)
-- Redirects to `/payment-success` on completion
+- Modal hiển thị thương hiệu VNPay và mô phỏng tiến trình
+- Mô phỏng luồng chuyển hướng trong 2.5 giây
+- Được sử dụng trong [CheckoutPage.tsx](src/app/pages/CheckoutPage.tsx)
+- Chuyển hướng đến `/payment-success` khi hoàn thành
 
-**Flow:**
+**Luồng:**
 
 ```
 CheckoutPage → handlePayment() → VNPayRedirectModal → handleVNPayComplete() → PaymentSuccessPage
@@ -83,13 +102,15 @@ CheckoutPage → handlePayment() → VNPayRedirectModal → handleVNPayComplete(
 
 ---
 
-## 3. DATA SOURCES & CONTEXT APIS
+## 3. NGUỒN DỮ LIỆU & CONTEXT APIs
 
 ### 3.1 Authentication Context
 
 **File:** [AuthContext.tsx](src/app/contexts/AuthContext.tsx)
 
-**Demo Accounts (No Backend Integration):**
+**Lưu ý:** Hiện tại sử dụng validation mock/local storage. Cần tích hợp backend cho production.
+
+**Tài khoản Demo (Không có tích hợp Backend):**
 
 ```typescript
 // Admin
@@ -105,74 +126,74 @@ CheckoutPage → handlePayment() → VNPayRedirectModal → handleVNPayComplete(
 - Email: user1@example.com
 ```
 
-**Methods:**
+**Phương thức:**
 
-- `login(username: string, password: string)` - Client-side validation only
-- `register(data: RegisterData)` - Stores in localStorage under 'registeredUsers'
-- `logout()` - Clears session
+- `login(username: string, password: string)` - Chỉ validation phía client
+- `register(data: RegisterData)` - Lưu trữ trong localStorage dưới 'registeredUsers'
+- `logout()` - Xóa session
 - `isAuthenticated: boolean`
 
-**Storage:** localStorage (key: 'auth')
+**Lưu trữ:** localStorage (key: 'auth')
 
 ### 3.2 Properties Context
 
 **File:** [PropertiesContext.tsx](src/app/contexts/PropertiesContext.tsx)
 
-**Data Source:** [mockData.ts](src/app/components/mockData.ts)  
-**Mock Data Objects:**
+**Nguồn dữ liệu:** [mockData.ts](src/app/components/mockData.ts)  
+**Đối tượng Mock Data:**
 
-- `mockRentalProperties` - Array of 12+ rental properties
-- `mockLandlords` - Array of 5 landlord profiles
+- `mockRentalProperties` - Mảng 12+ phòng trọ
+- `mockLandlords` - Mảng 5 hồ sơ chủ trọ
 
-**Methods:**
+**Phương thức:**
 
-- `addProperty(property)` - Add new property (in-memory only)
-- `updateProperty(id, updates)` - Update property details
-- Consumed by: HomePage, PropertyList, MapPage, RoomDetailPage
+- `addProperty(property)` - Thêm phòng mới (chỉ trong bộ nhớ)
+- `updateProperty(id, updates)` - Cập nhật chi tiết phòng
+- Được sử dụng bởi: HomePage, PropertyList, MapPage, RoomDetailPage
 
 ### 3.3 Verification Context
 
 **File:** [VerificationContext.tsx](src/app/contexts/VerificationContext.tsx)
 
-**Mock Data:** In-memory state (initialized empty)
+**Mock Data:** Trạng thái trong bộ nhớ (khởi tạo rỗng)
 
-**Methods:**
+**Phương thức:**
 
-- `addRequest()` - Request property verification
-- `updateRequestStatus()` - Update verification status
-- `completeInspection()` - Complete inspection and award badge
-- `getRequestsByLandlord()` - Filter by landlord
-- `getRequestsByProperty()` - Filter by property
-- `getRequestsByUser()` - Filter by user
-- `submitUserPhotos()` - User photo submission
-- `notifyUserAboutPhotos()` - Notification trigger
+- `addRequest()` - Yêu cầu xác minh phòng
+- `updateRequestStatus()` - Cập nhật trạng thái xác minh
+- `completeInspection()` - Hoàn thành kiểm tra và trao huy hiệu
+- `getRequestsByLandlord()` - Lọc theo chủ trọ
+- `getRequestsByProperty()` - Lọc theo phòng
+- `getRequestsByUser()` - Lọc theo người dùng
+- `submitUserPhotos()` - Gửi ảnh người dùng
+- `notifyUserAboutPhotos()` - Kích hoạt thông báo
 
 ### 3.4 Compare Context
 
 **File:** [CompareContext.tsx](src/app/contexts/CompareContext.tsx)
 
-**Purpose:** Store properties for comparison  
-**Methods:**
+**Mục đích:** Lưu trữ phòng để so sánh  
+**Phương thức:**
 
-- `addToCompare(propertyId)` - Add property
-- `removeFromCompare(propertyId)` - Remove property
-- `getComparedProperties()` - Get comparison list
+- `addToCompare(propertyId)` - Thêm phòng
+- `removeFromCompare(propertyId)` - Xóa phòng
+- `getComparedProperties()` - Lấy danh sách so sánh
 
 ---
 
-## 4. FEATURE-BASED API ENDPOINT ORGANIZATION
+## 4. TỔ CHỨC API ENDPOINT THEO TÍNH NĂNG
 
-### 4.1 AUTHENTICATION & USER MANAGEMENT
+### 4.1 XÁC THỰC & QUẢN LÝ NGƯỜI DÙNG
 
-**Status:** ❌ No Backend Integration (Mock Only)
+**Trạng thái:** ❌ Không có tích hợp Backend (Chỉ Mock)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
-- Login validation: [LoginPage.tsx](src/app/pages/LoginPage.tsx#L40-L60)
-- Registration form: [RegisterPage.tsx](src/app/pages/RegisterPage.tsx)
-- Auth check: [AuthContext.tsx](src/app/contexts/AuthContext.tsx)
+- Validation đăng nhập: [LoginPage.tsx](src/app/pages/LoginPage.tsx#L40-L60)
+- Form đăng ký: [RegisterPage.tsx](src/app/pages/RegisterPage.tsx)
+- Kiểm tra xác thực: [AuthContext.tsx](src/app/contexts/AuthContext.tsx)
 
-**Expected Backend Endpoints (NOT IMPLEMENTED):**
+**Backend Endpoints dự kiến (CHƯA TRIỂN KHAI):**
 
 ```
 POST /api/auth/login
@@ -181,18 +202,18 @@ POST /api/auth/logout
 GET  /api/auth/verify
 ```
 
-### 4.2 PROPERTY LISTINGS
+### 4.2 DANH SÁCH PHÒNG TRỌ
 
-**Status:** ❌ No Backend Integration (Mock Only)
+**Trạng thái:** ❌ Không có tích hợp Backend (Chỉ Mock)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
-- Fetch properties: [PropertiesContext.tsx](src/app/contexts/PropertiesContext.tsx)
-- Display list: [PropertyList.tsx](src/app/components/PropertyList.tsx)
-- Room details: [RoomDetailPage.tsx](src/app/pages/RoomDetailPage.tsx)
-- Post room: [PostRoomPage.tsx](src/app/pages/PostRoomPage.tsx)
+- Lấy phòng: [PropertiesContext.tsx](src/app/contexts/PropertiesContext.tsx)
+- Hiển thị danh sách: [PropertyList.tsx](src/app/components/PropertyList.tsx)
+- Chi tiết phòng: [RoomDetailPage.tsx](src/app/pages/RoomDetailPage.tsx)
+- Đăng phòng: [PostRoomPage.tsx](src/app/pages/PostRoomPage.tsx)
 
-**Expected Backend Endpoints (NOT IMPLEMENTED):**
+**Backend Endpoints dự kiến (CHƯA TRIỂN KHAI):**
 
 ```
 GET    /api/properties
@@ -204,17 +225,17 @@ GET    /api/properties/search?query=...
 GET    /api/properties/landlord/:landlordId
 ```
 
-### 4.3 LANDLORD SERVICES
+### 4.3 DỊCH VỤ CHỦ TRỌ
 
-**Status:** ❌ No Backend Integration (Mock Only)
+**Trạng thái:** ❌ Không có tích hợp Backend (Chỉ Mock)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
 - Dashboard: [LandlordDashboardV2.tsx](src/app/pages/LandlordDashboardV2.tsx)
-- Verification requests: [InspectionsView.tsx](src/app/components/InspectionsView.tsx)
-- Request verification: [RequestVerificationDialog.tsx](src/app/components/RequestVerificationDialog.tsx)
+- Yêu cầu xác minh: [InspectionsView.tsx](src/app/components/InspectionsView.tsx)
+- Yêu cầu xác minh: [RequestVerificationDialog.tsx](src/app/components/RequestVerificationDialog.tsx)
 
-**Expected Backend Endpoints (NOT IMPLEMENTED):**
+**Backend Endpoints dự kiến (CHƯA TRIỂN KHAI):**
 
 ```
 GET    /api/landlord/profile
@@ -227,17 +248,17 @@ GET    /api/landlord/analytics
 GET    /api/landlord/subscription
 ```
 
-### 4.4 VERIFICATION & INSPECTION
+### 4.4 XÁC MINH & KIỂM TRA
 
-**Status:** ❌ No Backend Integration (Mock Only)
+**Trạng thái:** ❌ Không có tích hợp Backend (Chỉ Mock)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
-- Admin dashboard: [AdminPage.tsx](src/app/pages/AdminPage.tsx)
-- Inspection dialog: [InspectionDialog.tsx](src/app/components/InspectionDialog.tsx)
-- Green badge award: [GreenBadgeDisplay.tsx](src/app/components/GreenBadgeDisplay.tsx)
+- Dashboard admin: [AdminPage.tsx](src/app/pages/AdminPage.tsx)
+- Dialog kiểm tra: [InspectionDialog.tsx](src/app/components/InspectionDialog.tsx)
+- Trao huy hiệu xanh: [GreenBadgeDisplay.tsx](src/app/components/GreenBadgeDisplay.tsx)
 
-**Expected Backend Endpoints (NOT IMPLEMENTED):**
+**Backend Endpoints dự kiến (CHƯA TRIỂN KHAI):**
 
 ```
 GET    /api/admin/verification-requests
@@ -247,17 +268,17 @@ POST   /api/admin/inspection/:id/complete
 GET    /api/admin/verification-stats
 ```
 
-### 4.5 BOOKING & INSPECTION SCHEDULING
+### 4.5 ĐẶT LỊCH & LÊN LỊCH KIỂM TRA
 
-**Status:** ❌ No Backend Integration (Mock Only)
+**Trạng thái:** ❌ Không có tích hợp Backend (Chỉ Mock)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
-- Booking dialog: [BookingDialog.tsx](src/app/components/BookingDialog.tsx)
-- User inspection request: [UserRequestInspectionDialog.tsx](src/app/components/UserRequestInspectionDialog.tsx)
-- Uses localStorage for session storage
+- Dialog đặt lịch: [BookingDialog.tsx](src/app/components/BookingDialog.tsx)
+- Yêu cầu kiểm tra người dùng: [UserRequestInspectionDialog.tsx](src/app/components/UserRequestInspectionDialog.tsx)
+- Sử dụng localStorage cho lưu trữ session
 
-**Expected Backend Endpoints (NOT IMPLEMENTED):**
+**Backend Endpoints dự kiến (CHƯA TRIỂN KHAI):**
 
 ```
 POST   /api/bookings
@@ -270,26 +291,26 @@ GET    /api/inspections
 PUT    /api/inspections/:id/status
 ```
 
-### 4.6 PAYMENT & SUBSCRIPTION
+### 4.6 THANH TOÁN & ĐĂNG KÝ
 
-**Status:** ⚠️ Partially Integrated (VNPay UI Only)
+**Trạng thái:** ⚠️ Tích hợp một phần (Chỉ UI VNPay)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
-- Checkout page: [CheckoutPage.tsx](src/app/pages/CheckoutPage.tsx)
-- VNPay modal: [VNPayRedirectModal.tsx](src/app/components/VNPayRedirectModal.tsx)
-- Payment success: [PaymentSuccessPage.tsx](src/app/pages/PaymentSuccessPage.tsx)
-- Payment failure: [PaymentFailurePage.tsx](src/app/pages/PaymentFailurePage.tsx)
-- Subscription management: [SubscriptionManagement.tsx](src/app/components/SubscriptionManagement.tsx)
+- Trang thanh toán: [CheckoutPage.tsx](src/app/pages/CheckoutPage.tsx)
+- Modal VNPay: [VNPayRedirectModal.tsx](src/app/components/VNPayRedirectModal.tsx)
+- Thanh toán thành công: [PaymentSuccessPage.tsx](src/app/pages/PaymentSuccessPage.tsx)
+- Thanh toán thất bại: [PaymentFailurePage.tsx](src/app/pages/PaymentFailurePage.tsx)
+- Quản lý đăng ký: [SubscriptionManagement.tsx](src/app/components/SubscriptionManagement.tsx)
 
-**Current Implementation:**
+**Triển khai hiện tại:**
 
-- Mock pricing tiers stored in component state
-- VNPay redirect simulated with progress bar
-- No actual payment processing
-- Order data passed via location.state or sessionStorage
+- Mock pricing tiers được lưu trong component state
+- Chuyển hướng VNPay được mô phỏng với thanh tiến trình
+- Không có xử lý thanh toán thực tế
+- Dữ liệu đơn hàng được chuyển qua location.state hoặc sessionStorage
 
-**Expected Backend Endpoints (NOT IMPLEMENTED):**
+**Backend Endpoints dự kiến (CHƯA TRIỂN KHAI):**
 
 ```
 POST   /api/payments/vnpay/create-order
@@ -302,18 +323,18 @@ GET    /api/payments/history
 GET    /api/payments/invoice/:id
 ```
 
-### 4.7 USER DASHBOARD
+### 4.7 DASHBOARD NGƯỜI DÙNG
 
-**Status:** ❌ No Backend Integration (Mock Only)
+**Trạng thái:** ❌ Không có tích hợp Backend (Chỉ Mock)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
-- User dashboard: [UserDashboard.tsx](src/app/pages/UserDashboard.tsx)
-- Favorites management: [useFavorites.ts](src/app/hooks/useFavorites.ts)
+- Dashboard người dùng: [UserDashboard.tsx](src/app/pages/UserDashboard.tsx)
+- Quản lý yêu thích: [useFavorites.ts](src/app/hooks/useFavorites.ts)
 
-**Storage:** localStorage (key: 'favorites')
+**Lưu trữ:** localStorage (key: 'favorites')
 
-**Expected Backend Endpoints (NOT IMPLEMENTED):**
+**Backend Endpoints dự kiến (CHƯA TRIỂN KHAI):**
 
 ```
 GET    /api/user/profile
@@ -325,17 +346,17 @@ GET    /api/user/bookings
 GET    /api/user/inspections
 ```
 
-### 4.8 SEARCH & FILTERING
+### 4.8 TÌM KIẾM & LỌC
 
-**Status:** ❌ No Backend Integration (Mock Only)
+**Trạng thái:** ❌ Không có tích hợp Backend (Chỉ Mock)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
-- Search component: [SearchByWorkplace.tsx](src/app/components/SearchByWorkplace.tsx)
-- Filter panel: [FilterPanel.tsx](src/app/components/FilterPanel.tsx)
-- All filtering done client-side on mock data
+- Component tìm kiếm: [SearchByWorkplace.tsx](src/app/components/SearchByWorkplace.tsx)
+- Panel lọc: [FilterPanel.tsx](src/app/components/FilterPanel.tsx)
+- Tất cả lọc được thực hiện phía client trên mock data
 
-**Expected Backend Endpoints (NOT IMPLEMENTED):**
+**Backend Endpoints dự kiến (CHƯA TRIỂN KHAI):**
 
 ```
 GET    /api/search?q=...&location=...&page=...&limit=...
@@ -344,32 +365,37 @@ GET    /api/properties/nearby?lat=...&lng=...&radius=...
 GET    /api/facilities/nearby?lat=...&lng=...&type=...
 ```
 
-### 4.9 MAP & LOCATION
+### 4.9 BẢN ĐỒ & VỊ TRÍ
 
-**Status:** ✅ Third-Party Integration Active
+**Trạng thái:** ✅ Tích hợp bên thứ ba đang hoạt động
 
-**External APIs:**
+**APIs bên ngoài:**
 
-- OpenStreetMap Tiles: [https://tile.openstreetmap.org/{z}/{x}/{y}.png](https://tile.openstreetmap.org/{z}/{x}/{y}.png)
-- Leaflet.js: Map rendering library
+- Goong Maps JS SDK: @goongmaps/goong-js v1.0.9
+- Goong Vector Tiles: https://tiles.goong.io/assets/
+- Goong Places API (qua backend proxy)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
-- Map view: [RentalMapView.tsx](src/app/components/RentalMapView.tsx)
-- Location pinning: [LandlordPinMap.tsx](src/app/components/LandlordPinMap.tsx)
-- Room detail map: [RoomDetailPage.tsx](src/app/pages/RoomDetailPage.tsx)
-- Vietnam locations data: [vietnamLocations.ts](src/app/data/vietnamLocations.ts)
+- Xem bản đồ: [RentalMapView.tsx](src/app/components/RentalMapView.tsx)
+- Ghim vị trí: [LandlordPinMap.tsx](src/app/components/LandlordPinMap.tsx)
+- Bản đồ chi tiết phòng: [RoomDetailPage.tsx](src/app/pages/RoomDetailPage.tsx)
+- Autocomplete địa chỉ: [PostRoomPage.tsx](src/app/pages/PostRoomPage.tsx)
+- Tìm địa chỉ: [MapPage.tsx](src/app/pages/MapPage.tsx)
+- Tìm nơi làm việc: [SearchByWorkplace.tsx](src/app/components/SearchByWorkplace.tsx)
+- Utility Goong API: [goongApi.ts](src/app/utils/goongApi.ts)
+- Dữ liệu vị trí Việt Nam: [vietnamLocations.ts](src/app/data/vietnamLocations.ts)
 
-### 4.10 UPLOAD & MEDIA
+### 4.10 TẢI LÊN & PHƯƠNG TIỆN
 
-**Status:** ❌ No Backend Integration (Mock Only)
+**Trạng thái:** ❌ Không có tích hợp Backend (Chỉ Mock)
 
-**Frontend Implementation:**
+**Triển khai Frontend:**
 
-- Upload component: Image upload in [PostRoomPage.tsx](src/app/pages/PostRoomPage.tsx)
-- Uses Unsplash URLs as fallback
+- Component tải lên: Tải lên hình ảnh trong [PostRoomPage.tsx](src/app/pages/PostRoomPage.tsx)
+- Sử dụng URLs Unsplash làm dự phòng
 
-**Expected Backend Endpoints (NOT IMPLEMENTED):**
+**Backend Endpoints dự kiến (CHƯA TRIỂN KHAI):**
 
 ```
 POST   /api/upload/image
@@ -380,9 +406,9 @@ GET    /api/upload/quota
 
 ---
 
-## 5. CLIENT-SIDE STORAGE
+## 5. LƯU TRỮ PHÍA CLIENT
 
-### 5.1 localStorage Usage
+### 5.1 Sử dụng localStorage
 
 ```javascript
 // Authentication
@@ -398,10 +424,10 @@ localStorage.getItem("favorites");
 localStorage.setItem("favorites", JSON.stringify(favoriteIds));
 ```
 
-### 5.2 sessionStorage Usage
+### 5.2 Sử dụng sessionStorage
 
 ```javascript
-// Checkout Data (temporary)
+// Checkout Data (tạm thời)
 sessionStorage.getItem("inspectionCheckoutData");
 sessionStorage.setItem("inspectionCheckoutData", JSON.stringify(checkoutData));
 sessionStorage.removeItem("inspectionCheckoutData");
@@ -409,113 +435,117 @@ sessionStorage.removeItem("inspectionCheckoutData");
 
 ---
 
-## 6. THIRD-PARTY INTEGRATIONS
+## 6. TÍCH HỢP BÊN THỨ BA
 
-### 6.1 Image Hosting
+### 6.1 Lưu Trữ Hình Ảnh
 
-**Service:** Unsplash (via CDN)  
-**Usage:** Property images, blog images, UI assets  
-**Base URL:** `https://images.unsplash.com/`  
-**Count:** 50+ image URLs in codebase
+**Dịch vụ:** Unsplash (qua CDN)  
+**Sử dụng:** Hình ảnh phòng trọ, hình ảnh blog, tài sản UI  
+**URL cơ bản:** `https://images.unsplash.com/`  
+**Số lượng:** 50+ URLs hình ảnh trong codebase
 
-### 6.2 Mapping
+### 6.2 Bản Đồ
 
-**Service:** OpenStreetMap (via Leaflet.js)  
-**Usage:** Property location display, location selection  
-**Tiles URL:** `https://tile.openstreetmap.org/{z}/{x}/{y}.png`
+**Dịch vụ:** Goong Maps (qua Goong JS SDK)  
+**Sử dụng:** Hiển thị vị trí phòng trọ, chọn vị trí, autocomplete địa chỉ  
+**URL Tiles:** `https://tiles.goong.io/assets/{style}.json?api_key={key}`
+**Thư viện:** @goongmaps/goong-js v1.0.9
 
 ### 6.3 Carousel
 
-**Library:** react-slick  
-**Usage:** Hero carousel, image galleries
+**Thư viện:** react-slick  
+**Sử dụng:** Hero carousel, bộ sưu tập hình ảnh
 
-### 6.4 Date Formatting
+### 6.4 Định Dạng Ngày Tháng
 
-**Library:** date-fns  
-**Usage:** Date display and manipulation (Vietnamese locale)
+**Thư viện:** date-fns  
+**Sử dụng:** Hiển thị và thao tác ngày tháng (locale Tiếng Việt)
 
 ---
 
-## 7. COMPONENTS ORGANIZATION
+## 7. TỔ CHỨC COMPONENTS
 
-### 7.1 Pages (No API Calls)
+### 7.1 Pages (Không có API Calls)
 
 ```
 src/app/pages/
-├── HomePage.tsx                    - Home page (mock data)
-├── LoginPage.tsx                   - Login (local auth)
-├── RegisterPage.tsx                - Registration (local auth)
-├── MapPage.tsx                     - Map view
-├── RoomDetailPage.tsx              - Property details
-├── ComparePage.tsx                 - Comparison tool
-├── PostRoomPage.tsx                - Post property (local state)
-├── CheckoutPage.tsx                - Checkout (VNPay simulation)
-├── PaymentSuccessPage.tsx          - Success page
-├── PaymentFailurePage.tsx          - Failure page
-├── PricingPage.tsx                 - Pricing (local data)
-├── LandlordDashboardV2.tsx        - Landlord dashboard (contexts)
-├── UserDashboard.tsx               - User dashboard (contexts)
-├── AdminPage.tsx                   - Admin dashboard (contexts)
+├── HomePage.tsx                    - Trang chủ (mock data)
+├── LoginPage.tsx                   - Đăng nhập (local auth)
+├── RegisterPage.tsx                - Đăng ký (local auth)
+├── MapPage.tsx                     - Xem bản đồ
+├── RoomDetailPage.tsx              - Chi tiết phòng
+├── ComparePage.tsx                 - Công cụ so sánh
+├── PostRoomPage.tsx                - Đăng phòng (local state)
+├── CheckoutPage.tsx                - Thanh toán (mô phỏng VNPay)
+├── PaymentSuccessPage.tsx          - Trang thành công
+├── PaymentFailurePage.tsx          - Trang thất bại
+├── PricingPage.tsx                 - Giá (local data)
+├── LandlordDashboardV2.tsx        - Dashboard chủ trọ (contexts)
+├── UserDashboard.tsx               - Dashboard người dùng (contexts)
+├── AdminPage.tsx                   - Dashboard admin (contexts)
 ├── BlogPage.tsx                    - Blog (mock data)
-├── ContactPage.tsx                 - Contact form (no API)
-└── PolicyPage.tsx                  - Policies
+├── ContactPage.tsx                 - Form liên hệ (không có API)
+└── PolicyPage.tsx                  - Chính sách
 ```
 
-### 7.2 Contexts (Data Management)
+### 7.2 Contexts (Quản lý Dữ liệu)
 
 ```
 src/app/contexts/
-├── AuthContext.tsx                 - Authentication management
-├── PropertiesContext.tsx           - Property list management
-├── VerificationContext.tsx         - Verification requests
-└── CompareContext.tsx              - Property comparison
+├── AuthContext.tsx                 - Quản lý xác thực
+├── PropertiesContext.tsx           - Quản lý danh sách phòng
+├── VerificationContext.tsx         - Yêu cầu xác minh
+└── CompareContext.tsx              - So sánh phòng
 ```
 
-### 7.3 Components Making External Calls
+### 7.3 Components Thực hiện Các Gọi API Bên Ngoài
 
 ```
 src/app/components/
-├── RentalMapView.tsx              ✅ OpenStreetMap (L.tileLayer)
-├── RoomDetailPage.tsx             ✅ OpenStreetMap (L.tileLayer)
-├── LandlordPinMap.tsx             ✅ OpenStreetMap (L.tileLayer)
-├── VNPayRedirectModal.tsx         ⚠️ VNPay (UI simulation)
+├── RentalMapView.tsx              ✅ Goong Maps (goongjs.Map)
+├── RoomDetailPage.tsx             ✅ Goong Maps (goongjs.Map)
+├── LandlordPinMap.tsx             ✅ Goong Maps (goongjs.Map)
+├── PostRoomPage.tsx               ✅ Goong Autocomplete (qua proxy)
+├── MapPage.tsx                    ✅ Goong Autocomplete (qua proxy)
+├── SearchByWorkplace.tsx          ✅ Goong Autocomplete (qua proxy)
+├── VNPayRedirectModal.tsx         ⚠️ VNPay (mô phỏng UI)
 ├── mockData.ts                    ✅ Unsplash URLs (50+)
 ├── HeroCarousel.tsx               ✅ Unsplash URLs
 ├── BlogPage.tsx                   ✅ Unsplash URLs
-└── [Others]                       ❌ No API calls
+└── [Others]                       ❌ Không có API calls
 ```
 
 ---
 
-## 8. DATA FLOW EXAMPLE: Property Listing
+## 8. VÍ DỤ LUỒNG DỮ LIỆU: Danh Sách Phòng Trọ
 
 ```
 1. HomePage Component
    ↓
 2. useProperties() hook → PropertiesContext
    ↓
-3. Return mockRentalProperties from mockData.ts
+3. Return mockRentalProperties từ mockData.ts
    ↓
 4. PropertyCard Component
    ↓
-5. Display images from Unsplash URLs (async load)
+5. Hiển thị hình ảnh từ Unsplash URLs (load async)
    ↓
 6. RentalMapView Component
    ↓
-7. Load OpenStreetMap tiles via L.tileLayer()
+7. Load Goong Map tiles qua Goong JS SDK
 ```
 
 ---
 
-## 9. ROUTING STRUCTURE
+## 9. CẤU TRÚC ROUTING
 
 ```
 /                          → HomePage
-/map                       → MapPage (OSM tiles)
-/room/:id                  → RoomDetailPage (OSM tiles)
+/map                       → MapPage (Goong tiles)
+/room/:id                  → RoomDetailPage (Goong tiles)
 /compare                   → ComparePage
 /pricing                   → PricingPage
-/checkout                  → CheckoutPage (VNPay simulation)
+/checkout                  → CheckoutPage (mô phỏng VNPay)
 /payment-success           → PaymentSuccessPage
 /payment-failure           → PaymentFailurePage
 /register                  → RegisterPage (local auth)
@@ -531,111 +561,111 @@ src/app/components/
 
 ---
 
-## 10. RECOMMENDATIONS FOR BACKEND INTEGRATION
+## 10. KHUYẾN NGHỊ TÍCH HỢP BACKEND
 
-### Priority 1 (Critical):
+### Ưu tiên 1 (Quan trọng):
 
-1. **Authentication Service**
-   - Replace AuthContext local validation with JWT-based API
-   - Implement `/api/auth/login`, `/api/auth/register`
+1. **Dịch vụ Xác thực**
+   - Thay thế validation AuthContext local bằng API dựa trên JWT
+   - Triển khai `/api/auth/login`, `/api/auth/register`
 
-2. **Properties API**
-   - Implement CRUD endpoints for properties
-   - Add search and filtering
-   - Property queries in all listings
+2. **API Phòng trọ**
+   - Triển khai CRUD endpoints cho phòng trọ
+   - Thêm tìm kiếm và lọc
+   - Truy vấn phòng trong tất cả danh sách
 
-3. **Payment Processing**
-   - Replace VNPay mock with actual payment flow
-   - Implement order creation and status tracking
+3. **Xử lý Thanh toán**
+   - Thay thế mock VNPay bằng luồng thanh toán thực tế
+   - Triển khai tạo đơn hàng và theo dõi trạng thái
 
-### Priority 2 (High):
+### Ưu tiên 2 (Cao):
 
-4. **Verification/Inspection Service**
-   - Replace VerificationContext with backend API
-   - Admin inspection workflow
+4. **Dịch vụ Xác minh/Kiểm tra**
+   - Thay thế VerificationContext bằng backend API
+   - Workflow kiểm tra admin
 
-5. **User Profiles & Data**
-   - User dashboard data from backend
-   - Subscription management
+5. **Hồ sơ & Dữ liệu Người dùng**
+   - Dữ liệu dashboard người dùng từ backend
+   - Quản lý đăng ký
 
-6. **File Upload**
-   - Replace Unsplash URLs with actual upload service
-   - Property image uploads
+6. **Tải lên Tệp**
+   - Thay thế URLs Unsplash bằng dịch vụ tải lên thực tế
+   - Tải lên hình ảnh phòng trọ
 
-### Priority 3 (Medium):
+### Ưu tiên 3 (Trung bình):
 
-7. **Search & Filtering**
-   - Server-side search with indexing
-   - Advanced filtering options
+7. **Tìm kiếm & Lọc**
+   - Tìm kiếm phía server với indexing
+   - Tùy chọn lọc nâng cao
 
-8. **Notifications**
-   - Real-time booking confirmations
-   - Inspection updates
+8. **Thông báo**
+   - Xác nhận đặt phòng thời gian thực
+   - Cập nhật kiểm tra
 
-9. **Analytics**
-   - Property view tracking
-   - User behavior analytics
+9. **Phân tích**
+   - Theo dõi lượt xem phòng
+   - Phân tích hành vi người dùng
 
 ---
 
-## 11. ENVIRONMENT VARIABLES NEEDED
+## 11. BIẾN MÔI TRƯỜNG CẦN THIẾT
 
 ```env
-# Map Configuration
-REACT_APP_OPENSTREETMAP_URL=https://tile.openstreetmap.org
+# Cấu hình Bản đồ
+VITE_GOONG_MAPTILES_KEY=your_goong_maptiles_key_here
 
-# Payment Gateway
+# Cổng Thanh toán
 REACT_APP_VNPAY_URL=https://sandbox.vnpayment.vn/paygate/pay
 REACT_APP_VNPAY_MERCHANT_CODE=xxxxx
 REACT_APP_VNPAY_SECRET_KEY=xxxxx
 
-# API Configuration
+# Cấu hình API
 REACT_APP_API_URL=http://localhost:5000/api
 REACT_APP_API_TIMEOUT=30000
 
-# Image Upload
+# Tải lên Hình ảnh
 REACT_APP_UPLOAD_MAX_SIZE=5242880
 REACT_APP_ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/webp
 
-# Features
+# Tính năng
 REACT_APP_ENABLE_SOCIAL_LOGIN=false
 REACT_APP_ENABLE_REAL_PAYMENTS=false
 ```
 
 ---
 
-## 12. SUMMARY STATISTICS
+## 12. THỐNG KÊ TỔNG QUAN
 
-| Category                   | Count | Status                    |
-| -------------------------- | ----- | ------------------------- |
-| Pages                      | 16    | ❌ No Backend             |
-| Components                 | 25+   | ❌ No Backend             |
-| Contexts                   | 4     | ❌ No Backend             |
-| External APIs              | 2     | ✅ Active (OSM, Unsplash) |
-| Mock Data Objects          | 12+   | -                         |
-| localStorage Keys          | 3     | -                         |
-| Routes                     | 17    | ✅ All Setup              |
-| Image URLs                 | 50+   | ✅ Unsplash               |
-| Expected Backend Endpoints | 50+   | ❌ Not Implemented        |
-
----
-
-## 13. CONCLUSION
-
-The frontend is a **fully functional UI prototype** with:
-
-- ✅ Complete user interface
-- ✅ Navigation and routing
-- ✅ Client-side state management (React Contexts)
-- ✅ External map/image services
-- ✅ Mock payment flow
-- ❌ **NO backend API integration**
-- ❌ **NO real data persistence**
-- ❌ **NO real authentication**
-- ❌ **NO real payment processing**
-
-**To make this production-ready:** All 50+ expected backend endpoints need to be implemented and integrated.
+| Category                   | Count | Status                              |
+| -------------------------- | ----- | ----------------------------------- |
+| Pages                      | 16    | ❌ Không có Backend                 |
+| Components                 | 25+   | ❌ Không có Backend                 |
+| Contexts                   | 4     | ❌ Không có Backend                 |
+| External APIs              | 2     | ✅ Đang hoạt động (Goong, Unsplash) |
+| Mock Data Objects          | 12+   | -                                   |
+| localStorage Keys          | 3     | -                                   |
+| Routes                     | 17    | ✅ Đã thiết lập toàn bộ             |
+| Image URLs                 | 50+   | ✅ Unsplash                         |
+| Expected Backend Endpoints | 50+   | ❌ Chưa triển khai                  |
 
 ---
 
-_Report Generated on March 20, 2026_
+## 13. KẾT LUẬN
+
+Frontend là một **UI prototype hoàn toàn chức năng** với:
+
+- ✅ Giao diện người dùng hoàn chỉnh
+- ✅ Điều hướng và routing
+- ✅ Quản lý trạng thái phía client (React Contexts)
+- ✅ Dịch vụ bản đồ/hình ảnh bên ngoài
+- ✅ Luồng thanh toán mô phỏng
+- ❌ **KHÔNG có tích hợp backend API**
+- ❌ **KHÔNG có lưu trữ dữ liệu thực tế**
+- ❌ **KHÔNG có xác thực thực tế**
+- ❌ **KHÔNG có xử lý thanh toán thực tế**
+
+**Để sẵn sàng cho production:** Cần triển khai và tích hợp tất cả 50+ backend endpoints dự kiến.
+
+---
+
+_Báo cáo được tạo vào ngày 20 tháng 3, 2026_

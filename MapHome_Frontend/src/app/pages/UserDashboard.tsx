@@ -52,6 +52,7 @@ import { amenityMeta } from "@/app/constants/amenities";
 import api from "@/app/utils/api";
 import { ConfirmDialog } from "@/app/components/ConfirmDialog";
 import NotificationCenter from "@/app/components/NotificationCenter";
+import { BlogEditorDialog } from "@/app/components/BlogEditorDialog";
 import { useRecentlyViewed } from "@/app/hooks/useRecentlyViewed";
 import {
   validateFullName,
@@ -67,6 +68,8 @@ type UserView =
   | "inspections"
   | "history"
   | "book"
+  | "saved-blogs"
+  | "my-blogs"
   | "settings";
 
 interface ConfirmModalState {
@@ -83,6 +86,8 @@ export function UserDashboard() {
   const [favorites, setFavorites] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [inspections, setInspections] = useState<any[]>([]);
+  const [myBlogs, setMyBlogs] = useState<any[]>([]);
+  const [savedBlogs, setSavedBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmModal, setConfirmModal] = useState<ConfirmModalState>({
     open: false,
@@ -93,15 +98,19 @@ export function UserDashboard() {
       if (!isAuthenticated) return;
 
       try {
-        const [favRes, bookRes, inspRes] = await Promise.all([
+        const [favRes, bookRes, inspRes, blogsRes, savedBlogsRes] = await Promise.all([
           api.get("/api/user/me/favorites"),
           api.get("/api/user/bookings"),
           api.get("/api/user/inspections"),
+          api.get("/api/blogs/my-blogs"),
+          api.get("/api/blogs/me/saved"),
         ]);
 
         setFavorites(favRes.data);
         setAppointments(bookRes.data);
         setInspections(inspRes.data);
+        setMyBlogs(blogsRes.data);
+        setSavedBlogs(savedBlogsRes.data);
       } catch (err) {
         console.error("Failed to fetch user dashboard data:", err);
       } finally {
@@ -288,6 +297,8 @@ export function UserDashboard() {
             { id: "search", label: "Tìm kiếm thông minh", icon: Search },
             { id: "appointments", label: "Lịch hẹn của tôi", icon: Calendar },
             { id: "inspections", label: "Yêu cầu kiểm tra", icon: ShieldCheck },
+            { id: "saved-blogs", label: "Blog đã lưu", icon: Heart },
+            { id: "my-blogs", label: "Bài viết của tôi", icon: MessageCircle },
             { id: "history", label: "Lịch sử đã xem", icon: Eye },
             { id: "settings", label: "Cài đặt", icon: Settings },
           ].map((tab) => {
@@ -352,6 +363,20 @@ export function UserDashboard() {
               />
             )}
             {activeView === "history" && <RecentlyViewedView />}
+            {activeView === "saved-blogs" && (
+              <SavedBlogsView
+                savedBlogs={savedBlogs}
+                setSavedBlogs={setSavedBlogs}
+                setConfirmModal={setConfirmModal}
+              />
+            )}
+            {activeView === "my-blogs" && (
+              <MyBlogsView
+                myBlogs={myBlogs}
+                setMyBlogs={setMyBlogs}
+                setConfirmModal={setConfirmModal}
+              />
+            )}
             {activeView === "settings" && <SettingsView />}
           </motion.div>
         </AnimatePresence>
@@ -2177,6 +2202,316 @@ function RecentlyViewedView() {
           </motion.div>
         ))}
       </motion.div>
+    </div>
+  );
+}
+
+// ─── Saved Blogs View ────────────────────────────────────────────────────────
+function SavedBlogsView({
+  savedBlogs,
+  setSavedBlogs,
+  setConfirmModal,
+}: {
+  savedBlogs: any[];
+  setSavedBlogs: (blogs: any[]) => void;
+  setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalState>>;
+}) {
+  const navigate = useNavigate();
+
+  const handleUnsave = async (blogId: string) => {
+    setConfirmModal({
+      open: true,
+      title: "Bỏ lưu bài viết",
+      description: "Bạn có chắc chắn muốn bỏ lưu bài viết này không?",
+      onConfirm: async () => {
+        try {
+          const res = await api.post(`/api/blogs/${blogId}/save`);
+          if (res.status === 200) {
+            setSavedBlogs(savedBlogs.filter((b) => b._id !== blogId));
+            toast.success("Đã bỏ lưu bài viết! ✨");
+          }
+        } catch (err) {
+          console.error("Failed to unsave blog:", err);
+          toast.error("Không thể bỏ lưu bài viết. Vui lòng thử lại.");
+        }
+      },
+    });
+  };
+
+  if (savedBlogs.length === 0) {
+    return (
+      <EmptyState
+        icon={Heart}
+        title="Chưa có bài viết đã lưu"
+        description="Lưu lại những kiến thức và mẹo hay để đọc sau nhé."
+        action={
+          <Button
+            onClick={() => navigate("/blog")}
+            className="px-8 h-14 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white rounded-2xl font-black shadow-xl shadow-green-500/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 group"
+          >
+            <Search className="size-5 group-hover:rotate-12 transition-transform" />
+            Khám phá Blog
+          </Button>
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {savedBlogs.map((blog) => (
+        <motion.div
+          key={blog._id}
+          whileHover={{ y: -5 }}
+          className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group"
+        >
+          <div 
+            className="aspect-video relative overflow-hidden cursor-pointer"
+            onClick={() => navigate(`/blog/${blog._id}`)}
+          >
+            <img 
+              src={blog.image || "/images/blog-placeholder.jpg"} 
+              alt={blog.title}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
+            <div className="absolute top-4 right-4">
+              <Button
+                size="icon"
+                variant="secondary"
+                className="bg-white/90 backdrop-blur-md hover:bg-white text-red-500 rounded-xl"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUnsave(blog._id);
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-lg">
+                {blog.category}
+              </span>
+              <span className="text-[11px] text-gray-400 font-medium">
+                {new Date(blog.createdAt).toLocaleDateString("vi-VN")}
+              </span>
+            </div>
+            <h4 
+              className="font-black text-gray-900 leading-tight mb-2 line-clamp-2 hover:text-green-600 cursor-pointer transition-colors"
+              onClick={() => navigate(`/blog/${blog._id}`)}
+            >
+              {blog.title}
+            </h4>
+            <p className="text-gray-500 text-xs line-clamp-2 mb-4">
+              {blog.excerpt}
+            </p>
+            <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+              <div className="flex items-center gap-2">
+                <div className="size-6 rounded-full bg-gray-100 overflow-hidden border border-white shadow-sm">
+                  <img src={blog.authorAvatar || getAvatarUrl(blog.author)} alt={blog.author} className="w-full h-full object-cover" />
+                </div>
+                <span className="text-xs font-bold text-gray-700">{blog.author}</span>
+              </div>
+              <div className="flex items-center gap-3 text-gray-400">
+                <div className="flex items-center gap-1">
+                  <Eye className="size-3.5" />
+                  <span className="text-[11px] font-bold">{blog.views || 0}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+// ─── My Blogs View ───────────────────────────────────────────────────────────
+function MyBlogsView({
+  myBlogs,
+  setMyBlogs,
+  setConfirmModal,
+}: {
+  myBlogs: any[];
+  setMyBlogs: (blogs: any[]) => void;
+  setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalState>>;
+}) {
+  const navigate = useNavigate();
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editingBlog, setEditingBlog] = useState<any>(null);
+
+  const handleDeleteBlog = async (blogId: string) => {
+    setConfirmModal({
+      open: true,
+      title: "Xóa bài viết",
+      description: "Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.",
+      onConfirm: async () => {
+        try {
+          const res = await api.delete(`/api/blogs/${blogId}`);
+          if (res.status === 200) {
+            setMyBlogs(myBlogs.filter((b) => b._id !== blogId));
+            toast.success("Đã xóa bài viết thành công!");
+          }
+        } catch (err) {
+          console.error("Failed to delete blog:", err);
+          toast.error("Không thể xóa bài viết. Vui lòng thử lại.");
+        }
+      },
+    });
+  };
+
+  const handleEditBlog = (blog: any) => {
+    setEditingBlog(blog);
+    setEditorOpen(true);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "published":
+        return <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5"><CheckCircle className="size-3" /> Đã đăng</span>;
+      case "pending":
+        return <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5"><Clock className="size-3" /> Chờ duyệt</span>;
+      case "rejected":
+        return <span className="px-2.5 py-1 bg-red-50 text-red-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5"><XCircle className="size-3" /> Bị từ chối</span>;
+      case "draft":
+        return <span className="px-2.5 py-1 bg-gray-50 text-gray-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5"><Settings className="size-3" /> Bản nháp</span>;
+      default:
+        return null;
+    }
+  };
+
+  if (myBlogs.length === 0) {
+    return (
+      <EmptyState
+        icon={MessageCircle}
+        title="Bạn chưa có bài viết nào"
+        description="Chia sẻ kinh nghiệm và mẹo tìm trọ của bạn với cộng đồng nhé."
+        action={
+          <Button
+            onClick={() => navigate("/blog")}
+            className="px-8 h-14 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white rounded-2xl font-black shadow-xl shadow-green-500/20 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 group"
+          >
+            <Sparkles className="size-5 group-hover:rotate-12 transition-transform" />
+            Bắt đầu viết Blog
+          </Button>
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-xl font-bold text-gray-900">
+          Quản lý bài viết ({myBlogs.length})
+        </h3>
+        <Button
+          onClick={() => navigate("/blog")}
+          className="bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-xs uppercase tracking-widest px-6"
+        >
+          Viết bài mới
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {myBlogs.map((blog) => (
+          <motion.div
+            key={blog._id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-5 hover:shadow-md transition-shadow relative overflow-hidden"
+          >
+            {blog.status === "rejected" && (
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />
+            )}
+            
+            <div className="size-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50">
+              <img src={blog.image || "/images/blog-placeholder.jpg"} alt={blog.title} className="w-full h-full object-cover" />
+            </div>
+
+            <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+              <div>
+                <div className="flex items-center gap-3 mb-1.5">
+                  {getStatusBadge(blog.status)}
+                  <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">
+                    {blog.category} • {formatDateVietnamese(blog.createdAt)}
+                  </span>
+                </div>
+                <h4 className="font-black text-gray-900 truncate pr-20">{blog.title}</h4>
+                {blog.status === "rejected" && blog.rejectionReason && (
+                    <p className="text-[11px] text-red-500 font-bold mt-1.5 flex items-start gap-1">
+                        <Info className="size-3 flex-shrink-0 mt-0.5" />
+                        Lý do từ chối: {blog.rejectionReason}
+                    </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 px-4 rounded-xl font-bold text-[11px] border-blue-200 text-blue-600 hover:bg-blue-50"
+                  onClick={() => handleEditBlog(blog)}
+                >
+                  <Settings className="size-3.5 mr-1.5" /> Sửa bài
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 px-4 rounded-xl font-bold text-[11px] border-red-100 text-red-500 hover:bg-red-50"
+                  onClick={() => handleDeleteBlog(blog._id)}
+                >
+                  <Trash2 className="size-3.5 mr-1.5" /> Xóa
+                </Button>
+                {blog.status === "published" && (
+                   <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 px-4 rounded-xl font-bold text-[11px] border-gray-200 text-gray-600 hover:bg-gray-50"
+                    onClick={() => navigate(`/blog/${blog._id}`)}
+                  >
+                    <Eye className="size-3.5 mr-1.5" /> Xem
+                  </Button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <BlogEditorDialog
+        isOpen={editorOpen}
+        onClose={() => {
+          setEditorOpen(false);
+          setEditingBlog(null);
+        }}
+        initialData={editingBlog}
+        onSave={async (data) => {
+          try {
+            if (editingBlog?._id) {
+              // Update existing blog
+              await api.put(`/api/blogs/${editingBlog._id}`, data);
+              toast.success("Cập nhật bài viết thành công!");
+            } else {
+              // Create new blog (if we add this functionality later)
+              await api.post("/api/blogs", data);
+              toast.success("Gửi bài viết thành công!");
+            }
+            
+            setEditorOpen(false);
+            setEditingBlog(null);
+            
+            // Refresh blog list
+            const res = await api.get("/api/blogs/my-blogs");
+            setMyBlogs(res.data);
+          } catch (err) {
+            console.error("Failed to save blog:", err);
+            toast.error("Không thể lưu bài viết. Vui lòng thử lại.");
+          }
+        }}
+      />
     </div>
   );
 }
