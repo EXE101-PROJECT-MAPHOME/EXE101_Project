@@ -230,3 +230,39 @@
 .testimonial-carousel-wrapper .slick-dots li button:hover {
   background: #9ca3af;
 }
+
+/* Utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom horizontal scrollbar - independent from vertical */
+.custom-h-scrollbar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.custom-h-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+.custom-h-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to right, #16a34a, #0ea5e9);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.custom-h-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to right, #15803d, #0284c7);
+  box-shadow: 0 0 8px rgba(22, 163, 74, 0.3);
+}
+
+.custom-h-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: linear-gradient(to right, #16a34a, #0ea5e9)
+    rgba(0, 0, 0, 0.02);
+}

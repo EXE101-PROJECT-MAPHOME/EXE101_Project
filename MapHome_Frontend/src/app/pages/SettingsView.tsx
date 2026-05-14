@@ -44,6 +44,21 @@ export function SettingsView() {
   >("general");
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [adminData, setAdminData] = useState({
+    fullName: user?.fullName || "",
+    username: user?.username || "",
+    phone: user?.phone || ""
+  });
+
+  useEffect(() => {
+    if (user) {
+      setAdminData({
+        fullName: user.fullName || "",
+        username: user.username || "",
+        phone: user.phone || ""
+      });
+    }
+  }, [user]);
 
   const fetchSettings = async () => {
     try {
@@ -145,6 +160,22 @@ export function SettingsView() {
       toast.error("Không thể tải ảnh banner.");
     } finally {
       setUploadingBanner(false);
+    }
+  };
+
+  const handleSaveAdminProfile = async () => {
+    try {
+      setSaving(true);
+      const userId = user?.id || (user as any)?._id;
+      const res = await api.put(`/api/user/${userId}`, adminData);
+      if (res.status === 200) {
+        updateUser(res.data);
+        toast.success("Hồ sơ quản trị đã được cập nhật! ✨");
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Không thể cập nhật hồ sơ.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -469,9 +500,19 @@ export function SettingsView() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-8">
-                    <InputGroup label="Email đăng nhập" value={user?.email || ""} onChange={() => {}} icon={<Mail className="size-4" />} />
-                    <InputGroup label="Số điện thoại" value={user?.phone || ""} onChange={() => {}} icon={<Phone className="size-4" />} />
+                    <InputGroup label="Họ và tên" value={adminData.fullName} onChange={(val) => setAdminData({...adminData, fullName: val})} icon={<User className="size-4" />} />
+                    <InputGroup label="Tên đăng nhập" value={adminData.username} onChange={(val) => setAdminData({...adminData, username: val})} icon={<User className="size-4" />} />
+                    <InputGroup label="Số điện thoại" value={adminData.phone} onChange={(val) => setAdminData({...adminData, phone: val})} icon={<Phone className="size-4" />} />
+                    <InputGroup label="Email đăng nhập" value={user?.email || ""} onChange={() => {}} icon={<Mail className="size-4" />} disabled />
                   </div>
+
+                  <Button 
+                    onClick={handleSaveAdminProfile}
+                    loading={saving}
+                    className="w-full h-14 bg-gradient-to-r from-emerald-600 to-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    Lưu thay đổi hồ sơ Admin
+                  </Button>
 
                   <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100 flex items-center justify-between group">
                     <div className="flex items-center gap-4">
@@ -586,12 +627,14 @@ function InputGroup({
   onChange,
   icon,
   type = "text",
+  disabled = false,
 }: {
   label: string;
   value: any;
   onChange: (val: string) => void;
   icon?: React.ReactNode;
   type?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="space-y-2">
@@ -607,8 +650,9 @@ function InputGroup({
         <input
           type={type}
           value={value}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          className={`w-full h-12 ${icon ? "pl-11" : "px-5"} pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-emerald-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner`}
+          className={`w-full h-12 ${icon ? "pl-11" : "px-5"} pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-emerald-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner disabled:bg-slate-100 disabled:text-slate-400`}
         />
       </div>
     </div>

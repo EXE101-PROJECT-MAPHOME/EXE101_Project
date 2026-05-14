@@ -26,6 +26,18 @@ const updateUser = async (req, res) => {
   try {
     const updates = { ...req.body };
     delete updates.password; // password changes via dedicated flow
+
+    // If username is being updated, check for uniqueness
+    if (updates.username) {
+      const existingUser = await User.findOne({ 
+        username: updates.username, 
+        _id: { $ne: req.params.id } 
+      });
+      if (existingUser) {
+        return res.status(400).json({ message: "Tên đăng nhập này đã được sử dụng. Vui lòng chọn tên khác." });
+      }
+    }
+
     const user = await User.findByIdAndUpdate(req.params.id, updates, {
       new: true,
     }).select("-password");
