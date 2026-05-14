@@ -360,7 +360,7 @@ export function LoginPage() {
                 className="space-y-6"
               >
                 {mode === "login" ? (
-                  <form onSubmit={handleLogin} className="space-y-5">
+                  <form onSubmit={handleLogin} className="space-y-4">
                     <motion.div variants={itemVariants} className="space-y-2.5">
                       <div className="flex items-center justify-between ml-1">
                         <label className="text-[14px] font-black text-emerald-600/80 uppercase tracking-wide">
@@ -410,13 +410,6 @@ export function LoginPage() {
                         <label className="text-[14px] font-black text-blue-600/80 uppercase tracking-wide">
                           Mật khẩu
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => navigate("/forgot-password")}
-                          className="text-[13px] font-bold text-emerald-500 hover:text-emerald-600 hover:underline decoration-2 underline-offset-4 transition-colors"
-                        >
-                          Quên mật khẩu?
-                        </button>
                       </div>
                       <div className="relative group">
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 size-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-focus-within:bg-blue-50 group-focus-within:text-blue-500 transition-all duration-300">
@@ -453,6 +446,15 @@ export function LoginPage() {
                           {loginErrors.password}
                         </motion.p>
                       )}
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => navigate("/forgot-password")}
+                          className="text-[13px] font-bold text-emerald-500 hover:text-emerald-600 hover:underline decoration-2 underline-offset-4 transition-colors pt-2"
+                        >
+                          Quên mật khẩu?
+                        </button>
+                      </div>
                     </motion.div>
 
                     {error && (
