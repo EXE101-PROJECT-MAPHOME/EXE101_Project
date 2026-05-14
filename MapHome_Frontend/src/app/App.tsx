@@ -22,31 +22,47 @@ import { CheckoutPage } from "@/app/pages/CheckoutPage";
 import { PaymentSuccessPage } from "@/app/pages/PaymentSuccessPage";
 import { PaymentFailurePage } from "@/app/pages/PaymentFailurePage";
 import { ExpiryWarningDemo } from "@/app/pages/ExpiryWarningDemo";
+import { Outlet } from "react-router-dom";
 import { AIChatAssistant } from "@/app/components/AIChatAssistant";
 import { Toaster } from "@/app/components/ui/sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
+function RootLayout() {
+  return (
+    <>
+      <Outlet />
+      <AIChatAssistant />
+    </>
+  );
+}
+
 const router = createBrowserRouter([
-  { path: "/", Component: HomePage },
-  { path: "/map", Component: MapPage },
-  { path: "/room/:id", Component: RoomDetailPage },
-  { path: "/compare", Component: ComparePage },
-  { path: "/pricing", Component: PricingPage },
-  { path: "/checkout", Component: CheckoutPage },
-  { path: "/payment-success", Component: PaymentSuccessPage },
-  { path: "/payment-failure", Component: PaymentFailurePage },
-  { path: "/expiry-warning-demo", Component: ExpiryWarningDemo },
-  { path: "/register", Component: RegisterPage },
-  { path: "/post-room", Component: PostRoomPage },
-  { path: "/blog", Component: BlogPage },
-  { path: "/policy", Component: PolicyPage },
-  { path: "/contact", Component: ContactPage },
-  { path: "/login", Component: LoginPage },
-  { path: "/forgot-password", Component: ForgotPasswordPage },
-  { path: "/admin/login", Component: LoginPage },
-  { path: "/admin/dashboard", Component: AdminPage },
-  { path: "/landlord/dashboard", Component: LandlordDashboardV2 },
-  { path: "/user/dashboard", Component: UserDashboard },
+  {
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      { path: "/", Component: HomePage },
+      { path: "/map", Component: MapPage },
+      { path: "/room/:id", Component: RoomDetailPage },
+      { path: "/compare", Component: ComparePage },
+      { path: "/pricing", Component: PricingPage },
+      { path: "/checkout", Component: CheckoutPage },
+      { path: "/payment-success", Component: PaymentSuccessPage },
+      { path: "/payment-failure", Component: PaymentFailurePage },
+      { path: "/expiry-warning-demo", Component: ExpiryWarningDemo },
+      { path: "/register", Component: RegisterPage },
+      { path: "/post-room", Component: PostRoomPage },
+      { path: "/blog", Component: BlogPage },
+      { path: "/policy", Component: PolicyPage },
+      { path: "/contact", Component: ContactPage },
+      { path: "/login", Component: LoginPage },
+      { path: "/forgot-password", Component: ForgotPasswordPage },
+      { path: "/admin/login", Component: LoginPage },
+      { path: "/admin/dashboard", Component: AdminPage },
+      { path: "/landlord/dashboard", Component: LandlordDashboardV2 },
+      { path: "/user/dashboard", Component: UserDashboard },
+    ]
+  }
 ]);
 
 export default function App() {
@@ -65,7 +81,6 @@ export default function App() {
                 <RouterProvider router={router} />
               </motion.div>
             </AnimatePresence>
-            <AIChatAssistant />
             <Toaster position="top-center" richColors />
           </CompareProvider>
         </VerificationProvider>

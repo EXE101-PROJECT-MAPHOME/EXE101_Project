@@ -82,6 +82,7 @@ interface ConfirmModalState {
 export function UserDashboard() {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
+  const scrollRef = React.useRef<HTMLDivElement>(null);
   const [activeView, setActiveView] = useState<UserView>("favorites");
   const [favorites, setFavorites] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -92,19 +93,38 @@ export function UserDashboard() {
   const [confirmModal, setConfirmModal] = useState<ConfirmModalState>({
     open: false,
   });
+  const [supportModal, setSupportModal] = useState({
+    open: false,
+    subject: "",
+    message: "",
+  });
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!isAuthenticated) return;
 
       try {
-        const [favRes, bookRes, inspRes, blogsRes, savedBlogsRes] = await Promise.all([
-          api.get("/api/user/me/favorites"),
-          api.get("/api/user/bookings"),
-          api.get("/api/user/inspections"),
-          api.get("/api/blogs/my-blogs"),
-          api.get("/api/blogs/me/saved"),
-        ]);
+        const [favRes, bookRes, inspRes, blogsRes, savedBlogsRes] =
+          await Promise.all([
+            api.get("/api/user/me/favorites"),
+            api.get("/api/user/bookings"),
+            api.get("/api/user/inspections"),
+            api.get("/api/blogs/my-blogs"),
+            api.get("/api/blogs/me/saved"),
+          ]);
 
         setFavorites(favRes.data);
         setAppointments(bookRes.data);
@@ -291,7 +311,10 @@ export function UserDashboard() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-3 mb-8 overflow-x-auto pb-4 no-scrollbar relative">
+        <div
+          ref={scrollRef}
+          className="flex items-center gap-3 mb-6 overflow-x-auto pb-4 custom-h-scrollbar relative scroll-smooth"
+        >
           {[
             { id: "favorites", label: "Trọ yêu thích", icon: Heart },
             { id: "search", label: "Tìm kiếm thông minh", icon: Search },
@@ -377,7 +400,9 @@ export function UserDashboard() {
                 setConfirmModal={setConfirmModal}
               />
             )}
-            {activeView === "settings" && <SettingsView />}
+            {activeView === "settings" && (
+              <SettingsView setSupportModal={setSupportModal} />
+            )}
           </motion.div>
         </AnimatePresence>
       </motion.main>
@@ -393,7 +418,195 @@ export function UserDashboard() {
         }}
         onCancel={() => setConfirmModal({ open: false })}
       />
+
+      <SupportModal
+        open={supportModal.open}
+        user={user}
+        initialSubject={supportModal.subject}
+        initialMessage={supportModal.message}
+        onClose={() => setSupportModal({ ...supportModal, open: false })}
+      />
+
+      {/* Floating Support Button */}
+      <motion.button
+        initial={{ scale: 0, rotate: -90 }}
+        animate={{ scale: 1, rotate: 0 }}
+        whileHover={{ scale: 1.1, rotate: 5 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => {
+          setSupportModal({
+            open: true,
+            subject: "",
+            message: "",
+          });
+        }}
+        className="fixed bottom-6 right-24 w-16 h-16 bg-gradient-to-br from-emerald-600 to-blue-600 text-white rounded-full shadow-2xl shadow-emerald-500/40 flex items-center justify-center z-[100] group hover:shadow-emerald-500/60 transition-shadow"
+      >
+        <motion.div
+          animate={{ y: [0, -4, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <MessageCircle className="size-8 group-hover:scale-110 transition-transform" />
+        </motion.div>
+        <div className="absolute right-full mr-4 bg-gradient-to-br from-emerald-50 to-blue-50 px-4 py-2 rounded-xl shadow-xl border border-emerald-200 opacity-0 group-hover:opacity-100 pointer-events-none transition-all translate-x-4 group-hover:translate-x-0 whitespace-nowrap">
+          <p className="text-xs font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-widest">
+            Gửi yêu cầu hỗ trợ
+          </p>
+        </div>
+      </motion.button>
     </div>
+  );
+}
+
+// ─── Support Modal Component ──────────────────────────────────────────────────
+
+function SupportModal({
+  open,
+  onClose,
+  initialSubject = "",
+  initialMessage = "",
+  user,
+}: {
+  open: boolean;
+  onClose: () => void;
+  initialSubject?: string;
+  initialMessage?: string;
+  user: any;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    subject: initialSubject,
+    message: initialMessage,
+  });
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        subject: initialSubject,
+        message: initialMessage,
+      });
+    }
+  }, [open, initialSubject, initialMessage]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.subject || !formData.message) {
+      toast.error("Vui lòng nhập đầy đủ thông tin.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.post("/api/contacts", {
+        name: user?.fullName || user?.username,
+        email: user?.email,
+        subject: formData.subject,
+        message: formData.message,
+      });
+      toast.success("Yêu cầu của bạn đã được gửi đi! 🚀");
+      onClose();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Lỗi khi gửi yêu cầu.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-md px-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-white rounded-[32px] shadow-2xl w-full max-w-lg overflow-hidden border border-white/20"
+            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+          >
+            <div className="bg-gradient-to-r from-emerald-600 to-blue-600 p-8 text-white relative">
+              <button
+                onClick={onClose}
+                className="absolute top-6 right-6 p-2 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="size-6" />
+              </button>
+              <div className="flex items-center gap-4 mb-2">
+                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                  <MessageCircle className="size-8" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight">
+                    Gửi yêu cầu hỗ trợ
+                  </h2>
+                  <p className="text-emerald-50 text-sm font-medium opacity-90">
+                    Chúng tôi sẽ phản hồi bạn qua Email sớm nhất có thể.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">
+                  Tiêu đề yêu cầu
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors pointer-events-none">
+                    <Sparkles className="size-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.subject}
+                    onChange={(e) =>
+                      setFormData({ ...formData, subject: e.target.value })
+                    }
+                    placeholder="Ví dụ: Lỗi khi đặt lịch hẹn xem nhà..."
+                    className="w-full h-14 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 placeholder-slate-400 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">
+                  Nội dung chi tiết
+                </label>
+                <textarea
+                  value={formData.message}
+                  onChange={(e) =>
+                    setFormData({ ...formData, message: e.target.value })
+                  }
+                  placeholder="Mô tả chi tiết vấn đề bạn gặp phải... Bao gồm ngày giờ, tên bất động sản nếu liên quan, và các bước bạn đã thực hiện."
+                  rows={5}
+                  className="w-full p-5 bg-slate-50 border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 placeholder-slate-400 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  className="flex-1 h-14 rounded-2xl font-black text-slate-500 border-slate-200 hover:bg-slate-50"
+                >
+                  Hủy bỏ
+                </Button>
+                <Button
+                  type="submit"
+                  loading={loading}
+                  className="flex-[2] h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  Gửi yêu cầu ngay
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -1519,38 +1732,66 @@ function InspectionsView({
  * SettingsView component for managing user profile and security
  * Allows updating personal info and changing password
  */
-function SettingsView() {
+function SettingsView({
+  setSupportModal,
+}: {
+  setSupportModal: (val: any) => void;
+}) {
   const { user, updateUser, logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"profile" | "search" | "privacy" | "security">("profile");
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "search" | "privacy" | "security"
+  >("profile");
   const [loading, setLoading] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  
+
   // Local state for complex settings
   const [localSettings, setLocalSettings] = useState({
     searchPreferences: user?.searchPreferences || {
       districts: [],
-      priceRange: { min: 0, max: 50000000 }
+      priceRange: { min: 0, max: 50000000 },
     },
     privacySettings: user?.privacySettings || {
-      showPhoneBeforeBooking: true
+      showPhoneBeforeBooking: true,
     },
     security: user?.security || {
       twoFactorEnabled: false,
-      loginHistory: []
-    }
+      loginHistory: [],
+    },
   });
 
   const districtsList = [
-    "Quận 1", "Quận 2", "Quận 3", "Quận 4", "Quận 5", "Quận 6", "Quận 7", "Quận 8", "Quận 9", "Quận 10", "Quận 11", "Quận 12",
-    "Thủ Đức", "Bình Thạnh", "Tân Bình", "Phú Nhuận", "Gò Vấp", "Bình Tân", "Hóc Môn", "Củ Chi", "Nhà Bè", "Bình Chánh", "Cần Giờ"
+    "Quận 1",
+    "Quận 2",
+    "Quận 3",
+    "Quận 4",
+    "Quận 5",
+    "Quận 6",
+    "Quận 7",
+    "Quận 8",
+    "Quận 9",
+    "Quận 10",
+    "Quận 11",
+    "Quận 12",
+    "Thủ Đức",
+    "Bình Thạnh",
+    "Tân Bình",
+    "Phú Nhuận",
+    "Gò Vấp",
+    "Bình Tân",
+    "Hóc Môn",
+    "Củ Chi",
+    "Nhà Bè",
+    "Bình Chánh",
+    "Cần Giờ",
   ];
 
   const handleSave = async (data: any) => {
     setLoading(true);
     try {
-      const res = await api.put(`/api/user/${user?.id}`, data);
+      const userId = user?.id || (user as any)?._id;
+      const res = await api.put(`/api/user/${userId}`, data);
       if (res.status === 200) {
         updateUser(res.data);
         toast.success("Cập nhật thành công! ✨");
@@ -1564,13 +1805,16 @@ function SettingsView() {
 
   const toggleDistrict = (district: string) => {
     const current = localSettings.searchPreferences?.districts || [];
-    const next = current.includes(district) 
+    const next = current.includes(district)
       ? current.filter((d: string) => d !== district)
       : [...current, district];
-    
+
     setLocalSettings({
       ...localSettings,
-      searchPreferences: { ...localSettings.searchPreferences, districts: next }
+      searchPreferences: {
+        ...localSettings.searchPreferences,
+        districts: next,
+      },
     });
   };
 
@@ -1579,25 +1823,29 @@ function SettingsView() {
       {/* Sidebar Navigation */}
       <div className="lg:w-72 shrink-0">
         <div className="bg-white/60 backdrop-blur-md rounded-[32px] p-4 border border-white/50 shadow-xl space-y-2 sticky top-24">
-          <TabNav 
-            active={activeTab === "profile"} 
-            onClick={() => setActiveTab("profile")} 
-            icon={<User />} label="Hồ sơ cá nhân" 
+          <TabNav
+            active={activeTab === "profile"}
+            onClick={() => setActiveTab("profile")}
+            icon={<User />}
+            label="Hồ sơ cá nhân"
           />
-          <TabNav 
-            active={activeTab === "search"} 
-            onClick={() => setActiveTab("search")} 
-            icon={<Search />} label="Sở thích tìm kiếm" 
+          <TabNav
+            active={activeTab === "search"}
+            onClick={() => setActiveTab("search")}
+            icon={<Search />}
+            label="Sở thích tìm kiếm"
           />
-          <TabNav 
-            active={activeTab === "privacy"} 
-            onClick={() => setActiveTab("privacy")} 
-            icon={<ShieldCheck />} label="Quyền riêng tư" 
+          <TabNav
+            active={activeTab === "privacy"}
+            onClick={() => setActiveTab("privacy")}
+            icon={<ShieldCheck />}
+            label="Quyền riêng tư"
           />
-          <TabNav 
-            active={activeTab === "security"} 
-            onClick={() => setActiveTab("security")} 
-            icon={<Key />} label="Bảo mật & Đăng nhập" 
+          <TabNav
+            active={activeTab === "security"}
+            onClick={() => setActiveTab("security")}
+            icon={<Key />}
+            label="Bảo mật & Đăng nhập"
           />
         </div>
       </div>
@@ -1615,50 +1863,127 @@ function SettingsView() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-8"
                 >
-                  <SectionHeader title="Thông tin cá nhân" description="Cập nhật thông tin cơ bản để mọi người nhận diện bạn." />
-                  
+                  <SectionHeader
+                    title="Thông tin cá nhân"
+                    description="Cập nhật thông tin cơ bản để mọi người nhận diện bạn."
+                  />
+
                   <div className="flex flex-col items-center gap-4 pb-8 border-b border-gray-100">
                     <div className="relative group">
                       <div className="w-32 h-32 rounded-[2.5rem] border-4 border-white shadow-2xl overflow-hidden bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white text-4xl font-black">
                         {user?.avatar ? (
-                          <img src={getAvatarUrl(user.avatar) || ""} alt="Avatar" className="w-full h-full object-cover" />
+                          <img
+                            src={getAvatarUrl(user.avatar) || ""}
+                            alt="Avatar"
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           getInitials(user?.fullName, user?.username)
                         )}
                       </div>
                       <label className="absolute -bottom-2 -right-2 p-3 bg-white text-green-600 rounded-2xl shadow-xl cursor-pointer hover:bg-green-600 hover:text-white transition-all transform hover:scale-110 border border-gray-100">
                         <Camera className="size-5" />
-                        <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
-                           const file = e.target.files?.[0];
-                           if (!file) return;
-                           const formData = new FormData();
-                           formData.append("image", file);
-                           try {
-                             const uploadRes = await api.post("/api/upload/single", formData, { headers: { "Content-Type": "multipart/form-data" }});
-                             if (uploadRes.status === 200 || uploadRes.status === 201) {
-                               await handleSave({ avatar: uploadRes.data.url });
-                             }
-                           } catch (err) { toast.error("Lỗi upload ảnh."); }
-                        }} />
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const formData = new FormData();
+                            formData.append("image", file);
+                            try {
+                              const uploadRes = await api.post(
+                                "/api/upload/single",
+                                formData,
+                                {
+                                  headers: {
+                                    "Content-Type": "multipart/form-data",
+                                  },
+                                },
+                              );
+                              if (
+                                uploadRes.status === 200 ||
+                                uploadRes.status === 201
+                              ) {
+                                await handleSave({
+                                  avatar: uploadRes.data.url,
+                                });
+                              }
+                            } catch (err) {
+                              toast.error("Lỗi upload ảnh.");
+                            }
+                          }}
+                        />
                       </label>
                     </div>
                   </div>
 
-                  <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={(e) => {
-                    e.preventDefault();
-                    const form = new FormData(e.currentTarget);
-                    handleSave({
-                      fullName: form.get("fullName"),
-                      phone: form.get("phone")
-                    });
-                  }}>
-                    <InputGroup name="fullName" label="Họ và tên" defaultValue={user?.fullName || user?.username} icon={<User />} />
-                    <InputGroup name="phone" label="Số điện thoại" defaultValue={user?.phone || ""} icon={<Phone />} />
-                    <div className="md:col-span-2">
-                       <InputGroup name="email" label="Địa chỉ Email" defaultValue={user?.email || ""} icon={<Mail />} disabled />
+                  <form
+                    className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = new FormData(e.currentTarget);
+                      handleSave({
+                        fullName: form.get("fullName"),
+                        username: form.get("username"),
+                        phone: form.get("phone"),
+                      });
+                    }}
+                  >
+                    <InputGroup
+                      name="fullName"
+                      label="Họ và tên"
+                      defaultValue={user?.fullName || ""}
+                      icon={<User />}
+                    />
+                    <InputGroup
+                      name="phone"
+                      label="Số điện thoại"
+                      defaultValue={user?.phone || ""}
+                      icon={<Phone />}
+                    />
+                    <InputGroup
+                      name="username"
+                      label="Tên đăng nhập"
+                      defaultValue={user?.username || ""}
+                      icon={<User />}
+                    />
+                    <InputGroup
+                      name="email"
+                      label="Địa chỉ Email"
+                      defaultValue={user?.email || ""}
+                      icon={<Mail />}
+                      disabled
+                    />
+                    <div className="flex items-center justify-between mt-2 ml-1">
+                      <p className="text-[10px] text-slate-400 italic">
+                        * Để bảo mật, việc thay đổi Email cần sự xác nhận của
+                        Quản trị viên.
+                      </p>
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          setSupportModal({
+                            open: true,
+                            subject: "",
+                            message: "",
+                          });
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-black text-[11px] uppercase tracking-widest flex items-center gap-2 rounded-lg transition-all shadow-md shadow-emerald-500/20 hover:shadow-emerald-500/40"
+                      >
+                        <MessageCircle className="size-4" />
+                        Gửi yêu cầu hỗ trợ
+                      </motion.button>
                     </div>
                     <div className="md:col-span-2 pt-4">
-                      <Button type="submit" loading={loading} className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                      <Button
+                        type="submit"
+                        loading={loading}
+                        className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                      >
                         Lưu thay đổi hồ sơ
                       </Button>
                     </div>
@@ -1674,18 +1999,25 @@ function SettingsView() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-8"
                 >
-                  <SectionHeader title="Sở thích tìm kiếm" description="Chúng tôi sẽ ưu tiên hiển thị các phòng trọ phù hợp với tiêu chí của bạn." />
-                  
+                  <SectionHeader
+                    title="Sở thích tìm kiếm"
+                    description="Chúng tôi sẽ ưu tiên hiển thị các phòng trọ phù hợp với tiêu chí của bạn."
+                  />
+
                   <div className="space-y-6">
                     <div className="space-y-4">
-                      <label className="text-xs font-black text-emerald-600/70 uppercase tracking-widest ml-1">Khu vực quan tâm (Quận/Huyện)</label>
+                      <label className="text-xs font-black text-emerald-600/70 uppercase tracking-widest ml-1">
+                        Khu vực quan tâm (Quận/Huyện)
+                      </label>
                       <div className="flex flex-wrap gap-2">
-                        {districtsList.map(d => (
+                        {districtsList.map((d) => (
                           <button
                             key={d}
                             onClick={() => toggleDistrict(d)}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                              localSettings.searchPreferences?.districts?.includes(d)
+                              localSettings.searchPreferences?.districts?.includes(
+                                d,
+                              )
                                 ? "bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200"
                                 : "bg-white text-slate-500 border-slate-100 hover:border-emerald-200 hover:text-emerald-700"
                             }`}
@@ -1698,50 +2030,76 @@ function SettingsView() {
 
                     <div className="grid grid-cols-2 gap-6 pt-4">
                       <div className="space-y-2">
-                         <label className="text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">Giá tối thiểu (VNĐ)</label>
-                         <div className="relative group">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
-                               <DollarSign className="size-5" />
-                            </div>
-                            <input 
-                              type="number"
-                              value={localSettings.searchPreferences?.priceRange?.min || 0}
-                              onChange={(e) => setLocalSettings({
+                        <label className="text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">
+                          Giá tối thiểu (VNĐ)
+                        </label>
+                        <div className="relative group">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
+                            <DollarSign className="size-5" />
+                          </div>
+                          <input
+                            type="number"
+                            value={
+                              localSettings.searchPreferences?.priceRange
+                                ?.min || 0
+                            }
+                            onChange={(e) =>
+                              setLocalSettings({
                                 ...localSettings,
-                                searchPreferences: { 
-                                  ...localSettings.searchPreferences, 
-                                  priceRange: { ...localSettings.searchPreferences?.priceRange, min: Number(e.target.value) } 
-                                }
-                              })}
-                              className="w-full h-12 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner"
-                            />
-                         </div>
+                                searchPreferences: {
+                                  ...localSettings.searchPreferences,
+                                  priceRange: {
+                                    ...localSettings.searchPreferences
+                                      ?.priceRange,
+                                    min: Number(e.target.value),
+                                  },
+                                },
+                              })
+                            }
+                            className="w-full h-12 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
-                         <label className="text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">Giá tối đa (VNĐ)</label>
-                         <div className="relative group">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
-                               <DollarSign className="size-5" />
-                            </div>
-                            <input 
-                              type="number"
-                              value={localSettings.searchPreferences?.priceRange?.max || 50000000}
-                              onChange={(e) => setLocalSettings({
+                        <label className="text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">
+                          Giá tối đa (VNĐ)
+                        </label>
+                        <div className="relative group">
+                          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none">
+                            <DollarSign className="size-5" />
+                          </div>
+                          <input
+                            type="number"
+                            value={
+                              localSettings.searchPreferences?.priceRange
+                                ?.max || 50000000
+                            }
+                            onChange={(e) =>
+                              setLocalSettings({
                                 ...localSettings,
-                                searchPreferences: { 
-                                  ...localSettings.searchPreferences, 
-                                  priceRange: { ...localSettings.searchPreferences?.priceRange, max: Number(e.target.value) } 
-                                }
-                              })}
-                              className="w-full h-12 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner"
-                            />
-                         </div>
+                                searchPreferences: {
+                                  ...localSettings.searchPreferences,
+                                  priceRange: {
+                                    ...localSettings.searchPreferences
+                                      ?.priceRange,
+                                    max: Number(e.target.value),
+                                  },
+                                },
+                              })
+                            }
+                            className="w-full h-12 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={() => handleSave({ searchPreferences: localSettings.searchPreferences })}
+                  <Button
+                    onClick={() =>
+                      handleSave({
+                        searchPreferences: localSettings.searchPreferences,
+                      })
+                    }
                     loading={loading}
                     className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all mt-8"
                   >
@@ -1758,33 +2116,55 @@ function SettingsView() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-8"
                 >
-                  <SectionHeader title="Quyền riêng tư" description="Kiểm soát thông tin nào chủ trọ có thể nhìn thấy." />
-                  
+                  <SectionHeader
+                    title="Quyền riêng tư"
+                    description="Kiểm soát thông tin nào chủ trọ có thể nhìn thấy."
+                  />
+
                   <div className="bg-slate-50 rounded-[32px] p-8 border border-slate-100 space-y-6">
                     <div className="flex items-center justify-between gap-6">
                       <div className="flex-1">
-                        <h4 className="font-bold text-slate-800 mb-1">Công khai số điện thoại</h4>
-                        <p className="text-sm text-slate-500">Cho phép chủ nhà xem số điện thoại của bạn ngay cả khi chưa xác nhận lịch hẹn.</p>
+                        <h4 className="font-bold text-slate-800 mb-1">
+                          Công khai số điện thoại
+                        </h4>
+                        <p className="text-sm text-slate-500">
+                          Cho phép chủ nhà xem số điện thoại của bạn ngay cả khi
+                          chưa xác nhận lịch hẹn.
+                        </p>
                       </div>
-                      <Toggle 
-                        checked={localSettings.privacySettings?.showPhoneBeforeBooking ?? true} 
-                        onChange={(val) => setLocalSettings({
-                          ...localSettings,
-                          privacySettings: { ...localSettings.privacySettings, showPhoneBeforeBooking: val }
-                        })}
+                      <Toggle
+                        checked={
+                          localSettings.privacySettings
+                            ?.showPhoneBeforeBooking ?? true
+                        }
+                        onChange={(val) =>
+                          setLocalSettings({
+                            ...localSettings,
+                            privacySettings: {
+                              ...localSettings.privacySettings,
+                              showPhoneBeforeBooking: val,
+                            },
+                          })
+                        }
                       />
                     </div>
 
                     <div className="pt-6 border-t border-slate-200">
-                       <p className="text-xs text-slate-400 italic">
-                         <Info className="size-3 inline mr-1 mb-0.5" />
-                         Lưu ý: MapHome luôn bảo vệ dữ liệu của bạn. Chúng tôi chỉ cung cấp thông tin liên hệ khi bạn có ý định xem phòng thực sự.
-                       </p>
+                      <p className="text-xs text-slate-400 italic">
+                        <Info className="size-3 inline mr-1 mb-0.5" />
+                        Lưu ý: MapHome luôn bảo vệ dữ liệu của bạn. Chúng tôi
+                        chỉ cung cấp thông tin liên hệ khi bạn có ý định xem
+                        phòng thực sự.
+                      </p>
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={() => handleSave({ privacySettings: localSettings.privacySettings })}
+                  <Button
+                    onClick={() =>
+                      handleSave({
+                        privacySettings: localSettings.privacySettings,
+                      })
+                    }
                     loading={loading}
                     className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all mt-8"
                   >
@@ -1802,8 +2182,11 @@ function SettingsView() {
                   className="space-y-10"
                 >
                   <div>
-                    <SectionHeader title="Bảo mật tài khoản" description="Bảo vệ tài khoản của bạn bằng các lớp bảo mật mạnh mẽ." />
-                    
+                    <SectionHeader
+                      title="Bảo mật tài khoản"
+                      description="Bảo vệ tài khoản của bạn bằng các lớp bảo mật mạnh mẽ."
+                    />
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                       <div className="bg-amber-50 rounded-3xl p-6 border border-amber-100 flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -1811,17 +2194,28 @@ function SettingsView() {
                             <ShieldCheck className="size-6" />
                           </div>
                           <div>
-                            <p className="text-sm font-black text-amber-900 leading-none mb-1">Xác thực 2 lớp (2FA)</p>
-                            <p className="text-[10px] text-amber-600 font-bold">Tăng cường bảo mật qua Email</p>
+                            <p className="text-sm font-black text-amber-900 leading-none mb-1">
+                              Xác thực 2 lớp (2FA)
+                            </p>
+                            <p className="text-[10px] text-amber-600 font-bold">
+                              Tăng cường bảo mật qua Email
+                            </p>
                           </div>
                         </div>
-                        <Toggle 
+                        <Toggle
                           color="amber"
-                          checked={localSettings.security?.twoFactorEnabled || false} 
-                          onChange={(val) => setLocalSettings({
-                            ...localSettings,
-                            security: { ...localSettings.security, twoFactorEnabled: val }
-                          })}
+                          checked={
+                            localSettings.security?.twoFactorEnabled || false
+                          }
+                          onChange={(val) =>
+                            setLocalSettings({
+                              ...localSettings,
+                              security: {
+                                ...localSettings.security,
+                                twoFactorEnabled: val,
+                              },
+                            })
+                          }
                         />
                       </div>
 
@@ -1831,20 +2225,24 @@ function SettingsView() {
                             <Key className="size-6" />
                           </div>
                           <div>
-                            <p className="text-sm font-black text-emerald-900 leading-none mb-1">Đổi mật khẩu thủ công</p>
-                            <p className="text-[10px] text-emerald-600 font-bold">Cập nhật mật khẩu định kỳ</p>
+                            <p className="text-sm font-black text-emerald-900 leading-none mb-1">
+                              Đổi mật khẩu thủ công
+                            </p>
+                            <p className="text-[10px] text-emerald-600 font-bold">
+                              Cập nhật mật khẩu định kỳ
+                            </p>
                           </div>
                         </div>
-                        <Toggle 
+                        <Toggle
                           color="emerald"
-                          checked={showPasswordForm} 
+                          checked={showPasswordForm}
                           onChange={(val) => setShowPasswordForm(val)}
                         />
                       </div>
 
                       <AnimatePresence>
                         {showPasswordForm && (
-                          <motion.div 
+                          <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
@@ -1855,72 +2253,108 @@ function SettingsView() {
                                 <div className="p-2 bg-white rounded-xl text-emerald-600 shadow-sm">
                                   <Key className="size-5" />
                                 </div>
-                                <h4 className="font-bold text-slate-800">Cài đặt mật khẩu mới</h4>
+                                <h4 className="font-bold text-slate-800">
+                                  Cài đặt mật khẩu mới
+                                </h4>
                               </div>
-                              
+
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <InputGroup 
-                                  type="password" 
-                                  name="currentPassword" 
-                                  label="Mật khẩu hiện tại" 
-                                  placeholder="••••••••" 
-                                  icon={<Lock />} 
+                                <InputGroup
+                                  type="password"
+                                  name="currentPassword"
+                                  label="Mật khẩu hiện tại"
+                                  placeholder="••••••••"
+                                  icon={<Lock />}
                                 />
-                                <InputGroup 
-                                  type="password" 
-                                  name="newPassword" 
-                                  label="Mật khẩu mới" 
-                                  placeholder="••••••••" 
-                                  icon={<Key />} 
+                                <InputGroup
+                                  type="password"
+                                  name="newPassword"
+                                  label="Mật khẩu mới"
+                                  placeholder="••••••••"
+                                  icon={<Key />}
                                 />
                               </div>
-                              
+
                               <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
-                                 <Info className="size-4 text-amber-600 shrink-0 mt-0.5" />
-                                 <p className="text-[10px] text-amber-800 leading-relaxed font-bold">
-                                   Lưu ý: Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt. 
-                                   Bạn sẽ bị đăng xuất sau khi đổi thành công.
-                                 </p>
+                                <Info className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                                <p className="text-[10px] text-amber-800 leading-relaxed font-bold">
+                                  Lưu ý: Mật khẩu phải có ít nhất 8 ký tự, bao
+                                  gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+                                  Bạn sẽ bị đăng xuất sau khi đổi thành công.
+                                </p>
                               </div>
-                              
+
                               <Button
                                 type="button"
                                 variant="outline"
                                 loading={loading}
                                 onClick={async (e) => {
-                                  const container = (e.target as HTMLElement).closest('.space-y-6');
-                                  const currentPass = (container?.querySelector('input[name="currentPassword"]') as HTMLInputElement)?.value;
-                                  const newPass = (container?.querySelector('input[name="newPassword"]') as HTMLInputElement)?.value;
-                                  
+                                  const container = (
+                                    e.target as HTMLElement
+                                  ).closest(".space-y-6");
+                                  const currentPass = (
+                                    container?.querySelector(
+                                      'input[name="currentPassword"]',
+                                    ) as HTMLInputElement
+                                  )?.value;
+                                  const newPass = (
+                                    container?.querySelector(
+                                      'input[name="newPassword"]',
+                                    ) as HTMLInputElement
+                                  )?.value;
+
                                   if (!currentPass || !newPass) {
-                                    toast.error("Vui lòng nhập đầy đủ thông tin mật khẩu.");
+                                    toast.error(
+                                      "Vui lòng nhập đầy đủ thông tin mật khẩu.",
+                                    );
                                     return;
                                   }
-                                  
+
                                   if (newPass.length < 8) {
-                                    toast.error("Mật khẩu mới phải có ít nhất 8 ký tự.");
+                                    toast.error(
+                                      "Mật khẩu mới phải có ít nhất 8 ký tự.",
+                                    );
                                     return;
                                   }
-                                  
+
                                   setLoading(true);
                                   try {
-                                    const res = await api.put("/api/auth/change-password", {
-                                      currentPassword: currentPass,
-                                      newPassword: newPass
-                                    });
+                                    const res = await api.put(
+                                      "/api/auth/change-password",
+                                      {
+                                        currentPassword: currentPass,
+                                        newPassword: newPass,
+                                      },
+                                    );
                                     if (res.status === 200) {
-                                      toast.success("Đổi mật khẩu thành công! 🔐");
-                                      setTimeout(() => {
-                                        logout();
-                                        navigate("/login");
-                                      }, 2000);
+                                      toast.success(
+                                        "Đổi mật khẩu thành công! 🔐",
+                                      );
+                                      setShowPasswordForm(false);
+                                      // Clear inputs
+                                      (
+                                        container?.querySelector(
+                                          'input[name="currentPassword"]',
+                                        ) as HTMLInputElement
+                                      ).value = "";
+                                      (
+                                        container?.querySelector(
+                                          'input[name="newPassword"]',
+                                        ) as HTMLInputElement
+                                      ).value = "";
                                     }
                                   } catch (err: any) {
                                     const errorData = err.response?.data;
-                                    if (errorData?.errors && errorData.errors.length > 0) {
+                                    if (
+                                      errorData?.errors &&
+                                      errorData.errors.length > 0
+                                    ) {
                                       toast.error(errorData.errors[0].message);
                                     } else {
-                                      toast.error(errorData?.message || "Mật khẩu hiện tại không chính xác.");
+                                      toast.error(
+                                        errorData?.message ||
+                                          "Mật khẩu hiện tại không chính xác.",
+                                      );
                                     }
                                   } finally {
                                     setLoading(false);
@@ -1939,37 +2373,56 @@ function SettingsView() {
 
                   <div>
                     <h4 className="text-sm font-black text-indigo-500/60 uppercase tracking-widest mb-6 px-1 flex items-center gap-2">
-                       Lịch sử đăng nhập (10 phiên gần nhất)
+                      Lịch sử đăng nhập (10 phiên gần nhất)
                     </h4>
                     <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-inner">
                       <div className="divide-y divide-slate-100">
                         {localSettings.security?.loginHistory?.length > 0 ? (
-                          localSettings.security.loginHistory.map((h: any, i: number) => (
-                            <div key={i} className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                              <div className="flex items-center gap-4">
-                                <div className={`p-2 rounded-xl ${h.os === 'Windows' ? 'bg-blue-50 text-blue-500' : 'bg-slate-100 text-slate-600'}`}>
-                                   <Activity className="size-4" />
+                          localSettings.security.loginHistory.map(
+                            (h: any, i: number) => (
+                              <div
+                                key={i}
+                                className="p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div
+                                    className={`p-2 rounded-xl ${h.os === "Windows" ? "bg-blue-50 text-blue-500" : "bg-slate-100 text-slate-600"}`}
+                                  >
+                                    <Activity className="size-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-bold text-slate-700 leading-none mb-1">
+                                      {h.browser} on {h.os}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">
+                                      {h.device}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-bold text-slate-700 leading-none mb-1">{h.browser} on {h.os}</p>
-                                  <p className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{h.device}</p>
+                                <div className="text-right">
+                                  <p className="text-[11px] font-black text-slate-600">
+                                    {h.ip}
+                                  </p>
+                                  <p className="text-[9px] text-slate-400 font-bold">
+                                    {new Date(h.lastLogin).toLocaleString()}
+                                  </p>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                <p className="text-[11px] font-black text-slate-600">{h.ip}</p>
-                                <p className="text-[9px] text-slate-400 font-bold">{new Date(h.lastLogin).toLocaleString()}</p>
-                              </div>
-                            </div>
-                          ))
+                            ),
+                          )
                         ) : (
-                          <div className="p-10 text-center text-slate-400 font-medium italic">Chưa có lịch sử đăng nhập.</div>
+                          <div className="p-10 text-center text-slate-400 font-medium italic">
+                            Chưa có lịch sử đăng nhập.
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
-                  
-                  <Button 
-                    onClick={() => handleSave({ security: localSettings.security })}
+
+                  <Button
+                    onClick={() =>
+                      handleSave({ security: localSettings.security })
+                    }
                     loading={loading}
                     className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                   >
@@ -1987,65 +2440,120 @@ function SettingsView() {
 
 // ─── Interaction Helpers ──────────────────────────────────────────────────────
 
-function TabNav({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: any, label: string }) {
+function TabNav({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: any;
+  label: string;
+}) {
   return (
     <button
       onClick={onClick}
       className={`relative w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-[13px] font-black tracking-tight transition-all active:scale-95 ${
-        active ? "text-white" : "text-slate-400 hover:text-slate-700 hover:bg-slate-50"
+        active
+          ? "text-white"
+          : "text-slate-400 hover:text-slate-700 hover:bg-slate-50"
       }`}
     >
       {active && (
-        <motion.div layoutId="activeUserTab" className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl shadow-lg shadow-emerald-500/20" />
+        <motion.div
+          layoutId="activeUserTab"
+          className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl shadow-lg shadow-emerald-500/20"
+        />
       )}
-      <span className="relative z-10 [&>svg]:size-5">{active ? React.cloneElement(icon, { className: "text-white" }) : icon}</span>
+      <span className="relative z-10 [&>svg]:size-5">
+        {active ? React.cloneElement(icon, { className: "text-white" }) : icon}
+      </span>
       <span className="relative z-10">{label}</span>
-      {active && <div className="absolute right-4 w-1.5 h-1.5 bg-white rounded-full relative z-10" />}
+      {active && (
+        <div className="absolute right-4 w-1.5 h-1.5 bg-white rounded-full relative z-10" />
+      )}
     </button>
   );
 }
 
-function SectionHeader({ title, description }: { title: string, description: string }) {
+function SectionHeader({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
     <div>
-      <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">{title}</h3>
-      <p className="text-sm font-bold text-emerald-600/60 italic">{description}</p>
+      <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-none mb-2">
+        {title}
+      </h3>
+      <p className="text-sm font-bold text-emerald-600/60 italic">
+        {description}
+      </p>
     </div>
   );
 }
 
-function InputGroup({ name, label, icon, defaultValue, value, onChange, type = "text", disabled = false }: any) {
+function InputGroup({
+  name,
+  label,
+  icon,
+  defaultValue,
+  value,
+  onChange,
+  type = "text",
+  disabled = false,
+}: any) {
   return (
     <div className="space-y-2">
-      <label className="block text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">{label}</label>
+      <label className="block text-[11px] font-black text-emerald-600/70 uppercase tracking-widest ml-1">
+        {label}
+      </label>
       <div className="relative group">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors pointer-events-none [&>svg]:size-5">
-           {icon}
+          {icon}
         </div>
-        <input 
+        <input
           name={name}
-          type={type} 
+          type={type}
           disabled={disabled}
           defaultValue={defaultValue}
           value={value}
           onChange={onChange}
-          className="w-full h-12 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner disabled:bg-slate-100 disabled:text-slate-400" 
+          className="w-full h-12 pl-12 pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-slate-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner disabled:bg-slate-100 disabled:text-slate-400"
         />
       </div>
     </div>
   );
 }
 
-function Toggle({ checked, onChange, color = "emerald" }: { checked: boolean, onChange: (val: boolean) => void, color?: string }) {
+function Toggle({
+  checked,
+  onChange,
+  color = "emerald",
+}: {
+  checked: boolean;
+  onChange: (val: boolean) => void;
+  color?: string;
+}) {
   const colors: any = {
     emerald: "peer-checked:bg-emerald-600",
     amber: "peer-checked:bg-amber-600",
-    blue: "peer-checked:bg-blue-600"
+    blue: "peer-checked:bg-blue-600",
   };
   return (
     <label className="relative inline-flex items-center cursor-pointer scale-110">
-      <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <div className={`w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-7 after:transition-all ${colors[color]} shadow-inner`}></div>
+      <input
+        type="checkbox"
+        className="sr-only peer"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <div
+        className={`w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-7 after:transition-all ${colors[color]} shadow-inner`}
+      ></div>
     </label>
   );
 }
@@ -2119,7 +2627,10 @@ function RecentlyViewedView() {
         {history.map((item) => (
           <motion.div
             key={item.id}
-            variants={{ hidden: { opacity: 0, x: -20 }, show: { opacity: 1, x: 0 } }}
+            variants={{
+              hidden: { opacity: 0, x: -20 },
+              show: { opacity: 1, x: 0 },
+            }}
             whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
             className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-4"
           >
@@ -2130,7 +2641,10 @@ function RecentlyViewedView() {
                 onClick={() => navigate(`/room/${item.id}`)}
               >
                 <img
-                  src={item.image || "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400"}
+                  src={
+                    item.image ||
+                    "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400"
+                  }
                   alt={item.name}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   onError={(e) => {
@@ -2265,12 +2779,12 @@ function SavedBlogsView({
           whileHover={{ y: -5 }}
           className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all group"
         >
-          <div 
+          <div
             className="aspect-video relative overflow-hidden cursor-pointer"
             onClick={() => navigate(`/blog/${blog._id}`)}
           >
-            <img 
-              src={blog.image || "/images/blog-placeholder.jpg"} 
+            <img
+              src={blog.image || "/images/blog-placeholder.jpg"}
               alt={blog.title}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             />
@@ -2298,7 +2812,7 @@ function SavedBlogsView({
                 {new Date(blog.createdAt).toLocaleDateString("vi-VN")}
               </span>
             </div>
-            <h4 
+            <h4
               className="font-black text-gray-900 leading-tight mb-2 line-clamp-2 hover:text-green-600 cursor-pointer transition-colors"
               onClick={() => navigate(`/blog/${blog._id}`)}
             >
@@ -2310,14 +2824,22 @@ function SavedBlogsView({
             <div className="flex items-center justify-between pt-4 border-t border-gray-50">
               <div className="flex items-center gap-2">
                 <div className="size-6 rounded-full bg-gray-100 overflow-hidden border border-white shadow-sm">
-                  <img src={blog.authorAvatar || getAvatarUrl(blog.author)} alt={blog.author} className="w-full h-full object-cover" />
+                  <img
+                    src={blog.authorAvatar || getAvatarUrl(blog.author)}
+                    alt={blog.author}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <span className="text-xs font-bold text-gray-700">{blog.author}</span>
+                <span className="text-xs font-bold text-gray-700">
+                  {blog.author}
+                </span>
               </div>
               <div className="flex items-center gap-3 text-gray-400">
                 <div className="flex items-center gap-1">
                   <Eye className="size-3.5" />
-                  <span className="text-[11px] font-bold">{blog.views || 0}</span>
+                  <span className="text-[11px] font-bold">
+                    {blog.views || 0}
+                  </span>
                 </div>
               </div>
             </div>
@@ -2346,7 +2868,8 @@ function MyBlogsView({
     setConfirmModal({
       open: true,
       title: "Xóa bài viết",
-      description: "Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.",
+      description:
+        "Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.",
       onConfirm: async () => {
         try {
           const res = await api.delete(`/api/blogs/${blogId}`);
@@ -2370,13 +2893,29 @@ function MyBlogsView({
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "published":
-        return <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5"><CheckCircle className="size-3" /> Đã đăng</span>;
+        return (
+          <span className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5">
+            <CheckCircle className="size-3" /> Đã đăng
+          </span>
+        );
       case "pending":
-        return <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5"><Clock className="size-3" /> Chờ duyệt</span>;
+        return (
+          <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5">
+            <Clock className="size-3" /> Chờ duyệt
+          </span>
+        );
       case "rejected":
-        return <span className="px-2.5 py-1 bg-red-50 text-red-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5"><XCircle className="size-3" /> Bị từ chối</span>;
+        return (
+          <span className="px-2.5 py-1 bg-red-50 text-red-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5">
+            <XCircle className="size-3" /> Bị từ chối
+          </span>
+        );
       case "draft":
-        return <span className="px-2.5 py-1 bg-gray-50 text-gray-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5"><Settings className="size-3" /> Bản nháp</span>;
+        return (
+          <span className="px-2.5 py-1 bg-gray-50 text-gray-700 text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-1.5">
+            <Settings className="size-3" /> Bản nháp
+          </span>
+        );
       default:
         return null;
     }
@@ -2426,9 +2965,13 @@ function MyBlogsView({
             {blog.status === "rejected" && (
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />
             )}
-            
+
             <div className="size-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50">
-              <img src={blog.image || "/images/blog-placeholder.jpg"} alt={blog.title} className="w-full h-full object-cover" />
+              <img
+                src={blog.image || "/images/blog-placeholder.jpg"}
+                alt={blog.title}
+                className="w-full h-full object-cover"
+              />
             </div>
 
             <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
@@ -2439,12 +2982,14 @@ function MyBlogsView({
                     {blog.category} • {formatDateVietnamese(blog.createdAt)}
                   </span>
                 </div>
-                <h4 className="font-black text-gray-900 truncate pr-20">{blog.title}</h4>
+                <h4 className="font-black text-gray-900 truncate pr-20">
+                  {blog.title}
+                </h4>
                 {blog.status === "rejected" && blog.rejectionReason && (
-                    <p className="text-[11px] text-red-500 font-bold mt-1.5 flex items-start gap-1">
-                        <Info className="size-3 flex-shrink-0 mt-0.5" />
-                        Lý do từ chối: {blog.rejectionReason}
-                    </p>
+                  <p className="text-[11px] text-red-500 font-bold mt-1.5 flex items-start gap-1">
+                    <Info className="size-3 flex-shrink-0 mt-0.5" />
+                    Lý do từ chối: {blog.rejectionReason}
+                  </p>
                 )}
               </div>
 
@@ -2466,7 +3011,7 @@ function MyBlogsView({
                   <Trash2 className="size-3.5 mr-1.5" /> Xóa
                 </Button>
                 {blog.status === "published" && (
-                   <Button
+                  <Button
                     size="sm"
                     variant="outline"
                     className="h-9 px-4 rounded-xl font-bold text-[11px] border-gray-200 text-gray-600 hover:bg-gray-50"
@@ -2499,10 +3044,10 @@ function MyBlogsView({
               await api.post("/api/blogs", data);
               toast.success("Gửi bài viết thành công!");
             }
-            
+
             setEditorOpen(false);
             setEditingBlog(null);
-            
+
             // Refresh blog list
             const res = await api.get("/api/blogs/my-blogs");
             setMyBlogs(res.data);

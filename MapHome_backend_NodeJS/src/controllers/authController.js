@@ -6,12 +6,21 @@ const Landlord = require("../models/Landlord");
 const { sendEmail, getNewPasswordTemplate } = require("../utils/mailHelper");
 
 const generateRandomPassword = (length = 8) => {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const digits = "0123456789";
+  const allChars = letters + digits;
   let password = "";
-  for (let i = 0; i < length; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  
+  // Đảm bảo có ít nhất 1 chữ cái và 1 chữ số
+  password += letters.charAt(Math.floor(Math.random() * letters.length));
+  password += digits.charAt(Math.floor(Math.random() * digits.length));
+  
+  for (let i = 2; i < length; i++) {
+    password += allChars.charAt(Math.floor(Math.random() * allChars.length));
   }
-  return password;
+  
+  // Trộn ngẫu nhiên các ký tự
+  return password.split('').sort(() => 0.5 - Math.random()).join('');
 };
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);

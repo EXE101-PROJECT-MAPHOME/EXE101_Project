@@ -80,7 +80,7 @@ export function LoginPage() {
 
     // Validate fields
     const usernameError = validateUsernameOrEmail(loginUsername);
-    const passwordError = validatePassword(loginPassword);
+    const passwordError = loginPassword ? { valid: true } : { valid: false, error: "Mật khẩu không được để trống" };
 
     setLoginErrors({
       username: usernameError.error || "",
@@ -425,11 +425,12 @@ export function LoginPage() {
                             }
                           }}
                           onBlur={() => {
-                            const result = validatePassword(loginPassword);
-                            setLoginErrors({
-                              ...loginErrors,
-                              password: result.error || "",
-                            });
+                            if (!loginPassword) {
+                              setLoginErrors({
+                                ...loginErrors,
+                                password: "Mật khẩu không được để trống",
+                              });
+                            }
                           }}
                           placeholder="••••••••"
                           className={`pl-16 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 rounded-2xl transition-all shadow-sm border ${loginErrors.password ? "border-red-500" : "border-slate-200"}`}
