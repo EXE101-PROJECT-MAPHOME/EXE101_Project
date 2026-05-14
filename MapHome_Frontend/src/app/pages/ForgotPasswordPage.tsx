@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/app/utils/api";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
-import { Input } from "@/app/components/ui/input";
+
 import {
   Home,
   Mail,
@@ -14,142 +14,37 @@ import {
   CheckCircle,
   AlertCircle,
   ArrowLeft,
-  User,
 } from "lucide-react";
 import {
   validateEmail,
   validatePassword,
   validateToken,
   validatePasswordMatch,
-  validateCurrentPassword,
 } from "@/app/utils/validationRules";
 
-type Step = "choose" | "manual" | "email" | "reset" | "success";
-
-interface CurrentUser {
-  email?: string;
-  username?: string;
-}
+type Step = "email" | "success";
 
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
 
   // State management
-  const [step, setStep] = useState<Step>("choose");
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [resetToken, setResetToken] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
-  const [fetchingUser, setFetchingUser] = useState(false);
 
   // Error state
   const [error, setError] = useState("");
   const [errors, setErrors] = useState({
     email: "",
-    currentPassword: "",
-    token: "",
-    password: "",
-    confirmPassword: "",
   });
 
   // Reset form states
   const resetFormStates = () => {
     setEmail("");
-    setCurrentPassword("");
-    setResetToken("");
-    setNewPassword("");
-    setConfirmPassword("");
     setError("");
     setErrors({
       email: "",
-      currentPassword: "",
-      token: "",
-      password: "",
-      confirmPassword: "",
     });
-  };
-
-  // Fetch current user info
-  const fetchCurrentUser = async () => {
-    setFetchingUser(true);
-    try {
-      const response = await api.get("/api/auth/me");
-      setCurrentUser({
-        email: response.data.email,
-        username: response.data.username,
-      });
-    } catch (err: any) {
-      console.error("Error fetching user:", err);
-      // If fetch fails, still allow user to proceed
-      setCurrentUser(null);
-    } finally {
-      setFetchingUser(false);
-    }
-  };
-
-  // Manual password change
-  const handleManualPasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setErrors({
-      email: "",
-      currentPassword: "",
-      token: "",
-      password: "",
-      confirmPassword: "",
-    });
-
-    // Validate current password
-    const currentPasswordValidation = validateCurrentPassword(currentPassword);
-    if (!currentPasswordValidation.valid) {
-      setErrors((prev) => ({
-        ...prev,
-        currentPassword: currentPasswordValidation.error,
-      }));
-      return;
-    }
-
-    // Validate new password
-    const passwordValidation = validatePassword(newPassword);
-    if (!passwordValidation.valid) {
-      setErrors((prev) => ({ ...prev, password: passwordValidation.error }));
-      return;
-    }
-
-    // Validate password match
-    const matchValidation = validatePasswordMatch(newPassword, confirmPassword);
-    if (!matchValidation.valid) {
-      setErrors((prev) => ({
-        ...prev,
-        confirmPassword: matchValidation.error,
-      }));
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await api.put("/api/auth/change-password", {
-        currentPassword,
-        newPassword,
-      });
-      setStep("success");
-      toast.success("Đổi mật khẩu thành công!");
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || "Có lỗi xảy ra";
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Step 1: Request password reset token
@@ -158,10 +53,6 @@ export function ForgotPasswordPage() {
     setError("");
     setErrors({
       email: "",
-      currentPassword: "",
-      token: "",
-      password: "",
-      confirmPassword: "",
     });
 
     // Validate email
@@ -173,80 +64,9 @@ export function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      const response = await api.post("/api/auth/forgot-password", { email });
-      setStep("reset");
-      // Pre-fill token if returned (for development/testing)
-      if (response.data.token) {
-        setResetToken(response.data.token);
-      }
-      toast.success("Kiểm tra email của bạn để nhận mã đặt lại mật khẩu");
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || "Có lỗi xảy ra";
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 2: Reset password with token
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setErrors({
-      email: "",
-      currentPassword: "",
-      token: "",
-      password: "",
-      confirmPassword: "",
-    });
-
-    // Validate token
-    const tokenValidation = validateToken(resetToken);
-    if (!tokenValidation.valid) {
-      setErrors((prev) => ({
-        ...prev,
-        token: tokenValidation.error,
-      }));
-      return;
-    }
-
-    // Validate password
-    const passwordValidation = validatePassword(newPassword);
-    if (!passwordValidation.valid) {
-      setErrors((prev) => ({ ...prev, password: passwordValidation.error }));
-      return;
-    }
-
-    // Validate password match
-    const matchValidation = validatePasswordMatch(newPassword, confirmPassword);
-    if (!matchValidation.valid) {
-      setErrors((prev) => ({
-        ...prev,
-        confirmPassword: matchValidation.error,
-      }));
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // First verify the reset code
-      await api.post("/api/auth/verify-reset-code", {
-        email,
-        token: resetToken,
-      });
-
-      // If verification succeeds, reset the password
-      await api.post("/api/auth/reset-password", {
-        email,
-        token: resetToken,
-        newPassword,
-      });
+      await api.post("/api/auth/forgot-password", { email });
       setStep("success");
-      toast.success("Đặt lại mật khẩu thành công!");
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+      toast.success("Mật khẩu mới đã được gửi đến email của bạn");
     } catch (err: any) {
       const errorMsg = err?.response?.data?.message || "Có lỗi xảy ra";
       setError(errorMsg);
@@ -354,26 +174,12 @@ export function ForgotPasswordPage() {
               </motion.div>
 
               <h2 className="text-3xl lg:text-4xl font-[900] bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent tracking-tight leading-tight">
-                {step === "choose"
-                  ? "Quên mật khẩu?"
-                  : step === "manual"
-                    ? "Đổi mật khẩu"
-                    : step === "email"
-                      ? "Xác thực qua Email"
-                      : step === "reset"
-                        ? "Đặt lại mật khẩu"
-                        : "Thành công!"}
+                {step === "email" ? "Khôi phục mật khẩu" : "Thành công!"}
               </h2>
-              <p className="text-slate-400 font-semibold text-lg leading-relaxed">
-                {step === "choose"
-                  ? "Chọn phương pháp để khôi phục tài khoản của bạn"
-                  : step === "manual"
-                    ? "Nhập mật khẩu hiện tại và mật khẩu mới"
-                    : step === "email"
-                      ? "Nhập email của bạn để nhận mã đặt lại"
-                      : step === "reset"
-                        ? "Nhập mã và mật khẩu mới của bạn"
-                        : "Mật khẩu của bạn đã được đặt lại thành công"}
+              <p className="text-slate-400 font-semibold text-base lg:text-lg leading-relaxed">
+                {step === "email"
+                  ? "Nhập email của bạn để nhận mật khẩu mới"
+                  : "Mật khẩu mới đã được gửi vào email của bạn"}
               </p>
             </header>
 
@@ -389,256 +195,6 @@ export function ForgotPasswordPage() {
               </motion.div>
             )}
 
-            {/* Step 0: Choose Method */}
-            {step === "choose" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-4"
-              >
-                {/* Manual Password Change Card */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={async () => {
-                    resetFormStates();
-                    setStep("manual");
-                    await fetchCurrentUser();
-                  }}
-                  type="button"
-                  className="w-full p-6 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 bg-white hover:bg-emerald-50/50 transition-all group"
-                >
-                  <div className="flex items-start gap-4 text-left">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-100 group-hover:bg-emerald-200 flex items-center justify-center flex-shrink-0 transition-colors">
-                      <Lock className="size-6 text-emerald-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-slate-900">
-                        Đổi mật khẩu thủ công
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-1">
-                        Thay đổi mật khẩu bằng cách nhập mật khẩu hiện tại
-                      </p>
-                    </div>
-                    <div className="w-5 h-5 rounded-full border-2 border-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </motion.button>
-
-                {/* Email Verification Card */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    resetFormStates();
-                    setStep("email");
-                  }}
-                  type="button"
-                  className="w-full p-6 rounded-2xl border-2 border-slate-200 hover:border-blue-500 bg-white hover:bg-blue-50/50 transition-all group"
-                >
-                  <div className="flex items-start gap-4 text-left">
-                    <div className="w-12 h-12 rounded-xl bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center flex-shrink-0 transition-colors">
-                      <Mail className="size-6 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-slate-900">
-                        Xác thực qua Email
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-1">
-                        Nhận mã xác nhận qua email để đặt lại mật khẩu
-                      </p>
-                    </div>
-                    <div className="w-5 h-5 rounded-full border-2 border-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </motion.button>
-              </motion.div>
-            )}
-
-            {/* Step 0.5: Manual Password Change */}
-            {step === "manual" && (
-              <motion.form
-                onSubmit={handleManualPasswordChange}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-6"
-              >
-                {/* Current Account Info */}
-                {fetchingUser ? (
-                  <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4 animate-pulse">
-                    <div className="w-5 h-5 bg-slate-200 rounded-full" />
-                    <div className="flex-1 space-y-1">
-                      <div className="h-3 bg-slate-200 rounded w-32" />
-                    </div>
-                  </div>
-                ) : currentUser?.email || currentUser?.username ? (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                      <User className="size-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-emerald-600 font-semibold uppercase">
-                        Tài khoản hiện tại
-                      </p>
-                      <p className="text-sm font-bold text-emerald-900">
-                        {currentUser.email || currentUser.username}
-                      </p>
-                    </div>
-                  </motion.div>
-                ) : null}
-
-                {/* Current Password Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-700">
-                    Mật khẩu hiện tại
-                  </label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                    <input
-                      type={showCurrentPassword ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => {
-                        setCurrentPassword(e.target.value);
-                        setErrors((prev) => ({
-                          ...prev,
-                          currentPassword: "",
-                        }));
-                      }}
-                      placeholder="••••••••"
-                      className={`w-full pl-12 pr-12 py-3 rounded-xl border font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 ${
-                        errors.currentPassword
-                          ? "border-red-300 bg-red-50/50"
-                          : "border-slate-200 bg-white/50 hover:bg-white"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowCurrentPassword(!showCurrentPassword)
-                      }
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showCurrentPassword ? (
-                        <EyeOff className="size-5" />
-                      ) : (
-                        <Eye className="size-5" />
-                      )}
-                    </button>
-                  </div>
-                  {errors.currentPassword && (
-                    <p className="text-xs text-red-600 font-medium">
-                      {errors.currentPassword}
-                    </p>
-                  )}
-                </div>
-
-                {/* New Password Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-700">
-                    Mật khẩu mới
-                  </label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => {
-                        setNewPassword(e.target.value);
-                        setErrors((prev) => ({ ...prev, password: "" }));
-                      }}
-                      placeholder="••••••••"
-                      className={`w-full pl-12 pr-12 py-3 rounded-xl border font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 ${
-                        errors.password
-                          ? "border-red-300 bg-red-50/50"
-                          : "border-slate-200 bg-white/50 hover:bg-white"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-5" />
-                      ) : (
-                        <Eye className="size-5" />
-                      )}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-xs text-red-600 font-medium">
-                      {errors.password}
-                    </p>
-                  )}
-                </div>
-
-                {/* Confirm Password Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-700">
-                    Xác nhận mật khẩu mới
-                  </label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setErrors((prev) => ({
-                          ...prev,
-                          confirmPassword: "",
-                        }));
-                      }}
-                      placeholder="••••••••"
-                      className={`w-full pl-12 pr-12 py-3 rounded-xl border font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 ${
-                        errors.confirmPassword
-                          ? "border-red-300 bg-red-50/50"
-                          : "border-slate-200 bg-white/50 hover:bg-white"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="size-5" />
-                      ) : (
-                        <Eye className="size-5" />
-                      )}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-xs text-red-600 font-medium">
-                      {errors.confirmPassword}
-                    </p>
-                  )}
-                </div>
-
-                {/* Button Group */}
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    onClick={() => setStep("choose")}
-                    className="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold rounded-xl transition-all"
-                  >
-                    Quay lại
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-                  >
-                    {loading ? "Đang đổi..." : "Đổi mật khẩu"}
-                  </Button>
-                </div>
-              </motion.form>
-            )}
-
             {/* Step 1: Email Request */}
             {step === "email" && (
               <motion.form
@@ -648,12 +204,18 @@ export function ForgotPasswordPage() {
                 className="space-y-6"
               >
                 {/* Email Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-700">
+                <motion.div
+                  className="space-y-2.5"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <label className="text-[14px] font-black text-emerald-600/80 uppercase tracking-wide ml-1">
                     Email
                   </label>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 size-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-500 transition-all duration-300">
+                      <Mail className="size-5" />
+                    </div>
                     <input
                       type="email"
                       value={email}
@@ -661,206 +223,205 @@ export function ForgotPasswordPage() {
                         setEmail(e.target.value);
                         setErrors((prev) => ({ ...prev, email: "" }));
                       }}
+                      onBlur={() => {
+                        const result = validateEmail(email);
+                        setErrors((prev) => ({
+                          ...prev,
+                          email: result.error || "",
+                        }));
+                      }}
                       placeholder="bạn@example.com"
-                      className={`w-full pl-12 pr-4 py-3 rounded-xl border font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 ${
-                        errors.email
-                          ? "border-red-300 bg-red-50/50"
-                          : "border-slate-200 bg-white/50 hover:bg-white"
-                      }`}
+                      className={`w-full pl-16 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${errors.email ? "border-red-500" : "border-slate-200"}`}
                     />
                   </div>
                   {errors.email && (
-                    <p className="text-xs text-red-600 font-medium">
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-xs text-red-500 font-medium ml-1 flex items-center gap-1"
+                    >
+                      <AlertCircle className="size-3" />
                       {errors.email}
-                    </p>
+                    </motion.p>
                   )}
-                </div>
+                </motion.div>
+
+                {/* Info Box */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-gradient-to-r from-emerald-50 to-blue-50 border border-emerald-200/50 rounded-2xl p-4 text-sm text-slate-600 space-y-2"
+                >
+                  <p className="font-semibold text-slate-700">
+                    Chúng tôi sẽ gửi mật khẩu mới vào email của bạn
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Hãy chắc chắn rằng bạn nhập đúng địa chỉ email đã đăng ký.
+                  </p>
+                </motion.div>
 
                 {/* Submit Button */}
-                <div className="flex gap-3">
+                <motion.div
+                  variants={{
+                    hidden: { opacity: 0 },
+                    show: { opacity: 1, transition: { delay: 0.3 } },
+                  }}
+                  initial="hidden"
+                  animate="show"
+                  className="flex gap-3 pt-2"
+                >
                   <Button
                     type="button"
-                    onClick={() => setStep("choose")}
-                    className="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold rounded-xl transition-all"
+                    onClick={() => navigate("/login")}
+                    className="flex-1 h-14 bg-slate-200 hover:bg-slate-300 text-slate-900 font-[800] rounded-[1.25rem] transition-all active:scale-[0.98]"
                   >
                     Quay lại
                   </Button>
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                    className="flex-1 h-14 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-[800] shadow-xl shadow-emerald-500/20 active:scale-[0.98] transition-all rounded-[1.25rem] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {loading ? "Đang gửi..." : "Gửi mã đặt lại"}
+                    {loading ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity }}
+                          className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                        />
+                        Đang gửi...
+                      </>
+                    ) : (
+                      <>
+                        Gửi email
+                        <motion.span
+                          animate={{ x: [0, 4, 0] }}
+                          transition={{ repeat: Infinity, duration: 1.5 }}
+                        >
+                          →
+                        </motion.span>
+                      </>
+                    )}
                   </Button>
-                </div>
-              </motion.form>
-            )}
-
-            {/* Step 2: Reset Password */}
-            {step === "reset" && (
-              <motion.form
-                onSubmit={handleResetPassword}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-6"
-              >
-                {/* Token Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-700">
-                    Mã đặt lại mật khẩu
-                  </label>
-                  <input
-                    type="text"
-                    value={resetToken}
-                    onChange={(e) => {
-                      setResetToken(e.target.value);
-                      setErrors((prev) => ({ ...prev, token: "" }));
-                    }}
-                    placeholder="Nhập mã từ email của bạn"
-                    className={`w-full px-4 py-3 rounded-xl border font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 ${
-                      errors.token
-                        ? "border-red-300 bg-red-50/50"
-                        : "border-slate-200 bg-white/50 hover:bg-white"
-                    }`}
-                  />
-                  {errors.token && (
-                    <p className="text-xs text-red-600 font-medium">
-                      {errors.token}
-                    </p>
-                  )}
-                </div>
-
-                {/* New Password Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-700">
-                    Mật khẩu mới
-                  </label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => {
-                        setNewPassword(e.target.value);
-                        setErrors((prev) => ({ ...prev, password: "" }));
-                      }}
-                      placeholder="••••••••"
-                      className={`w-full pl-12 pr-12 py-3 rounded-xl border font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 ${
-                        errors.password
-                          ? "border-red-300 bg-red-50/50"
-                          : "border-slate-200 bg-white/50 hover:bg-white"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="size-5" />
-                      ) : (
-                        <Eye className="size-5" />
-                      )}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-xs text-red-600 font-medium">
-                      {errors.password}
-                    </p>
-                  )}
-                </div>
-
-                {/* Confirm Password Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-slate-700">
-                    Xác nhận mật khẩu
-                  </label>
-                  <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setErrors((prev) => ({ ...prev, confirmPassword: "" }));
-                      }}
-                      placeholder="••••••••"
-                      className={`w-full pl-12 pr-12 py-3 rounded-xl border font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 ${
-                        errors.confirmPassword
-                          ? "border-red-300 bg-red-50/50"
-                          : "border-slate-200 bg-white/50 hover:bg-white"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="size-5" />
-                      ) : (
-                        <Eye className="size-5" />
-                      )}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-xs text-red-600 font-medium">
-                      {errors.confirmPassword}
-                    </p>
-                  )}
-                </div>
-
-                {/* Submit Button */}
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    onClick={() => setStep("email")}
-                    className="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold rounded-xl transition-all"
-                  >
-                    Quay lại
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-                  >
-                    {loading ? "Đang đặt lại..." : "Đặt lại mật khẩu"}
-                  </Button>
-                </div>
+                </motion.div>
               </motion.form>
             )}
 
             {/* Step 3: Success */}
             {step === "success" && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-8 space-y-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="flex flex-col items-center justify-center py-10 space-y-7"
               >
+                {/* Success Icon with Animation */}
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{
+                    delay: 0.2,
+                    type: "spring",
+                    stiffness: 200,
+                    damping: 15,
+                  }}
+                  className="relative"
                 >
-                  <CheckCircle className="size-8 text-green-600" />
+                  <motion.div
+                    animate={{
+                      boxShadow: [
+                        "0 0 0 0 rgba(16, 185, 129, 0.7)",
+                        "0 0 0 20px rgba(16, 185, 129, 0)",
+                      ],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeOut",
+                    }}
+                    className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-xl shadow-emerald-500/30"
+                  >
+                    <CheckCircle className="size-10 text-white" />
+                  </motion.div>
                 </motion.div>
-                <div className="text-center space-y-2">
-                  <p className="text-slate-700 font-semibold">
-                    Mật khẩu của bạn đã được đặt lại thành công!
-                  </p>
-                  <p className="text-slate-500 text-sm">
-                    Bạn sẽ được chuyển về trang đăng nhập trong giây lát...
-                  </p>
-                </div>
-                <Button
-                  onClick={() => navigate("/login")}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20"
+
+                {/* Success Message */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-center space-y-4 w-full"
                 >
-                  Đăng nhập ngay
-                </Button>
+                  <h3 className="text-2xl font-[900] bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                    Thành công!
+                  </h3>
+                  <div className="space-y-3">
+                    <p className="text-slate-700 font-semibold text-base">
+                      Mật khẩu mới đã được gửi vào email
+                    </p>
+                    <div className="inline-block px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-200">
+                      <p className="text-emerald-700 font-bold text-sm break-all">
+                        {email}
+                      </p>
+                    </div>
+                    <p className="text-slate-500 text-sm leading-relaxed px-4">
+                      Mật khẩu tạm thời sẽ được gửi ngay tức thì. Nếu không
+                      thấy, vui lòng kiểm tra{" "}
+                      <span className="font-semibold text-slate-600">
+                        hộp thư rác (Spam)
+                      </span>
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Email Tips */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  className="w-full bg-gradient-to-br from-blue-50 to-emerald-50 border border-blue-200/50 rounded-2xl p-4 space-y-3"
+                >
+                  <h4 className="font-bold text-slate-700 text-sm flex items-center gap-2">
+                    <Mail className="size-4 text-blue-600" />
+                    Hướng dẫn
+                  </h4>
+                  <ul className="text-xs text-slate-600 space-y-2">
+                    <li className="flex gap-2">
+                      <span className="text-emerald-600 font-bold">1.</span>
+                      <span>Mở email để xem mật khẩu tạm thời</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-600 font-bold">2.</span>
+                      <span>Đăng nhập bằng mật khẩu tạm thời</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-emerald-600 font-bold">3.</span>
+                      <span>Đổi thành mật khẩu mới của bạn</span>
+                    </li>
+                  </ul>
+                </motion.div>
+
+                {/* Action Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  className="w-full pt-2"
+                >
+                  <Button
+                    onClick={() => navigate("/login")}
+                    className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-[800] text-base shadow-xl shadow-emerald-500/20 active:scale-[0.98] transition-all rounded-[1.25rem] flex items-center justify-center gap-2"
+                  >
+                    Quay về Đăng nhập
+                    <motion.span
+                      animate={{ x: [0, 4, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      →
+                    </motion.span>
+                  </Button>
+                </motion.div>
               </motion.div>
             )}
 

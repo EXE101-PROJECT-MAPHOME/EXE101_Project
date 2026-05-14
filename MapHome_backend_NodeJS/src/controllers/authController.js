@@ -3,6 +3,16 @@ const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
 const Landlord = require("../models/Landlord");
+const { sendEmail, getNewPasswordTemplate } = require("../utils/mailHelper");
+
+const generateRandomPassword = (length = 8) => {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+};
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -219,17 +229,37 @@ const forgotPassword = async (req, res) => {
         .status(404)
         .json({ message: "User with this email not found" });
 
-    // Generate basic numeric token for demo purposes (as per frontend expectations usually)
-    const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    // 1. Generate a new random password
+    const newPlainPassword = generateRandomPassword(8);
+
+    // 2. Hash and save the new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPlainPassword, salt);
+    
+    // Clear any existing reset tokens for safety
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    
     await user.save();
 
-    // In a real app, send email here. For now returning token in response for testing.
-    res.status(200).json({
-      message: "Password reset token sent to email",
-      token: resetToken, // Returning token for convenience during development
-    });
+    // 3. Send email with the new password
+    const emailHtml = getNewPasswordTemplate(user.username || "Người dùng", newPlainPassword);
+    
+    try {
+      await sendEmail(email, "Mật khẩu mới của bạn từ MapHome", emailHtml);
+      
+      res.status(200).json({
+        message: "Mật khẩu mới đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư (bao gồm cả thư rác).",
+      });
+    } catch (mailError) {
+      console.error("Failed to send email:", mailError);
+      // In development, you might want to return the password in the response if mail fails
+      // but for production, this should be logged and handled.
+      res.status(500).json({ 
+        message: "Không thể gửi email. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.",
+        // devOnlyPassword: newPlainPassword 
+      });
+    }
   } catch (error) {
     console.error("[Auth Error]:", error.message);
     res.status(500).json({ message: error.message });
