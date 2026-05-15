@@ -5,6 +5,8 @@ const {
   authMiddleware,
   requireAnyRole,
 } = require("../middleware/authMiddleware");
+const { blogRules, rejectBlogRules } = require("../validators/blogValidator");
+const validate = require("../middleware/validate");
 
 // Helper middleware to require auth for optional routes
 const optionalAuthMiddleware = (req, res, next) => {
@@ -136,6 +138,8 @@ router.post(
   "/",
   authMiddleware,
   requireAnyRole(["admin", "landlord", "user"]),
+  blogRules,
+  validate,
   blogController.createBlog,
 );
 
@@ -160,6 +164,8 @@ router.put(
   "/:id",
   authMiddleware,
   requireAnyRole(["admin", "landlord", "user"]),
+  blogRules,
+  validate,
   blogController.updateBlog,
 );
 
@@ -241,6 +247,8 @@ router.put(
   "/:id/reject",
   authMiddleware,
   requireAnyRole(["admin"]),
+  rejectBlogRules,
+  validate,
   blogController.rejectBlog,
 );
 

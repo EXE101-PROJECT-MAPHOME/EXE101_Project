@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const mapController = require("../controllers/mapController");
+const { geocodeRules, autocompleteRules, placeDetailRules } = require("../validators/mapValidator");
+const validate = require("../middleware/validate");
 
 /**
  * @swagger
@@ -32,7 +34,7 @@ const mapController = require("../controllers/mapController");
  *       404:
  *         description: Address not found
  */
-router.get("/reverse-geocode", mapController.reverseGeocode);
+router.get("/reverse-geocode", geocodeRules, validate, mapController.reverseGeocode);
 
 /**
  * @swagger
@@ -55,7 +57,7 @@ router.get("/reverse-geocode", mapController.reverseGeocode);
  *       400:
  *         description: Search input is required
  */
-router.get("/autocomplete", mapController.autocomplete);
+router.get("/autocomplete", autocompleteRules, validate, mapController.autocomplete);
 
 /**
  * @swagger
@@ -80,6 +82,6 @@ router.get("/autocomplete", mapController.autocomplete);
  *       404:
  *         description: Place not found
  */
-router.get("/place-detail", mapController.getPlaceDetail);
+router.get("/place-detail", placeDetailRules, validate, mapController.getPlaceDetail);
 
 module.exports = router;

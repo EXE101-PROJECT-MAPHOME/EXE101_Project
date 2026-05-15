@@ -39,6 +39,16 @@ const {
   authMiddleware,
   requireAnyRole,
 } = require("../middleware/authMiddleware");
+const { 
+  broadcastRules, 
+  updatePropertyStatusRules, 
+  approveVerificationRules, 
+  rejectVerificationRules, 
+  completeVerificationRules, 
+  planRules, 
+  updateSettingsRules 
+} = require("../validators/adminValidator");
+const validate = require("../middleware/validate");
 
 // All admin routes require admin authentication
 router.use(authMiddleware, requireAnyRole(["admin"]));
@@ -246,7 +256,7 @@ router.get("/properties", getAllProperties);
  *       200:
  *         description: Status updated
  */
-router.put("/properties/:id/status", updatePropertyStatus);
+router.put("/properties/:id/status", updatePropertyStatusRules, validate, updatePropertyStatus);
 
 // Notification Management
 /**
@@ -284,7 +294,7 @@ router.get("/notifications", getAdminNotifications);
  *       200:
  *         description: Notification broadcasted
  */
-router.post("/notifications/broadcast", broadcastNotification);
+router.post("/notifications/broadcast", broadcastRules, validate, broadcastNotification);
 
 // Booking Management
 /**
@@ -381,7 +391,7 @@ router.get("/settings", getSettings);
  *       200:
  *         description: Settings updated
  */
-router.put("/settings", updateSettings);
+router.put("/settings", updateSettingsRules, validate, updateSettings);
 
 // Subscription Plan Management
 /**
@@ -396,7 +406,7 @@ router.put("/settings", updateSettings);
  *       201:
  *         description: Plan created
  */
-router.post("/subscriptions/plans", createSubscriptionPlan);
+router.post("/subscriptions/plans", planRules, validate, createSubscriptionPlan);
 
 /**
  * @swagger
@@ -410,7 +420,7 @@ router.post("/subscriptions/plans", createSubscriptionPlan);
  *       200:
  *         description: Plan updated
  */
-router.put("/subscriptions/plans/:id", updateSubscriptionPlan);
+router.put("/subscriptions/plans/:id", planRules, validate, updateSubscriptionPlan);
 
 /**
  * @swagger
@@ -505,7 +515,7 @@ router.get("/verification-requests", getVerificationRequests);
  *       200:
  *         description: Verification approved
  */
-router.put("/verification/:id/approve", approveVerification);
+router.put("/verification/:id/approve", approveVerificationRules, validate, approveVerification);
 
 /**
  * @swagger
@@ -535,7 +545,7 @@ router.put("/verification/:id/approve", approveVerification);
  *       200:
  *         description: Verification rejected
  */
-router.put("/verification/:id/reject", rejectVerification);
+router.put("/verification/:id/reject", rejectVerificationRules, validate, rejectVerification);
 
 /**
  * @swagger
@@ -556,6 +566,6 @@ router.put("/verification/:id/reject", rejectVerification);
  *       200:
  *         description: Verification completed and property verified
  */
-router.put("/verification/:id/complete", completeVerification);
+router.put("/verification/:id/complete", completeVerificationRules, validate, completeVerification);
 
 module.exports = router;

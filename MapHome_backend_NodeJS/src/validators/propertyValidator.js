@@ -60,16 +60,16 @@ const updatePropertyRules = [
 
 const nearbyPropertiesRules = [
   query("lat")
-    .optional()
-    .isFloat({ min: -90, max: 90 }).withMessage("Invalid latitude"),
+    .notEmpty().withMessage("Vĩ độ (lat) là bắt buộc")
+    .isFloat({ min: -90, max: 90 }).withMessage("Vĩ độ không hợp lệ (phải từ -90 đến 90)"),
     
   query("lng")
-    .optional()
-    .isFloat({ min: -180, max: 180 }).withMessage("Invalid longitude"),
+    .notEmpty().withMessage("Kinh độ (lng) là bắt buộc")
+    .isFloat({ min: -180, max: 180 }).withMessage("Kinh độ không hợp lệ (phải từ -180 đến 180)"),
     
   query("radius")
     .optional()
-    .isFloat({ min: 0 }).withMessage("Radius must be a positive number"),
+    .isFloat({ min: 0.1, max: 100 }).withMessage("Bán kính tìm kiếm phải từ 0.1km đến 100km"),
 ];
 
 const searchPropertiesRules = [
@@ -79,9 +79,9 @@ const searchPropertiesRules = [
   query("maxPrice").optional().isNumeric(),
   query("minArea").optional().isNumeric(),
   query("maxArea").optional().isNumeric(),
-  query("lat").optional().isFloat({ min: -90, max: 90 }),
-  query("lng").optional().isFloat({ min: -180, max: 180 }),
-  query("radius").optional().isFloat({ min: 0 }),
+  query("lat").optional().isFloat({ min: -90, max: 90 }).withMessage("Vĩ độ không hợp lệ"),
+  query("lng").optional().isFloat({ min: -180, max: 180 }).withMessage("Kinh độ không hợp lệ"),
+  query("radius").optional().isFloat({ min: 0.1, max: 100 }).withMessage("Bán kính không hợp lệ"),
 ];
 
 module.exports = {

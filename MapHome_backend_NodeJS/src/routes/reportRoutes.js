@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const { createReport, getReports, updateReportStatus } = require("../controllers/reportController");
 const { authMiddleware, requireAnyRole } = require("../middleware/authMiddleware");
+const { createReportRules, updateReportRules } = require("../validators/reportValidator");
+const validate = require("../middleware/validate");
 
 // Create report (Any logged in user)
 /**
@@ -18,17 +20,16 @@ const { authMiddleware, requireAnyRole } = require("../middleware/authMiddleware
  *         application/json:
  *           schema:
  *             type: object
- *             required: [targetId, targetType, reason]
+ *             required: [propertyId, reason]
  *             properties:
- *               targetId: { type: string, description: "ID of property or user being reported" }
- *               targetType: { type: string, enum: [property, user, review] }
+ *               propertyId: { type: string, description: "ID of property being reported" }
  *               reason: { type: string }
  *               description: { type: string }
  *     responses:
  *       201:
  *         description: Report submitted
  */
-router.post("/", authMiddleware, createReport);
+router.post("/", authMiddleware, createReportRules, validate, createReport);
 
 /**
  * @swagger
@@ -68,6 +69,6 @@ router.get("/", authMiddleware, requireAnyRole(["admin"]), getReports);
  *       200:
  *         description: Report status updated
  */
-router.put("/:id", authMiddleware, requireAnyRole(["admin"]), updateReportStatus);
+router.put("/:id", authMiddleware, requireAnyRole(["admin"]), updateReportRules, validate, updateReportStatus);
 
 module.exports = router;
