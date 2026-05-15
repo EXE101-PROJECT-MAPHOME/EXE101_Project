@@ -5,6 +5,8 @@ const {
   authMiddleware,
   requireAnyRole,
 } = require("../middleware/authMiddleware");
+const { contactRules } = require("../validators/contactValidator");
+const validate = require("../middleware/validate");
 
 // Public route to submit
 /**
@@ -29,7 +31,7 @@ const {
  *       201:
  *         description: Message submitted
  */
-router.post("/", contactController.submitContact);
+router.post("/", contactRules, validate, contactController.submitContact);
 
 /**
  * @swagger

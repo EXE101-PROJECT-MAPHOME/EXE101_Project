@@ -5,6 +5,8 @@ const {
   paymentCallback,
 } = require("../controllers/paymentController");
 const { authMiddleware } = require("../middleware/authMiddleware");
+const { createPaymentRules } = require("../validators/paymentValidator");
+const validate = require("../middleware/validate");
 
 /**
  * @swagger
@@ -20,16 +22,17 @@ const { authMiddleware } = require("../middleware/authMiddleware");
  *         application/json:
  *           schema:
  *             type: object
- *             required: [amount, orderInfo]
+ *             required: [amount, planId]
  *             properties:
  *               amount: { type: number, example: 50000 }
- *               orderInfo: { type: string, example: "Thanh toán gói Silver" }
+ *               planId: { type: string, example: "standard" }
+ *               description: { type: string, example: "Thanh toán gói Silver" }
  *               returnUrl: { type: string }
  *     responses:
  *       200:
  *         description: Redirect URL for payment
  */
-router.post("/create", authMiddleware, createPayment);
+router.post("/create", authMiddleware, createPaymentRules, validate, createPayment);
 
 /**
  * @swagger

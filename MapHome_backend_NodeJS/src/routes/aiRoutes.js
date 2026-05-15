@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const { chatWithAI } = require("../controllers/aiController");
+const { chatRules } = require("../validators/aiValidator");
+const validate = require("../middleware/validate");
 
 /**
  * @swagger
@@ -34,7 +36,7 @@ const { chatWithAI } = require("../controllers/aiController");
  *       500:
  *         description: Error communicating with AI
  */
-router.post("/chat", chatWithAI);
-router.post("/chatai", chatWithAI); // Alias cho sự tương thích
+router.post("/chat", chatRules, validate, chatWithAI);
+router.post("/chatai", chatRules, validate, chatWithAI); // Alias cho sự tương thích
 
 module.exports = router;
