@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -36,14 +36,32 @@ export function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [adminExists, setAdminExists] = useState(false);
 
-  // Login form
-  const [loginUsername, setLoginUsername] = useState("");
+  // Check on mount if an admin already exists to conditionally lock the role option
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/admin-exists`)
+      .then((r) => r.json())
+      .then((data) => setAdminExists(data.exists))
+      .catch(() => {}); // silently fail - default stays unlocked
+  }, []);
+
+  // Login form - single smart identifier field
+  const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginErrors, setLoginErrors] = useState({
-    username: "",
+    identifier: "",
     password: "",
   });
+
+  // Detect input type for hint display
+  const detectInputType = (val: string) => {
+    if (/^[0-9+]{9,12}$/.test(val.replace(/\s/g, ""))) return "phone";
+    if (val.includes("@")) return "email";
+    if (val.length > 0) return "username";
+    return "none";
+  };
+  const inputType = detectInputType(loginIdentifier);
 
   // Register form
   const [registerData, setRegisterData] = useState({
@@ -78,24 +96,22 @@ export function LoginPage() {
     setError("");
     setSuccess("");
 
-    // Validate fields
-    const usernameError = validateUsernameOrEmail(loginUsername);
-    const passwordError = loginPassword ? { valid: true } : { valid: false, error: "Mật khẩu không được để trống" };
+    const errors = { identifier: "", password: "" };
 
-    setLoginErrors({
-      username: usernameError.error || "",
-      password: passwordError.error || "",
-    });
-
-    if (!usernameError.valid || !passwordError.valid) {
-      return;
+    if (!loginIdentifier.trim()) {
+      errors.identifier = "Vui lòng nhập tài khoản, email hoặc số điện thoại";
+    }
+    if (!loginPassword) {
+      errors.password = "Mật khẩu không được để trống";
     }
 
+    setLoginErrors(errors);
+    if (errors.identifier || errors.password) return;
+
     try {
-      const result = await login(loginUsername, loginPassword);
+      const result = await login(loginIdentifier.trim(), loginPassword);
       if (result.success) {
         toast.success("Đăng nhập thành công!");
-        // Redirect dựa trên role
         if (result.role === "admin") {
           navigate("/admin/dashboard");
         } else if (result.role === "landlord") {
@@ -361,47 +377,83 @@ export function LoginPage() {
               >
                 {mode === "login" ? (
                   <form onSubmit={handleLogin} className="space-y-4">
+                    {/* Smart Identifier Input */}
                     <motion.div variants={itemVariants} className="space-y-2.5">
                       <div className="flex items-center justify-between ml-1">
                         <label className="text-[14px] font-black text-emerald-600/80 uppercase tracking-wide">
                           Tài khoản
                         </label>
+                        {/* Dynamic type badge */}
+                        <AnimatePresence mode="wait">
+                          {inputType !== "none" && (
+                            <motion.span
+                              key={inputType}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                inputType === "phone"
+                                  ? "bg-blue-50 text-blue-500"
+                                  : inputType === "email"
+                                    ? "bg-purple-50 text-purple-500"
+                                    : "bg-emerald-50 text-emerald-500"
+                              }`}
+                            >
+                              {inputType === "phone" ? (
+                                <><Phone className="inline size-3 mr-1" />Số điện thoại</>
+                              ) : inputType === "email" ? (
+                                <><Mail className="inline size-3 mr-1" />Email</>
+                              ) : (
+                                <><User className="inline size-3 mr-1" />Username</>
+                              )}
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
                       </div>
                       <div className="relative group">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 size-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-500 transition-all duration-300">
-                          <User className="size-5" />
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 size-10 bg-slate-100 rounded-xl flex items-center justify-center transition-all duration-300 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-500 text-slate-400">
+                          {inputType === "phone" ? (
+                            <Phone className="size-5 text-blue-500" />
+                          ) : inputType === "email" ? (
+                            <Mail className="size-5 text-purple-500" />
+                          ) : (
+                            <User className="size-5" />
+                          )}
                         </div>
                         <Input
                           type="text"
-                          value={loginUsername}
+                          value={loginIdentifier}
                           onChange={(e) => {
-                            setLoginUsername(e.target.value);
+                            setLoginIdentifier(e.target.value);
                             if (e.target.value.trim()) {
-                              setLoginErrors({ ...loginErrors, username: "" });
+                              setLoginErrors({ ...loginErrors, identifier: "" });
                             }
                           }}
                           onBlur={() => {
-                            const result =
-                              validateUsernameOrEmail(loginUsername);
-                            setLoginErrors({
-                              ...loginErrors,
-                              username: result.error || "",
-                            });
+                            if (!loginIdentifier.trim()) {
+                              setLoginErrors({ ...loginErrors, identifier: "Vui lòng nhập tài khoản, email hoặc số điện thoại" });
+                            }
                           }}
-                          placeholder="username hoặc email"
-                          className={`pl-16 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${loginErrors.username ? "border-red-500" : "border-slate-200"}`}
-                          required
+                          placeholder="Username, email hoặc số điện thoại"
+                          className={`pl-16 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${
+                            loginErrors.identifier ? "border-red-500" : "border-slate-200"
+                          }`}
+                          autoComplete="username"
                         />
                       </div>
-                      {loginErrors.username && (
+                      {loginErrors.identifier ? (
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           className="text-xs text-red-500 font-medium ml-1 flex items-center gap-1"
                         >
                           <AlertCircle className="size-3" />
-                          {loginErrors.username}
+                          {loginErrors.identifier}
                         </motion.p>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 ml-1">
+                          Chấp nhận username, email hoặc số điện thoại
+                        </p>
                       )}
                     </motion.div>
 
@@ -830,43 +882,54 @@ export function LoginPage() {
                             desc: "Quản lý",
                             color: "slate",
                           },
-                        ].map((role) => (
+                        ].map((role) => {
+                          const isAdminLocked = role.id === "admin" && adminExists;
+                          return (
                           <button
                             key={role.id}
                             type="button"
+                            disabled={isAdminLocked}
                             onClick={() =>
-                              setRegisterData({
+                              !isAdminLocked && setRegisterData({
                                 ...registerData,
                                 role: role.id as any,
                               })
                             }
+                            title={isAdminLocked ? "Hệ thống đã có quản trị viên" : undefined}
                             className={`relative p-3 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center justify-center gap-1 group overflow-hidden ${
-                              registerData.role === role.id
-                                ? `border-${role.color}-500 bg-${role.color}-50 shadow-lg shadow-${role.color}-500/10 scale-[1.02]`
-                                : "bg-white/40 border-slate-100 hover:border-slate-300 hover:bg-white"
+                              isAdminLocked
+                                ? "opacity-40 cursor-not-allowed bg-slate-50 border-slate-100"
+                                : registerData.role === role.id
+                                  ? `border-${role.color}-500 bg-${role.color}-50 shadow-lg shadow-${role.color}-500/10 scale-[1.02]`
+                                  : "bg-white/40 border-slate-100 hover:border-slate-300 hover:bg-white"
                             }`}
                           >
                             <role.icon
                               className={`size-6 mb-1 transition-all ${
-                                registerData.role === role.id
-                                  ? `text-${role.color}-600`
-                                  : "text-slate-400 group-hover:text-slate-600"
+                                isAdminLocked
+                                  ? "text-slate-300"
+                                  : registerData.role === role.id
+                                    ? `text-${role.color}-600`
+                                    : "text-slate-400 group-hover:text-slate-600"
                               }`}
                             />
                             <span
                               className={`text-[12px] font-extrabold ${
-                                registerData.role === role.id
-                                  ? `text-${role.color}-900`
-                                  : "text-slate-600"
+                                isAdminLocked
+                                  ? "text-slate-300"
+                                  : registerData.role === role.id
+                                    ? `text-${role.color}-900`
+                                    : "text-slate-600"
                               }`}
                             >
                               {role.label}
                             </span>
                             <span className="text-[10px] text-slate-400 font-medium">
-                              {role.desc}
+                              {isAdminLocked ? "Đã đủ" : role.desc}
                             </span>
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                     </motion.div>
 

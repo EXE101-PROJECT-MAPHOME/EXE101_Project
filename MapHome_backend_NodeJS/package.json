@@ -31,7 +31,8 @@
     "nodemailer": "^8.0.7",
     "openai": "^6.33.0",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "twilio": "^6.0.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

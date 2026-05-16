@@ -7,9 +7,14 @@ const {
   forgotPassword,
   verifyResetCode,
   resetPassword,
+  forgotPasswordPhone,
+  verifyOtpPhone,
+  resetPasswordPhone,
+  checkPhoneExists,
   googleLogin,
   refresh,
   logout,
+  checkAdminExists,
 } = require("../controllers/authController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const {
@@ -153,6 +158,9 @@ router.get("/refresh", refresh);
  *         description: Logged out successfully
  */
 router.post("/logout", logout);
+
+// GET /api/auth/admin-exists - Public: check if an admin account already exists
+router.get("/admin-exists", checkAdminExists);
 
 /**
  * @swagger
@@ -321,5 +329,83 @@ router.post(
  *         description: Password reset successful
  */
 router.post("/reset-password", resetPasswordRules, validate, resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/forgot-password-phone:
+ *   post:
+ *     summary: Request OTP via phone
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *             properties:
+ *               phone:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP sent
+ */
+router.post("/forgot-password-phone", forgotPasswordPhone);
+
+/**
+ * @swagger
+ * /api/auth/verify-otp-phone:
+ *   post:
+ *     summary: Verify OTP from phone
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *               - otp
+ *             properties:
+ *               phone:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP valid, returns reset token
+ */
+router.post("/verify-otp-phone", verifyOtpPhone);
+
+/**
+ * @swagger
+ * /api/auth/reset-password-phone:
+ *   post:
+ *     summary: Reset password with phone reset token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - resetToken
+ *               - newPassword
+ *             properties:
+ *               resetToken:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ */
+router.post("/reset-password-phone", resetPasswordPhone);
+
+// Phone Auth Routes
+router.post("/check-phone-exists", checkPhoneExists);
 
 module.exports = router;
