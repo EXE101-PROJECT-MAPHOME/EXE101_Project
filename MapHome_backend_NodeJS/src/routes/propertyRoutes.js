@@ -15,12 +15,14 @@ const {
   getPublicStats,
   getDistrictsStats,
   renewProperty,
+  pinProperty,
+  unpinProperty,
 } = require("../controllers/propertyController");
-const { 
-  createPropertyRules, 
-  updatePropertyRules, 
-  searchPropertiesRules, 
-  nearbyPropertiesRules 
+const {
+  createPropertyRules,
+  updatePropertyRules,
+  searchPropertiesRules,
+  nearbyPropertiesRules,
 } = require("../validators/propertyValidator");
 const validate = require("../middleware/validate");
 
@@ -180,7 +182,13 @@ router.get("/landlord/:landlordId", getPropertiesByLandlord);
 router
   .route("/")
   .get(getProperties)
-  .post(authMiddleware, requireAnyRole(["landlord"]), createPropertyRules, validate, createProperty);
+  .post(
+    authMiddleware,
+    requireAnyRole(["landlord"]),
+    createPropertyRules,
+    validate,
+    createProperty,
+  );
 
 /**
  * @swagger
@@ -226,7 +234,13 @@ router
 router
   .route("/:id")
   .get(getPropertyById)
-  .put(authMiddleware, requireAnyRole(["landlord"]), updatePropertyRules, validate, updateProperty)
+  .put(
+    authMiddleware,
+    requireAnyRole(["landlord"]),
+    updatePropertyRules,
+    validate,
+    updateProperty,
+  )
   .delete(authMiddleware, requireAnyRole(["landlord"]), deleteProperty);
 
 /**
@@ -292,6 +306,72 @@ router.post("/:id/view", incrementView);
  *       200:
  *         description: Property renewed with new expiry date
  */
-router.put("/:id/renew", authMiddleware, requireAnyRole(["landlord"]), renewProperty);
+router.put(
+  "/:id/renew",
+  authMiddleware,
+  requireAnyRole(["landlord"]),
+  renewProperty,
+);
+
+/**
+ * @swagger
+ * /api/properties/{id}/pin:
+ *   post:
+ *     summary: Pin a property to highlight it
+ *     tags: [Properties]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               note:
+ *                 type: string
+ *                 description: Optional note about the pin
+ *               photoAtPin:
+ *                 type: string
+ *                 description: Optional photo URL at pin time
+ *     responses:
+ *       200:
+ *         description: Property pinned successfully
+ */
+router.post(
+  "/:id/pin",
+  authMiddleware,
+  requireAnyRole(["landlord"]),
+  pinProperty,
+);
+
+/**
+ * @swagger
+ * /api/properties/{id}/unpin:
+ *   post:
+ *     summary: Unpin a property
+ *     tags: [Properties]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Property unpinned successfully
+ */
+router.post(
+  "/:id/unpin",
+  authMiddleware,
+  requireAnyRole(["landlord"]),
+  unpinProperty,
+);
 
 module.exports = router;
