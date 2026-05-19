@@ -654,6 +654,120 @@ const checkPhoneExists = async (req, res) => {
   }
 };
 
+// POST /api/auth/send-otp-phone
+// Gửi OTP tới bất kỳ số điện thoại nào (dùng cho verification, booking, v.v)
+const sendOtpToPhone = async (req, res) => {
+  try {
+    const { phone, purpose = "verification" } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ message: "Số điện thoại là bắt buộc" });
+    }
+
+    // 1. Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 2. Save OTP to cache with purpose (expires in 5 minutes)
+    otpCache.set(`otp_${phone}_${purpose}`, otp);
+
+    // DEBUG: Log OTP to console
+    console.log(`
+╔═══════════════════════════════════════╗
+║         🔐 OTP GENERATED 🔐           ║
+╠═══════════════════════════════════════╣
+║ Phone:   ${phone}
+║ Purpose: ${purpose}
+║ OTP:     ${otp}
+║ Valid:   5 minutes
+╚═══════════════════════════════════════╝
+    `);
+
+    // 3. Build message based on purpose
+    let message;
+    switch (purpose) {
+      case "booking":
+        message = `Ma OTP xac thuc booking MapHome: ${otp}. Co hieu luc trong 5 phut.`;
+        break;
+      case "verification":
+        message = `Ma OTP xac thuc MapHome: ${otp}. Co hieu luc trong 5 phut.`;
+        break;
+      case "contact":
+        message = `Ma OTP xac thuc lien he MapHome: ${otp}. Co hieu luc trong 5 phut.`;
+        break;
+      default:
+        message = `Ma OTP MapHome: ${otp}. Co hieu luc trong 5 phut.`;
+    }
+
+    // 4. Send SMS
+    const smsResult = await sendSMS(phone, message);
+
+    if (smsResult.CodeResult !== "100") {
+      const errorMsg =
+        smsResult.ErrorMessage || "Lỗi khi gửi SMS. Vui lòng thử lại sau.";
+      console.error("[SMS Error]:", errorMsg);
+      return res.status(400).json({
+        message: `Lỗi gửi SMS: ${errorMsg}. Vui lòng liên hệ Admin hoặc thử lại sau.`,
+      });
+    }
+
+    // If SMS simulated in dev mode, still return success
+    if (smsResult.simulated) {
+      console.log(
+        "[SMS Simulated] OTP:",
+        otp,
+        "Phone:",
+        phone,
+        "Purpose:",
+        purpose,
+      );
+    }
+
+    res.status(200).json({
+      message: "Mã OTP đã được gửi đến số điện thoại.",
+      purpose,
+    });
+  } catch (error) {
+    console.error("[Auth Error]:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// POST /api/auth/verify-otp-general
+// Verify OTP cho bất kỳ purpose nào (not just password reset)
+const verifyOtpGeneral = async (req, res) => {
+  try {
+    const { phone, otp, purpose = "verification" } = req.body;
+
+    if (!phone || !otp) {
+      return res
+        .status(400)
+        .json({ message: "Số điện thoại và mã OTP là bắt buộc" });
+    }
+
+    const cachedOtp = otpCache.get(`otp_${phone}_${purpose}`);
+
+    if (!cachedOtp || cachedOtp !== otp) {
+      return res
+        .status(400)
+        .json({ message: "Mã OTP không hợp lệ hoặc đã hết hạn" });
+    }
+
+    // Clear OTP from cache after verification
+    otpCache.del(`otp_${phone}_${purpose}`);
+
+    // Return success - client can use this for their logic
+    res.status(200).json({
+      message: "Xác thực OTP thành công",
+      phone,
+      purpose,
+      verified: true,
+    });
+  } catch (error) {
+    console.error("[Auth Error]:", error.message);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // POST /api/auth/logout
 const logout = async (req, res) => {
   try {
@@ -688,6 +802,8 @@ module.exports = {
   verifyOtpPhone,
   resetPasswordPhone,
   checkPhoneExists,
+  sendOtpToPhone,
+  verifyOtpGeneral,
   googleLogin,
   refresh,
   logout,

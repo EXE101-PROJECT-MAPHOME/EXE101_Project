@@ -11,6 +11,8 @@ const {
   verifyOtpPhone,
   resetPasswordPhone,
   checkPhoneExists,
+  sendOtpToPhone,
+  verifyOtpGeneral,
   googleLogin,
   refresh,
   logout,
@@ -407,5 +409,74 @@ router.post("/reset-password-phone", resetPasswordPhone);
 
 // Phone Auth Routes
 router.post("/check-phone-exists", checkPhoneExists);
+
+/**
+ * @swagger
+ * /api/auth/send-otp-phone:
+ *   post:
+ *     summary: Send OTP to any phone number
+ *     description: Send OTP via SMS to any phone number for verification, booking, etc.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 description: Phone number to send OTP to
+ *                 example: "0912345678"
+ *               purpose:
+ *                 type: string
+ *                 description: Purpose of OTP (verification, booking, contact)
+ *                 enum: [verification, booking, contact]
+ *                 default: verification
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *       400:
+ *         description: Invalid phone or SMS error
+ */
+router.post("/send-otp-phone", sendOtpToPhone);
+
+/**
+ * @swagger
+ * /api/auth/verify-otp-general:
+ *   post:
+ *     summary: Verify OTP for any purpose
+ *     description: Verify OTP sent to any phone number (not just password reset)
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *               - otp
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 example: "0912345678"
+ *               otp:
+ *                 type: string
+ *                 example: "123456"
+ *               purpose:
+ *                 type: string
+ *                 description: Purpose of OTP (must match what was used to send)
+ *                 enum: [verification, booking, contact]
+ *                 default: verification
+ *     responses:
+ *       200:
+ *         description: OTP verified successfully
+ *       400:
+ *         description: Invalid or expired OTP
+ */
+router.post("/verify-otp-general", verifyOtpGeneral);
 
 module.exports = router;
