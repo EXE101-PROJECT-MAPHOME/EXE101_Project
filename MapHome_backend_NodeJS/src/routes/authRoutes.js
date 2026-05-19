@@ -7,9 +7,16 @@ const {
   forgotPassword,
   verifyResetCode,
   resetPassword,
+  forgotPasswordPhone,
+  verifyOtpPhone,
+  resetPasswordPhone,
+  checkPhoneExists,
+  sendOtpToPhone,
+  verifyOtpGeneral,
   googleLogin,
   refresh,
   logout,
+  checkAdminExists,
 } = require("../controllers/authController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const {
@@ -153,6 +160,9 @@ router.get("/refresh", refresh);
  *         description: Logged out successfully
  */
 router.post("/logout", logout);
+
+// GET /api/auth/admin-exists - Public: check if an admin account already exists
+router.get("/admin-exists", checkAdminExists);
 
 /**
  * @swagger
@@ -321,5 +331,152 @@ router.post(
  *         description: Password reset successful
  */
 router.post("/reset-password", resetPasswordRules, validate, resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/forgot-password-phone:
+ *   post:
+ *     summary: Request OTP via phone
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *             properties:
+ *               phone:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP sent
+ */
+router.post("/forgot-password-phone", forgotPasswordPhone);
+
+/**
+ * @swagger
+ * /api/auth/verify-otp-phone:
+ *   post:
+ *     summary: Verify OTP from phone
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *               - otp
+ *             properties:
+ *               phone:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: OTP valid, returns reset token
+ */
+router.post("/verify-otp-phone", verifyOtpPhone);
+
+/**
+ * @swagger
+ * /api/auth/reset-password-phone:
+ *   post:
+ *     summary: Reset password with phone reset token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - resetToken
+ *               - newPassword
+ *             properties:
+ *               resetToken:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ */
+router.post("/reset-password-phone", resetPasswordPhone);
+
+// Phone Auth Routes
+router.post("/check-phone-exists", checkPhoneExists);
+
+/**
+ * @swagger
+ * /api/auth/send-otp-phone:
+ *   post:
+ *     summary: Send OTP to any phone number
+ *     description: Send OTP via SMS to any phone number for verification, booking, etc.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 description: Phone number to send OTP to
+ *                 example: "0912345678"
+ *               purpose:
+ *                 type: string
+ *                 description: Purpose of OTP (verification, booking, contact)
+ *                 enum: [verification, booking, contact]
+ *                 default: verification
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *       400:
+ *         description: Invalid phone or SMS error
+ */
+router.post("/send-otp-phone", sendOtpToPhone);
+
+/**
+ * @swagger
+ * /api/auth/verify-otp-general:
+ *   post:
+ *     summary: Verify OTP for any purpose
+ *     description: Verify OTP sent to any phone number (not just password reset)
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *               - otp
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 example: "0912345678"
+ *               otp:
+ *                 type: string
+ *                 example: "123456"
+ *               purpose:
+ *                 type: string
+ *                 description: Purpose of OTP (must match what was used to send)
+ *                 enum: [verification, booking, contact]
+ *                 default: verification
+ *     responses:
+ *       200:
+ *         description: OTP verified successfully
+ *       400:
+ *         description: Invalid or expired OTP
+ */
+router.post("/verify-otp-general", verifyOtpGeneral);
 
 module.exports = router;

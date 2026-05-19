@@ -24,34 +24,45 @@ const haversineKm = (lat1, lon1, lat2, lon2) => {
  * @param {Array} propertyLocation [lng, lat]
  */
 const getNearbyLandmarks = async (propertyLocation) => {
-  if (!Array.isArray(propertyLocation) || propertyLocation.length < 2) return [];
+  if (!Array.isArray(propertyLocation) || propertyLocation.length < 2)
+    return [];
   const [lng, lat] = propertyLocation;
-  
-  const GOONG_API_KEY = process.env.GOONG_API_KEY || "9Xau7e646cReoQa17uHw6Dp1KLPG7ahl9iDGy8V1";
-  
+
+  const GOONG_API_KEY =
+    process.env.GOONG_API_KEY || "9Xau7e646cReoQa17uHw6Dp1KLPG7ahl9iDGy8V1";
+
   try {
     // Types to search for near the property
     const types = "university,school,hospital,park";
     const radius = 3000; // 3km radius
-    
+
     const url = `https://rsapi.goong.io/Place/NearbySearch?location=${lat},${lng}&radius=${radius}&type=${types}&api_key=${GOONG_API_KEY}`;
-    
+
     const response = await axios.get(url);
     const places = response.data.results || [];
 
-    return places.slice(0, 10).map(place => {
-      // Calculate distance manually if API doesn't provide it in the results directly in a way we want
-      // Actually Goong NearbySearch doesn't always provide distance in the main results array
-      const distance = haversineKm(lat, lng, place.geometry.location.lat, place.geometry.location.lng);
-      
-      return {
-        name: place.name,
-        distanceKm: Number(distance.toFixed(2)),
-        distanceText: distance < 1 
-          ? `${Math.round(distance * 1000)}m` 
-          : `${distance.toFixed(1)}km`
-      };
-    }).sort((a, b) => a.distanceKm - b.distanceKm);
+    return places
+      .slice(0, 10)
+      .map((place) => {
+        // Calculate distance manually if API doesn't provide it in the results directly in a way we want
+        // Actually Goong NearbySearch doesn't always provide distance in the main results array
+        const distance = haversineKm(
+          lat,
+          lng,
+          place.geometry.location.lat,
+          place.geometry.location.lng,
+        );
+
+        return {
+          name: place.name,
+          distanceKm: Number(distance.toFixed(2)),
+          distanceText:
+            distance < 1
+              ? `${Math.round(distance * 1000)}m`
+              : `${distance.toFixed(1)}km`,
+        };
+      })
+      .sort((a, b) => a.distanceKm - b.distanceKm);
   } catch (error) {
     console.error("Goong API Error:", error.message);
     return []; // Return empty array on failure to avoid breaking the whole response
@@ -96,7 +107,7 @@ const getProperties = async (req, res) => {
     else if (!req.query.all) {
       query.status = "approved"; // Default to approved unless explicitly asking for all
       // Also filter out expired if only approved are requested
-      query.status = { $eq: "approved" }; 
+      query.status = { $eq: "approved" };
     }
 
     if (req.query.verified === "true") query["greenBadge.level"] = "verified";
@@ -107,13 +118,15 @@ const getProperties = async (req, res) => {
     );
 
     // Augment with proximity info (Processing sequentially or with Promise.all)
-    // For many properties, calling API for each one is slow. 
+    // For many properties, calling API for each one is slow.
     // We'll only augment if there are few results or it's specifically requested.
-    const augmentedProperties = await Promise.all(properties.map(async p => {
-      const pObj = p.toObject();
-      pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
-      return pObj;
-    }));
+    const augmentedProperties = await Promise.all(
+      properties.map(async (p) => {
+        const pObj = p.toObject();
+        pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
+        return pObj;
+      }),
+    );
 
     res.status(200).json(augmentedProperties);
   } catch (error) {
@@ -132,10 +145,10 @@ const getPropertyById = async (req, res) => {
     if (!property) {
       return res.status(404).json({ message: "Property not found" });
     }
-    
+
     const propertyObj = property.toObject();
     propertyObj.nearbyLandmarks = await getNearbyLandmarks(property.location);
-    
+
     res.status(200).json(propertyObj);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -162,7 +175,7 @@ const createProperty = async (req, res) => {
     // Set default expiry date from settings
     const settings = await SystemSetting.findOne();
     const expiryDays = settings?.automation?.defaultExpiryDays || 30;
-    
+
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + expiryDays);
     payload.expiryDate = expiryDate;
@@ -203,15 +216,19 @@ const getNearbyProperties = async (req, res) => {
     }).populate("landlordId", "name phone email avatar rating");
 
     // Augment with proximity info
-    const result = await Promise.all(properties.map(async (p) => {
-      const pObj = p.toObject();
-      pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
-      // Actual distance from search center
-      if (p.location && p.location.length >= 2) {
-        pObj.distanceToCenter = Number(haversineKm(lat, lng, p.location[1], p.location[0]).toFixed(2));
-      }
-      return pObj;
-    }));
+    const result = await Promise.all(
+      properties.map(async (p) => {
+        const pObj = p.toObject();
+        pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
+        // Actual distance from search center
+        if (p.location && p.location.length >= 2) {
+          pObj.distanceToCenter = Number(
+            haversineKm(lat, lng, p.location[1], p.location[0]).toFixed(2),
+          );
+        }
+        return pObj;
+      }),
+    );
 
     res.status(200).json(result);
   } catch (error) {
@@ -375,7 +392,7 @@ const searchProperties = async (req, res) => {
     }
 
     // Search in name and address
-    // IMPROVEMENT: If lat/lng are present, treat q more like a property-specific filter (name/desc) 
+    // IMPROVEMENT: If lat/lng are present, treat q more like a property-specific filter (name/desc)
     // instead of an absolute address requirement, as the geospatial filter handles the address/area.
     if (q) {
       if (req.query.lat && req.query.lng) {
@@ -429,29 +446,29 @@ const searchProperties = async (req, res) => {
     }
 
     const skip = (Number(page) - 1) * Number(limit);
-    
+
     // Check if location-based search is requested within search
     const hasGeoSearch = !!(req.query.lat && req.query.lng);
-    
+
     if (hasGeoSearch) {
       const lat = Number(req.query.lat);
       const lng = Number(req.query.lng);
       const radius = Number(req.query.radius || 5);
-      
+
       // NOTE: $nearSphere CANNOT be used with countDocuments() or .sort()
       // MongoDB handles sorting by distance automatically with $nearSphere
       query.location = {
         $nearSphere: {
           $geometry: { type: "Point", coordinates: [lng, lat] },
-          $maxDistance: radius * 1000
-        }
+          $maxDistance: radius * 1000,
+        },
       };
     }
 
     // When using $nearSphere, we CANNOT call countDocuments or .sort()
     // MongoDB restriction: $near/$nearSphere is incompatible with count() and explicit sort
     let properties, total;
-    
+
     if (hasGeoSearch) {
       // Geospatial: no sort (auto-sorted by distance), no countDocuments
       properties = await Property.find(query)
@@ -468,14 +485,23 @@ const searchProperties = async (req, res) => {
       total = await Property.countDocuments(query);
     }
 
-    const augmentedProperties = await Promise.all(properties.map(async p => {
-      const pObj = p.toObject();
-      pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
-      if (hasGeoSearch) {
-        pObj.distanceToCenter = Number(haversineKm(Number(req.query.lat), Number(req.query.lng), p.location[1], p.location[0]).toFixed(2));
-      }
-      return pObj;
-    }));
+    const augmentedProperties = await Promise.all(
+      properties.map(async (p) => {
+        const pObj = p.toObject();
+        pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
+        if (hasGeoSearch) {
+          pObj.distanceToCenter = Number(
+            haversineKm(
+              Number(req.query.lat),
+              Number(req.query.lng),
+              p.location[1],
+              p.location[0],
+            ).toFixed(2),
+          );
+        }
+        return pObj;
+      }),
+    );
 
     res.status(200).json({
       properties: augmentedProperties,
@@ -499,18 +525,21 @@ const searchByMultipleLocations = async (req, res) => {
       return res.status(400).json({ message: "locations query is required" });
 
     const searchPoints = JSON.parse(locations);
-    
+
     // For multiple locations, we can use $or with $centerSphere for native efficiency
     const geoQuery = {
-      $or: searchPoints.map(point => ({
+      $or: searchPoints.map((point) => ({
         location: {
           $geoWithin: {
-            $centerSphere: [[Number(point.lng), Number(point.lat)], (Number(point.radius) || 2) / 6371]
-          }
-        }
+            $centerSphere: [
+              [Number(point.lng), Number(point.lat)],
+              (Number(point.radius) || 2) / 6371,
+            ],
+          },
+        },
       })),
       status: "approved",
-      available: true
+      available: true,
     };
 
     const properties = await Property.find(geoQuery).populate(
@@ -518,11 +547,13 @@ const searchByMultipleLocations = async (req, res) => {
       "name phone email avatar rating",
     );
 
-    const result = await Promise.all(properties.map(async (p) => {
-      const pObj = p.toObject();
-      pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
-      return pObj;
-    }));
+    const result = await Promise.all(
+      properties.map(async (p) => {
+        const pObj = p.toObject();
+        pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
+        return pObj;
+      }),
+    );
 
     res.status(200).json(result);
   } catch (error) {
@@ -637,15 +668,97 @@ const renewProperty = async (req, res) => {
     // Set new expiry date from settings
     const settings = await SystemSetting.findOne();
     const expiryDays = settings?.automation?.defaultExpiryDays || 30;
-    
+
     const newExpiryDate = new Date();
     newExpiryDate.setDate(newExpiryDate.getDate() + expiryDays);
-    
+
     property.expiryDate = newExpiryDate;
     property.status = "approved"; // Reset to approved if it was expired
-    
+
     await property.save();
     res.status(200).json(property);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Pin a property (highlight it)
+// @route   POST /api/properties/:id/pin
+const pinProperty = async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+
+    // Authorization check - only landlord who owns the property or admin can pin
+    if (req.user && req.user.role === "landlord") {
+      const Landlord = require("../models/Landlord");
+      const landlord = await Landlord.findOne({ userId: req.user._id });
+      if (
+        !landlord ||
+        property.landlordId.toString() !== landlord._id.toString()
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to pin this property" });
+      }
+    }
+
+    const { note, photoAtPin } = req.body;
+
+    property.pinInfo = {
+      pinnedAt: new Date(),
+      pinnedBy: req.user ? req.user._id : null,
+      note: note || "",
+      photoAtPin: photoAtPin || null,
+    };
+
+    await property.save();
+    res.status(200).json({
+      message: "Property pinned successfully",
+      pinInfo: property.pinInfo,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Unpin a property
+// @route   POST /api/properties/:id/unpin
+const unpinProperty = async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+
+    // Authorization check - only landlord who owns the property or admin can unpin
+    if (req.user && req.user.role === "landlord") {
+      const Landlord = require("../models/Landlord");
+      const landlord = await Landlord.findOne({ userId: req.user._id });
+      if (
+        !landlord ||
+        property.landlordId.toString() !== landlord._id.toString()
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to unpin this property" });
+      }
+    }
+
+    property.pinInfo = {
+      pinnedAt: null,
+      pinnedBy: null,
+      note: null,
+      photoAtPin: null,
+    };
+
+    await property.save();
+    res.status(200).json({
+      message: "Property unpinned successfully",
+      pinInfo: property.pinInfo,
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -666,4 +779,6 @@ module.exports = {
   getPublicStats,
   getDistrictsStats,
   renewProperty,
+  pinProperty,
+  unpinProperty,
 };
