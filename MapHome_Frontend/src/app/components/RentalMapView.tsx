@@ -124,6 +124,16 @@ export function RentalMapView({ properties, selectedProperty, onPropertySelect, 
       transformRequest: getGoongTransformRequest
     });
 
+    // Handle map style errors (e.g., invalid layer references)
+    map.on('error', (error) => {
+      if (error.error && error.error.message && error.error.message.includes('Source layer')) {
+        console.warn('[RentalMapView] Map style layer error (non-critical):', error.error.message);
+        // Ignore this error as it doesn't prevent map functionality
+      } else {
+        console.error('[RentalMapView] Map error:', error);
+      }
+    });
+
     map.addControl(new goongjs.NavigationControl(), 'top-right');
     mapRef.current = map;
 
@@ -145,9 +155,11 @@ export function RentalMapView({ properties, selectedProperty, onPropertySelect, 
     searchMarkersRef.current = [];
 
     // Add Property Markers
+    console.log('RentalMapView rendering properties:', properties.length, properties);
     properties.forEach((property) => {
+      console.log('Adding marker for property:', property.name, 'location:', property.location, 'available:', property.available);
       const isPinned = !!property.pinInfo;
-      const isVerified = property.greenBadge?.level === 'verified';
+      const isVerified = property.greenBadge?.level === 'verified' || property.verificationLevel === 'verified';
       const el = isPinned
         ? createPinnedPropertyIcon(property.available)
         : createPropertyIcon(property.available, isVerified);

@@ -7,13 +7,27 @@ const PropertySchema = new mongoose.Schema(
     address: { type: String, required: true },
     district: { type: String }, // Quận/Huyện
     price: { type: Number, required: true },
-    location: { type: [Number], required: true }, // [longitude, latitude] (GeoJSON standard)
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude] per GeoJSON spec
+        required: true,
+      },
+    },
     amenities: {
       type: Map,
       of: Boolean,
       default: {},
     },
-    image: { type: String },
+    image: { type: String }, // Deprecated: kept for backward compatibility. Use 'images' instead.
+    images: {
+      type: [String],
+      default: [],
+    },
     area: { type: Number, required: true },
     available: { type: Boolean, default: true },
     phone: { type: String, required: true },
