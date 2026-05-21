@@ -1,12 +1,10 @@
 import axios from "axios";
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || "http://localhost:5000";
+const API_BASE =
+  (import.meta as any).env?.VITE_API_BASE || "http://localhost:5000";
 
 const api = axios.create({
   baseURL: API_BASE,
-  headers: {
-    "Content-Type": "application/json",
-  },
   withCredentials: true, // Crucial for sending/receiving cookies
 });
 
@@ -21,7 +19,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response Interceptor: Handle Global Errors & Token Refresh
@@ -43,7 +41,7 @@ api.interceptors.response.use(
         if (res.status === 200) {
           const { token } = res.data;
           localStorage.setItem("token", token);
-          
+
           // Retry the original request with the new token
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return api(originalRequest);
@@ -58,7 +56,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

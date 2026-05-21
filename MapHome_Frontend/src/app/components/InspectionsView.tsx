@@ -4,7 +4,7 @@ import PromptDialog from "@/app/components/PromptDialog";
 import { toast } from "sonner";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { useVerification } from "@/app/contexts/VerificationContext";
-import { useProperties } from "@/app/contexts/PropertiesContext";
+import { useProperties } from "@/app/contexts/useProperties";
 import { InspectionDialog } from "@/app/components/InspectionDialog";
 import { VerificationRequest } from "@/app/components/types";
 import { Button } from "@/app/components/ui/button";

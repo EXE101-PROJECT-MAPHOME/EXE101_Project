@@ -10,6 +10,25 @@ const mapCache = new NodeCache({ stdTTL: 86400, checkperiod: 600 });
 
 const GOONG_API_KEY = process.env.GOONG_API_KEY;
 
+const normalizeAddressComponents = (components) => {
+  if (!Array.isArray(components)) return [];
+
+  return components
+    .filter(
+      (component) =>
+        component &&
+        typeof component === "object" &&
+        typeof component.long_name === "string" &&
+        typeof component.short_name === "string" &&
+        Array.isArray(component.types),
+    )
+    .map((component) => ({
+      long_name: component.long_name,
+      short_name: component.short_name,
+      types: component.types.filter((type) => typeof type === "string"),
+    }));
+};
+
 // @desc    Convert coordinates (lat, lng) to human-readable address
 // @route   GET /api/map/reverse-geocode
 const reverseGeocode = async (req, res, next) => {
@@ -17,7 +36,9 @@ const reverseGeocode = async (req, res, next) => {
     const { lat, lng } = req.query;
 
     if (!lat || !lng) {
-      return res.status(400).json({ message: "Latitude and longitude are required" });
+      return res
+        .status(400)
+        .json({ message: "Latitude and longitude are required" });
     }
 
     const cacheKey = `reverse_${lat}_${lng}`;
@@ -28,15 +49,28 @@ const reverseGeocode = async (req, res, next) => {
     }
 
     const url = `https://rsapi.goong.io/Geocode?latlng=${lat},${lng}&api_key=${GOONG_API_KEY}`;
-    
+
     const response = await axios.get(url);
-    
-    if (response.data && response.data.results && response.data.results.length > 0) {
+
+    if (
+      response.data &&
+      response.data.results &&
+      response.data.results.length > 0
+    ) {
       const result = response.data.results[0];
-      mapCache.set(cacheKey, result);
-      res.status(200).json(result);
+      const normalizedResult = {
+        ...result,
+        formatted_address: result.formatted_address || "",
+        address_components: normalizeAddressComponents(
+          result.address_components,
+        ),
+      };
+      mapCache.set(cacheKey, normalizedResult);
+      res.status(200).json(normalizedResult);
     } else {
-      res.status(404).json({ message: "No address found for these coordinates" });
+      res
+        .status(404)
+        .json({ message: "No address found for these coordinates" });
     }
   } catch (error) {
     next(error);
@@ -64,10 +98,10 @@ const autocomplete = async (req, res, next) => {
     const locationBias = "10.7769,106.7009";
     const radiusBias = 20000;
     const url = `https://rsapi.goong.io/Place/Autocomplete?input=${encodeURIComponent(input)}&location=${locationBias}&radius=${radiusBias}&api_key=${GOONG_API_KEY}`;
-    
+
     const response = await axios.get(url);
     const predictions = response.data.predictions || [];
-    
+
     mapCache.set(cacheKey, predictions);
     res.status(200).json(predictions);
   } catch (error) {
@@ -93,13 +127,19 @@ const getPlaceDetail = async (req, res, next) => {
     }
 
     const url = `https://rsapi.goong.io/Place/Detail?place_id=${place_id}&api_key=${GOONG_API_KEY}`;
-    
+
     const response = await axios.get(url);
-    
+
     if (response.data && response.data.result) {
       const result = response.data.result;
-      mapCache.set(cacheKey, result);
-      res.status(200).json(result);
+      const normalizedResult = {
+        ...result,
+        address_components: normalizeAddressComponents(
+          result.address_components,
+        ),
+      };
+      mapCache.set(cacheKey, normalizedResult);
+      res.status(200).json(normalizedResult);
     } else {
       res.status(404).json({ message: "Place not found" });
     }
@@ -107,7 +147,6 @@ const getPlaceDetail = async (req, res, next) => {
     next(error);
   }
 };
-
 
 module.exports = {
   reverseGeocode,

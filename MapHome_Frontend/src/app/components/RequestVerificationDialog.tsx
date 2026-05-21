@@ -1,12 +1,19 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/app/components/ui/button';
-import { Input } from '@/app/components/ui/input';
-import { Label } from '@/app/components/ui/label';
-import { RentalProperty } from '@/app/components/types';
-import { useProperties } from '@/app/contexts/PropertiesContext';
-import { X, Calendar, Clock, ShieldCheck, Award, CheckCircle } from 'lucide-react';
-import api from '@/app/utils/api';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
+import { Label } from "@/app/components/ui/label";
+import { RentalProperty } from "@/app/components/types";
+import { useProperties } from "@/app/contexts/useProperties";
+import {
+  X,
+  Calendar,
+  Clock,
+  ShieldCheck,
+  Award,
+  CheckCircle,
+} from "lucide-react";
+import api from "@/app/utils/api";
+import { toast } from "sonner";
 
 interface RequestVerificationDialogProps {
   isOpen: boolean;
@@ -25,11 +32,14 @@ export function RequestVerificationDialog({
 }: RequestVerificationDialogProps) {
   const { properties } = useProperties();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedPropertyId, setSelectedPropertyId] = useState('');
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('09:00');
-  const [notes, setNotes] = useState('');
-  const [pricing, setPricing] = useState({ basicVerification: 0, premiumVerification: 0 });
+  const [selectedPropertyId, setSelectedPropertyId] = useState("");
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("09:00");
+  const [notes, setNotes] = useState("");
+  const [pricing, setPricing] = useState({
+    basicVerification: 0,
+    premiumVerification: 0,
+  });
 
   // Fetch pricing on mount
   useEffect(() => {
@@ -48,18 +58,20 @@ export function RequestVerificationDialog({
 
   // Filter properties belonging to this landlord
   const landlordProperties = properties.filter(
-    (p) => p.ownerName === landlordName || p.pinInfo?.pinnedBy === landlordId
+    (p) => p.ownerName === landlordName || p.pinInfo?.pinnedBy === landlordId,
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedPropertyId || !scheduledDate) {
-      toast.warning('Vui lòng chọn căn trọ và ngày hẹn');
+      toast.warning("Vui lòng chọn căn trọ và ngày hẹn");
       return;
     }
 
-    const property = properties.find((p) => (p.id || p._id) === selectedPropertyId);
+    const property = properties.find(
+      (p) => (p.id || p._id) === selectedPropertyId,
+    );
     if (!property) return;
 
     setIsSubmitting(true);
@@ -79,7 +91,9 @@ export function RequestVerificationDialog({
       const res = await api.post("/api/verifications", payload);
 
       if (res.status === 200 || res.status === 201) {
-        toast.success('Yêu cầu kiểm tra đã được gửi! ✅ Admin sẽ xem xét và liên hệ với bạn sớm.');
+        toast.success(
+          "Yêu cầu kiểm tra đã được gửi! ✅ Admin sẽ xem xét và liên hệ với bạn sớm.",
+        );
         onClose();
         // Reload is needed to show the new request in the dashboard
         window.location.reload();
@@ -88,7 +102,10 @@ export function RequestVerificationDialog({
       }
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.message || 'Có lỗi xảy ra. Không thể gửi yêu cầu. ❌');
+      toast.error(
+        err.response?.data?.message ||
+          "Có lỗi xảy ra. Không thể gửi yêu cầu. ❌",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -107,8 +124,12 @@ export function RequestVerificationDialog({
                 <ShieldCheck className="size-8" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Yêu cầu kiểm tra & Cấp Tích Xanh</h2>
-                <p className="text-green-100 text-sm">Nâng cao độ tin cậy của tin đăng</p>
+                <h2 className="text-2xl font-bold">
+                  Yêu cầu kiểm tra & Cấp Tích Xanh
+                </h2>
+                <p className="text-green-100 text-sm">
+                  Nâng cao độ tin cậy của tin đăng
+                </p>
               </div>
             </div>
             <button
@@ -131,17 +152,23 @@ export function RequestVerificationDialog({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="bg-white rounded-lg p-3 border border-green-100">
                 <div className="text-2xl mb-1">⭐</div>
-                <p className="text-xs font-semibold text-gray-900">Ưu tiên hiển thị</p>
+                <p className="text-xs font-semibold text-gray-900">
+                  Ưu tiên hiển thị
+                </p>
                 <p className="text-xs text-gray-600">Lên top tìm kiếm</p>
               </div>
               <div className="bg-white rounded-lg p-3 border border-blue-100">
                 <div className="text-2xl mb-1">🛡️</div>
-                <p className="text-xs font-semibold text-gray-900">Tăng độ tin cậy</p>
+                <p className="text-xs font-semibold text-gray-900">
+                  Tăng độ tin cậy
+                </p>
                 <p className="text-xs text-gray-600">Đã kiểm tra thực tế</p>
               </div>
               <div className="bg-white rounded-lg p-3 border border-purple-100">
                 <div className="text-2xl mb-1">📈</div>
-                <p className="text-xs font-semibold text-gray-900">Nhiều lượt xem</p>
+                <p className="text-xs font-semibold text-gray-900">
+                  Nhiều lượt xem
+                </p>
                 <p className="text-xs text-gray-600">+50% người thuê</p>
               </div>
             </div>
@@ -160,15 +187,19 @@ export function RequestVerificationDialog({
             >
               <option value="">-- Chọn căn trọ --</option>
               {landlordProperties.map((property) => (
-                <option key={property._id || property.id} value={property._id || property.id}>
+                <option
+                  key={property._id || property.id}
+                  value={property._id || property.id}
+                >
                   {property.name} - {property.address}
-                  {property.greenBadge ? ' ✅ (Đã có tích xanh)' : ''}
+                  {property.greenBadge ? " ✅ (Đã có tích xanh)" : ""}
                 </option>
               ))}
             </select>
             {landlordProperties.length === 0 && (
               <p className="text-xs text-red-600 mt-1">
-                Bạn chưa có tin đăng nào. Vui lòng đăng tin trước khi yêu cầu kiểm tra.
+                Bạn chưa có tin đăng nào. Vui lòng đăng tin trước khi yêu cầu
+                kiểm tra.
               </p>
             )}
           </div>
@@ -184,7 +215,7 @@ export function RequestVerificationDialog({
                 type="date"
                 value={scheduledDate}
                 onChange={(e) => setScheduledDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                min={new Date().toISOString().split("T")[0]}
                 className="text-sm"
                 required
               />
@@ -234,24 +265,35 @@ export function RequestVerificationDialog({
             </h4>
             <ol className="space-y-2 text-xs text-blue-800">
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold">1</span>
+                <span className="flex-shrink-0 bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold">
+                  1
+                </span>
                 <span>Admin xác nhận lịch hẹn (trong 24h)</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold">2</span>
+                <span className="flex-shrink-0 bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold">
+                  2
+                </span>
                 <span>Đội ngũ kiểm tra đến hiện trường đúng giờ</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold">3</span>
+                <span className="flex-shrink-0 bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold">
+                  3
+                </span>
                 <span>Đánh giá: vị trí GPS, điều kiện phòng, pháp lý</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold">4</span>
+                <span className="flex-shrink-0 bg-blue-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold">
+                  4
+                </span>
                 <span>Cấp Tích Xanh (Basic/Premium/Platinum) nếu đạt</span>
               </li>
               <li className="flex items-start gap-2 pt-2 border-t border-blue-100 mt-2">
-                < Award className="size-4 text-blue-600 flex-shrink-0" />
-                <span className="font-bold">Chi phí: {pricing.basicVerification.toLocaleString()}đ / lần kiểm tra</span>
+                <Award className="size-4 text-blue-600 flex-shrink-0" />
+                <span className="font-bold">
+                  Chi phí: {pricing.basicVerification.toLocaleString()}đ / lần
+                  kiểm tra
+                </span>
               </li>
             </ol>
           </div>

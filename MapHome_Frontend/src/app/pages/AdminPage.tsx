@@ -6,7 +6,7 @@ import api from "@/app/utils/api";
 import { getAvatarUrl, getInitials } from "@/app/utils/avatarUtils";
 import { formatDateVietnamese } from "@/app/utils/dateUtils";
 import { useVerification } from "@/app/contexts/VerificationContext";
-import { useProperties } from "@/app/contexts/PropertiesContext";
+import { useProperties } from "@/app/contexts/useProperties";
 import { Button } from "@/app/components/ui/button";
 import { InspectionDialog } from "@/app/components/InspectionDialog";
 import { VerificationRequest } from "@/app/components/types";
@@ -89,7 +89,7 @@ export function AdminPage() {
   const [searchParams] = useSearchParams();
   const { user, logout, isAuthenticated } = useAuth();
   const [activeView, setActiveView] = useState<AdminView>(
-    (searchParams.get("view") as AdminView) || "dashboard"
+    (searchParams.get("view") as AdminView) || "dashboard",
   );
   const [stats, setStats] = useState<any>(null);
   const [weeklySearchData, setWeeklySearchData] = useState<any[]>([]);
@@ -371,7 +371,8 @@ export function AdminPage() {
     setConfirmModal({
       open: true,
       title: "Xác nhận xóa bài viết",
-      description: "Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa bài viết này không?",
+      description:
+        "Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa bài viết này không?",
       onConfirm: async () => {
         try {
           await api.delete(`/api/blogs/${id}`);
@@ -381,7 +382,7 @@ export function AdminPage() {
           console.error(error);
           toast.error("Lỗi khi xóa bài viết!");
         }
-      }
+      },
     });
   };
 
@@ -598,14 +599,22 @@ export function AdminPage() {
                 { id: "revenue", label: "Doanh thu", icon: TrendingUp },
                 { id: "transactions", label: "Giao dịch", icon: CreditCard },
                 { id: "blog", label: "Quản lý Blog", icon: Newspaper },
-                { id: "analytics", label: "Phân tích hệ thống", icon: BarChart3 },
+                {
+                  id: "analytics",
+                  label: "Phân tích hệ thống",
+                  icon: BarChart3,
+                },
               ],
             },
             {
               title: "Hệ thống",
               items: [
                 { id: "subscriptions", label: "Gói dịch vụ", icon: Ticket },
-                { id: "global_pricing", label: "Dịch vụ & Giá", icon: DollarSign },
+                {
+                  id: "global_pricing",
+                  label: "Dịch vụ & Giá",
+                  icon: DollarSign,
+                },
                 { id: "settings", label: "Cài đặt", icon: Settings },
               ],
             },
@@ -913,19 +922,22 @@ export function AdminPage() {
                     <AdvancedAnalyticsView stats={stats} />
                   )}
                   {activeView === "subscriptions" && (
-                    <SubscriptionsAdminView plans={subscriptionPlans} onRefresh={fetchData} />
+                    <SubscriptionsAdminView
+                      plans={subscriptionPlans}
+                      onRefresh={fetchData}
+                    />
                   )}
                   {activeView === "global_pricing" && (
                     <GlobalPricingView onRefresh={fetchData} />
                   )}
-                   {activeView === "blog" && (
-                     <BlogAdminView 
-                       blogs={blogs} 
-                       onAdd={() => handleOpenBlogEditor()}
-                       onEdit={(blog: any) => handleOpenBlogEditor(blog)}
-                       onDelete={(id: string) => handleDeleteBlog(id)}
-                     />
-                   )}
+                  {activeView === "blog" && (
+                    <BlogAdminView
+                      blogs={blogs}
+                      onAdd={() => handleOpenBlogEditor()}
+                      onEdit={(blog: any) => handleOpenBlogEditor(blog)}
+                      onDelete={(id: string) => handleDeleteBlog(id)}
+                    />
+                  )}
                   {activeView === "revenue" && <RevenueView />}
                   {activeView === "inspections" && <InspectionsView />}
                   {activeView === "settings" && <SettingsView />}
@@ -3392,13 +3404,20 @@ function NotificationsManagementView({
         }}
         className="bg-white border border-slate-100 rounded-[40px] p-10 shadow-sm"
       >
-        <h4 className="text-lg font-black text-slate-800 mb-6">Thông báo chuyên trang Admin</h4>
+        <h4 className="text-lg font-black text-slate-800 mb-6">
+          Thông báo chuyên trang Admin
+        </h4>
         <div className="space-y-3">
           {notifications.length === 0 ? (
-            <div className="py-10 text-center text-slate-400 font-medium">Không có thông báo hệ thống nào.</div>
+            <div className="py-10 text-center text-slate-400 font-medium">
+              Không có thông báo hệ thống nào.
+            </div>
           ) : (
             notifications.map((n) => (
-              <div key={n.id} className="flex gap-4 p-5 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100">
+              <div
+                key={n.id}
+                className="flex gap-4 p-5 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors border border-slate-100"
+              >
                 <div
                   className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 ${
                     n.type === "user"
@@ -3413,7 +3432,9 @@ function NotificationsManagementView({
                   {n.icon}
                 </div>
                 <div>
-                  <div className="font-black text-sm text-slate-800">{n.title}</div>
+                  <div className="font-black text-sm text-slate-800">
+                    {n.title}
+                  </div>
                   <div className="text-xs text-slate-500 mt-1">{n.message}</div>
                   <div className="text-[10px] text-slate-400 font-medium mt-2">
                     {new Date(n.time).toLocaleString("vi-VN")}
@@ -3657,17 +3678,24 @@ const TransactionsView = ({ transactions }: { transactions: any[] }) => {
       <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-[35px] shadow-sm overflow-hidden">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight">Lịch sử Giao dịch VNPay</h3>
-            <p className="text-xs text-slate-500 font-medium mt-1">Quản lý và đối soát các giao dịch thanh toán trên hệ thống</p>
+            <h3 className="text-xl font-black text-slate-800 tracking-tight">
+              Lịch sử Giao dịch VNPay
+            </h3>
+            <p className="text-xs text-slate-500 font-medium mt-1">
+              Quản lý và đối soát các giao dịch thanh toán trên hệ thống
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="px-5 py-3 bg-emerald-50 rounded-2xl border border-emerald-100/50">
-              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest block mb-1">Tổng doanh thu</span>
+              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest block mb-1">
+                Tổng doanh thu
+              </span>
               <span className="text-lg font-black text-emerald-700">
                 {transactions
-                  .filter(t => t.status === "success")
+                  .filter((t) => t.status === "success")
                   .reduce((sum, t) => sum + t.amount, 0)
-                  .toLocaleString("vi-VN")}đ
+                  .toLocaleString("vi-VN")}
+                đ
               </span>
             </div>
           </div>
@@ -3676,37 +3704,74 @@ const TransactionsView = ({ transactions }: { transactions: any[] }) => {
           <table className="w-full">
             <thead>
               <tr className="bg-slate-50/50">
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Mã GD</th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Người dùng</th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Số tiền</th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Nội dung</th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Trạng thái</th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Thời gian</th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Mã GD
+                </th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Người dùng
+                </th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Số tiền
+                </th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Nội dung
+                </th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Trạng thái
+                </th>
+                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  Thời gian
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {transactions.map((t) => (
-                <tr key={t._id} className="hover:bg-slate-50/30 transition-colors">
-                  <td className="px-8 py-5 font-black text-slate-700 text-sm whitespace-nowrap">{t.invoiceId || t._id.slice(-8)}</td>
+                <tr
+                  key={t._id}
+                  className="hover:bg-slate-50/30 transition-colors"
+                >
+                  <td className="px-8 py-5 font-black text-slate-700 text-sm whitespace-nowrap">
+                    {t.invoiceId || t._id.slice(-8)}
+                  </td>
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-[10px] font-black text-indigo-600">
-                        {getInitials(t.userId?.fullName || "User", t.userId?.username)}
+                        {getInitials(
+                          t.userId?.fullName || "User",
+                          t.userId?.username,
+                        )}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-black text-slate-800 truncate">{t.userId?.fullName}</div>
-                        <div className="text-[10px] text-slate-400 truncate">{t.userId?.email}</div>
+                        <div className="text-sm font-black text-slate-800 truncate">
+                          {t.userId?.fullName}
+                        </div>
+                        <div className="text-[10px] text-slate-400 truncate">
+                          {t.userId?.email}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-5 font-black text-slate-800 text-sm">{t.amount.toLocaleString("vi-VN")}đ</td>
-                  <td className="px-8 py-5 text-xs text-slate-500 max-w-xs truncate">{t.description}</td>
+                  <td className="px-8 py-5 font-black text-slate-800 text-sm">
+                    {t.amount.toLocaleString("vi-VN")}đ
+                  </td>
+                  <td className="px-8 py-5 text-xs text-slate-500 max-w-xs truncate">
+                    {t.description}
+                  </td>
                   <td className="px-8 py-5">
-                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                      t.status === "success" ? "bg-emerald-50 text-emerald-600" : 
-                      t.status === "pending" ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
-                    }`}>
-                      {t.status === "success" ? "Thành công" : t.status === "pending" ? "Chờ xử lý" : "Thất bại"}
+                    <span
+                      className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                        t.status === "success"
+                          ? "bg-emerald-50 text-emerald-600"
+                          : t.status === "pending"
+                            ? "bg-amber-50 text-amber-600"
+                            : "bg-rose-50 text-rose-600"
+                      }`}
+                    >
+                      {t.status === "success"
+                        ? "Thành công"
+                        : t.status === "pending"
+                          ? "Chờ xử lý"
+                          : "Thất bại"}
                     </span>
                   </td>
                   <td className="px-8 py-5 text-xs text-slate-400 whitespace-nowrap">
@@ -3719,7 +3784,9 @@ const TransactionsView = ({ transactions }: { transactions: any[] }) => {
           {transactions.length === 0 && (
             <div className="p-20 text-center">
               <CreditCard className="size-12 mx-auto text-slate-200 mb-4" />
-              <p className="text-sm font-bold text-slate-400">Chưa có giao dịch nào được ghi nhận</p>
+              <p className="text-sm font-bold text-slate-400">
+                Chưa có giao dịch nào được ghi nhận
+              </p>
             </div>
           )}
         </div>
@@ -3730,13 +3797,15 @@ const TransactionsView = ({ transactions }: { transactions: any[] }) => {
 
 // 2. Advanced Analytics View
 const AdvancedAnalyticsView = ({ stats }: { stats: any }) => {
-  const contactRate = stats?.totalViews > 0 
-    ? Math.round((stats.totalBookings / stats.totalViews) * 100) 
-    : 0;
-  
-  const successRate = stats?.totalViews > 0 
-    ? Math.round((stats.totalTransactionsSuccess / stats.totalViews) * 100) 
-    : 0;
+  const contactRate =
+    stats?.totalViews > 0
+      ? Math.round((stats.totalBookings / stats.totalViews) * 100)
+      : 0;
+
+  const successRate =
+    stats?.totalViews > 0
+      ? Math.round((stats.totalTransactionsSuccess / stats.totalViews) * 100)
+      : 0;
 
   return (
     <motion.div
@@ -3752,68 +3821,96 @@ const AdvancedAnalyticsView = ({ stats }: { stats: any }) => {
         </h3>
         <div className="flex items-end gap-12 h-64 px-10">
           <div className="flex-1 flex flex-col items-center gap-4">
-             <div className="w-full bg-slate-50 rounded-2xl relative overflow-hidden h-48">
-                <motion.div 
-                   initial={{ height: 0 }} 
-                   animate={{ height: "100%" }} 
-                   className="absolute bottom-0 inset-x-0 bg-blue-500/10 border-t-2 border-blue-500"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                   <div className="font-black text-blue-600 text-xl">{stats?.totalViews?.toLocaleString()}</div>
-                   <div className="text-[8px] font-black text-blue-400 uppercase">100%</div>
+            <div className="w-full bg-slate-50 rounded-2xl relative overflow-hidden h-48">
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: "100%" }}
+                className="absolute bottom-0 inset-x-0 bg-blue-500/10 border-t-2 border-blue-500"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="font-black text-blue-600 text-xl">
+                  {stats?.totalViews?.toLocaleString()}
                 </div>
-             </div>
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Lượt xem tin</span>
+                <div className="text-[8px] font-black text-blue-400 uppercase">
+                  100%
+                </div>
+              </div>
+            </div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+              Lượt xem tin
+            </span>
           </div>
           <div className="flex-1 flex flex-col items-center gap-4">
-             <div className="w-full bg-slate-50 rounded-2xl relative overflow-hidden h-48">
-                <motion.div 
-                   initial={{ height: 0 }} 
-                   animate={{ height: `${Math.max(contactRate, 5)}%` }} 
-                   className="absolute bottom-0 inset-x-0 bg-indigo-500/10 border-t-2 border-indigo-500"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                   <div className="font-black text-indigo-600 text-xl">{stats?.totalBookings?.toLocaleString()}</div>
-                   <div className="text-[8px] font-black text-indigo-400 uppercase">{contactRate}%</div>
+            <div className="w-full bg-slate-50 rounded-2xl relative overflow-hidden h-48">
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: `${Math.max(contactRate, 5)}%` }}
+                className="absolute bottom-0 inset-x-0 bg-indigo-500/10 border-t-2 border-indigo-500"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="font-black text-indigo-600 text-xl">
+                  {stats?.totalBookings?.toLocaleString()}
                 </div>
-             </div>
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Liên hệ / Đặt lịch</span>
+                <div className="text-[8px] font-black text-indigo-400 uppercase">
+                  {contactRate}%
+                </div>
+              </div>
+            </div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+              Liên hệ / Đặt lịch
+            </span>
           </div>
           <div className="flex-1 flex flex-col items-center gap-4">
-             <div className="w-full bg-slate-50 rounded-2xl relative overflow-hidden h-48">
-                <motion.div 
-                   initial={{ height: 0 }} 
-                   animate={{ height: `${Math.max(successRate, 5)}%` }} 
-                   className="absolute bottom-0 inset-x-0 bg-emerald-500/10 border-t-2 border-emerald-500"
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                   <div className="font-black text-emerald-600 text-xl">{stats?.totalTransactionsSuccess?.toLocaleString()}</div>
-                   <div className="text-[8px] font-black text-emerald-400 uppercase">{successRate}%</div>
+            <div className="w-full bg-slate-50 rounded-2xl relative overflow-hidden h-48">
+              <motion.div
+                initial={{ height: 0 }}
+                animate={{ height: `${Math.max(successRate, 5)}%` }}
+                className="absolute bottom-0 inset-x-0 bg-emerald-500/10 border-t-2 border-emerald-500"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="font-black text-emerald-600 text-xl">
+                  {stats?.totalTransactionsSuccess?.toLocaleString()}
                 </div>
-             </div>
-             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Giao dịch thành công</span>
+                <div className="text-[8px] font-black text-emerald-400 uppercase">
+                  {successRate}%
+                </div>
+              </div>
+            </div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+              Giao dịch thành công
+            </span>
           </div>
         </div>
       </div>
 
       <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-[35px] p-8 text-white shadow-xl shadow-indigo-100 flex flex-col justify-between">
         <div>
-          <h3 className="text-indigo-100 font-bold text-sm uppercase tracking-widest mb-2">Đăng ký mới</h3>
-          <div className="text-4xl font-black">{stats?.newUsers?.toLocaleString() || 0}</div>
-          <p className="text-xs text-indigo-200 mt-2 font-medium">Người dùng mới gia nhập trong tháng này</p>
+          <h3 className="text-indigo-100 font-bold text-sm uppercase tracking-widest mb-2">
+            Đăng ký mới
+          </h3>
+          <div className="text-4xl font-black">
+            {stats?.newUsers?.toLocaleString() || 0}
+          </div>
+          <p className="text-xs text-indigo-200 mt-2 font-medium">
+            Người dùng mới gia nhập trong tháng này
+          </p>
         </div>
         <div className="pt-8 border-t border-white/10 mt-8">
-           <div className="flex items-center justify-between text-xs font-bold text-indigo-200 mb-2">
-              <span>Mục tiêu tháng</span>
-              <span>{Math.min(Math.round(((stats?.newUsers || 0) / 100) * 100), 100)}%</span>
-           </div>
-           <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(((stats?.newUsers || 0) / 100) * 100), 100}%` }}
-                className="h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
-              />
-           </div>
+          <div className="flex items-center justify-between text-xs font-bold text-indigo-200 mb-2">
+            <span>Mục tiêu tháng</span>
+            <span>
+              {Math.min(Math.round(((stats?.newUsers || 0) / 100) * 100), 100)}%
+            </span>
+          </div>
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{
+                width: `${(Math.min(((stats?.newUsers || 0) / 100) * 100), 100)}%`,
+              }}
+              className="h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+            />
+          </div>
         </div>
       </div>
     </motion.div>
@@ -3821,7 +3918,13 @@ const AdvancedAnalyticsView = ({ stats }: { stats: any }) => {
 };
 
 // 3. Subscriptions Admin View
-const SubscriptionsAdminView = ({ plans, onRefresh }: { plans: any[]; onRefresh: () => void }) => {
+const SubscriptionsAdminView = ({
+  plans,
+  onRefresh,
+}: {
+  plans: any[];
+  onRefresh: () => void;
+}) => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -3837,7 +3940,12 @@ const SubscriptionsAdminView = ({ plans, onRefresh }: { plans: any[]; onRefresh:
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xoá (ngừng kích hoạt) gói này không?")) return;
+    if (
+      !window.confirm(
+        "Bạn có chắc chắn muốn xoá (ngừng kích hoạt) gói này không?",
+      )
+    )
+      return;
     try {
       const res = await api.delete(`/api/admin/subscriptions/plans/${id}`);
       if (res.status === 200) {
@@ -3853,7 +3961,10 @@ const SubscriptionsAdminView = ({ plans, onRefresh }: { plans: any[]; onRefresh:
     setIsSaving(true);
     try {
       if (editingPlan) {
-        await api.put(`/api/admin/subscriptions/plans/${editingPlan._id}`, data);
+        await api.put(
+          `/api/admin/subscriptions/plans/${editingPlan._id}`,
+          data,
+        );
         toast.success("Cập nhật gói dịch vụ thành công! ✨");
       } else {
         await api.post("/api/admin/subscriptions/plans", data);
@@ -3874,96 +3985,96 @@ const SubscriptionsAdminView = ({ plans, onRefresh }: { plans: any[]; onRefresh:
       animate={{ opacity: 1, scale: 1 }}
       className="space-y-8"
     >
-        <div className="flex items-center justify-between mb-12">
-          <div>
-            <h3 className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tighter mb-2">
-              Gói dịch vụ hệ thống
-            </h3>
-            <p className="text-sm font-bold text-slate-400">
-              Cấu hình các gói Listing dành cho Landlord
-            </p>
-          </div>
-          <Button
-            onClick={handleAdd}
-            className="bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 hover:scale-105 transition-all text-white rounded-[22px] h-14 px-8 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-none shadow-xl shadow-blue-200/50"
+      <div className="flex items-center justify-between mb-12">
+        <div>
+          <h3 className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tighter mb-2">
+            Gói dịch vụ hệ thống
+          </h3>
+          <p className="text-sm font-bold text-slate-400">
+            Cấu hình các gói Listing dành cho Landlord
+          </p>
+        </div>
+        <Button
+          onClick={handleAdd}
+          className="bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 hover:scale-105 transition-all text-white rounded-[22px] h-14 px-8 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-none shadow-xl shadow-blue-200/50"
+        >
+          <Plus className="size-5" /> Thêm gói mới
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {plans.map((plan) => (
+          <motion.div
+            key={plan._id}
+            whileHover={{ y: -10, scale: 1.02 }}
+            className="bg-white/80 backdrop-blur-3xl rounded-[42px] border border-white/60 p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative overflow-hidden group"
           >
-            <Plus className="size-5" /> Thêm gói mới
-          </Button>
-        </div>
+            {/* Decorative Background Glow */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors" />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {plans.map((plan) => (
-            <motion.div
-              key={plan._id}
-              whileHover={{ y: -10, scale: 1.02 }}
-              className="bg-white/80 backdrop-blur-3xl rounded-[42px] border border-white/60 p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] relative overflow-hidden group"
-            >
-              {/* Decorative Background Glow */}
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors" />
-
-              <div className="flex justify-between items-start mb-10">
-                <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-4 rounded-[22px] shadow-lg shadow-blue-100/50 text-white">
-                  <Ticket className="size-8" />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(plan)}
-                    className="p-3 bg-slate-50 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-2xl transition-all"
-                  >
-                    <Edit className="size-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(plan._id)}
-                    className="p-3 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"
-                  >
-                    <Trash2 className="size-4" />
-                  </button>
-                </div>
+            <div className="flex justify-between items-start mb-10">
+              <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-4 rounded-[22px] shadow-lg shadow-blue-100/50 text-white">
+                <Ticket className="size-8" />
               </div>
-
-              <div className="mb-8">
-                <h4 className="text-2xl font-black text-slate-800 tracking-tight mb-2">
-                  {plan.name}
-                </h4>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-black bg-gradient-to-br from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                    {Number(plan.price).toLocaleString("vi-VN")}
-                  </span>
-                  <span className="text-sm font-black text-slate-400 uppercase tracking-widest">
-                    đ / tháng
-                  </span>
-                </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEdit(plan)}
+                  className="p-3 bg-slate-50 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-2xl transition-all"
+                >
+                  <Edit className="size-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(plan._id)}
+                  className="p-3 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl transition-all"
+                >
+                  <Trash2 className="size-4" />
+                </button>
               </div>
+            </div>
 
-              <div className="space-y-4 mb-10">
-                {(plan.features || []).map((f: any, i: number) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="mt-1 bg-emerald-100/50 p-1 rounded-lg text-emerald-600 flex-shrink-0">
-                      <CheckCircle className="size-3" />
-                    </div>
-                    <span className="text-[13px] font-bold text-slate-600 leading-relaxed">
-                      {typeof f === "string" ? f : f.text}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="pt-8 border-t border-slate-50 flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  Landlord đang dùng
+            <div className="mb-8">
+              <h4 className="text-2xl font-black text-slate-800 tracking-tight mb-2">
+                {plan.name}
+              </h4>
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-black bg-gradient-to-br from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                  {Number(plan.price).toLocaleString("vi-VN")}
                 </span>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-lg font-black text-slate-800">
-                    {plan.activeUsers || 0}
+                <span className="text-sm font-black text-slate-400 uppercase tracking-widest">
+                  đ / tháng
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-4 mb-10">
+              {(plan.features || []).map((f: any, i: number) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="mt-1 bg-emerald-100/50 p-1 rounded-lg text-emerald-600 flex-shrink-0">
+                    <CheckCircle className="size-3" />
+                  </div>
+                  <span className="text-[13px] font-bold text-slate-600 leading-relaxed">
+                    {typeof f === "string" ? f : f.text}
                   </span>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+              ))}
+            </div>
 
-      <PlanEditorDialog 
+            <div className="pt-8 border-t border-slate-50 flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Landlord đang dùng
+              </span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-lg font-black text-slate-800">
+                  {plan.activeUsers || 0}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <PlanEditorDialog
         isOpen={isEditorOpen}
         onClose={() => setIsEditorOpen(false)}
         onSave={handleSave}
@@ -3975,7 +4086,13 @@ const SubscriptionsAdminView = ({ plans, onRefresh }: { plans: any[]; onRefresh:
 };
 
 // Plan Editor Dialog Content
-const PlanEditorDialog = ({ isOpen, onClose, onSave, initialData, isSaving }: any) => {
+const PlanEditorDialog = ({
+  isOpen,
+  onClose,
+  onSave,
+  initialData,
+  isSaving,
+}: any) => {
   const [formData, setFormData] = useState<any>({
     name: "",
     planId: "",
@@ -4028,7 +4145,10 @@ const PlanEditorDialog = ({ isOpen, onClose, onSave, initialData, isSaving }: an
     if (!newFeature.trim()) return;
     setFormData({
       ...formData,
-      features: [...formData.features, { text: newFeature.trim(), included: true }]
+      features: [
+        ...formData.features,
+        { text: newFeature.trim(), included: true },
+      ],
     });
     setNewFeature("");
   };
@@ -4036,7 +4156,7 @@ const PlanEditorDialog = ({ isOpen, onClose, onSave, initialData, isSaving }: an
   const removeFeature = (index: number) => {
     setFormData({
       ...formData,
-      features: formData.features.filter((_: any, i: number) => i !== index)
+      features: formData.features.filter((_: any, i: number) => i !== index),
     });
   };
 
@@ -4063,13 +4183,15 @@ const PlanEditorDialog = ({ isOpen, onClose, onSave, initialData, isSaving }: an
             <div className="p-10 pb-6 flex items-center justify-between">
               <div>
                 <h3 className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tighter">
-                  {initialData ? "Cập nhật Gói Dịch Vụ" : "Thiết kế Gói Dịch Vụ Mới"}
+                  {initialData
+                    ? "Cập nhật Gói Dịch Vụ"
+                    : "Thiết kế Gói Dịch Vụ Mới"}
                 </h3>
                 <p className="text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest">
                   Thông tin cơ bản & Đặc quyền quyền lợi
                 </p>
               </div>
-              <button 
+              <button
                 onClick={onClose}
                 className="w-12 h-12 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-rose-500 rounded-2xl transition-all"
               >
@@ -4162,13 +4284,13 @@ const PlanEditorDialog = ({ isOpen, onClose, onSave, initialData, isSaving }: an
                     Danh sách Đặc quyền
                   </label>
                   <div className="flex gap-2">
-                    <input 
+                    <input
                       className="h-10 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold"
                       placeholder="Tính năng mới..."
                       value={newFeature}
-                      onChange={e => setNewFeature(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
+                      onChange={(e) => setNewFeature(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
                           e.preventDefault();
                           addFeature();
                         }
@@ -4199,13 +4321,18 @@ const PlanEditorDialog = ({ isOpen, onClose, onSave, initialData, isSaving }: an
                           <CheckCircle className="size-4" />
                         </div>
                         <input
-                          value={typeof feature === 'string' ? feature : feature.text}
+                          value={
+                            typeof feature === "string" ? feature : feature.text
+                          }
                           onChange={(e) => {
                             const newFeatures = [...formData.features];
-                            if (typeof newFeatures[idx] === 'string') {
+                            if (typeof newFeatures[idx] === "string") {
                               newFeatures[idx] = e.target.value;
                             } else {
-                              newFeatures[idx] = { ...newFeatures[idx], text: e.target.value };
+                              newFeatures[idx] = {
+                                ...newFeatures[idx],
+                                text: e.target.value,
+                              };
                             }
                             setFormData({ ...formData, features: newFeatures });
                           }}
@@ -4222,7 +4349,9 @@ const PlanEditorDialog = ({ isOpen, onClose, onSave, initialData, isSaving }: an
                     </motion.div>
                   ))}
                   {formData.features.length === 0 && (
-                    <p className="text-[10px] text-slate-400 font-bold text-center py-4 italic">Chưa có tính năng nào được thêm</p>
+                    <p className="text-[10px] text-slate-400 font-bold text-center py-4 italic">
+                      Chưa có tính năng nào được thêm
+                    </p>
                   )}
                 </div>
               </div>
@@ -4242,7 +4371,11 @@ const PlanEditorDialog = ({ isOpen, onClose, onSave, initialData, isSaving }: an
                 disabled={isSaving}
                 className="h-12 px-10 rounded-[22px] bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white font-black text-xs uppercase tracking-widest border-none shadow-xl shadow-blue-200/50 hover:scale-105 transition-all text-white"
               >
-                {isSaving ? "Đang lưu..." : (initialData ? "Lưu thay đổi" : "Khởi tạo Gói")}
+                {isSaving
+                  ? "Đang lưu..."
+                  : initialData
+                    ? "Lưu thay đổi"
+                    : "Khởi tạo Gói"}
               </Button>
             </div>
           </motion.div>
@@ -4295,7 +4428,9 @@ const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Đang tải biểu phí...</p>
+        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+          Đang tải biểu phí...
+        </p>
       </div>
     );
   }
@@ -4320,7 +4455,11 @@ const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
           disabled={saving}
           className="bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 hover:scale-105 transition-all text-white rounded-[22px] h-14 px-10 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-none shadow-xl shadow-blue-200/50"
         >
-          {saving ? <RefreshCw className="size-5 animate-spin" /> : <Save className="size-5" />}
+          {saving ? (
+            <RefreshCw className="size-5 animate-spin" />
+          ) : (
+            <Save className="size-5" />
+          )}
           {saving ? "Đang xử lý..." : "Lưu cấu hình"}
         </Button>
       </div>
@@ -4333,10 +4472,15 @@ const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
           color="blue"
           value={settings.pricing.basicVerification}
           description="Áp dụng xác minh qua SĐT/Zalo"
-          onChange={(val) => setSettings({
-            ...settings,
-            pricing: { ...settings.pricing, basicVerification: parseInt(val) || 0 }
-          })}
+          onChange={(val) =>
+            setSettings({
+              ...settings,
+              pricing: {
+                ...settings.pricing,
+                basicVerification: parseInt(val) || 0,
+              },
+            })
+          }
         />
 
         <PricingCard
@@ -4345,10 +4489,15 @@ const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
           color="amber"
           value={settings.pricing.premiumVerification}
           description="Nhân viên MapHome đến kiểm tra tận nơi"
-          onChange={(val) => setSettings({
-            ...settings,
-            pricing: { ...settings.pricing, premiumVerification: parseInt(val) || 0 }
-          })}
+          onChange={(val) =>
+            setSettings({
+              ...settings,
+              pricing: {
+                ...settings.pricing,
+                premiumVerification: parseInt(val) || 0,
+              },
+            })
+          }
         />
 
         {/* Posting Fees */}
@@ -4358,10 +4507,12 @@ const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
           color="emerald"
           value={settings.pricing.postRoomFee || 0}
           description="Áp dụng cho mỗi tin đăng mới"
-          onChange={(val) => setSettings({
-            ...settings,
-            pricing: { ...settings.pricing, postRoomFee: parseInt(val) || 0 }
-          })}
+          onChange={(val) =>
+            setSettings({
+              ...settings,
+              pricing: { ...settings.pricing, postRoomFee: parseInt(val) || 0 },
+            })
+          }
         />
 
         <PricingCard
@@ -4370,10 +4521,12 @@ const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
           color="violet"
           value={settings.pricing.pushRoomFee || 0}
           description="Dịch vụ đẩy tin lên đầu trang"
-          onChange={(val) => setSettings({
-            ...settings,
-            pricing: { ...settings.pricing, pushRoomFee: parseInt(val) || 0 }
-          })}
+          onChange={(val) =>
+            setSettings({
+              ...settings,
+              pricing: { ...settings.pricing, pushRoomFee: parseInt(val) || 0 },
+            })
+          }
         />
 
         <PricingCard
@@ -4382,10 +4535,15 @@ const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
           color="rose"
           value={settings.pricing.urgentRoomFee || 0}
           description="Gắn nhãn 'Gấp' cho tin đăng"
-          onChange={(val) => setSettings({
-            ...settings,
-            pricing: { ...settings.pricing, urgentRoomFee: parseInt(val) || 0 }
-          })}
+          onChange={(val) =>
+            setSettings({
+              ...settings,
+              pricing: {
+                ...settings.pricing,
+                urgentRoomFee: parseInt(val) || 0,
+              },
+            })
+          }
         />
 
         {/* Commissions */}
@@ -4396,17 +4554,30 @@ const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
           value={settings.pricing.commissionRate || 0}
           description="Tỷ lệ thu phí trên mỗi giao dịch"
           unit="%"
-          onChange={(val) => setSettings({
-            ...settings,
-            pricing: { ...settings.pricing, commissionRate: parseInt(val) || 0 }
-          })}
+          onChange={(val) =>
+            setSettings({
+              ...settings,
+              pricing: {
+                ...settings.pricing,
+                commissionRate: parseInt(val) || 0,
+              },
+            })
+          }
         />
       </div>
     </motion.div>
   );
 };
 
-const PricingCard = ({ title, icon, color, value, description, onChange, unit = "VNĐ" }: any) => {
+const PricingCard = ({
+  title,
+  icon,
+  color,
+  value,
+  description,
+  onChange,
+  unit = "VNĐ",
+}: any) => {
   const colorClasses: any = {
     blue: "text-blue-600 bg-blue-50/50",
     amber: "text-amber-600 bg-amber-50/50",
@@ -4423,7 +4594,9 @@ const PricingCard = ({ title, icon, color, value, description, onChange, unit = 
     >
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <div className={`p-4 rounded-[22px] ${colorClasses[color]} flex items-center justify-center shadow-inner border border-white`}>
+          <div
+            className={`p-4 rounded-[22px] ${colorClasses[color]} flex items-center justify-center shadow-inner border border-white`}
+          >
             {icon}
           </div>
           <div>
@@ -4472,82 +4645,100 @@ const BlogAdminView = ({ blogs, onAdd, onEdit, onDelete }: any) => {
       className="space-y-6"
     >
       <div className="flex items-center justify-between">
-         <div>
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Kiểm duyệt Blog & Tin tức</h3>
-            <p className="text-sm text-slate-500 font-medium">Quản lý nội dung bài viết và truyền thông trên MapHome</p>
-         </div>
-         <Button 
-            onClick={() => onAdd()}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl gap-2 h-12 px-6 shadow-lg shadow-indigo-100"
-          >
-            <Plus className="size-5" /> Viết bài mới
-         </Button>
+        <div>
+          <h3 className="text-2xl font-black text-slate-800 tracking-tight">
+            Kiểm duyệt Blog & Tin tức
+          </h3>
+          <p className="text-sm text-slate-500 font-medium">
+            Quản lý nội dung bài viết và truyền thông trên MapHome
+          </p>
+        </div>
+        <Button
+          onClick={() => onAdd()}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl gap-2 h-12 px-6 shadow-lg shadow-indigo-100"
+        >
+          <Plus className="size-5" /> Viết bài mới
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
         {blogs.map((blog: any) => (
-          <div key={blog._id} className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-[35px] overflow-hidden shadow-sm flex group h-48">
+          <div
+            key={blog._id}
+            className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-[35px] overflow-hidden shadow-sm flex group h-48"
+          >
             <div className="w-1/3 relative overflow-hidden">
-               <img 
-                 src={blog.image || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1073&auto=format&fit=crop"} 
-                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-               />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <img
+                src={
+                  blog.image ||
+                  "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=1073&auto=format&fit=crop"
+                }
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <div className="flex-1 p-6 flex flex-col justify-between">
-               <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{blog.category}</span>
-                    <span className="text-[9px] font-bold text-slate-400">{blog.date}</span>
-                  </div>
-                  <h4 className="text-sm font-black text-slate-800 line-clamp-1 leading-relaxed mb-2 group-hover:text-indigo-600 transition-colors">
-                    {blog.title}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 line-clamp-2 font-medium">
-                    {blog.excerpt}
-                  </p>
-               </div>
-               <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {blog.authorAvatar ? (
-                      <img src={blog.authorAvatar} className="size-6 rounded-full object-cover" />
-                    ) : (
-                      <div className="size-6 rounded-full bg-slate-200 border border-white shadow-sm flex items-center justify-center text-[8px] font-black uppercase">
-                        {blog.author?.substring(0, 2) || "AD"}
-                      </div>
-                    )}
-                    <span className="text-[9px] font-black text-slate-400 capitalize">{blog.author || "Admin"}</span>
-                  </div>
-                  <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => onEdit(blog)}
-                      className="size-8 rounded-xl hover:bg-slate-100"
-                    >
-                      <Edit className="size-4 text-slate-400" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => onDelete(blog._id)}
-                      className="size-8 rounded-xl hover:bg-rose-50 hover:text-rose-500 text-slate-400"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-               </div>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">
+                    {blog.category}
+                  </span>
+                  <span className="text-[9px] font-bold text-slate-400">
+                    {blog.date}
+                  </span>
+                </div>
+                <h4 className="text-sm font-black text-slate-800 line-clamp-1 leading-relaxed mb-2 group-hover:text-indigo-600 transition-colors">
+                  {blog.title}
+                </h4>
+                <p className="text-[11px] text-slate-500 line-clamp-2 font-medium">
+                  {blog.excerpt}
+                </p>
+              </div>
+              <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {blog.authorAvatar ? (
+                    <img
+                      src={blog.authorAvatar}
+                      className="size-6 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="size-6 rounded-full bg-slate-200 border border-white shadow-sm flex items-center justify-center text-[8px] font-black uppercase">
+                      {blog.author?.substring(0, 2) || "AD"}
+                    </div>
+                  )}
+                  <span className="text-[9px] font-black text-slate-400 capitalize">
+                    {blog.author || "Admin"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEdit(blog)}
+                    className="size-8 rounded-xl hover:bg-slate-100"
+                  >
+                    <Edit className="size-4 text-slate-400" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(blog._id)}
+                    className="size-8 rounded-xl hover:bg-rose-50 hover:text-rose-500 text-slate-400"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         ))}
         {blogs.length === 0 && (
           <div className="col-span-2 py-20 bg-slate-50/50 rounded-[35px] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-slate-400">
-             < Newspaper className="size-12 mb-4 opacity-20" />
-             <p className="font-bold">Chưa có bài viết nào được xuất bản</p>
+            <Newspaper className="size-12 mb-4 opacity-20" />
+            <p className="font-bold">Chưa có bài viết nào được xuất bản</p>
           </div>
         )}
       </div>
     </motion.div>
   );
 };
-
