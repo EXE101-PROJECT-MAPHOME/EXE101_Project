@@ -15,5 +15,5 @@ export const defaultFilters: RentalFilters = {
   verificationLevel: 'all',
   availability: 'all',
   sortBy: 'distance',
-  radius: 5,
+  radius: 10,
 };

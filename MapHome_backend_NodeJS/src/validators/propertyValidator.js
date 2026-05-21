@@ -26,8 +26,8 @@ const createPropertyRules = [
       if (typeof value[0] !== "number" || typeof value[1] !== "number") {
         throw new Error("Latitude and longitude must be numbers");
       }
-      if (value[0] < -90 || value[0] > 90) throw new Error("Invalid latitude");
-      if (value[1] < -180 || value[1] > 180) throw new Error("Invalid longitude");
+      if (value[0] < -180 || value[0] > 180) throw new Error("Invalid longitude");
+      if (value[1] < -90 || value[1] > 90) throw new Error("Invalid latitude");
       return true;
     }),
     
@@ -53,7 +53,17 @@ const updatePropertyRules = [
   body("address").optional().trim(),
   body("price").optional().isNumeric().isFloat({ min: 0 }),
   body("area").optional().isNumeric().isFloat({ min: 0 }),
-  body("location").optional().isArray({ min: 2, max: 2 }),
+  body("location")
+    .optional()
+    .isArray({ min: 2, max: 2 })
+    .custom((value) => {
+      if (typeof value[0] !== "number" || typeof value[1] !== "number") {
+        throw new Error("Latitude and longitude must be numbers");
+      }
+      if (value[0] < -180 || value[0] > 180) throw new Error("Invalid longitude");
+      if (value[1] < -90 || value[1] > 90) throw new Error("Invalid latitude");
+      return true;
+    }),
   body("phone").optional().matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/),
   body("status").optional().isIn(["pending", "approved", "rejected", "reported"]),
 ];

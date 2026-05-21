@@ -27,11 +27,21 @@ export const PropertiesContext = createContext<
 export function PropertiesProvider({ children }: { children: ReactNode }) {
   const [properties, setProperties] = useState<RentalProperty[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    console.log('PropertiesContext state changed - properties:', properties.length, properties);
+  }, [properties]);
 
-  const mapBackendProperty = (prop: any): RentalProperty => ({
-    ...prop,
-    id: prop._id,
-  });
+  const mapBackendProperty = (prop: any): RentalProperty => {
+    const result: RentalProperty = {
+      ...prop,
+      id: prop._id,
+      verificationLevel: prop.verificationLevel || 'none', // Ensure correct format
+      greenBadge: prop.greenBadge || { level: prop.verificationLevel === 'verified' ? 'verified' : 'none' },
+    };
+    console.log('Mapped property:', result.id, result.name, 'verificationLevel:', result.verificationLevel, 'greenBadge:', result.greenBadge);
+    return result;
+  };
 
   const fetchProperties = async () => {
     try {
@@ -88,11 +98,17 @@ export function PropertiesProvider({ children }: { children: ReactNode }) {
   const searchProperties = async (filters: any) => {
     try {
       setLoading(true);
+      console.log('searchProperties called with filters:', filters);
       const res = await api.get("/api/properties/search", { params: filters });
+      console.log('searchProperties API response:', res.data);
       const results = Array.isArray(res.data)
         ? res.data
         : res.data.properties || [];
-      setProperties(results.map(mapBackendProperty));
+      console.log('searchProperties results after parsing:', results.length, results);
+      const mapped = results.map(mapBackendProperty);
+      console.log('searchProperties after map:', mapped.length, mapped);
+      setProperties(mapped);
+      console.log('searchProperties setProperties called with:', mapped.length, 'items');
     } catch (err) {
       console.error("Failed to search properties:", err);
     } finally {

@@ -19,14 +19,115 @@ const haversineKm = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
+const normalizeFrontendVerificationLevel = (level) => {
+  if (level === "verified") return "location-verified";
+  if (level === "none") return "unverified";
+  return level;
+};
+
+/**
+ * Normalize location to GeoJSON Point format
+ * Handles both old format [lng, lat] and new format { type: "Point", coordinates: [lng, lat] }
+ */
+const normalizeLocationToGeoJSON = (location) => {
+  if (!location) return null;
+
+  // Already in GeoJSON format
+  if (location.type === "Point" && Array.isArray(location.coordinates)) {
+    return location;
+  }
+
+  // Old format: plain array [lng, lat]
+  if (Array.isArray(location) && location.length >= 2) {
+    return {
+      type: "Point",
+      coordinates: [Number(location[0]), Number(location[1])],
+    };
+  }
+
+  return null;
+};
+
+/**
+ * Normalize images array
+ * Handles both old format (single image) and new format (multiple images)
+ */
+const normalizeImages = (image, images) => {
+  const imageArray = [];
+
+  // Add from new 'images' field
+  if (Array.isArray(images) && images.length > 0) {
+    imageArray.push(...images.filter((img) => img && typeof img === "string"));
+  }
+
+  // Add from old 'image' field if not already included
+  if (
+    image &&
+    typeof image === "string" &&
+    !imageArray.includes(image) &&
+    imageArray.length === 0
+  ) {
+    imageArray.push(image);
+  }
+
+  return imageArray;
+};
+
+const serializePropertyForClient = (propertyDoc) => {
+  if (!propertyDoc) return propertyDoc;
+
+  const property =
+    typeof propertyDoc.toObject === "function"
+      ? propertyDoc.toObject()
+      : { ...propertyDoc };
+
+  if (
+    property.verificationLevel === "location-verified" ||
+    property.verificationLevel === "phone-verified" ||
+    property.verificationLevel === "verified"
+  ) {
+    property.verificationLevel = "verified";
+  } else if (
+    property.verificationLevel === "unverified" ||
+    property.verificationLevel === "none"
+  ) {
+    property.verificationLevel = "none";
+  }
+
+  // Normalize location: convert GeoJSON back to [lng, lat] for frontend
+  if (property.location && property.location.coordinates) {
+    property.location = property.location.coordinates;
+  }
+
+  // Ensure images array exists
+  if (!property.images) {
+    property.images = property.image ? [property.image] : [];
+  }
+
+  return property;
+};
+
 /**
  * Helper to fetch real-time nearby landmarks from Goong API
- * @param {Array} propertyLocation [lng, lat]
+ * @param {Array|Object} propertyLocation [lng, lat] or GeoJSON Point { type: "Point", coordinates: [lng, lat] }
  */
 const getNearbyLandmarks = async (propertyLocation) => {
-  if (!Array.isArray(propertyLocation) || propertyLocation.length < 2)
+  if (!propertyLocation) return [];
+
+  let lng, lat;
+
+  // Handle both old [lng, lat] and new GeoJSON Point formats
+  if (Array.isArray(propertyLocation) && propertyLocation.length >= 2) {
+    [lng, lat] = propertyLocation;
+  } else if (
+    propertyLocation.type === "Point" &&
+    Array.isArray(propertyLocation.coordinates) &&
+    propertyLocation.coordinates.length >= 2
+  ) {
+    [lng, lat] = propertyLocation.coordinates;
+  } else {
     return [];
-  const [lng, lat] = propertyLocation;
+  }
 
   const GOONG_API_KEY =
     process.env.GOONG_API_KEY || "9Xau7e646cReoQa17uHw6Dp1KLPG7ahl9iDGy8V1";
@@ -122,7 +223,7 @@ const getProperties = async (req, res) => {
     // We'll only augment if there are few results or it's specifically requested.
     const augmentedProperties = await Promise.all(
       properties.map(async (p) => {
-        const pObj = p.toObject();
+        const pObj = serializePropertyForClient(p);
         pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
         return pObj;
       }),
@@ -146,7 +247,7 @@ const getPropertyById = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    const propertyObj = property.toObject();
+    const propertyObj = serializePropertyForClient(property);
     propertyObj.nearbyLandmarks = await getNearbyLandmarks(property.location);
 
     res.status(200).json(propertyObj);
@@ -192,9 +293,32 @@ const createProperty = async (req, res) => {
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + expiryDays);
     payload.expiryDate = expiryDate;
+    payload.verificationLevel = normalizeFrontendVerificationLevel(
+      payload.verificationLevel,
+    );
+    // Auto-approve landlord properties so they appear on the map immediately
+    payload.status = payload.status || "approved";
+
+    // Normalize location to GeoJSON format
+    const geoJsonLocation = normalizeLocationToGeoJSON(payload.location);
+    if (geoJsonLocation) {
+      payload.location = geoJsonLocation;
+    } else {
+      return res.status(400).json({
+        message: "Invalid location format. Must provide coordinates as [lng, lat].",
+        error: "INVALID_LOCATION",
+      });
+    }
+
+    // Normalize images array
+    payload.images = normalizeImages(payload.image, payload.images);
+    // If no images provided, use the first image field as fallback
+    if (payload.images.length === 0 && payload.image) {
+      payload.images = [payload.image];
+    }
 
     const property = await Property.create(payload);
-    res.status(201).json(property);
+    res.status(201).json(serializePropertyForClient(property));
   } catch (error) {
     console.error("Create property error:", error);
     res.status(400).json({
@@ -240,12 +364,13 @@ const getNearbyProperties = async (req, res) => {
     // Augment with proximity info
     const result = await Promise.all(
       properties.map(async (p) => {
-        const pObj = p.toObject();
-        pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
-        // Actual distance from search center
-        if (p.location && p.location.length >= 2) {
+        const pObj = serializePropertyForClient(p);
+        // Extract coordinates from GeoJSON Point
+        const coords = p.location.coordinates;
+        if (coords && coords.length >= 2) {
+          pObj.nearbyLandmarks = await getNearbyLandmarks(coords);
           pObj.distanceToCenter = Number(
-            haversineKm(lat, lng, p.location[1], p.location[0]).toFixed(2),
+            haversineKm(lat, lng, coords[1], coords[0]).toFixed(2),
           );
         }
         return pObj;
@@ -280,11 +405,39 @@ const updateProperty = async (req, res) => {
       }
     }
 
-    property = await Property.findByIdAndUpdate(req.params.id, req.body, {
+    const updates = {
+      ...req.body,
+      verificationLevel: normalizeFrontendVerificationLevel(
+        req.body.verificationLevel,
+      ),
+    };
+
+    // Normalize location if provided
+    if (updates.location) {
+      const geoJsonLocation = normalizeLocationToGeoJSON(updates.location);
+      if (geoJsonLocation) {
+        updates.location = geoJsonLocation;
+      } else {
+        return res.status(400).json({
+          message: "Invalid location format. Must provide coordinates as [lng, lat].",
+          error: "INVALID_LOCATION",
+        });
+      }
+    }
+
+    // Normalize images if provided
+    if (updates.image || updates.images) {
+      updates.images = normalizeImages(updates.image, updates.images);
+      if (updates.images.length === 0 && updates.image) {
+        updates.images = [updates.image];
+      }
+    }
+
+    property = await Property.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
     });
-    res.status(200).json(property);
+    res.status(200).json(serializePropertyForClient(property));
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -368,7 +521,7 @@ const getPropertiesByLandlord = async (req, res) => {
       "landlordId",
       "name phone email avatar rating",
     );
-    res.status(200).json(properties);
+    res.status(200).json(properties.map(serializePropertyForClient));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -509,17 +662,21 @@ const searchProperties = async (req, res) => {
 
     const augmentedProperties = await Promise.all(
       properties.map(async (p) => {
-        const pObj = p.toObject();
-        pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
-        if (hasGeoSearch) {
-          pObj.distanceToCenter = Number(
-            haversineKm(
-              Number(req.query.lat),
-              Number(req.query.lng),
-              p.location[1],
-              p.location[0],
-            ).toFixed(2),
-          );
+        const pObj = serializePropertyForClient(p);
+        // Extract coordinates from GeoJSON Point
+        const coords = p.location.coordinates;
+        if (coords && coords.length >= 2) {
+          pObj.nearbyLandmarks = await getNearbyLandmarks(coords);
+          if (hasGeoSearch) {
+            pObj.distanceToCenter = Number(
+              haversineKm(
+                Number(req.query.lat),
+                Number(req.query.lng),
+                coords[1],
+                coords[0],
+              ).toFixed(2),
+            );
+          }
         }
         return pObj;
       }),
@@ -571,7 +728,7 @@ const searchByMultipleLocations = async (req, res) => {
 
     const result = await Promise.all(
       properties.map(async (p) => {
-        const pObj = p.toObject();
+        const pObj = serializePropertyForClient(p);
         pObj.nearbyLandmarks = await getNearbyLandmarks(p.location);
         return pObj;
       }),
@@ -698,7 +855,7 @@ const renewProperty = async (req, res) => {
     property.status = "approved"; // Reset to approved if it was expired
 
     await property.save();
-    res.status(200).json(property);
+    res.status(200).json(serializePropertyForClient(property));
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -818,9 +975,17 @@ const verifyPropertyLocation = async (req, res) => {
     }
 
     // Calculate distance between pinned location and new GPS location
-    // property.location is [lng, lat]
-    const pinnedLng = property.location[0];
-    const pinnedLat = property.location[1];
+    // property.location is now GeoJSON Point: { type: "Point", coordinates: [lng, lat] }
+    const coordinates = property.location.coordinates || [];
+    const pinnedLng = coordinates[0];
+    const pinnedLat = coordinates[1];
+
+    if (!pinnedLng || !pinnedLat) {
+      return res.status(400).json({
+        message: "Property location is invalid",
+        error: "INVALID_LOCATION",
+      });
+    }
 
     const distanceKm = haversineKm(pinnedLat, pinnedLng, lat, lng);
     const distanceM = distanceKm * 1000;
@@ -856,19 +1021,21 @@ const verifyPropertyLocation = async (req, res) => {
 
     await property.save();
 
+    const clientProperty = serializePropertyForClient(property);
+
     res.status(200).json({
       message:
         distanceM <= MISMATCH_THRESHOLD_M
           ? "✓ GPS verification successful - Location verified"
           : "⚠️ Location mismatch - GPS differs from pinned location",
-      property,
+      property: clientProperty,
       verification: {
         distance: {
           km: distanceKm.toFixed(2),
           m: distanceM.toFixed(0),
         },
         isVerified: distanceM <= MISMATCH_THRESHOLD_M,
-        verificationLevel: property.verificationLevel,
+        verificationLevel: clientProperty.verificationLevel,
         greenBadge: property.greenBadge,
       },
     });
