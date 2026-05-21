@@ -27,7 +27,7 @@ import {
   MapPin,
   Home,
 } from "lucide-react";
-import { useProperties } from "@/app/contexts/PropertiesContext";
+import { useProperties } from "@/app/contexts/useProperties";
 import { PropertyCard } from "@/app/components/PropertyCard";
 import { Footer } from "@/app/components/Footer";
 import { Navbar } from "@/app/components/Navbar";
@@ -40,13 +40,13 @@ const fadeIn = {
   initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
   viewport: { once: true },
-  transition: { duration: 0.6 }
+  transition: { duration: 0.6 },
 };
 
 const staggerContainer = {
   initial: {},
   whileInView: { transition: { staggerChildren: 0.2 } },
-  viewport: { once: true }
+  viewport: { once: true },
 };
 
 // ─── Statistics Counter Animation ─────────────────────────────
@@ -99,12 +99,48 @@ function AnimatedCounter({
 }
 // ─── Constants ───────────────────────────────────────────────
 const HCMC_DISTRICTS = [
-  { name: "Quận 1", count: 1250, image: "https://images.unsplash.com/photo-1559592442-7e18ad73d800?auto=format&fit=crop&q=80&w=800", isHot: true },
-  { name: "Quận 7", count: 850, image: "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=800", isHot: true },
-  { name: "Bình Thạnh", count: 920, image: "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&q=80&w=800", isHot: true },
-  { name: "Quận 3", count: 640, image: "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=800", isHot: false },
-  { name: "Quận 10", count: 710, image: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&q=80&w=800", isHot: false },
-  { name: "Thủ Đức", count: 1100, image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&q=80&w=800", isHot: true },
+  {
+    name: "Quận 1",
+    count: 1250,
+    image:
+      "https://images.unsplash.com/photo-1559592442-7e18ad73d800?auto=format&fit=crop&q=80&w=800",
+    isHot: true,
+  },
+  {
+    name: "Quận 7",
+    count: 850,
+    image:
+      "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=800",
+    isHot: true,
+  },
+  {
+    name: "Bình Thạnh",
+    count: 920,
+    image:
+      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&q=80&w=800",
+    isHot: true,
+  },
+  {
+    name: "Quận 3",
+    count: 640,
+    image:
+      "https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=800",
+    isHot: false,
+  },
+  {
+    name: "Quận 10",
+    count: 710,
+    image:
+      "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&q=80&w=800",
+    isHot: false,
+  },
+  {
+    name: "Thủ Đức",
+    count: 1100,
+    image:
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&q=80&w=800",
+    isHot: true,
+  },
 ];
 
 // ─── Main Component ──────────────────────────────────────────
@@ -121,26 +157,27 @@ export function HomePage() {
     totalProperties: 0,
     totalUsers: 0,
     totalDistricts: 12,
-    satisfactionRate: 98
+    satisfactionRate: 98,
   });
 
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [statsRes, districtsRes, reviewsRes, blogsRes] = await Promise.allSettled([
-          api.get("/api/properties/stats/public"),
-          api.get("/api/properties/stats/districts"),
-          api.get("/api/reviews/latest"),
-          api.get("/api/blogs?limit=3")
-        ]);
+        const [statsRes, districtsRes, reviewsRes, blogsRes] =
+          await Promise.allSettled([
+            api.get("/api/properties/stats/public"),
+            api.get("/api/properties/stats/districts"),
+            api.get("/api/reviews/latest"),
+            api.get("/api/blogs?limit=3"),
+          ]);
 
         // Use HCM districts by default as requested by user
         setDistricts(HCMC_DISTRICTS);
-        
-        if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
-        if (reviewsRes.status === "fulfilled") setTestimonials(reviewsRes.value.data);
-        if (blogsRes.status === "fulfilled") setBlogPosts(blogsRes.value.data);
 
+        if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
+        if (reviewsRes.status === "fulfilled")
+          setTestimonials(reviewsRes.value.data);
+        if (blogsRes.status === "fulfilled") setBlogPosts(blogsRes.value.data);
       } catch (error) {
         console.error("Error fetching homepage data:", error);
       }
@@ -191,7 +228,7 @@ export function HomePage() {
       <HeroCarousel />
 
       <main className="flex-1">
-        <motion.section 
+        <motion.section
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -200,16 +237,16 @@ export function HomePage() {
         >
           {/* Background Aura */}
           <div className="absolute inset-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600" />
-          <motion.div 
-            animate={{ 
+          <motion.div
+            animate={{
               scale: [1, 1.2, 1],
               opacity: [0.3, 0.5, 0.3],
-              rotate: [0, 90, 0]
+              rotate: [0, 90, 0],
             }}
             transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
             className="absolute -top-1/2 -left-1/4 w-[100%] h-[200%] bg-white/10 blur-[100px] rounded-full"
           />
-          
+
           <div className="relative max-w-6xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
             {[
               {
@@ -218,8 +255,18 @@ export function HomePage() {
                 suffix: "+",
                 label: "Phòng trọ",
               },
-              { icon: Users, target: stats.totalUsers, suffix: "+", label: "Người dùng" },
-              { icon: Map, target: stats.totalDistricts, suffix: "", label: "Quận / Huyện" },
+              {
+                icon: Users,
+                target: stats.totalUsers,
+                suffix: "+",
+                label: "Người dùng",
+              },
+              {
+                icon: Map,
+                target: stats.totalDistricts,
+                suffix: "",
+                label: "Quận / Huyện",
+              },
               {
                 icon: CheckCircle2,
                 target: stats.satisfactionRate,
@@ -241,7 +288,7 @@ export function HomePage() {
         </motion.section>
 
         {/* ━━━ Features ━━━ */}
-        <motion.section 
+        <motion.section
           initial="initial"
           whileInView="whileInView"
           viewport={{ once: true }}
@@ -249,7 +296,7 @@ export function HomePage() {
           className="max-w-7xl mx-auto py-20 md:py-32 px-4 relative overflow-hidden"
         >
           <div className="absolute top-1/2 left-0 w-64 h-64 bg-green-100/30 blur-[120px] rounded-full -translate-x-1/2" />
- 
+
           <motion.div variants={fadeIn} className="text-center mb-16 md:mb-24">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-emerald-900 to-emerald-600 bg-clip-text text-transparent pb-3 tracking-tighter will-change-transform">
               Tại Sao Chọn MapHome?
@@ -260,7 +307,7 @@ export function HomePage() {
               được ngôi nhà thứ hai một cách dễ dàng và nhanh chóng nhất.
             </p>
           </motion.div>
- 
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative z-10">
             {[
               {
@@ -291,7 +338,15 @@ export function HomePage() {
               <motion.div
                 variants={{
                   initial: { opacity: 0, y: 30 },
-                  whileInView: { opacity: 1, y: 0, transition: { delay: f.delay, duration: 0.8, type: "spring" } }
+                  whileInView: {
+                    opacity: 1,
+                    y: 0,
+                    transition: {
+                      delay: f.delay,
+                      duration: 0.8,
+                      type: "spring",
+                    },
+                  },
                 }}
                 whileHover={{ y: -12 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -299,46 +354,55 @@ export function HomePage() {
                 className={`bg-white rounded-[48px] p-10 shadow-2xl ${f.shadow} hover:shadow-emerald-900/10 group border border-slate-50 flex flex-col items-center text-center relative overflow-hidden will-change-transform h-full`}
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-slate-50 to-transparent rounded-bl-full opacity-50" />
-                
+
                 <div className="relative mb-8">
-                   <div className={`absolute inset-0 bg-gradient-to-br ${f.gradient} blur-2xl opacity-20 group-hover:opacity-40 will-change-[opacity]`} />
-                   <div className={`bg-gradient-to-br ${f.gradient} w-20 h-20 md:w-24 md:h-24 rounded-[32px] flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-6 relative z-10 p-5 will-change-transform`}>
-                      <f.icon className="size-full text-white" />
-                   </div>
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${f.gradient} blur-2xl opacity-20 group-hover:opacity-40 will-change-[opacity]`}
+                  />
+                  <div
+                    className={`bg-gradient-to-br ${f.gradient} w-20 h-20 md:w-24 md:h-24 rounded-[32px] flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-6 relative z-10 p-5 will-change-transform`}
+                  >
+                    <f.icon className="size-full text-white" />
+                  </div>
                 </div>
- 
+
                 <h3 className="font-black text-2xl md:text-3xl mb-4 text-emerald-950 relative z-10 leading-tight">
                   {f.title}
                 </h3>
                 <p className="text-slate-600 text-base md:text-lg leading-relaxed relative z-10 font-medium pb-2 flex-grow">
                   {f.desc}
                 </p>
-                
-                <div className={`w-16 h-1.5 bg-gradient-to-r ${f.gradient} mt-8 rounded-full opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 will-change-transform`} />
+
+                <div
+                  className={`w-16 h-1.5 bg-gradient-to-r ${f.gradient} mt-8 rounded-full opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 will-change-transform`}
+                />
               </motion.div>
             ))}
           </div>
         </motion.section>
 
         {/* ━━━ How It Works ━━━ */}
-        <motion.section 
+        <motion.section
           {...fadeIn}
           className="bg-gradient-to-b from-slate-50 to-white py-20 md:py-32 relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-green-200 to-transparent" />
-          
+
           <div className="max-w-6xl mx-auto px-4 relative z-10">
             <div className="text-center mb-16 md:mb-24">
-              <span className="text-green-600 font-black text-xs uppercase tracking-[0.4em] mb-4 block">Hành trình trải nghiệm</span>
+              <span className="text-green-600 font-black text-xs uppercase tracking-[0.4em] mb-4 block">
+                Hành trình trải nghiệm
+              </span>
               <h2 className="text-4xl md:text-5xl font-black tracking-tighter bg-gradient-to-r from-emerald-900 to-emerald-600 bg-clip-text text-transparent pb-2 will-change-transform">
                 Tìm trọ chỉ với 4 bước
               </h2>
 
               <p className="text-base md:text-xl text-slate-500 font-medium max-w-2xl mx-auto mt-4">
-                Quy trình được tối ưu hóa tối đa, giúp bạn tiết kiệm thời gian và đảm bảo an toàn tuyệt đối.
+                Quy trình được tối ưu hóa tối đa, giúp bạn tiết kiệm thời gian
+                và đảm bảo an toàn tuyệt đối.
               </p>
             </div>
- 
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 md:gap-8">
               {[
                 {
@@ -374,32 +438,41 @@ export function HomePage() {
                   shadow: "shadow-orange-900/20",
                 },
               ].map((s, i) => (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.15, duration: 0.6, type: "spring", stiffness: 300 }}
-                  key={s.step} 
+                  transition={{
+                    delay: i * 0.15,
+                    duration: 0.6,
+                    type: "spring",
+                    stiffness: 300,
+                  }}
+                  key={s.step}
                   className="relative group will-change-transform"
                 >
                   {i < 3 && (
                     <div className="hidden lg:block absolute top-[50px] left-[65%] w-[70%] h-[3px] bg-gradient-to-r from-slate-100 to-slate-200 z-0" />
                   )}
-                  
+
                   <div className="relative z-10 flex flex-col items-center">
                     <motion.div
                       whileHover={{ scale: 1.1, rotate: 5 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 20,
+                      }}
                       className={`${s.color} w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-2xl ${s.shadow} relative overflow-hidden will-change-transform`}
                     >
                       <div className="absolute inset-0 bg-white/20 -translate-y-full group-hover:translate-y-full transition-transform duration-500 ease-in-out will-change-transform" />
                       <s.icon className="size-10 text-white" />
-                      
+
                       <div className="absolute -top-1 -right-1 w-9 h-9 rounded-2xl bg-white shadow-xl flex items-center justify-center text-sm font-black text-slate-800 border-4 border-slate-50 group-hover:bg-emerald-50 group-hover:text-emerald-700 transition-colors duration-300 will-change-transform">
                         {s.step}
                       </div>
                     </motion.div>
-                    
+
                     <h3 className="font-black text-xl mb-3 text-emerald-950 group-hover:text-green-600 transition-colors duration-300">
                       {s.title}
                     </h3>
@@ -413,7 +486,7 @@ export function HomePage() {
           </div>
         </motion.section>
 
-        <motion.section 
+        <motion.section
           {...fadeIn}
           className="max-w-7xl mx-auto py-20 md:py-32 px-4 relative overflow-hidden"
         >
@@ -421,7 +494,7 @@ export function HomePage() {
           <div className="absolute top-1/2 right-1/4 w-[500px] h-[500px] bg-emerald-50/30 blur-[120px] rounded-full -z-10" />
 
           <div className="text-center mb-12 md:mb-16">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               whileInView={{ scale: 1, opacity: 1 }}
               viewport={{ once: true }}
@@ -431,18 +504,16 @@ export function HomePage() {
               <span className="text-xs font-black text-emerald-900/90 uppercase tracking-[0.2em]">
                 Hệ thống đã xác thực
               </span>
-
-
             </motion.div>
-            
+
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-emerald-900 mb-4 tracking-tighter leading-tight will-change-transform">
               Nhà Trọ Uy Tín
             </h2>
 
             <p className="text-base md:text-xl text-emerald-950/60 font-medium max-w-2xl mx-auto">
-              Các tin đăng được xác thực trực tiếp tại chỗ qua hệ thống <span className="text-emerald-600 font-bold">Trust is King</span>
+              Các tin đăng được xác thực trực tiếp tại chỗ qua hệ thống{" "}
+              <span className="text-emerald-600 font-bold">Trust is King</span>
             </p>
-
           </div>
 
           <div className="relative group">
@@ -475,8 +546,8 @@ export function HomePage() {
 
           <div className="text-center mt-12 md:mt-16">
             <motion.button
-              whileHover={{ 
-                scale: 1.05, 
+              whileHover={{
+                scale: 1.05,
                 boxShadow: "0 20px 40px -10px rgba(16, 185, 129, 0.4)",
               }}
               whileTap={{ scale: 0.95 }}
@@ -491,25 +562,22 @@ export function HomePage() {
           </div>
         </motion.section>
 
-
         {/* ━━━ Browse by District ━━━ */}
-        <motion.section 
-          {...fadeIn}
-          className="bg-gray-50 py-12 md:py-20"
-        >
+        <motion.section {...fadeIn} className="bg-gray-50 py-12 md:py-20">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-16 md:mb-24">
-              <span className="text-emerald-600 font-black text-xs uppercase tracking-[0.4em] mb-4 block">Thành phố Hồ Chí Minh</span>
+              <span className="text-emerald-600 font-black text-xs uppercase tracking-[0.4em] mb-4 block">
+                Thành phố Hồ Chí Minh
+              </span>
               <h2 className="text-4xl md:text-5xl font-black tracking-tighter bg-gradient-to-r from-emerald-900 to-emerald-600 bg-clip-text text-transparent pb-3 will-change-transform">
                 Khám Phá Theo Quận
               </h2>
 
               <p className="text-base md:text-xl text-emerald-950/60 font-medium max-w-2xl mx-auto mt-4">
-                Các khu vực trọng điểm với hàng nghìn phòng trọ tốt nhất tại Sài Gòn.
+                Các khu vực trọng điểm với hàng nghìn phòng trọ tốt nhất tại Sài
+                Gòn.
               </p>
             </div>
-
-
 
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {districts.map((d, i) => (
@@ -518,13 +586,18 @@ export function HomePage() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.05, type: "spring", stiffness: 300, damping: 25 }}
+                  transition={{
+                    delay: i * 0.05,
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 25,
+                  }}
                   whileHover={{ y: -8 }}
                   onClick={() => navigate("/map")}
                   className="group relative rounded-[32px] overflow-hidden aspect-[16/11] cursor-pointer shadow-2xl shadow-slate-200/50 hover:shadow-emerald-900/10 will-change-transform border border-slate-100"
                 >
                   <div className="absolute inset-0 z-10 bg-gradient-to-t from-emerald-950/90 via-emerald-900/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500 will-change-opacity" />
-                  
+
                   <ImageWithFallback
                     src={d.image}
                     alt={d.name}
@@ -532,9 +605,7 @@ export function HomePage() {
                   />
 
                   <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 z-20 text-left">
-                    <motion.h3 
-                      className="text-white font-black text-xl md:text-2xl lg:text-3xl tracking-tighter mb-1"
-                    >
+                    <motion.h3 className="text-white font-black text-xl md:text-2xl lg:text-3xl tracking-tighter mb-1">
                       {d.name}
                     </motion.h3>
                     <p className="text-emerald-50/80 text-xs md:text-sm font-bold uppercase tracking-widest">
@@ -545,25 +616,26 @@ export function HomePage() {
                   {d.isHot && (
                     <div className="absolute top-5 right-5 z-20 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center gap-2 shadow-xl">
                       <div className="size-2 bg-green-400 rounded-full animate-pulse" />
-                      <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Hot District</span>
+                      <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
+                        Hot District
+                      </span>
                     </div>
                   )}
-                  
+
                   <div className="absolute inset-0 border-[6px] border-white/0 group-hover:border-white/10 transition-colors duration-500 rounded-[32px] z-30" />
                 </motion.button>
               ))}
             </div>
-
           </div>
         </motion.section>
 
         {/* ━━━ Testimonials ━━━ */}
-        <motion.section 
+        <motion.section
           {...fadeIn}
           className="relative py-16 md:py-24 overflow-hidden bg-gradient-to-b from-white to-green-50/50"
         >
           <div className="absolute top-1/4 -right-20 w-80 h-80 bg-green-200/20 blur-[100px] rounded-full" />
-          
+
           <div className="max-w-6xl mx-auto px-4 relative z-10">
             <div className="text-center mb-10 md:mb-16">
               <span className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.3em] mb-3 block">
@@ -574,11 +646,11 @@ export function HomePage() {
               </h2>
 
               <p className="text-sm md:text-base lg:text-lg text-emerald-950/70 font-medium max-w-2xl mx-auto">
-                Lắng nghe những câu chuyện tìm thấy " tổ ấm" thực sự từ hàng nghìn khách hàng của chúng tôi.
+                Lắng nghe những câu chuyện tìm thấy " tổ ấm" thực sự từ hàng
+                nghìn khách hàng của chúng tôi.
               </p>
             </div>
 
- 
             <div className="relative group">
               <button
                 onClick={() => testimonialSliderRef.current?.slickPrev()}
@@ -592,20 +664,27 @@ export function HomePage() {
               >
                 <ChevronRight className="size-6" />
               </button>
- 
+
               <div className="testimonial-carousel-wrapper">
-                <Slider ref={testimonialSliderRef} {...testimonialSliderSettings}>
+                <Slider
+                  ref={testimonialSliderRef}
+                  {...testimonialSliderSettings}
+                >
                   {testimonials.map((t) => (
                     <div key={t.id} className="px-3 pb-10">
-                      <motion.div 
+                      <motion.div
                         whileHover={{ y: -8, scale: 1.01 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 25,
+                        }}
                         className="bg-white border border-white/60 rounded-[40px] p-8 shadow-2xl shadow-green-900/5 h-full flex flex-col group relative will-change-transform"
                       >
                         <div className="absolute -top-4 -right-4 w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-green-500 scale-0 group-hover:scale-100 transition-transform duration-300 border border-green-50 will-change-transform">
                           <Quote className="size-6 fill-green-500 opacity-20" />
                         </div>
-                        
+
                         <div className="flex items-center gap-1 mb-6">
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star
@@ -614,11 +693,11 @@ export function HomePage() {
                             />
                           ))}
                         </div>
- 
+
                         <p className="text-slate-600 text-base leading-relaxed mb-8 italic font-medium">
                           \"{t.text}\"
                         </p>
- 
+
                         <div className="mt-auto flex items-center gap-4 pt-6 border-t border-slate-50">
                           <div className="relative">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-lg font-black shadow-lg">
@@ -632,7 +711,9 @@ export function HomePage() {
                             <p className="font-black text-[15px] text-emerald-950 tracking-tight">
                               {t.name}
                             </p>
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{t.role}</p>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                              {t.role}
+                            </p>
                           </div>
                         </div>
                       </motion.div>
@@ -645,12 +726,12 @@ export function HomePage() {
         </motion.section>
 
         {/* ━━━ Blog / Tips ━━━ */}
-        <motion.section 
+        <motion.section
           {...fadeIn}
           className="bg-slate-50 py-16 md:py-24 relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-full h-20 bg-white" />
-          
+
           <div className="max-w-6xl mx-auto px-4 relative z-10">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 md:mb-16">
               <div className="space-y-2">
@@ -674,9 +755,8 @@ export function HomePage() {
                   <ArrowRight className="size-4" />
                 </div>
               </motion.button>
-
             </div>
- 
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {blogPosts.map((post) => (
                 <article
@@ -694,7 +774,6 @@ export function HomePage() {
                     <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-md text-[10px] font-black px-4 py-2 rounded-xl text-emerald-700 uppercase tracking-widest shadow-lg">
                       {post.category}
                     </span>
-
                   </div>
                   <div className="p-7 flex-1 flex flex-col">
                     <h3 className="font-black text-lg mb-3 text-emerald-950 group-hover:text-green-600 transition-colors duration-300 leading-snug">
@@ -714,7 +793,9 @@ export function HomePage() {
                           {post.views.toLocaleString("vi-VN")}
                         </span>
                       </div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{post.date}</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {post.date}
+                      </span>
                     </div>
                   </div>
                 </article>
@@ -724,7 +805,7 @@ export function HomePage() {
         </motion.section>
 
         {/* ━━━ CTA for Landlords ━━━ */}
-        <motion.section 
+        <motion.section
           {...fadeIn}
           className="relative py-24 md:py-32 overflow-hidden"
         >
@@ -735,39 +816,42 @@ export function HomePage() {
               className="w-full h-full object-cover scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-green-950/95 via-green-900/90 to-emerald-900/80" />
-            <motion.div 
-               animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }} 
-               transition={{ duration: 8, repeat: Infinity }}
-               className="absolute top-1/4 left-1/4 w-96 h-96 bg-green-500/30 blur-[120px] rounded-full"
+            <motion.div
+              animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
+              transition={{ duration: 8, repeat: Infinity }}
+              className="absolute top-1/4 left-1/4 w-96 h-96 bg-green-500/30 blur-[120px] rounded-full"
             />
           </div>
-          
+
           <div className="relative max-w-5xl mx-auto px-4 text-center">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               whileInView={{ scale: 1, opacity: 1 }}
               viewport={{ once: true }}
               className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-5 py-2.5 rounded-full mb-8"
             >
               <div className="size-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-xs font-black text-white/90 uppercase tracking-[0.2em]">Dành riêng cho chủ trọ</span>
+              <span className="text-xs font-black text-white/90 uppercase tracking-[0.2em]">
+                Dành riêng cho chủ trọ
+              </span>
             </motion.div>
- 
+
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 tracking-tighter leading-tight">
-              Tối Ưu Doanh Thu<br />
+              Tối Ưu Doanh Thu
+              <br />
               <span className="text-emerald-400">Từ Bất Động Sản Của Bạn</span>
             </h2>
 
-            
             <p className="text-green-50 text-base md:text-xl max-w-3xl mx-auto mb-12 leading-relaxed font-medium">
-              Gia nhập cộng đồng hơn 5.000+ chủ trọ đang kinh doanh hiệu quả trên MapHome. 
-              Đăng tin xác thực để nhận ưu tiên hiển thị và tiếp cận đúng khách hàng mục tiêu.
+              Gia nhập cộng đồng hơn 5.000+ chủ trọ đang kinh doanh hiệu quả
+              trên MapHome. Đăng tin xác thực để nhận ưu tiên hiển thị và tiếp
+              cận đúng khách hàng mục tiêu.
             </p>
- 
+
             <div className="flex flex-col sm:flex-row gap-5 justify-center">
               <motion.button
-                whileHover={{ 
-                  scale: 1.05, 
+                whileHover={{
+                  scale: 1.05,
                   boxShadow: "0 20px 40px -10px rgba(16, 185, 129, 0.4)",
                 }}
                 whileTap={{ scale: 0.95 }}
@@ -780,10 +864,9 @@ export function HomePage() {
                 Đăng tin miễn phí ngay
               </motion.button>
 
-              
               <motion.button
-                whileHover={{ 
-                  scale: 1.05, 
+                whileHover={{
+                  scale: 1.05,
                   backgroundColor: "rgba(255, 255, 255, 0.15)",
                 }}
                 whileTap={{ scale: 0.95 }}
@@ -795,19 +878,21 @@ export function HomePage() {
                 <ArrowRight className="size-5" />
               </motion.button>
             </div>
-            
+
             <div className="mt-16 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-8">
-               {[
-                 { label: "Tiếp cận", value: "10k+" },
-                 { label: "Tin đăng", value: "50k+" },
-                 { label: "Chủ trọ", value: "5k+" },
-                 { label: "Xác thực", value: "100%" }
-               ].map(item => (
-                 <div key={item.label}>
-                    <p className="text-2xl font-black text-white">{item.value}</p>
-                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">{item.label}</p>
-                 </div>
-               ))}
+              {[
+                { label: "Tiếp cận", value: "10k+" },
+                { label: "Tin đăng", value: "50k+" },
+                { label: "Chủ trọ", value: "5k+" },
+                { label: "Xác thực", value: "100%" },
+              ].map((item) => (
+                <div key={item.label}>
+                  <p className="text-2xl font-black text-white">{item.value}</p>
+                  <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">
+                    {item.label}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </motion.section>

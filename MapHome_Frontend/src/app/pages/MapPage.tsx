@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { RentalMapView } from "@/app/components/RentalMapView";
 import { PropertyList } from "@/app/components/PropertyList";
 import { PropertyCard } from "@/app/components/PropertyCard";
-import { useProperties } from "@/app/contexts/PropertiesContext";
+import { useProperties } from "@/app/contexts/useProperties";
 import {
   RentalProperty,
   RentalFilters,

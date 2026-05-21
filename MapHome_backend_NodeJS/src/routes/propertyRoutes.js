@@ -17,6 +17,7 @@ const {
   renewProperty,
   pinProperty,
   unpinProperty,
+  verifyPropertyLocation,
 } = require("../controllers/propertyController");
 const {
   createPropertyRules,
@@ -372,6 +373,47 @@ router.post(
   authMiddleware,
   requireAnyRole(["landlord"]),
   unpinProperty,
+);
+
+/**
+ * @swagger
+ * /api/properties/{id}/verify-location:
+ *   post:
+ *     summary: Verify property GPS location
+ *     tags: [Properties]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [lat, lng]
+ *             properties:
+ *               lat: { type: number, example: 10.7769 }
+ *               lng: { type: number, example: 106.6965 }
+ *               accuracy: { type: number, example: 12.5 }
+ *     responses:
+ *       200:
+ *         description: GPS verification completed
+ *       400:
+ *         description: Invalid request
+ *       403:
+ *         description: Not authorized
+ *       404:
+ *         description: Property not found
+ */
+router.post(
+  "/:id/verify-location",
+  authMiddleware,
+  requireAnyRole(["landlord"]),
+  verifyPropertyLocation,
 );
 
 module.exports = router;

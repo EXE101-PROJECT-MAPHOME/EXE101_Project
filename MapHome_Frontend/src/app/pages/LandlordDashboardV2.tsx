@@ -44,6 +44,7 @@ import {
   AlertTriangle,
   Zap,
   Bell,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/app/components/ConfirmDialog";
@@ -127,6 +128,9 @@ export function LandlordDashboardV2() {
   const [selectedPropertyForRenewal, setSelectedPropertyForRenewal] =
     useState<RentalProperty | null>(null);
   const [isRenewing, setIsRenewing] = useState(false);
+  const [verifyingPropertyId, setVerifyingPropertyId] = useState<string | null>(
+    null,
+  );
 
   // Helper compute for expiration warnings
   const { expiredCount, soonToExpireCount } = useMemo(() => {
@@ -339,19 +343,109 @@ export function LandlordDashboardV2() {
     }
   };
 
-  const handleUpdateBookingStatus = async (bookingId: string, status: string) => {
+  const handleVerifyLocation = async (property: RentalProperty) => {
+    const propertyId = property._id || property.id;
+    setVerifyingPropertyId(propertyId);
+
+    const loadingToast = toast.loading("📍 Đang lấy vị trí GPS của bạn...");
+
+    if (!("geolocation" in navigator)) {
+      toast.error(
+        "Trình duyệt không hỗ trợ GPS. Vui lòng sử dụng trình duyệt khác.",
+        { id: loadingToast },
+      );
+      setVerifyingPropertyId(null);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+
+        try {
+          const res = await api.post(
+            `/api/properties/${propertyId}/verify-location`,
+            {
+              lat: latitude,
+              lng: longitude,
+              accuracy: Math.round(accuracy),
+            },
+          );
+
+          if (res.status === 200) {
+            const { verification } = res.data;
+
+            // Update property in state with new verification level
+            setLandlordPosts((prev) =>
+              prev.map((p) =>
+                (p._id || p.id) === propertyId
+                  ? {
+                      ...p,
+                      verificationLevel: verification.verificationLevel,
+                      greenBadge: verification.greenBadge,
+                    }
+                  : p,
+              ),
+            );
+
+            // Show appropriate toast
+            if (verification.isVerified) {
+              toast.success(
+                `✓ Xác thực GPS thành công! Khoảng cách: ${verification.distance.m}m`,
+                { id: loadingToast },
+              );
+            } else {
+              toast.warning(
+                `⚠️ Vị trí lệch ${verification.distance.m}m. Vui lòng kiểm tra lại.`,
+                { id: loadingToast },
+              );
+            }
+          }
+        } catch (err: any) {
+          console.error("GPS verification error:", err);
+          toast.error(err.response?.data?.message || "Xác thực GPS thất bại!", {
+            id: loadingToast,
+          });
+        } finally {
+          setVerifyingPropertyId(null);
+        }
+      },
+      () => {
+        toast.error(
+          "Không thể lấy vị trí GPS. Vui lòng kiểm tra quyền truy cập vị trí.",
+          { id: loadingToast },
+        );
+        setVerifyingPropertyId(null);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  };
+
+  const handleUpdateBookingStatus = async (
+    bookingId: string,
+    status: string,
+  ) => {
     const loadingToast = toast.loading("Đang cập nhật trạng thái...");
     try {
-      const res = await api.put(`/api/bookings/${bookingId}/status`, { status });
+      const res = await api.put(`/api/bookings/${bookingId}/status`, {
+        status,
+      });
       if (res.status === 200) {
-        const statusText = 
-          status === "confirmed" ? "đã xác nhận" : 
-          status === "completed" ? "đã hoàn thành" : "đã huỷ";
-        
+        const statusText =
+          status === "confirmed"
+            ? "đã xác nhận"
+            : status === "completed"
+              ? "đã hoàn thành"
+              : "đã huỷ";
+
         toast.success(`Lịch hẹn ${statusText}! ✨`, { id: loadingToast });
-        
+
         // Cập nhật state local để UI phản hồi ngay lập tức
-        setBookings(prev => prev.map(b => (b._id || b.id) === bookingId ? { ...b, status } : b));
+        setBookings((prev) =>
+          prev.map((b) =>
+            (b._id || b.id) === bookingId ? { ...b, status } : b,
+          ),
+        );
       }
     } catch (err) {
       toast.error("Không thể cập nhật trạng thái. ❌", { id: loadingToast });
@@ -884,26 +978,31 @@ export function LandlordDashboardV2() {
                   Lịch hẹn thông minh
                 </h2>
                 <p className="text-indigo-400/90 text-lg font-black mt-1 drop-shadow-sm">
-                  Giao diện lịch biểu giúp bạn quản lý thời gian xem phòng tối ưu
+                  Giao diện lịch biểu giúp bạn quản lý thời gian xem phòng tối
+                  ưu
                 </p>
               </div>
-              
+
               <div className="flex gap-3">
                 <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                   <div className="size-3 rounded-full bg-amber-500 shadow-sm" />
-                   <span className="text-[10px] font-black uppercase text-slate-500">Chờ duyệt</span>
+                  <div className="size-3 rounded-full bg-amber-500 shadow-sm" />
+                  <span className="text-[10px] font-black uppercase text-slate-500">
+                    Chờ duyệt
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                   <div className="size-3 rounded-full bg-emerald-500 shadow-sm" />
-                   <span className="text-[10px] font-black uppercase text-slate-500">Đã xác nhận</span>
+                  <div className="size-3 rounded-full bg-emerald-500 shadow-sm" />
+                  <span className="text-[10px] font-black uppercase text-slate-500">
+                    Đã xác nhận
+                  </span>
                 </div>
               </div>
             </div>
 
             {bookings.length > 0 ? (
-              <CalendarView 
-                bookings={bookings} 
-                onUpdateStatus={handleUpdateBookingStatus} 
+              <CalendarView
+                bookings={bookings}
+                onUpdateStatus={handleUpdateBookingStatus}
               />
             ) : (
               <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm p-20 text-center mx-auto">
@@ -921,7 +1020,6 @@ export function LandlordDashboardV2() {
             )}
           </motion.div>
         );
-
 
       case "notifications":
         return (
@@ -948,7 +1046,7 @@ export function LandlordDashboardV2() {
                     try {
                       await api.put("/api/notifications/read-all");
                       setNotifications((prev) =>
-                        prev.map((n) => ({ ...n, isRead: true }))
+                        prev.map((n) => ({ ...n, isRead: true })),
                       );
                       toast.success("Đã đánh dấu tất cả là đã đọc ✅");
                     } catch {
@@ -985,8 +1083,8 @@ export function LandlordDashboardV2() {
                           await api.put(`/api/notifications/${n._id}/read`);
                           setNotifications((prev) =>
                             prev.map((x) =>
-                              x._id === n._id ? { ...x, isRead: true } : x
-                            )
+                              x._id === n._id ? { ...x, isRead: true } : x,
+                            ),
                           );
                         } catch {
                           // silent
@@ -1030,7 +1128,7 @@ export function LandlordDashboardV2() {
                       </p>
                       <p className="text-[11px] text-slate-400 font-bold">
                         {new Date(n.createdAt || Date.now()).toLocaleString(
-                          "vi-VN"
+                          "vi-VN",
                         )}
                       </p>
                     </div>
@@ -1042,7 +1140,6 @@ export function LandlordDashboardV2() {
         );
 
       case "settings":
-
         return (
           <motion.div
             key="settings"
@@ -1116,7 +1213,7 @@ export function LandlordDashboardV2() {
                                   headers: {
                                     "Content-Type": "multipart/form-data",
                                   },
-                                }
+                                },
                               );
 
                               if (
@@ -1171,10 +1268,13 @@ export function LandlordDashboardV2() {
 
                       const updateToast = toast.loading("Đang cập nhật...");
                       try {
-                        const res = await api.put(`/api/user/${(user as any)?._id || user?.id}`, {
-                          fullName,
-                          phone,
-                        });
+                        const res = await api.put(
+                          `/api/user/${(user as any)?._id || user?.id}`,
+                          {
+                            fullName,
+                            phone,
+                          },
+                        );
                         if (res.status === 200) {
                           updateUser(res.data);
                           toast.success("Hồ sơ đã được lưu! ✨", {
@@ -1681,6 +1781,31 @@ export function LandlordDashboardV2() {
                                 <Edit className="size-4 mr-2" />
                                 Sửa
                               </Button>
+                              {post.verificationLevel !==
+                                "location-verified" && (
+                                <Button
+                                  variant="ghost"
+                                  className="rounded-2xl font-black text-emerald-600 hover:bg-emerald-50"
+                                  onClick={() => handleVerifyLocation(post)}
+                                  disabled={
+                                    verifyingPropertyId ===
+                                    (post._id || post.id)
+                                  }
+                                >
+                                  {verifyingPropertyId ===
+                                  (post._id || post.id) ? (
+                                    <>
+                                      <Loader2 className="size-4 mr-2 animate-spin" />
+                                      Đang xác thực...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ShieldCheck className="size-4 mr-2" />
+                                      Xác thực GPS
+                                    </>
+                                  )}
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 className="rounded-2xl font-black text-rose-600 hover:bg-rose-50"

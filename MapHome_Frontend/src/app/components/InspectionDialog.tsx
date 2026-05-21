@@ -4,7 +4,7 @@ import { Button } from "@/app/components/ui/button";
 import { Label } from "@/app/components/ui/label";
 import { VerificationRequest, GreenBadgeLevel } from "@/app/components/types";
 import { useVerification } from "@/app/contexts/VerificationContext";
-import { useProperties } from "@/app/contexts/PropertiesContext";
+import { useProperties } from "@/app/contexts/useProperties";
 import { formatDateVietnamese } from "@/app/utils/dateUtils";
 import { X, ShieldCheck, CheckCircle2, AlertCircle } from "lucide-react";
 

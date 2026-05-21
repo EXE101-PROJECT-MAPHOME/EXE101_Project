@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LandlordPinMap } from "@/app/components/LandlordPinMap";
-import { useProperties } from "@/app/contexts/PropertiesContext";
+import { useProperties } from "@/app/contexts/useProperties";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { getImageUrl } from "@/app/utils/avatarUtils";
 import { toast } from "sonner";
@@ -70,6 +70,10 @@ import {
   type GoongPrediction,
   type GeocodeResult,
 } from "@/app/utils/goongApi";
+import {
+  calculateDistance,
+  formatDistance,
+} from "@/app/utils/distanceCalculator";
 
 type Step = "info" | "pin-map" | "verify" | "upload-photos" | "preview";
 
@@ -89,6 +93,12 @@ export function PostRoomPage() {
     lat: number;
     lng: number;
   } | null>(null);
+  const [gpsLocationMismatch, setGpsLocationMismatch] = useState<{
+    distanceKm: number;
+    distanceM: number;
+    isExcessive: boolean;
+  } | null>(null);
+  const [showMismatchConfirm, setShowMismatchConfirm] = useState(false);
   const [pinNote, setPinNote] = useState("");
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [amenities, setAmenities] = useState({
@@ -174,6 +184,27 @@ export function PostRoomPage() {
     availableWards,
     availableDistricts,
   ]);
+
+  // Calculate GPS location mismatch distance
+  useEffect(() => {
+    if (pinnedLocation && locationData) {
+      const distanceKm = calculateDistance(
+        pinnedLocation.lat,
+        pinnedLocation.lng,
+        locationData.lat,
+        locationData.lng,
+      );
+      const distanceM = distanceKm * 1000;
+      const MISMATCH_THRESHOLD_M = 50; // 50 meters threshold
+      setGpsLocationMismatch({
+        distanceKm,
+        distanceM,
+        isExcessive: distanceM > MISMATCH_THRESHOLD_M,
+      });
+    } else {
+      setGpsLocationMismatch(null);
+    }
+  }, [pinnedLocation, locationData]);
 
   const steps: { key: Step; label: string; icon: any }[] = [
     { key: "info", label: "Thông tin", icon: FileText },
@@ -353,6 +384,42 @@ export function PostRoomPage() {
       return;
     }
 
+    // Check GPS location mismatch warning
+    if (step === "verify" && gpsLocationMismatch?.isExcessive) {
+      setShowMismatchConfirm(true);
+      return;
+    }
+
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < steps.length) {
+      setStep(steps[nextIndex].key);
+    }
+  };
+
+  const handleConfirmMismatch = () => {
+    setShowMismatchConfirm(false);
+    toast.success("✓ Xác thực GPS thành công! Tiếp tục tải ảnh.", {
+      style: {
+        background: "#dcfce7",
+        color: "#15803d",
+        border: "1px solid #86efac",
+      },
+    });
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex < steps.length) {
+      setStep(steps[nextIndex].key);
+    }
+  };
+
+  const handleRejectMismatch = () => {
+    setShowMismatchConfirm(false);
+    toast.warning("⚠️ Bạn chọn tiếp tục với vị trí không khớp. Hãy cẩn thận!", {
+      style: {
+        background: "#fef3c7",
+        color: "#92400e",
+        border: "1px solid #fde68a",
+      },
+    });
     const nextIndex = currentStepIndex + 1;
     if (nextIndex < steps.length) {
       setStep(steps[nextIndex].key);
@@ -432,6 +499,12 @@ export function PostRoomPage() {
       toast.error("Vui lòng ghim vị trí trên bản đồ trước khi đăng tin! 📍");
       return;
     }
+
+    if (!user?.id) {
+      toast.error("Lỗi: Vui lòng đăng nhập lại! 🔐");
+      return;
+    }
+
     let verificationLevel: GreenBadgeLevel = locationData ? "verified" : "none";
     const newProperty = {
       name: formData.name,
@@ -449,7 +522,7 @@ export function PostRoomPage() {
       verificationLevel: verificationLevel,
       verifiedAt: locationData ? new Date().toISOString() : undefined,
       locationAccuracy: locationData?.accuracy,
-      landlordId: user?.id || "unknown",
+      // Note: landlordId will be set by backend from req.user
       pinInfo: {
         pinnedAt: new Date().toISOString(),
         pinnedBy: user?.id || "unknown",
@@ -457,10 +530,19 @@ export function PostRoomPage() {
       },
     };
 
-    const success = await addProperty(newProperty);
-    if (success) {
-      toast.success("Đăng tin thành công! ✨");
-      navigate("/landlord/dashboard");
+    try {
+      const success = await addProperty(newProperty);
+      if (success) {
+        toast.success("Đăng tin thành công! ✨");
+        navigate("/landlord/dashboard");
+      } else {
+        toast.error("Không thể đăng tin. Vui lòng kiểm tra lại thông tin!");
+      }
+    } catch (err: any) {
+      const errorMsg =
+        err.response?.data?.message || err.message || "Lỗi không xác định";
+      toast.error(`❌ ${errorMsg}`);
+      console.error("Submit error:", err);
     }
   };
 
@@ -989,10 +1071,10 @@ export function PostRoomPage() {
                                 <MapPin className="size-5 text-emerald-400" />
                               </div>
                               <div>
-                                <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400 mb-1 flex items-center gap-2">
+                                <div className="text-xs font-semibold uppercase tracking-widest text-emerald-400 mb-1 flex items-center gap-2">
                                   <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                                   Địa chỉ hiển thị
-                                </p>
+                                </div>
                                 <p className="text-base font-semibold leading-tight">
                                   {fullAddress}
                                 </p>
@@ -1401,6 +1483,76 @@ export function PostRoomPage() {
                               </p>
                             </div>
                           </div>
+
+                          {/* GPS Location Mismatch Warning */}
+                          <AnimatePresence>
+                            {gpsLocationMismatch && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className={`mt-6 p-4 rounded-lg border ${
+                                  gpsLocationMismatch.isExcessive
+                                    ? "bg-amber-50 border-amber-200"
+                                    : "bg-emerald-50 border-emerald-200"
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div
+                                    className={`p-2 rounded-lg flex-shrink-0 ${
+                                      gpsLocationMismatch.isExcessive
+                                        ? "bg-amber-100"
+                                        : "bg-emerald-100"
+                                    }`}
+                                  >
+                                    <MapPin
+                                      className={`size-5 ${
+                                        gpsLocationMismatch.isExcessive
+                                          ? "text-amber-600"
+                                          : "text-emerald-600"
+                                      }`}
+                                    />
+                                  </div>
+                                  <div className="text-left">
+                                    <p
+                                      className={`text-sm font-bold ${
+                                        gpsLocationMismatch.isExcessive
+                                          ? "text-amber-900"
+                                          : "text-emerald-900"
+                                      }`}
+                                    >
+                                      {gpsLocationMismatch.isExcessive
+                                        ? "⚠️ Vị trí lệch quá xa"
+                                        : "✓ Vị trí khớp tốt"}
+                                    </p>
+                                    <p
+                                      className={`text-xs font-medium mt-1 ${
+                                        gpsLocationMismatch.isExcessive
+                                          ? "text-amber-700"
+                                          : "text-emerald-700"
+                                      }`}
+                                    >
+                                      Khoảng cách giữa vị trí ghim và GPS thực
+                                      tế:{" "}
+                                      <span className="font-bold">
+                                        {gpsLocationMismatch.distanceM.toFixed(
+                                          0,
+                                        )}
+                                        m
+                                      </span>
+                                      {gpsLocationMismatch.isExcessive && (
+                                        <>
+                                          <br />
+                                          Vui lòng kiểm tra lại vị trí ghim trên
+                                          bản đồ để đảm bảo chính xác.
+                                        </>
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
                     ) : (
@@ -1783,6 +1935,82 @@ export function PostRoomPage() {
                 </motion.div>
               )}
             </motion.div>
+          </AnimatePresence>
+
+          {/* ===== MISMATCH CONFIRMATION MODAL ===== */}
+          <AnimatePresence>
+            {showMismatchConfirm && gpsLocationMismatch && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                onClick={() => setShowMismatchConfirm(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-6"
+                >
+                  <div className="flex flex-col items-center">
+                    <div className="p-3 bg-amber-100 rounded-full mb-4">
+                      <AlertCircle className="size-8 text-amber-600" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 text-center">
+                      Vị trí không khớp
+                    </h3>
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-amber-900">
+                        Khoảng cách lệch:
+                      </span>
+                      <span className="text-lg font-bold text-amber-600">
+                        {gpsLocationMismatch.distanceM.toFixed(0)}m
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                      Vị trí bạn ghim trên bản đồ lệch hơn 50m so với vị trí GPS
+                      thực tế. Bạn có 2 lựa chọn:
+                    </p>
+                    <div className="space-y-2 pt-2 border-t border-amber-200 text-xs text-amber-700 font-medium">
+                      <div className="flex items-start gap-2">
+                        <span className="text-emerald-600 font-bold">✓</span>
+                        <span>
+                          <strong>Xác thực:</strong> Tin cậy vị trí, tiếp tục
+                          tải ảnh
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-600 font-bold">⚠️</span>
+                        <span>
+                          <strong>Tiếp tục:</strong> Bỏ qua lệch, chấp nhận rủi
+                          ro
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      onClick={handleRejectMismatch}
+                      className="flex-1 h-10 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold shadow-md transition-all"
+                    >
+                      ⚠️ Tiếp tục
+                    </Button>
+                    <Button
+                      onClick={handleConfirmMismatch}
+                      className="flex-1 h-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-md transition-all"
+                    >
+                      ✓ Xác thực
+                    </Button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </main>

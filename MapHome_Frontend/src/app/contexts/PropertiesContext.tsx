@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
 import api from "@/app/utils/api";
 import { RentalProperty } from "@/app/components/types";
 
@@ -6,12 +12,17 @@ interface PropertiesContextType {
   properties: RentalProperty[];
   loading: boolean;
   addProperty: (property: Omit<RentalProperty, "id">) => Promise<boolean>;
-  updateProperty: (id: string, updates: Partial<RentalProperty>) => Promise<boolean>;
+  updateProperty: (
+    id: string,
+    updates: Partial<RentalProperty>,
+  ) => Promise<boolean>;
   searchProperties: (filters: any) => Promise<void>;
   refreshProperties: () => Promise<void>;
 }
 
-const PropertiesContext = createContext<PropertiesContextType | undefined>(undefined);
+export const PropertiesContext = createContext<
+  PropertiesContextType | undefined
+>(undefined);
 
 export function PropertiesProvider({ children }: { children: ReactNode }) {
   const [properties, setProperties] = useState<RentalProperty[]>([]);
@@ -45,19 +56,25 @@ export function PropertiesProvider({ children }: { children: ReactNode }) {
         setProperties((prev) => [mapBackendProperty(res.data), ...prev]);
         return true;
       }
-      return false;
-    } catch (err) {
+      throw new Error("Invalid response status");
+    } catch (err: any) {
       console.error("Failed to add property:", err);
-      return false;
+      // Re-throw error to let caller handle it
+      throw err;
     }
   };
 
-  const updateProperty = async (id: string, updates: Partial<RentalProperty>) => {
+  const updateProperty = async (
+    id: string,
+    updates: Partial<RentalProperty>,
+  ) => {
     try {
       const res = await api.put(`/api/properties/${id}`, updates);
       if (res.status === 200) {
         setProperties((prev) =>
-          prev.map((prop) => (prop.id === id ? mapBackendProperty(res.data) : prop))
+          prev.map((prop) =>
+            prop.id === id ? mapBackendProperty(res.data) : prop,
+          ),
         );
         return true;
       }
@@ -72,7 +89,9 @@ export function PropertiesProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const res = await api.get("/api/properties/search", { params: filters });
-      const results = Array.isArray(res.data) ? res.data : res.data.properties || [];
+      const results = Array.isArray(res.data)
+        ? res.data
+        : res.data.properties || [];
       setProperties(results.map(mapBackendProperty));
     } catch (err) {
       console.error("Failed to search properties:", err);
@@ -95,12 +114,4 @@ export function PropertiesProvider({ children }: { children: ReactNode }) {
       {children}
     </PropertiesContext.Provider>
   );
-}
-
-export function useProperties() {
-  const context = useContext(PropertiesContext);
-  if (context === undefined) {
-    throw new Error("useProperties must be used within a PropertiesProvider");
-  }
-  return context;
 }
