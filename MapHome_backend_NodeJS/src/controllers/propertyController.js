@@ -169,7 +169,20 @@ const createProperty = async (req, res) => {
         // Increment listing count
         landlord.totalListings += 1;
         await landlord.save();
+      } else {
+        // Landlord not found - return error
+        return res.status(400).json({
+          message:
+            "Landlord profile not found. Please complete your landlord profile first.",
+          error: "LANDLORD_NOT_FOUND",
+        });
       }
+    } else {
+      // Not authenticated
+      return res.status(401).json({
+        message: "Unauthorized. Please login first.",
+        error: "NOT_AUTHENTICATED",
+      });
     }
 
     // Set default expiry date from settings
@@ -183,7 +196,16 @@ const createProperty = async (req, res) => {
     const property = await Property.create(payload);
     res.status(201).json(property);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Create property error:", error);
+    res.status(400).json({
+      message: error.message,
+      error: error.name || "VALIDATION_ERROR",
+      details: error.errors
+        ? Object.keys(error.errors).map(
+            (k) => `${k}: ${error.errors[k].message}`,
+          )
+        : undefined,
+    });
   }
 };
 
@@ -764,6 +786,97 @@ const unpinProperty = async (req, res) => {
   }
 };
 
+// @desc    Verify property GPS location
+// @route   POST /api/properties/:id/verify-location
+const verifyPropertyLocation = async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+
+    if (!lat || !lng) {
+      return res
+        .status(400)
+        .json({ message: "GPS coordinates (lat, lng) are required" });
+    }
+
+    const property = await Property.findById(req.params.id);
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+
+    // Authorization check - only landlord who owns the property
+    if (req.user && req.user.role === "landlord") {
+      const Landlord = require("../models/Landlord");
+      const landlord = await Landlord.findOne({ userId: req.user._id });
+      if (
+        !landlord ||
+        property.landlordId.toString() !== landlord._id.toString()
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to verify this property" });
+      }
+    }
+
+    // Calculate distance between pinned location and new GPS location
+    // property.location is [lng, lat]
+    const pinnedLng = property.location[0];
+    const pinnedLat = property.location[1];
+
+    const distanceKm = haversineKm(pinnedLat, pinnedLng, lat, lng);
+    const distanceM = distanceKm * 1000;
+    const MISMATCH_THRESHOLD_M = 50; // 50 meters threshold
+
+    // Update verification level based on distance
+    if (distanceM <= MISMATCH_THRESHOLD_M) {
+      // Location matches - verified
+      property.verificationLevel = "location-verified";
+      property.verifiedAt = new Date();
+      property.greenBadge = {
+        level: "verified",
+        awardedAt: new Date(),
+        awardedBy: "gps-verification",
+        inspectionNotes: `Auto-verified via GPS - Distance: ${distanceM.toFixed(0)}m`,
+      };
+    } else {
+      // Location mismatch - unverified but GPS attempted
+      property.verificationLevel = "unverified";
+      property.verifiedAt = new Date();
+      property.greenBadge = {
+        level: "none",
+        awardedAt: null,
+        awardedBy: null,
+        inspectionNotes: `GPS mismatch detected - Distance: ${distanceM.toFixed(0)}m`,
+      };
+    }
+
+    // Store accuracy from mobile device
+    if (req.body.accuracy) {
+      property.locationAccuracy = req.body.accuracy;
+    }
+
+    await property.save();
+
+    res.status(200).json({
+      message:
+        distanceM <= MISMATCH_THRESHOLD_M
+          ? "✓ GPS verification successful - Location verified"
+          : "⚠️ Location mismatch - GPS differs from pinned location",
+      property,
+      verification: {
+        distance: {
+          km: distanceKm.toFixed(2),
+          m: distanceM.toFixed(0),
+        },
+        isVerified: distanceM <= MISMATCH_THRESHOLD_M,
+        verificationLevel: property.verificationLevel,
+        greenBadge: property.greenBadge,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getProperties,
   getPropertyById,
@@ -781,4 +894,5 @@ module.exports = {
   renewProperty,
   pinProperty,
   unpinProperty,
+  verifyPropertyLocation,
 };

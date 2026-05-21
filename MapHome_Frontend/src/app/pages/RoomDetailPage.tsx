@@ -8,9 +8,15 @@ import { getAvatarUrl } from "@/app/utils/avatarUtils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import goongjs from '@goongmaps/goong-js';
-import '@goongmaps/goong-js/dist/goong-js.css';
-import { getGoongStyleUrl, getGoongAttribution, GOONG_API_KEY, GOONG_MAPTILES_KEY, getGoongTransformRequest } from "@/app/utils/goongApi";
+import goongjs from "@goongmaps/goong-js";
+import "@goongmaps/goong-js/dist/goong-js.css";
+import {
+  getGoongStyleUrl,
+  getGoongAttribution,
+  GOONG_API_KEY,
+  GOONG_MAPTILES_KEY,
+  getGoongTransformRequest,
+} from "@/app/utils/goongApi";
 import {
   MapPin,
   Star,
@@ -71,7 +77,7 @@ import { ReportPropertyDialog } from "@/app/components/ReportPropertyDialog";
 import { UserRequestInspectionDialog } from "@/app/components/UserRequestInspectionDialog";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { CompareFloatingBar } from "@/app/components/CompareFloatingBar";
-import { useProperties } from "@/app/contexts/PropertiesContext";
+import { useProperties } from "@/app/contexts/useProperties";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
   RentalProperty,
@@ -89,25 +95,28 @@ const MiniMap = ({ property }: { property: RentalProperty }) => {
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
       goongjs.accessToken = GOONG_MAPTILES_KEY;
-      
+
       const coords: [number, number] = Array.isArray(property.location)
         ? [property.location[0], property.location[1]] // [lng, lat]
         : [(property.location as any).lng, (property.location as any).lat];
 
       mapInstance.current = new goongjs.Map({
         container: mapRef.current,
-        style: getGoongStyleUrl('light'),
+        style: getGoongStyleUrl("light"),
         center: coords,
         zoom: 15,
         attributionControl: false,
-        transformRequest: getGoongTransformRequest
+        transformRequest: getGoongTransformRequest,
       });
 
-      mapInstance.current.addControl(new goongjs.NavigationControl(), 'top-right');
+      mapInstance.current.addControl(
+        new goongjs.NavigationControl(),
+        "top-right",
+      );
 
       // Create marker element
-      const el = document.createElement('div');
-      el.className = 'custom-mini-marker';
+      const el = document.createElement("div");
+      el.className = "custom-mini-marker";
       el.innerHTML = `
         <div class="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg border-2 border-green-600">
           <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white">
@@ -116,19 +125,17 @@ const MiniMap = ({ property }: { property: RentalProperty }) => {
         </div>
       `;
 
-      new goongjs.Marker(el)
-        .setLngLat(coords)
-        .addTo(mapInstance.current);
+      new goongjs.Marker(el).setLngLat(coords).addTo(mapInstance.current);
 
       // If pinned, we can add a simple circle highlight using a marker with CSS scale or a layer
       if (property.pinInfo) {
-        const circleEl = document.createElement('div');
-        circleEl.style.width = '100px';
-        circleEl.style.height = '100px';
-        circleEl.style.borderRadius = '50%';
-        circleEl.style.backgroundColor = 'rgba(249, 115, 22, 0.1)';
-        circleEl.style.border = '2px solid rgba(249, 115, 22, 0.3)';
-        
+        const circleEl = document.createElement("div");
+        circleEl.style.width = "100px";
+        circleEl.style.height = "100px";
+        circleEl.style.borderRadius = "50%";
+        circleEl.style.backgroundColor = "rgba(249, 115, 22, 0.1)";
+        circleEl.style.border = "2px solid rgba(249, 115, 22, 0.3)";
+
         new goongjs.Marker(circleEl)
           .setLngLat(coords)
           .addTo(mapInstance.current);
@@ -924,42 +931,52 @@ export function RoomDetailPage() {
                     <div className="bg-white p-6 rounded-2xl border shadow-sm">
                       <MiniMap property={property} />
                     </div>
-                    
+
                     <div className="bg-white p-6 rounded-2xl border shadow-sm">
                       <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2">
                         <GraduationCap className="size-5 text-indigo-600" />
                         Trường học & Địa danh lân cận
                       </h3>
-                      
-                      {property.nearbyLandmarks && property.nearbyLandmarks.length > 0 ? (
+
+                      {property.nearbyLandmarks &&
+                      property.nearbyLandmarks.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {property.nearbyLandmarks.map((landmark, idx) => (
-                            <div 
-                              key={idx} 
+                            <div
+                              key={idx}
                               className="group p-4 rounded-xl border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all flex items-center justify-between"
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
-                                  {landmark.name.includes("ĐH") || landmark.name.includes("Trường") ? (
+                                  {landmark.name.includes("ĐH") ||
+                                  landmark.name.includes("Trường") ? (
                                     <GraduationCap className="size-5" />
                                   ) : (
                                     <MapPin className="size-5" />
                                   )}
                                 </div>
                                 <div>
-                                  <p className="text-sm font-bold text-slate-900">{landmark.name}</p>
-                                  <p className="text-xs text-slate-500">Khu vực lân cận</p>
+                                  <p className="text-sm font-bold text-slate-900">
+                                    {landmark.name}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    Khu vực lân cận
+                                  </p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <span className="text-sm font-black text-indigo-600">{landmark.distanceText}</span>
+                                <span className="text-sm font-black text-indigo-600">
+                                  {landmark.distanceText}
+                                </span>
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
                         <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                          <p className="text-sm text-slate-500">Đang cập nhật dữ liệu tiện ích lân cận...</p>
+                          <p className="text-sm text-slate-500">
+                            Đang cập nhật dữ liệu tiện ích lân cận...
+                          </p>
                         </div>
                       )}
                     </div>
