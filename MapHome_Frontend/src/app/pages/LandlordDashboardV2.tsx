@@ -210,8 +210,11 @@ export function LandlordDashboardV2() {
 
       try {
         if (activeTab === "overview") {
-          const response = await api.get("/api/landlord/analytics");
-          const data = response.data;
+          const [analyticsRes, propertiesRes] = await Promise.all([
+            api.get("/api/landlord/analytics"),
+            api.get("/api/landlord/properties"),
+          ]);
+          const data = analyticsRes.data;
           setStats({
             totalPosts: data.totalProperties || 0,
             approvedPosts: data.approvedProperties || 0,
@@ -224,6 +227,7 @@ export function LandlordDashboardV2() {
               pendingPostsTrend: 0,
             },
           });
+          setLandlordPosts(propertiesRes.data);
         } else if (activeTab === "posts") {
           const response = await api.get("/api/landlord/properties");
           setLandlordPosts(response.data);
@@ -511,11 +515,12 @@ export function LandlordDashboardV2() {
       { label: "Cấp 3", color: "bg-green-100 text-green-800" },
     ];
     const badge = badges[level] || badges[0];
+    const tier = user?.subscriptionTier || "Standard";
     return (
       <span
         className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}
       >
-        {badge.label}
+        {badge.label} - {tier}
       </span>
     );
   };
@@ -1730,117 +1735,7 @@ export function LandlordDashboardV2() {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                className={`rounded-2xl font-black ${post.available ? "text-emerald-600 hover:bg-emerald-50" : "text-amber-600 hover:bg-amber-50"}`}
-                                onClick={() => handleToggleAvailability(post)}
-                                title={
-                                  post.available
-                                    ? "Đánh dấu đã cho thuê"
-                                    : "Đánh dấu còn trống"
-                                }
-                              >
-                                {post.available ? (
-                                  <>
-                                    <CheckCircle className="size-4 mr-2" />
-                                    Còn trống
-                                  </>
-                                ) : (
-                                  <>
-                                    <Clock className="size-4 mr-2" />
-                                    Đã thuê
-                                  </>
-                                )}
-                              </Button>
-                              {post.expiryDate &&
-                                new Date(post.expiryDate) < new Date() && (
-                                  <Button
-                                    variant="ghost"
-                                    className="rounded-2xl font-black text-red-600 hover:bg-red-50 px-4"
-                                    onClick={() => handleRenewProperty(post)}
-                                    title="Gia hạn tin đăng"
-                                  >
-                                    <Zap className="size-4 mr-2" />
-                                    Gia hạn
-                                  </Button>
-                                )}
-                              <Button
-                                variant="ghost"
-                                className="rounded-2xl font-black text-blue-600 hover:bg-blue-50 px-5"
-                                onClick={() => navigate(`/room/${post.id}`)}
-                              >
-                                <Eye className="size-4 mr-2" />
-                                Xem
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                className="rounded-2xl font-black text-amber-600 hover:bg-amber-50"
-                                onClick={() => setEditingProperty(post)}
-                              >
-                                <Edit className="size-4 mr-2" />
-                                Sửa
-                              </Button>
-                              {post.verificationLevel !==
-                                "location-verified" && (
-                                <Button
-                                  variant="ghost"
-                                  className="rounded-2xl font-black text-emerald-600 hover:bg-emerald-50"
-                                  onClick={() => handleVerifyLocation(post)}
-                                  disabled={
-                                    verifyingPropertyId ===
-                                    (post._id || post.id)
-                                  }
-                                >
-                                  {verifyingPropertyId ===
-                                  (post._id || post.id) ? (
-                                    <>
-                                      <Loader2 className="size-4 mr-2 animate-spin" />
-                                      Đang xác thực...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ShieldCheck className="size-4 mr-2" />
-                                      Xác thực GPS
-                                    </>
-                                  )}
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                className="rounded-2xl font-black text-rose-600 hover:bg-rose-50"
-                                onClick={() => {
-                                  setConfirmDelete({
-                                    open: true,
-                                    title: "Xác nhận xóa tin đăng",
-                                    description: `Bạn có chắc muốn xóa tin đăng "${post.name}"?`,
-                                    onConfirm: async () => {
-                                      try {
-                                        const res = await api.delete(
-                                          `/api/properties/${post._id || post.id}`,
-                                        );
-                                        if (res.status === 200) {
-                                          toast.success(
-                                            "Đã xóa tin đăng thành công! 🗑️",
-                                          );
-                                          setLandlordPosts((prev) =>
-                                            prev.filter(
-                                              (p) =>
-                                                (p._id || p.id) !==
-                                                (post._id || post.id),
-                                            ),
-                                          );
-                                        }
-                                      } catch (err) {
-                                        toast.error("Xóa thất bại! ❌");
-                                      }
-                                    },
-                                  });
-                                }}
-                              >
-                                <Trash2 className="size-4" />
-                              </Button>
-                            </div>
+                            {/* View-only mode: No action buttons */}
                           </div>
                         </div>
                       </motion.div>

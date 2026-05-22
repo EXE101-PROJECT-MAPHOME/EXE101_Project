@@ -229,6 +229,57 @@ export function PostRoomPage() {
     }, 400);
   };
 
+  // Helper: Normalize location names for better matching
+  const normalizeName = (name: string): string => {
+    if (!name) return "";
+    return (
+      name
+        .toLowerCase()
+        .trim()
+        // Remove common prefixes/suffixes
+        .replace(
+          /^(quận|huyện|phường|xã|thị trấn|tp\.|thành phố|t\.|q\.|h\.|p\.)[\s\.]*/,
+          "",
+        )
+        .replace(/[\s\.]+/g, " ")
+        .trim()
+    );
+  };
+
+  // Helper: Find best match for a name from a list
+  const findBestMatch = <T extends { name: string; code: string }>(
+    searchName: string,
+    items: T[],
+  ): T | undefined => {
+    const normalized = normalizeName(searchName);
+
+    // Try exact match first
+    const exact = items.find((item) => normalizeName(item.name) === normalized);
+    if (exact) return exact;
+
+    // Try partial match (contains)
+    const partial = items.find(
+      (item) =>
+        normalizeName(item.name).includes(normalized) ||
+        normalized.includes(normalizeName(item.name)),
+    );
+    if (partial) return partial;
+
+    // Try matching numbers (e.g., "Quận 1" → "1")
+    const numberMatch = normalized.match(/\d+/);
+    if (numberMatch) {
+      const num = numberMatch[0];
+      const byNumber = items.find(
+        (item) =>
+          normalizeName(item.name).includes(num) &&
+          /\d+/.test(normalizeName(item.name)),
+      );
+      if (byNumber) return byNumber;
+    }
+
+    return undefined;
+  };
+
   const autoPopulateLocation = (result: GeocodeResult) => {
     const components = Array.isArray(result.address_components)
       ? result.address_components.filter(
@@ -256,11 +307,7 @@ export function PostRoomPage() {
     // Find Province (City)
     const cityComp = findComponent("administrative_area_level_1");
     if (cityComp) {
-      const province = vietnamLocations.find(
-        (p) =>
-          p.name.toLowerCase().includes(cityComp.long_name.toLowerCase()) ||
-          cityComp.long_name.toLowerCase().includes(p.name.toLowerCase()),
-      );
+      const province = findBestMatch(cityComp.long_name, vietnamLocations);
       if (province) {
         setSelectedProvince(province.code);
 
@@ -270,10 +317,9 @@ export function PostRoomPage() {
           "locality",
         );
         if (distComp) {
-          const district = province.districts.find(
-            (d) =>
-              d.name.toLowerCase().includes(distComp.long_name.toLowerCase()) ||
-              distComp.long_name.toLowerCase().includes(d.name.toLowerCase()),
+          const district = findBestMatch(
+            distComp.long_name,
+            province.districts,
           );
           if (district) {
             setSelectedDistrict(district.code);
@@ -281,15 +327,7 @@ export function PostRoomPage() {
             // Find Ward
             const wardComp = findComponent("sublocality_level_1", "ward");
             if (wardComp) {
-              const ward = district.wards.find(
-                (w) =>
-                  w.name
-                    .toLowerCase()
-                    .includes(wardComp.long_name.toLowerCase()) ||
-                  wardComp.long_name
-                    .toLowerCase()
-                    .includes(w.name.toLowerCase()),
-              );
+              const ward = findBestMatch(wardComp.long_name, district.wards);
               if (ward) setSelectedWard(ward.code);
             }
           }
@@ -543,10 +581,28 @@ export function PostRoomPage() {
         toast.error("Không thể đăng tin. Vui lòng kiểm tra lại thông tin!");
       }
     } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.message || err.message || "Lỗi không xác định";
-      toast.error(`❌ ${errorMsg}`);
       console.error("Submit error:", err);
+
+      // Handle validation errors from backend
+      const backendErrors = err.response?.data?.errors;
+      if (Array.isArray(backendErrors) && backendErrors.length > 0) {
+        // Map backend errors to field errors
+        const newErrors: Record<string, string> = {};
+        backendErrors.forEach((error: any) => {
+          const field = error.field || error.param;
+          newErrors[field] = error.message;
+        });
+        setFieldErrors(newErrors);
+
+        // Show first error as toast
+        const firstError = backendErrors[0];
+        toast.error(`❌ ${firstError.message}`);
+      } else {
+        // Fallback to generic error message
+        const errorMsg =
+          err.response?.data?.message || err.message || "Lỗi không xác định";
+        toast.error(`❌ ${errorMsg}`);
+      }
     }
   };
 
@@ -1096,7 +1152,7 @@ export function PostRoomPage() {
                             placeholder="0912 345 678"
                             value={formData.phone}
                             onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, '');
+                              const val = e.target.value.replace(/[^0-9]/g, "");
                               setFormData({
                                 ...formData,
                                 phone: val,

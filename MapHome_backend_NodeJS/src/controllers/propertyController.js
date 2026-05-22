@@ -296,8 +296,8 @@ const createProperty = async (req, res) => {
     payload.verificationLevel = normalizeFrontendVerificationLevel(
       payload.verificationLevel,
     );
-    // Auto-approve landlord properties so they appear on the map immediately
-    payload.status = payload.status || "approved";
+    // Properties start as pending until admin approval
+    payload.status = payload.status || "pending";
 
     // Normalize location to GeoJSON format
     const geoJsonLocation = normalizeLocationToGeoJSON(payload.location);
