@@ -689,7 +689,11 @@ export function MapPage() {
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.5 }}
-        className="fixed bottom-6 inset-x-0 mx-auto max-w-5xl z-[100] px-4 pointer-events-none will-change-transform"
+        className={`fixed bottom-6 z-[100] px-4 pointer-events-none will-change-transform ${
+          selectedProperty
+            ? "left-4 right-[420px]"
+            : "inset-x-0 mx-auto max-w-5xl"
+        }`}
       >
         <div className="bg-emerald-950/90 backdrop-blur-2xl border border-white/10 rounded-[40px] py-4 px-8 shadow-[0_32px_64px_-16px_rgba(6,78,59,0.5)] flex justify-between items-center text-white flex-wrap gap-4 pointer-events-auto">
           <div className="flex items-center gap-6">

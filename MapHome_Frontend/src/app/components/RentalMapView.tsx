@@ -134,7 +134,7 @@ export function RentalMapView({ properties, selectedProperty, onPropertySelect, 
       }
     });
 
-    map.addControl(new goongjs.NavigationControl(), 'top-right');
+    // Disable built-in controls (we have custom ones below)
     mapRef.current = map;
 
     return () => {
@@ -312,13 +312,13 @@ export function RentalMapView({ properties, selectedProperty, onPropertySelect, 
       {/* My Location FAB */}
       <button 
         onClick={handleCenterOnUser}
-        className="absolute bottom-8 right-8 z-10 size-14 bg-emerald-600 text-white rounded-2xl shadow-lg flex items-center justify-center hover:bg-emerald-500 transition-colors"
+        className="absolute top-8 right-8 z-10 size-14 bg-emerald-600 text-white rounded-2xl shadow-lg flex items-center justify-center hover:bg-emerald-500 transition-colors"
       >
         <Navigation className="size-6" />
       </button>
 
       {/* Style Switcher FAB */}
-      <div className="absolute bottom-28 right-8 z-10 flex flex-col items-end gap-2">
+      <div className="absolute top-28 right-8 z-10 flex flex-col items-end gap-2">
         <AnimatePresence>
           {showStyleSwitcher && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="bg-emerald-950/90 p-2 rounded-xl border border-emerald-800/50">
