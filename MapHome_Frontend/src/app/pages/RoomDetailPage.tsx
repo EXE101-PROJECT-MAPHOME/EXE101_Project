@@ -1147,7 +1147,7 @@ export function RoomDetailPage() {
                 >
                   <div className="aspect-[4/3] relative overflow-hidden">
                     <img
-                      src={sp.images[0]}
+                      src={sp.images?.[0] ?? sp.image}
                       alt={sp.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
