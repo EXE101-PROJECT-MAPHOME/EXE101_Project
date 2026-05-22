@@ -13,7 +13,6 @@ import "@goongmaps/goong-js/dist/goong-js.css";
 import {
   getGoongStyleUrl,
   getGoongAttribution,
-  GOONG_API_KEY,
   GOONG_MAPTILES_KEY,
   getGoongTransformRequest,
 } from "@/app/utils/goongApi";
@@ -987,7 +986,7 @@ export function RoomDetailPage() {
 
             {/* RIGHT: Sidebar */}
             <div className="space-y-6">
-              <div className="lg:sticky lg:top-24 space-y-6">
+              <div className="lg:sticky lg:top-24 space-y-6 max-h-[calc(100vh-120px)] overflow-y-auto pr-2">
                 {/* CTA Card */}
                 <Card className="shadow-lg border-green-200 overflow-hidden rounded-2xl">
                   <div className="bg-gradient-to-r from-green-600 to-blue-600 p-4 text-white">
@@ -1173,9 +1172,11 @@ export function RoomDetailPage() {
                         {sp.price.toLocaleString("vi-VN")}đ
                       </p>
                       <span className="text-[10px] text-gray-400 font-medium">
-                        {sp.distance < 1
-                          ? `${Math.round(sp.distance * 1000)}m`
-                          : `${sp.distance.toFixed(1)}km`}
+                        {sp.distance !== undefined && sp.distance !== null
+                          ? sp.distance < 1
+                            ? `${Math.round(sp.distance * 1000)}m`
+                            : `${sp.distance.toFixed(1)}km`
+                          : ''}
                       </span>
                     </div>
                   </CardContent>
