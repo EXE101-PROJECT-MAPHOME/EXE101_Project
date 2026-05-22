@@ -45,7 +45,8 @@ import {
 
 export function MapPage() {
   const navigate = useNavigate();
-  const { properties, searchProperties, loading } = useProperties();
+  const { properties, searchProperties, loading, searchSummary } =
+    useProperties();
 
   const [selectedProperty, setSelectedProperty] =
     useState<RentalProperty | null>(null);
@@ -302,6 +303,22 @@ export function MapPage() {
     if (filters.radius !== defaultFilters.radius) count++;
     return count;
   }, [filters]);
+
+  // Local fallback for first-load listings; backend summary is preferred after search.
+  const localPriceRange = useMemo(() => {
+    const pinned = filteredProperties.filter(
+      (p: PropertyWithDistance) => p.pinInfo,
+    );
+    const source = pinned.length > 0 ? pinned : filteredProperties;
+    if (source.length === 0) return { min: 0, max: 0 };
+    const prices = source.map((p: PropertyWithDistance) => p.price);
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+    };
+  }, [filteredProperties]);
+
+  const priceRange = searchSummary?.priceRange ?? localPriceRange;
 
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden">
@@ -692,15 +709,14 @@ export function MapPage() {
 
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-emerald-100/40 mb-0.5">
-                Giá trung bình
+                Khoảng giá
               </span>
               <span className="text-xl font-black text-white italic">
-                {filteredProperties.length > 0
-                  ? Math.round(
-                      filteredProperties.reduce((sum, p) => sum + p.price, 0) /
-                        filteredProperties.length,
-                    ).toLocaleString("vi-VN")
-                  : 0}
+                {priceRange.min === 0 && priceRange.max === 0
+                  ? 0
+                  : priceRange.min === priceRange.max
+                    ? priceRange.min.toLocaleString("vi-VN")
+                    : `${priceRange.min.toLocaleString("vi-VN")} - ${priceRange.max.toLocaleString("vi-VN")}`}
                 <span className="text-xs ml-1 text-emerald-100/60 font-medium">
                   đ/tháng
                 </span>
