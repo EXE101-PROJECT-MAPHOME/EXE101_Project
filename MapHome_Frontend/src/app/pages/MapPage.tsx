@@ -45,7 +45,8 @@ import {
 
 export function MapPage() {
   const navigate = useNavigate();
-  const { properties, searchProperties, loading } = useProperties();
+  const { properties, searchProperties, loading, searchSummary } =
+    useProperties();
 
   const [selectedProperty, setSelectedProperty] =
     useState<RentalProperty | null>(null);
@@ -114,17 +115,26 @@ export function MapPage() {
       .map(([key]) => key)
       .join(",");
 
+    // Only apply price/area filters if user has actively changed them from defaults
+    const isPriceChanged =
+      filters.priceRange[0] !== defaultFilters.priceRange[0] ||
+      filters.priceRange[1] !== defaultFilters.priceRange[1];
+    const isAreaChanged =
+      filters.areaRange[0] !== defaultFilters.areaRange[0] ||
+      filters.areaRange[1] !== defaultFilters.areaRange[1];
+
     searchProperties({
-      q: term,
-      minPrice: filters.priceRange[0],
-      maxPrice: filters.priceRange[1],
-      minArea: filters.areaRange[0],
-      maxArea: filters.areaRange[1],
-      amenities: selectedAmenities,
+      q: term || undefined,
+      minPrice: isPriceChanged ? filters.priceRange[0] : undefined,
+      maxPrice: isPriceChanged ? filters.priceRange[1] : undefined,
+      minArea: isAreaChanged ? filters.areaRange[0] : undefined,
+      maxArea: isAreaChanged ? filters.areaRange[1] : undefined,
+      amenities: selectedAmenities || undefined,
       verified: filters.verificationLevel === "verified" ? "true" : undefined,
       lat: location[0],
       lng: location[1],
       radius: filters.radius,
+      limit: 100,
     });
   };
 
@@ -261,6 +271,19 @@ export function MapPage() {
     isFavorite,
   ]);
 
+  const searchPropertySuggestions = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return [];
+
+    return propertiesWithDistance
+      .filter(
+        (property: PropertyWithDistance) =>
+          property.name.toLowerCase().includes(query) ||
+          property.address.toLowerCase().includes(query),
+      )
+      .slice(0, 5);
+  }, [propertiesWithDistance, searchTerm]);
+
   // Count active filters
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -280,6 +303,22 @@ export function MapPage() {
     if (filters.radius !== defaultFilters.radius) count++;
     return count;
   }, [filters]);
+
+  // Local fallback for first-load listings; backend summary is preferred after search.
+  const localPriceRange = useMemo(() => {
+    const pinned = filteredProperties.filter(
+      (p: PropertyWithDistance) => p.pinInfo,
+    );
+    const source = pinned.length > 0 ? pinned : filteredProperties;
+    if (source.length === 0) return { min: 0, max: 0 };
+    const prices = source.map((p: PropertyWithDistance) => p.price);
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+    };
+  }, [filteredProperties]);
+
+  const priceRange = searchSummary?.priceRange ?? localPriceRange;
 
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden">
@@ -430,6 +469,55 @@ export function MapPage() {
                             </p>
                             <p className="text-[10px] font-medium text-emerald-900/40 truncate group-hover:text-emerald-900/60 font-mono uppercase tracking-tight">
                               {p.structured_formatting.secondary_text}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {searchPropertySuggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_20px_50px_-10px_rgba(6,78,59,0.18)] border border-emerald-900/5 overflow-hidden z-[105] p-2"
+                  >
+                    <div className="px-3 pt-2 pb-1 flex items-center justify-between">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-950/40">
+                        Kết quả phòng trọ
+                      </p>
+                      <p className="text-[10px] font-bold text-emerald-600">
+                        {searchPropertySuggestions.length} phòng
+                      </p>
+                    </div>
+                    <div className="max-h-[320px] overflow-y-auto custom-scrollbar space-y-1 px-1 pb-1">
+                      {searchPropertySuggestions.map((property) => (
+                        <button
+                          key={property.id}
+                          onClick={() => {
+                            setSelectedProperty(property);
+                            setViewMode("map");
+                          }}
+                          className="w-full text-left px-4 py-3.5 rounded-2xl hover:bg-emerald-50/80 transition-colors flex items-start justify-between gap-4"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-black text-emerald-950 truncate">
+                              {property.name}
+                            </p>
+                            <p className="text-[11px] font-medium text-emerald-900/45 truncate mt-0.5">
+                              {property.address}
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0 text-right">
+                            <p className="text-sm font-black text-emerald-600 whitespace-nowrap">
+                              {property.price.toLocaleString("vi-VN")}đ
+                            </p>
+                            <p className="text-[10px] font-bold text-emerald-950/35 uppercase tracking-widest">
+                              / tháng
                             </p>
                           </div>
                         </button>
@@ -621,15 +709,14 @@ export function MapPage() {
 
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-emerald-100/40 mb-0.5">
-                Giá trung bình
+                Khoảng giá
               </span>
               <span className="text-xl font-black text-white italic">
-                {filteredProperties.length > 0
-                  ? Math.round(
-                      filteredProperties.reduce((sum, p) => sum + p.price, 0) /
-                        filteredProperties.length,
-                    ).toLocaleString("vi-VN")
-                  : 0}
+                {priceRange.min === 0 && priceRange.max === 0
+                  ? 0
+                  : priceRange.min === priceRange.max
+                    ? priceRange.min.toLocaleString("vi-VN")
+                    : `${priceRange.min.toLocaleString("vi-VN")} - ${priceRange.max.toLocaleString("vi-VN")}`}
                 <span className="text-xs ml-1 text-emerald-100/60 font-medium">
                   đ/tháng
                 </span>

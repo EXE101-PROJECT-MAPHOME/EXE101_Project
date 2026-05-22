@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
 import api from "@/app/utils/api";
 import { toast } from "sonner";
 
@@ -11,6 +17,8 @@ export interface User {
   fullName?: string;
   avatar?: string; // user profile picture URL
   verificationLevel?: number;
+  verificationLevelLabel?: string; // e.g., "Level 1", "Level 2", "Level 3"
+  subscriptionTier?: string; // "Standard" or "Premium"
   createdAt?: string;
 
   // Personalized settings
@@ -42,9 +50,11 @@ interface AuthContextType {
     username: string,
     password: string,
   ) => Promise<{ success: boolean; role?: string; message?: string }>;
-  googleLogin: (
-    tokens: { idToken?: string; accessToken?: string; role?: string },
-  ) => Promise<{ success: boolean; role?: string; message?: string }>;
+  googleLogin: (tokens: {
+    idToken?: string;
+    accessToken?: string;
+    role?: string;
+  }) => Promise<{ success: boolean; role?: string; message?: string }>;
   register: (
     data: RegisterData,
   ) => Promise<{ success: boolean; message?: string }>;
@@ -80,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem("token");
       if (token && !user) {
         try {
-          const res = await api.get("/api/auth/me");
+          const res = await api.get("/api/user/me");
           if (res.status === 200) {
             setUser(res.data);
             localStorage.setItem("auth", JSON.stringify(res.data));
@@ -104,9 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
-      const res = await api.post("/api/auth/login", { usernameOrEmail: username, password });
+      const res = await api.post("/api/auth/login", {
+        usernameOrEmail: username,
+        password,
+      });
       const payload = res.data;
-      
+
       if (payload.user) {
         setUser(payload.user);
         localStorage.setItem("auth", JSON.stringify(payload.user));
@@ -116,7 +129,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { success: true, role: payload.user?.role };
     } catch (err: any) {
-      return { success: false, message: err.response?.data?.message || "Lỗi kết nối máy chủ" };
+      return {
+        success: false,
+        message: err.response?.data?.message || "Lỗi kết nối máy chủ",
+      };
     }
   };
 
@@ -128,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post("/api/auth/google", tokens);
       const payload = res.data;
-      
+
       if (payload.user) {
         setUser(payload.user);
         localStorage.setItem("auth", JSON.stringify(payload.user));
@@ -138,7 +154,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { success: true, role: payload.user?.role };
     } catch (err: any) {
-      return { success: false, message: err.response?.data?.message || "Lỗi kết nối máy chủ" };
+      return {
+        success: false,
+        message: err.response?.data?.message || "Lỗi kết nối máy chủ",
+      };
     }
   };
 
@@ -167,7 +186,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { success: false, message: "Đăng ký thất bại" };
     } catch (err: any) {
-      return { success: false, message: err.response?.data?.message || "Lỗi kết nối máy chủ" };
+      return {
+        success: false,
+        message: err.response?.data?.message || "Lỗi kết nối máy chủ",
+      };
     }
   };
 
