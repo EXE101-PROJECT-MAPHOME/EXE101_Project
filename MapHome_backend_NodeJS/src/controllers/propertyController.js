@@ -535,7 +535,7 @@ const searchProperties = async (req, res) => {
       q,
       location,
       page = 1,
-      limit = 10,
+      limit = 100, // Default 100 for map view
       minPrice,
       maxPrice,
       minArea,
@@ -554,12 +554,11 @@ const searchProperties = async (req, res) => {
       query.status = "approved"; // Default to approved for public search
     }
 
-    // Default to only showing available properties for public search
-    if (req.query.available) {
+    // Only filter by available if explicitly requested - map should show all approved listings
+    if (req.query.available !== undefined) {
       query.available = req.query.available === "true";
-    } else {
-      query.available = true;
     }
+    // Note: removed forced available:true so both available and unavailable rooms show on map
 
     // Filter by verification
     if (verified === "true") {
@@ -567,16 +566,12 @@ const searchProperties = async (req, res) => {
     }
 
     // Search in name and address
-    // IMPROVEMENT: If lat/lng are present, treat q more like a property-specific filter (name/desc)
-    // instead of an absolute address requirement, as the geospatial filter handles the address/area.
     if (q) {
       if (req.query.lat && req.query.lng) {
-        // If searching by location, q should search in names/description
-        // We make it a bit more flexible to avoid "Quận 1, HCM" failing to match "Quận 1" in DB
         query.$or = [
           { name: new RegExp(q, "i") },
           { description: new RegExp(q, "i") },
-          { address: new RegExp(q.split(",")[0], "i") }, // Try matching only the first part of the search string (e.g. "Quận 1")
+          { address: new RegExp(q.split(",")[0], "i") },
         ];
       } else {
         query.$or = [
@@ -613,7 +608,7 @@ const searchProperties = async (req, res) => {
         ? amenities
         : amenities.split(",");
       amenityList.forEach((a) => {
-        const key = a.split(":")[0]?.trim(); // Handle key or key:value format
+        const key = a.split(":")[0]?.trim();
         if (key) {
           query[`amenities.${key}`] = true;
         }
@@ -628,10 +623,9 @@ const searchProperties = async (req, res) => {
     if (hasGeoSearch) {
       const lat = Number(req.query.lat);
       const lng = Number(req.query.lng);
-      const radius = Number(req.query.radius || 5);
+      const radius = Number(req.query.radius || 50); // Default 50km
 
       // NOTE: $nearSphere CANNOT be used with countDocuments() or .sort()
-      // MongoDB handles sorting by distance automatically with $nearSphere
       query.location = {
         $nearSphere: {
           $geometry: { type: "Point", coordinates: [lng, lat] },
@@ -640,8 +634,6 @@ const searchProperties = async (req, res) => {
       };
     }
 
-    // When using $nearSphere, we CANNOT call countDocuments or .sort()
-    // MongoDB restriction: $near/$nearSphere is incompatible with count() and explicit sort
     let properties, total;
 
     if (hasGeoSearch) {
@@ -649,7 +641,7 @@ const searchProperties = async (req, res) => {
       properties = await Property.find(query)
         .populate("landlordId", "name phone email avatar rating")
         .limit(Number(limit));
-      total = properties.length; // Approximate count from results
+      total = properties.length;
     } else {
       // Text/filter search: can sort and count normally
       properties = await Property.find(query)
@@ -692,9 +684,11 @@ const searchProperties = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("searchProperties error:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // GET /api/properties/search-multiple?locations=[{"lat":10.7,"lng":106.6,"radius":2},...]
 const searchByMultipleLocations = async (req, res) => {

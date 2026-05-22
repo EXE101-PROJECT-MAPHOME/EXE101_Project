@@ -114,19 +114,29 @@ export function MapPage() {
       .map(([key]) => key)
       .join(",");
 
+    // Only apply price/area filters if user has actively changed them from defaults
+    const isPriceChanged =
+      filters.priceRange[0] !== defaultFilters.priceRange[0] ||
+      filters.priceRange[1] !== defaultFilters.priceRange[1];
+    const isAreaChanged =
+      filters.areaRange[0] !== defaultFilters.areaRange[0] ||
+      filters.areaRange[1] !== defaultFilters.areaRange[1];
+
     searchProperties({
-      q: term,
-      minPrice: filters.priceRange[0],
-      maxPrice: filters.priceRange[1],
-      minArea: filters.areaRange[0],
-      maxArea: filters.areaRange[1],
-      amenities: selectedAmenities,
+      q: term || undefined,
+      minPrice: isPriceChanged ? filters.priceRange[0] : undefined,
+      maxPrice: isPriceChanged ? filters.priceRange[1] : undefined,
+      minArea: isAreaChanged ? filters.areaRange[0] : undefined,
+      maxArea: isAreaChanged ? filters.areaRange[1] : undefined,
+      amenities: selectedAmenities || undefined,
       verified: filters.verificationLevel === "verified" ? "true" : undefined,
       lat: location[0],
       lng: location[1],
       radius: filters.radius,
+      limit: 100,
     });
   };
+
 
   useEffect(() => {
     if (skipNextDebounceRef.current) {
