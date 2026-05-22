@@ -49,7 +49,9 @@ export function formatDistance(km: number): string {
 }
 
 /**
- * Calculate distance from a reference point and add it to properties
+ * Calculate distance from a reference point and add it to properties.
+ * NOTE: referencePoint is [lat, lng]
+ * NOTE: property.location is [lng, lat] (GeoJSON format from backend)
  */
 export function addDistanceToProperties<T extends { location: [number, number] }>(
   properties: T[],
@@ -58,16 +60,18 @@ export function addDistanceToProperties<T extends { location: [number, number] }
   return properties.map(property => ({
     ...property,
     distance: calculateDistance(
-      referencePoint[0],
-      referencePoint[1],
-      property.location[0],
-      property.location[1]
+      referencePoint[0],          // user lat
+      referencePoint[1],          // user lng
+      property.location[1],       // property lat (location[1] because format is [lng, lat])
+      property.location[0]        // property lng (location[0] because format is [lng, lat])
     ),
   }));
 }
 
 /**
- * Filter properties within a certain radius
+ * Filter properties within a certain radius.
+ * NOTE: centerPoint is [lat, lng]
+ * NOTE: property.location is [lng, lat] (GeoJSON format from backend)
  */
 export function filterByRadius<T extends { location: [number, number] }>(
   properties: T[],
@@ -76,10 +80,10 @@ export function filterByRadius<T extends { location: [number, number] }>(
 ): T[] {
   return properties.filter(property => {
     const distance = calculateDistance(
-      centerPoint[0],
-      centerPoint[1],
-      property.location[0],
-      property.location[1]
+      centerPoint[0],        // user lat
+      centerPoint[1],        // user lng
+      property.location[1],  // property lat (location[1] because format is [lng, lat])
+      property.location[0]   // property lng (location[0] because format is [lng, lat])
     );
     return distance <= radiusKm;
   });

@@ -350,18 +350,22 @@ export function PostRoomPage() {
 
   const handleNext = () => {
     if (step === "info") {
-      const nameValid = validatePropertyName(formData.name);
-      const priceValid = validatePrice(formData.price);
-      const areaValid = validateArea(formData.area);
-      const descriptionValid = validateDescription(formData.description);
-      const phoneValid = validatePhone(formData.phone);
+      // More aggressive validation for numeric fields
+      const isPriceValid = (val: any) => {
+        const num = Number(val);
+        return !isNaN(num) && num > 0;
+      };
 
       const newErrors = {
-        name: nameValid.error || "",
-        price: priceValid.error || "",
-        area: areaValid.error || "",
-        description: descriptionValid.error || "",
-        phone: phoneValid.error || "",
+        name: validatePropertyName(formData.name).error || "",
+        price: !isPriceValid(formData.price)
+          ? "Giá thuê phải là một số dương"
+          : "",
+        area: !isPriceValid(formData.area)
+          ? "Diện tích phải là một số dương"
+          : "",
+        description: validateDescription(formData.description).error || "",
+        phone: validatePhone(formData.phone).error || "",
         address:
           !selectedProvince ||
           !selectedDistrict ||
@@ -1092,9 +1096,10 @@ export function PostRoomPage() {
                             placeholder="0912 345 678"
                             value={formData.phone}
                             onChange={(e) => {
+                              const val = e.target.value.replace(/[^0-9]/g, '');
                               setFormData({
                                 ...formData,
-                                phone: e.target.value,
+                                phone: val,
                               });
                               if (fieldErrors.phone)
                                 setFieldErrors({ ...fieldErrors, phone: "" });
