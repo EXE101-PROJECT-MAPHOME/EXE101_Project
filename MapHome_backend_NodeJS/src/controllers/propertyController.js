@@ -107,6 +107,31 @@ const serializePropertyForClient = (propertyDoc) => {
   return property;
 };
 
+const getPopularPriceRange = (propertyDocs) => {
+  const pinnedProperties = propertyDocs.filter(
+    (property) =>
+      property.pinInfo &&
+      (property.pinInfo.pinnedAt ||
+        property.pinInfo.pinnedBy ||
+        property.pinInfo.note ||
+        property.pinInfo.photoAtPin),
+  );
+
+  const source = pinnedProperties.length > 0 ? pinnedProperties : propertyDocs;
+  const prices = source
+    .map((property) => Number(property.price))
+    .filter((price) => Number.isFinite(price));
+
+  if (prices.length === 0) {
+    return { min: 0, max: 0 };
+  }
+
+  return {
+    min: Math.min(...prices),
+    max: Math.max(...prices),
+  };
+};
+
 /**
  * Helper to fetch real-time nearby landmarks from Goong API
  * @param {Array|Object} propertyLocation [lng, lat] or GeoJSON Point { type: "Point", coordinates: [lng, lat] }
@@ -221,6 +246,8 @@ const getProperties = async (req, res) => {
     // Augment with proximity info (Processing sequentially or with Promise.all)
     // For many properties, calling API for each one is slow.
     // We'll only augment if there are few results or it's specifically requested.
+    const priceRange = getPopularPriceRange(properties);
+
     const augmentedProperties = await Promise.all(
       properties.map(async (p) => {
         const pObj = serializePropertyForClient(p);
@@ -678,6 +705,7 @@ const searchProperties = async (req, res) => {
 
     res.status(200).json({
       properties: augmentedProperties,
+      priceRange,
       pagination: {
         total,
         page: Number(page),

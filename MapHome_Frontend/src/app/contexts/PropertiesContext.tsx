@@ -11,6 +11,9 @@ import { RentalProperty } from "@/app/components/types";
 interface PropertiesContextType {
   properties: RentalProperty[];
   loading: boolean;
+  searchSummary: {
+    priceRange: { min: number; max: number };
+  } | null;
   addProperty: (property: Omit<RentalProperty, "id">) => Promise<boolean>;
   updateProperty: (
     id: string,
@@ -27,19 +30,36 @@ export const PropertiesContext = createContext<
 export function PropertiesProvider({ children }: { children: ReactNode }) {
   const [properties, setProperties] = useState<RentalProperty[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [searchSummary, setSearchSummary] = useState<{
+    priceRange: { min: number; max: number };
+  } | null>(null);
+
   useEffect(() => {
-    console.log('PropertiesContext state changed - properties:', properties.length, properties);
+    console.log(
+      "PropertiesContext state changed - properties:",
+      properties.length,
+      properties,
+    );
   }, [properties]);
 
   const mapBackendProperty = (prop: any): RentalProperty => {
     const result: RentalProperty = {
       ...prop,
       id: prop._id,
-      verificationLevel: prop.verificationLevel || 'none', // Ensure correct format
-      greenBadge: prop.greenBadge || { level: prop.verificationLevel === 'verified' ? 'verified' : 'none' },
+      verificationLevel: prop.verificationLevel || "none", // Ensure correct format
+      greenBadge: prop.greenBadge || {
+        level: prop.verificationLevel === "verified" ? "verified" : "none",
+      },
     };
-    console.log('Mapped property:', result.id, result.name, 'verificationLevel:', result.verificationLevel, 'greenBadge:', result.greenBadge);
+    console.log(
+      "Mapped property:",
+      result.id,
+      result.name,
+      "verificationLevel:",
+      result.verificationLevel,
+      "greenBadge:",
+      result.greenBadge,
+    );
     return result;
   };
 
@@ -98,17 +118,39 @@ export function PropertiesProvider({ children }: { children: ReactNode }) {
   const searchProperties = async (filters: any) => {
     try {
       setLoading(true);
-      console.log('searchProperties called with filters:', filters);
+      console.log("searchProperties called with filters:", filters);
       const res = await api.get("/api/properties/search", { params: filters });
-      console.log('searchProperties API response:', res.data);
+      console.log("searchProperties API response:", res.data);
       const results = Array.isArray(res.data)
         ? res.data
         : res.data.properties || [];
-      console.log('searchProperties results after parsing:', results.length, results);
+      const responsePriceRange =
+        res.data && !Array.isArray(res.data) && res.data.priceRange
+          ? res.data.priceRange
+          : null;
+      console.log(
+        "searchProperties results after parsing:",
+        results.length,
+        results,
+      );
       const mapped = results.map(mapBackendProperty);
-      console.log('searchProperties after map:', mapped.length, mapped);
+      console.log("searchProperties after map:", mapped.length, mapped);
       setProperties(mapped);
-      console.log('searchProperties setProperties called with:', mapped.length, 'items');
+      setSearchSummary(
+        responsePriceRange
+          ? {
+              priceRange: {
+                min: Number(responsePriceRange.min) || 0,
+                max: Number(responsePriceRange.max) || 0,
+              },
+            }
+          : null,
+      );
+      console.log(
+        "searchProperties setProperties called with:",
+        mapped.length,
+        "items",
+      );
     } catch (err) {
       console.error("Failed to search properties:", err);
     } finally {
@@ -121,6 +163,7 @@ export function PropertiesProvider({ children }: { children: ReactNode }) {
       value={{
         properties,
         loading,
+        searchSummary,
         addProperty,
         updateProperty,
         searchProperties,
