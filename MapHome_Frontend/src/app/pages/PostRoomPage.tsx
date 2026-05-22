@@ -127,7 +127,7 @@ export function PostRoomPage() {
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [fieldErrors, setFieldErrors] = useState({
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({
     name: "",
     price: "",
     area: "",

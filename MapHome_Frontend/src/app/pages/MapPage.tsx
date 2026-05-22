@@ -137,7 +137,6 @@ export function MapPage() {
     });
   };
 
-
   useEffect(() => {
     if (skipNextDebounceRef.current) {
       skipNextDebounceRef.current = false;
@@ -270,6 +269,19 @@ export function MapPage() {
     showFavoritesOnly,
     isFavorite,
   ]);
+
+  const searchPropertySuggestions = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return [];
+
+    return propertiesWithDistance
+      .filter(
+        (property: PropertyWithDistance) =>
+          property.name.toLowerCase().includes(query) ||
+          property.address.toLowerCase().includes(query),
+      )
+      .slice(0, 5);
+  }, [propertiesWithDistance, searchTerm]);
 
   // Count active filters
   const activeFiltersCount = useMemo(() => {
@@ -440,6 +452,55 @@ export function MapPage() {
                             </p>
                             <p className="text-[10px] font-medium text-emerald-900/40 truncate group-hover:text-emerald-900/60 font-mono uppercase tracking-tight">
                               {p.structured_formatting.secondary_text}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {searchPropertySuggestions.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_20px_50px_-10px_rgba(6,78,59,0.18)] border border-emerald-900/5 overflow-hidden z-[105] p-2"
+                  >
+                    <div className="px-3 pt-2 pb-1 flex items-center justify-between">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-950/40">
+                        Kết quả phòng trọ
+                      </p>
+                      <p className="text-[10px] font-bold text-emerald-600">
+                        {searchPropertySuggestions.length} phòng
+                      </p>
+                    </div>
+                    <div className="max-h-[320px] overflow-y-auto custom-scrollbar space-y-1 px-1 pb-1">
+                      {searchPropertySuggestions.map((property) => (
+                        <button
+                          key={property.id}
+                          onClick={() => {
+                            setSelectedProperty(property);
+                            setViewMode("map");
+                          }}
+                          className="w-full text-left px-4 py-3.5 rounded-2xl hover:bg-emerald-50/80 transition-colors flex items-start justify-between gap-4"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-black text-emerald-950 truncate">
+                              {property.name}
+                            </p>
+                            <p className="text-[11px] font-medium text-emerald-900/45 truncate mt-0.5">
+                              {property.address}
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0 text-right">
+                            <p className="text-sm font-black text-emerald-600 whitespace-nowrap">
+                              {property.price.toLocaleString("vi-VN")}đ
+                            </p>
+                            <p className="text-[10px] font-bold text-emerald-950/35 uppercase tracking-widest">
+                              / tháng
                             </p>
                           </div>
                         </button>

@@ -305,7 +305,8 @@ const createProperty = async (req, res) => {
       payload.location = geoJsonLocation;
     } else {
       return res.status(400).json({
-        message: "Invalid location format. Must provide coordinates as [lng, lat].",
+        message:
+          "Invalid location format. Must provide coordinates as [lng, lat].",
         error: "INVALID_LOCATION",
       });
     }
@@ -419,7 +420,8 @@ const updateProperty = async (req, res) => {
         updates.location = geoJsonLocation;
       } else {
         return res.status(400).json({
-          message: "Invalid location format. Must provide coordinates as [lng, lat].",
+          message:
+            "Invalid location format. Must provide coordinates as [lng, lat].",
           error: "INVALID_LOCATION",
         });
       }
@@ -688,7 +690,6 @@ const searchProperties = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // GET /api/properties/search-multiple?locations=[{"lat":10.7,"lng":106.6,"radius":2},...]
 const searchByMultipleLocations = async (req, res) => {
