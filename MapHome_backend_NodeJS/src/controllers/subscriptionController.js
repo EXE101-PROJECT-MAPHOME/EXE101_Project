@@ -259,6 +259,11 @@ const subscribe = async (req, res) => {
       });
     }
 
+    // Update User's subscriptionId to link to the subscription
+    await User.findByIdAndUpdate(req.user._id, {
+      subscriptionId: subscription._id,
+    });
+
     res.status(200).json(subscription);
   } catch (error) {
     res.status(500).json({ message: error.message });

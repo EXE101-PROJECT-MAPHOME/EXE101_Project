@@ -1,8 +1,8 @@
 import { RentalFilters } from '@/app/components/types';
 
 export const defaultFilters: RentalFilters = {
-  priceRange: [1000000, 10000000],
-  areaRange: [10, 50],
+  priceRange: [500000, 50000000],
+  areaRange: [10, 200],
   amenities: {
     wifi: false,
     furniture: false,
@@ -15,5 +15,5 @@ export const defaultFilters: RentalFilters = {
   verificationLevel: 'all',
   availability: 'all',
   sortBy: 'distance',
-  radius: 5,
+  radius: 50,
 };

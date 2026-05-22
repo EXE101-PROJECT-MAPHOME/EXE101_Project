@@ -681,7 +681,7 @@ GET /api/health
 - `address`: String
 - `price`: Number
 - `area`: Number
-- `location`: [latitude, longitude]
+- `location`: [longitude, latitude]
 - `amenities`: Object
 - `image`: String
 - `available`: Boolean
