@@ -47,6 +47,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { io } from "socket.io-client";
 import { ConfirmDialog } from "@/app/components/ConfirmDialog";
 import CalendarView from "@/app/components/CalendarView";
 
@@ -206,6 +207,12 @@ export function LandlordDashboardV2() {
     }
 
     const fetchData = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
 
       try {
@@ -258,6 +265,40 @@ export function LandlordDashboardV2() {
 
     fetchData();
   }, [isAuthenticated, user, navigate, activeTab]);
+
+  // Real-time notifications via Socket.IO
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== "landlord") return;
+
+    const token = localStorage.getItem("token");
+    const socketUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const socket = io(socketUrl, {
+      auth: { token },
+      transports: ["websocket"],
+    });
+
+    socket.on("connect", () => {
+      console.debug("[Socket] Connected", socket.id);
+    });
+
+    socket.on("notification", (notif: any) => {
+      try {
+        setNotifications((prev) => [notif, ...(prev || [])]);
+        // show a subtle toast for new landlord notifications
+        toast.success(`${notif.title} — ${notif.message}`);
+      } catch (err) {
+        console.error("Failed to handle incoming notification", err);
+      }
+    });
+
+    socket.on("disconnect", () => {
+      console.debug("[Socket] Disconnected");
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isAuthenticated, user]);
 
   const handleToggleAvailability = async (property: RentalProperty) => {
     const newStatus = !property.available;
@@ -456,6 +497,28 @@ export function LandlordDashboardV2() {
     }
   };
 
+  const handleDeleteProperty = async (propertyId: string) => {
+    const loadingToast = toast.loading("Đang xoá tin đăng...");
+    try {
+      const res = await api.delete(`/api/properties/${propertyId}`);
+      if (res.status === 200) {
+        toast.success("Đã xoá tin đăng thành công! 🗑️", { id: loadingToast });
+        setLandlordPosts((prev) =>
+          prev.filter((p) => (p._id || p.id) !== propertyId),
+        );
+        if (activeTab === "overview") {
+          setStats((prev) => ({
+            ...prev,
+            totalPosts: Math.max(0, prev.totalPosts - 1),
+            approvedPosts: Math.max(0, prev.approvedPosts - 1),
+          }));
+        }
+      }
+    } catch (err) {
+      toast.error("Xoá thất bại! ❌", { id: loadingToast });
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -505,6 +568,56 @@ export function LandlordDashboardV2() {
         {badge.label.toUpperCase()}
       </span>
     );
+  };
+
+  const getPostActionConfig = (post: RentalProperty) => {
+    const status = post.status || "approved";
+
+    if (status === "expired") {
+      return {
+        label: "Gia hạn",
+        icon: Zap,
+        className:
+          "bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700",
+        onClick: handleRenewProperty,
+      };
+    }
+
+    if (status === "pending") {
+      return {
+        label: "Chờ duyệt",
+        icon: Clock,
+        className: "bg-orange-50 text-orange-600 cursor-not-allowed",
+        disabled: true,
+      };
+    }
+
+    if (status === "rejected") {
+      return {
+        label: "Bị từ chối",
+        icon: XCircle,
+        className: "bg-rose-50 text-rose-600 cursor-not-allowed",
+        disabled: true,
+      };
+    }
+
+    if (status === "reported") {
+      return {
+        label: "Bị báo cáo",
+        icon: AlertTriangle,
+        className: "bg-rose-50 text-rose-600 cursor-not-allowed",
+        disabled: true,
+      };
+    }
+
+    return {
+      label: post.available ? "Ngừng thuê" : "Mở thuê",
+      icon: post.available ? XCircle : CheckCircle,
+      className: post.available
+        ? "bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"
+        : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700",
+      onClick: handleToggleAvailability,
+    };
   };
 
   const getVerificationBadge = (level: number) => {
@@ -1735,7 +1848,64 @@ export function LandlordDashboardV2() {
                               </span>
                             </div>
 
-                            {/* View-only mode: No action buttons */}
+                            {activeTab === "posts" && (
+                              <div className="flex items-center gap-2 mt-4 sm:mt-0 w-full sm:w-auto justify-end">
+                                {(() => {
+                                  const action = getPostActionConfig(post);
+                                  const ActionIcon = action.icon;
+                                  return (
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (action.disabled) return;
+                                        if (action.onClick) {
+                                          action.onClick(post);
+                                        }
+                                      }}
+                                      variant="ghost"
+                                      disabled={action.disabled}
+                                      className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm flex items-center gap-1.5 ${action.className} ${
+                                        action.disabled ? "opacity-70" : ""
+                                      }`}
+                                    >
+                                      <ActionIcon className="size-3.5" />
+                                      {action.label}
+                                    </Button>
+                                  );
+                                })()}
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingProperty(post);
+                                  }}
+                                  variant="ghost"
+                                  className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 rounded-xl transition-all shadow-sm"
+                                  title="Chỉnh sửa tin"
+                                >
+                                  <Edit className="size-3.5" />
+                                </Button>
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmDelete({
+                                      open: true,
+                                      title: "Xác nhận xoá tin đăng",
+                                      description:
+                                        "Bạn có chắc chắn muốn xoá tin đăng này? Hành động này không thể hoàn tác.",
+                                      onConfirm: () =>
+                                        handleDeleteProperty(
+                                          post._id || post.id,
+                                        ),
+                                    });
+                                  }}
+                                  variant="ghost"
+                                  className="p-2 bg-slate-50 text-slate-500 hover:bg-rose-100 hover:text-rose-600 rounded-xl transition-all shadow-sm"
+                                  title="Xoá tin đăng"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </motion.div>

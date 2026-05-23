@@ -31,6 +31,12 @@ export function VerificationProvider({ children }: { children: ReactNode }) {
   });
 
   const fetchRequests = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       const res = await api.get("/api/verifications");
