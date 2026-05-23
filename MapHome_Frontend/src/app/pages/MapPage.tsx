@@ -51,6 +51,7 @@ export function MapPage() {
   const [selectedProperty, setSelectedProperty] =
     useState<RentalProperty | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [filters, setFilters] = useState<RentalFilters>(defaultFilters);
   const [searchLocations, setSearchLocations] = useState<SearchLocation[]>([]);
@@ -74,6 +75,8 @@ export function MapPage() {
   // GPS original location - saved separately so we can return to it when search is cleared
   const gpsLocationRef = useRef<[number, number]>([10.7769, 106.7009]);
   const [isLocating, setIsLocating] = useState(false);
+  // Force recenter trigger (increments to force child map to fly even if coordinates unchanged)
+  const [recenterKey, setRecenterKey] = useState(0);
 
   // Get real-time location on mount
   useEffect(() => {
@@ -153,6 +156,7 @@ export function MapPage() {
   // Autocomplete Handlers
   const handleAutocompleteInput = (value: string) => {
     setSearchTerm(value);
+    setShowDropdown(true);
     setPredictions([]);
 
     if (autocompleteTimerRef.current)
@@ -170,6 +174,7 @@ export function MapPage() {
   const handleSelectPrediction = async (prediction: GoongPrediction) => {
     setIsGeocoding(true);
     setPredictions([]);
+    setShowDropdown(false);
 
     // Set search term for UI - use a cleaner name (e.g. "Quận 1" instead of "Quận 1, Hồ Chí Minh...")
     const cleanTerm =
@@ -420,6 +425,8 @@ export function MapPage() {
                 value={searchTerm}
                 onChange={(e) => handleAutocompleteInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                onFocus={() => setShowDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                 className="pl-12 h-14 bg-white/50 border-white/20 rounded-2xl text-emerald-950 font-medium placeholder:text-emerald-950/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all duration-300 shadow-sm relative z-10"
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 z-20">
@@ -431,11 +438,19 @@ export function MapPage() {
                     onClick={() => {
                       setSearchTerm("");
                       setPredictions([]);
+                      // Close any open detail panel and return to map view
+                      setSelectedProperty(null);
+                      setViewMode("map");
                       // Return map to original GPS location and reload all properties
                       const gpsLoc = gpsLocationRef.current;
+                      console.log("[MapPage] clear clicked, gpsLoc:", gpsLoc);
                       skipNextDebounceRef.current = true;
                       setUserLocation(gpsLoc);
                       performSearch("", gpsLoc);
+                      // Force child map to recenter even if gpsLoc equals current userLocation
+                      setRecenterKey((k) => k + 1);
+                      // Auto-recenter to GPS location immediately (no toast):
+                      // skipNextDebounceRef already set above, setUserLocation + performSearch will trigger map fly
                     }}
                     className="size-8 bg-emerald-50 hover:bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-950 group transition-all duration-300"
                   >
@@ -446,7 +461,7 @@ export function MapPage() {
 
               {/* Suggestions Dropdown */}
               <AnimatePresence>
-                {predictions.length > 0 && (
+                {showDropdown && predictions.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -479,7 +494,7 @@ export function MapPage() {
               </AnimatePresence>
 
               <AnimatePresence>
-                {searchPropertySuggestions.length > 0 && (
+                {showDropdown && searchPropertySuggestions.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -501,6 +516,8 @@ export function MapPage() {
                           onClick={() => {
                             setSelectedProperty(property);
                             setViewMode("map");
+                            setSearchTerm(property.name);
+                            setShowDropdown(false);
                           }}
                           className="w-full text-left px-4 py-3.5 rounded-2xl hover:bg-emerald-50/80 transition-colors flex items-start justify-between gap-4"
                         >
@@ -559,11 +576,9 @@ export function MapPage() {
       {/* Main Content */}
       <div className="flex-1 overflow-hidden relative pt-[164px]">
         {viewMode === "map" ? (
-          <div className="h-full w-full flex">
+          <div className="h-full w-full relative">
             {/* Map */}
-            <div
-              className={`${selectedProperty ? "w-2/3" : "w-full"} h-full transition-all duration-500 ease-in-out`}
-            >
+            <div className="h-full w-full relative transition-all duration-500 ease-in-out">
               <div className="h-full w-full p-4">
                 <RentalMapView
                   properties={filteredProperties}
@@ -572,8 +587,99 @@ export function MapPage() {
                   searchLocations={searchLocations}
                   searchRadius={filters.radius}
                   searchCenter={searchCenter}
+                  recenterLocation={gpsLocationRef.current}
+                  recenterKey={recenterKey}
                 />
               </div>
+
+              {/* Floating Footer Stats bounded by the map container */}
+              <motion.footer
+                initial={{ y: 100 }}
+                animate={{ y: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 30,
+                  delay: 0.5,
+                }}
+                className="absolute bottom-6 left-0 right-0 px-4 pointer-events-none flex justify-center z-[100]"
+                style={{
+                  left: selectedProperty ? "16px" : "0px",
+                  right: selectedProperty ? "416px" : "0px",
+                  padding: selectedProperty ? "0" : "0 16px",
+                }}
+              >
+                <div
+                  className="bg-emerald-950/90 backdrop-blur-2xl border border-white/10 rounded-[30px] md:rounded-[40px] py-3 px-4 md:py-4 md:px-8 shadow-[0_32px_64px_-16px_rgba(6,78,59,0.5)] flex flex-col xl:flex-row xl:justify-between xl:items-center text-white gap-4 pointer-events-auto overflow-hidden w-full"
+                  style={{
+                    maxWidth: "80rem",
+                  }}
+                >
+                  <div className="flex items-center flex-wrap gap-4 md:gap-6 flex-1 min-w-0">
+                    <div className="flex flex-col flex-shrink-0">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-emerald-100/40 mb-0.5">
+                        Tìm thấy
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="size-2 bg-emerald-400 rounded-full animate-pulse" />
+                        <span className="text-xl font-black text-white">
+                          {filteredProperties.length}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="hidden sm:block h-10 w-px bg-white/10 flex-shrink-0" />
+
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-emerald-100/40 mb-0.5">
+                        Khoảng giá
+                      </span>
+                      <div className="text-lg md:text-xl font-black text-white italic leading-tight truncate">
+                        <div className="block truncate">
+                          {priceRange.min === 0 && priceRange.max === 0
+                            ? "0"
+                            : priceRange.min === priceRange.max
+                              ? priceRange.min.toLocaleString("vi-VN")
+                              : `${priceRange.min.toLocaleString("vi-VN")} - ${priceRange.max.toLocaleString("vi-VN")}`}
+                        </div>
+                        <div className="text-[10px] md:text-xs text-emerald-100/60 font-medium mt-0.5 md:mt-1">
+                          đ/tháng
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center flex-wrap gap-3 flex-shrink-0 w-full xl:w-auto">
+                    <div className="px-3 py-2 md:px-5 md:py-2.5 bg-white/10 rounded-[16px] md:rounded-[20px] flex items-center gap-3 border border-white/5 shadow-inner w-full xl:w-auto">
+                      <div className="flex items-center gap-3 md:gap-4 flex-wrap">
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                          <div className="size-1.5 bg-orange-400 rounded-full" />
+                          <span className="text-[10px] md:text-xs font-black uppercase tracking-widest whitespace-nowrap">
+                            Ghim:{" "}
+                            {filteredProperties.filter((p) => p.pinInfo).length}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 md:gap-2">
+                          <div className="size-1.5 bg-green-400 rounded-full" />
+                          <span className="text-[10px] md:text-xs font-black uppercase tracking-widest whitespace-nowrap">
+                            Còn phòng:{" "}
+                            {
+                              filteredProperties.filter((p) => p.available)
+                                .length
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {searchLocations.length > 0 && (
+                      <div className="hidden sm:flex px-3 py-2 md:px-5 md:py-2.5 bg-emerald-500 text-white rounded-[16px] md:rounded-[20px] items-center gap-2 font-black text-[10px] md:text-xs uppercase tracking-widest shadow-xl shadow-emerald-900/20 w-full xl:w-auto justify-center">
+                        📍 {searchLocations.length} Địa điểm
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.footer>
             </div>
 
             {/* Detail Panel */}
@@ -584,7 +690,7 @@ export function MapPage() {
                   animate={{ x: 0 }}
                   exit={{ x: "100%" }}
                   transition={{ type: "spring", damping: 28, stiffness: 220 }}
-                  className="w-[400px] h-full bg-white border-l border-emerald-50 shadow-[-10px_0_40px_-10px_rgba(6,78,59,0.1)] overflow-y-auto z-[90] will-change-transform"
+                  className="absolute top-0 right-0 z-[120] h-full w-full max-w-[400px] bg-white border-l border-emerald-50 shadow-[-10px_0_40px_-10px_rgba(6,78,59,0.1)] overflow-y-auto will-change-transform"
                 >
                   <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-emerald-50 p-5 flex justify-between items-center z-10">
                     <h2 className="text-xl font-black bg-gradient-to-r from-emerald-950 to-emerald-600 bg-clip-text text-transparent tracking-tight">
@@ -604,7 +710,7 @@ export function MapPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="p-4"
+                    className="p-4 pb-36"
                   >
                     <PropertyCard property={selectedProperty} />
                     {/* Pin Info */}
@@ -685,76 +791,7 @@ export function MapPage() {
       </div>
 
       {/* Floating Footer Stats */}
-      <motion.footer
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.5 }}
-        className={`fixed bottom-6 z-[100] px-4 pointer-events-none will-change-transform ${
-          selectedProperty
-            ? "left-4 right-[420px]"
-            : "inset-x-0 mx-auto max-w-5xl"
-        }`}
-      >
-        <div className="bg-emerald-950/90 backdrop-blur-2xl border border-white/10 rounded-[40px] py-4 px-8 shadow-[0_32px_64px_-16px_rgba(6,78,59,0.5)] flex justify-between items-center text-white flex-wrap gap-4 pointer-events-auto">
-          <div className="flex items-center gap-6">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-100/40 mb-0.5">
-                Tìm thấy
-              </span>
-              <div className="flex items-center gap-2">
-                <div className="size-2 bg-emerald-400 rounded-full animate-pulse" />
-                <span className="text-xl font-black text-white">
-                  {filteredProperties.length}
-                </span>
-              </div>
-            </div>
 
-            <div className="h-10 w-px bg-white/10" />
-
-            <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-100/40 mb-0.5">
-                Khoảng giá
-              </span>
-              <span className="text-xl font-black text-white italic">
-                {priceRange.min === 0 && priceRange.max === 0
-                  ? 0
-                  : priceRange.min === priceRange.max
-                    ? priceRange.min.toLocaleString("vi-VN")
-                    : `${priceRange.min.toLocaleString("vi-VN")} - ${priceRange.max.toLocaleString("vi-VN")}`}
-                <span className="text-xs ml-1 text-emerald-100/60 font-medium">
-                  đ/tháng
-                </span>
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="px-5 py-2.5 bg-white/10 rounded-[20px] flex items-center gap-3 border border-white/5 shadow-inner">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="size-1.5 bg-orange-400 rounded-full" />
-                  <span className="text-xs font-black uppercase tracking-widest">
-                    Ghim: {filteredProperties.filter((p) => p.pinInfo).length}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="size-1.5 bg-green-400 rounded-full" />
-                  <span className="text-xs font-black uppercase tracking-widest">
-                    Còn phòng:{" "}
-                    {filteredProperties.filter((p) => p.available).length}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {searchLocations.length > 0 && (
-              <div className="px-5 py-2.5 bg-emerald-500 text-white rounded-[20px] flex items-center gap-2 font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-900/20">
-                📍 {searchLocations.length} Địa điểm
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.footer>
       <CompareFloatingBar />
     </div>
   );

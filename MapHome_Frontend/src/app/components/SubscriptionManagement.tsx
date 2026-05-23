@@ -233,7 +233,13 @@ export function SubscriptionManagement() {
         {/* Usage Stats (Vibrant Light Glass Cards) */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6">
           {usageStats.map((stat: any, idx: number) => {
-            const Icon = stat.icon;
+            const IconMap: Record<string, any> = {
+              Star, star: Star,
+              TrendingUp, trendingup: TrendingUp,
+              ShieldCheck, shieldcheck: ShieldCheck,
+              Zap, zap: Zap,
+            };
+            const Icon = typeof stat.icon === "string" ? (IconMap[stat.icon] || Star) : stat.icon;
             const cardGradients = {
               blue: "from-blue-600 to-indigo-700 shadow-blue-100",
               emerald: "from-emerald-500 to-teal-600 shadow-emerald-100",

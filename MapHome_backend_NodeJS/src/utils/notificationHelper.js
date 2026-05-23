@@ -9,12 +9,49 @@ const Notification = require("../models/Notification");
  * @param {string} [options.type]    - Type: "info"|"success"|"warning"|"error"|"booking"|"verification"
  * @param {string} [options.link]    - Related page link (e.g. /room/123)
  */
-const createNotification = async ({ userId, title, message, type = "info", link }) => {
+const { getIO } = require("./socket");
+
+const createNotification = async ({
+  userId,
+  title,
+  message,
+  type = "info",
+  link,
+}) => {
   try {
-    await Notification.create({ userId, title, message, type, link });
+    const notif = await Notification.create({
+      userId,
+      title,
+      message,
+      type,
+      link,
+    });
+
+    // Emit real-time event if socket.io is available
+    try {
+      const io = getIO();
+      if (io && userId) {
+        io.to(`user_${userId}`).emit("notification", notif);
+      }
+      // also broadcast to role-based room if type suggests landlord notification
+      if (io && type === "booking") {
+        io.to("role_landlord").emit("notification", notif);
+      }
+    } catch (emitErr) {
+      console.error(
+        "[NotificationHelper] Failed to emit socket notification:",
+        emitErr.message,
+      );
+    }
+
+    return notif;
   } catch (err) {
     // Log error but do not throw to avoid disrupting the main flow
-    console.error("[NotificationHelper] Failed to create notification:", err.message);
+    console.error(
+      "[NotificationHelper] Failed to create notification:",
+      err.message,
+    );
+    return null;
   }
 };
 
@@ -23,7 +60,14 @@ const createNotification = async ({ userId, title, message, type = "info", link 
 /**
  * Notify LANDLORD when a new booking is created by a tenant
  */
-const notifyLandlordNewBooking = async ({ landlordUserId, propertyName, customerName, bookingDate, bookingTime, propertyId }) => {
+const notifyLandlordNewBooking = async ({
+  landlordUserId,
+  propertyName,
+  customerName,
+  bookingDate,
+  bookingTime,
+  propertyId,
+}) => {
   await createNotification({
     userId: landlordUserId,
     title: "📅 New Viewing Appointment!",
@@ -36,7 +80,13 @@ const notifyLandlordNewBooking = async ({ landlordUserId, propertyName, customer
 /**
  * Notify TENANT when the landlord confirms their booking
  */
-const notifyTenantBookingConfirmed = async ({ tenantUserId, propertyName, bookingDate, bookingTime, propertyId }) => {
+const notifyTenantBookingConfirmed = async ({
+  tenantUserId,
+  propertyName,
+  bookingDate,
+  bookingTime,
+  propertyId,
+}) => {
   await createNotification({
     userId: tenantUserId,
     title: "✅ Appointment Confirmed!",
@@ -49,8 +99,16 @@ const notifyTenantBookingConfirmed = async ({ tenantUserId, propertyName, bookin
 /**
  * Notify TENANT when landlord cancels their booking
  */
-const notifyTenantBookingCancelled = async ({ tenantUserId, propertyName, cancelledBy, propertyId }) => {
-  const byText = cancelledBy === "landlord" ? "The landlord has cancelled" : "Your appointment has been cancelled";
+const notifyTenantBookingCancelled = async ({
+  tenantUserId,
+  propertyName,
+  cancelledBy,
+  propertyId,
+}) => {
+  const byText =
+    cancelledBy === "landlord"
+      ? "The landlord has cancelled"
+      : "Your appointment has been cancelled";
   await createNotification({
     userId: tenantUserId,
     title: "❌ Appointment Cancelled",
@@ -63,7 +121,11 @@ const notifyTenantBookingCancelled = async ({ tenantUserId, propertyName, cancel
 /**
  * Notify TENANT when their booking is marked as completed (prompt them to leave a review)
  */
-const notifyTenantBookingCompleted = async ({ tenantUserId, propertyName, propertyId }) => {
+const notifyTenantBookingCompleted = async ({
+  tenantUserId,
+  propertyName,
+  propertyId,
+}) => {
   await createNotification({
     userId: tenantUserId,
     title: "🏠 Viewing Completed!",
@@ -76,7 +138,13 @@ const notifyTenantBookingCompleted = async ({ tenantUserId, propertyName, proper
 /**
  * Notify LANDLORD when a tenant cancels their own booking
  */
-const notifyLandlordBookingCancelledByTenant = async ({ landlordUserId, propertyName, customerName, bookingDate, bookingTime }) => {
+const notifyLandlordBookingCancelledByTenant = async ({
+  landlordUserId,
+  propertyName,
+  customerName,
+  bookingDate,
+  bookingTime,
+}) => {
   await createNotification({
     userId: landlordUserId,
     title: "🔔 Tenant Cancelled Appointment",
@@ -88,8 +156,16 @@ const notifyLandlordBookingCancelledByTenant = async ({ landlordUserId, property
 /**
  * Notify BOTH LANDLORD AND TENANT 1 hour before the appointment
  */
-const notifyBookingReminder = async ({ userId, propertyName, bookingTime, isLandlord, propertyId }) => {
-  const roleText = isLandlord ? "You have a viewing appointment" : "Don't forget your viewing appointment";
+const notifyBookingReminder = async ({
+  userId,
+  propertyName,
+  bookingTime,
+  isLandlord,
+  propertyId,
+}) => {
+  const roleText = isLandlord
+    ? "You have a viewing appointment"
+    : "Don't forget your viewing appointment";
   await createNotification({
     userId,
     title: "⏰ Appointment Reminder",
@@ -102,7 +178,12 @@ const notifyBookingReminder = async ({ userId, propertyName, bookingTime, isLand
 /**
  * Notify LANDLORD when their property listing is about to expire (3 days before)
  */
-const notifyPropertyExpiryWarning = async ({ userId, propertyName, propertyId, daysRemaining = 3 }) => {
+const notifyPropertyExpiryWarning = async ({
+  userId,
+  propertyName,
+  propertyId,
+  daysRemaining = 3,
+}) => {
   await createNotification({
     userId,
     title: "⚠️ Tin đăng sắp hết hạn!",

@@ -154,11 +154,22 @@ const getNearbyLandmarks = async (propertyLocation) => {
     return [];
   }
 
-  const GOONG_API_KEY =
-    process.env.GOONG_API_KEY || "9Xau7e646cReoQa17uHw6Dp1KLPG7ahl9iDGy8V1";
+  // Validate coordinates to prevent "undefined,undefined"
+  if (lat === undefined || lng === undefined || Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
+    return [];
+  }
 
   try {
-    // Types to search for near the property
+    // NOTE: Goong API does not natively support the /Place/NearbySearch endpoint 
+    // (this is a Google Maps endpoint). Calling it will result in a 404 error.
+    // For now, we return an empty array to prevent spamming errors.
+    // If you need Nearby Search, consider using Google Maps Places API or 
+    // implement a local geospatial query if you have POI data in your database.
+    return [];
+
+    /* 
+    const GOONG_API_KEY =
+      process.env.GOONG_API_KEY || "9Xau7e646cReoQa17uHw6Dp1KLPG7ahl9iDGy8V1";
     const types = "university,school,hospital,park";
     const radius = 3000; // 3km radius
 
@@ -170,8 +181,6 @@ const getNearbyLandmarks = async (propertyLocation) => {
     return places
       .slice(0, 10)
       .map((place) => {
-        // Calculate distance manually if API doesn't provide it in the results directly in a way we want
-        // Actually Goong NearbySearch doesn't always provide distance in the main results array
         const distance = haversineKm(
           lat,
           lng,
@@ -189,9 +198,16 @@ const getNearbyLandmarks = async (propertyLocation) => {
         };
       })
       .sort((a, b) => a.distanceKm - b.distanceKm);
+    */
   } catch (error) {
-    console.error("Goong API Error:", error.message);
-    return []; // Return empty array on failure to avoid breaking the whole response
+    console.error("Goong API Error:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      url: error.config?.url,
+    });
+
+    return [];
   }
 };
 
@@ -246,7 +262,7 @@ const getProperties = async (req, res) => {
     // Augment with proximity info (Processing sequentially or with Promise.all)
     // For many properties, calling API for each one is slow.
     // We'll only augment if there are few results or it's specifically requested.
-    const priceRange = getPopularPriceRange(properties);
+    const priceRange = getPopularPriceRange(properties || []);
 
     const augmentedProperties = await Promise.all(
       properties.map(async (p) => {
@@ -680,6 +696,8 @@ const searchProperties = async (req, res) => {
         .sort({ createdAt: -1 });
       total = await Property.countDocuments(query);
     }
+
+    const priceRange = getPopularPriceRange(properties || []);
 
     const augmentedProperties = await Promise.all(
       properties.map(async (p) => {

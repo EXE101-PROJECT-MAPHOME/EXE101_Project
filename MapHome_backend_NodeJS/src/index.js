@@ -16,10 +16,12 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
-  credentials: true // Allow cookies
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true, // Allow cookies
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -27,7 +29,9 @@ app.use(cookieParser());
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // Limit each IP to 20 login/register requests per windowMs
-  message: { message: "Quá nhiều yêu cầu đăng nhập. Vui lòng thử lại sau 15 phút." },
+  message: {
+    message: "Quá nhiều yêu cầu đăng nhập. Vui lòng thử lại sau 15 phút.",
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -67,8 +71,6 @@ app.use("/api/contacts", require("./routes/contactRoutes"));
 app.use("/api/ai", aiLimiter, require("./routes/aiRoutes"));
 app.use("/api/map", require("./routes/mapRoutes"));
 
-
-
 app.get("/", (req, res) => res.send("API is running..."));
 
 // Health check
@@ -85,11 +87,23 @@ const PORT = process.env.PORT || 5000;
 (async function start() {
   try {
     await connectDB();
-    
+
     // Initialize scheduled tasks
     initCronJobs();
 
-    app.listen(PORT, () => {
+    const http = require("http");
+    const server = http.createServer(app);
+
+    // initialize socket.io
+    try {
+      const { initSocket } = require("./utils/socket");
+      initSocket(server);
+      console.log("Socket.IO initialized");
+    } catch (err) {
+      console.warn("Failed to initialize Socket.IO:", err.message);
+    }
+
+    server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
       console.log(`📚 Swagger API Docs: http://localhost:${PORT}/api-docs`);
     });
