@@ -196,49 +196,53 @@ export function CheckoutPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
+      {/* spacer to offset fixed navbar height (prevents overlap) */}
+      <div className="h-16" aria-hidden="true" />
 
       {/* Progress Stepper */}
-      <div className="bg-white border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white">
-                  <Check className="size-5" strokeWidth={3} />
+      <div className="py-6">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 px-6 py-4">
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white">
+                    <Check className="size-5" strokeWidth={3} />
+                  </div>
+                  <span className="text-xs font-semibold text-green-600 mt-2 whitespace-nowrap">
+                    {isInspection ? "Đặt lịch" : "Chọn gói"}
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-green-600 mt-2 whitespace-nowrap">
-                  {isInspection ? "Đặt lịch" : "Chọn gói"}
+                <div className="h-0.5 w-20 bg-green-600 mx-2" />
+              </div>
+              <div className="flex items-center">
+                <div className="flex flex-col items-center">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white animate-pulse">
+                    <span className="font-bold">2</span>
+                  </div>
+                  <span className="text-xs font-semibold text-blue-600 mt-2 whitespace-nowrap">
+                    Xác nhận
+                  </span>
+                </div>
+                <div className="h-0.5 w-20 bg-gray-300 mx-2" />
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                  <span className="font-bold">3</span>
+                </div>
+                <span className="text-xs font-medium text-gray-400 mt-2 whitespace-nowrap">
+                  Hoàn tất
                 </span>
               </div>
-              <div className="h-0.5 w-20 bg-green-600 mx-2" />
-            </div>
-            <div className="flex items-center">
-              <div className="flex flex-col items-center">
-                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white animate-pulse">
-                  <span className="font-bold">2</span>
-                </div>
-                <span className="text-xs font-semibold text-blue-600 mt-2 whitespace-nowrap">
-                  Xác nhận
-                </span>
-              </div>
-              <div className="h-0.5 w-20 bg-gray-300 mx-2" />
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                <span className="font-bold">3</span>
-              </div>
-              <span className="text-xs font-medium text-gray-400 mt-2 whitespace-nowrap">
-                Hoàn tất
-              </span>
             </div>
           </div>
         </div>
       </div>
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <main className="flex-1 max-w-7xl mx-auto px-4 py-10 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           {/* LEFT COLUMN */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="lg:col-span-8 space-y-8">
             <Button
               variant="ghost"
               onClick={() =>
@@ -266,7 +270,7 @@ export function CheckoutPage() {
             {/* INSPECTION ORDER DETAILS */}
             {isInspection && (
               <>
-                <Card>
+                <Card className="rounded-2xl shadow-sm border border-gray-100">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -340,7 +344,7 @@ export function CheckoutPage() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="rounded-2xl shadow-sm border border-gray-100">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Home className="size-5 text-gray-600" />
@@ -449,7 +453,7 @@ export function CheckoutPage() {
             {/* SUBSCRIPTION ORDER DETAILS */}
             {!isInspection && (
               <>
-                <Card>
+                <Card className="rounded-2xl shadow-sm border border-gray-100">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -492,7 +496,9 @@ export function CheckoutPage() {
                             />
                           </div>
                           <span className="text-sm text-gray-700">
-                            {feature}
+                            {typeof feature === "string"
+                              ? feature
+                              : feature.text}
                           </span>
                         </li>
                       ))}
@@ -512,7 +518,7 @@ export function CheckoutPage() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="rounded-2xl shadow-sm border border-gray-100">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Home className="size-5 text-gray-600" />
@@ -568,7 +574,7 @@ export function CheckoutPage() {
             )}
 
             {/* Terms & Conditions */}
-            <Card>
+            <Card className="rounded-2xl shadow-sm border border-gray-100">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="size-5 text-gray-600" />
@@ -662,17 +668,17 @@ export function CheckoutPage() {
           </div>
 
           {/* RIGHT COLUMN - Payment Panel */}
-          <div className="lg:col-span-2">
-            <div className="sticky top-4">
-              <Card className="border-2 border-gray-200 shadow-lg">
-                <CardHeader className="bg-gradient-to-br from-blue-50 to-purple-50 border-b">
+          <aside className="lg:col-span-4">
+            <div className="sticky top-24 space-y-4">
+              <Card className="border border-gray-100 shadow-2xl rounded-2xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-blue-50 to-purple-50 border-b px-6 py-4">
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="size-5" />
                     Chi tiết thanh toán
                   </CardTitle>
                 </CardHeader>
 
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-6 space-y-5">
                   <div className="space-y-3">
                     <div className="flex items-start justify-between text-sm">
                       <div>
@@ -683,7 +689,7 @@ export function CheckoutPage() {
                         </p>
                         <p className="text-xs text-gray-500">× {duration}</p>
                       </div>
-                      <p className="font-semibold text-gray-900">
+                      <p className="font-extrabold text-2xl text-blue-600">
                         {totalAmount.toLocaleString("vi-VN")}đ
                       </p>
                     </div>
@@ -714,7 +720,7 @@ export function CheckoutPage() {
                   <Button
                     onClick={handlePayment}
                     disabled={!agreedToTerms || isProcessing}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg"
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-xl rounded-full py-4 text-lg uppercase tracking-wider"
                     size="lg"
                   >
                     {isProcessing ? (
@@ -810,8 +816,8 @@ export function CheckoutPage() {
                 </CardContent>
               </Card>
 
-              <Card className="mt-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-                <CardContent className="p-4">
+              <Card className="mt-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 rounded-2xl">
+                  <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
                       <CheckCircle2 className="size-5 text-white" />
@@ -830,7 +836,7 @@ export function CheckoutPage() {
                 </CardContent>
               </Card>
             </div>
-          </div>
+          </aside>
         </div>
       </main>
 
