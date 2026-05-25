@@ -297,7 +297,11 @@ export function UserDetailDialog({
                           />
                           <InfoItem
                             label="Cấp độ xác minh"
-                            value={`${data?.user?.verificationLevelLabel || "Level 1"} - ${data?.user?.subscriptionTier || "Standard"}`}
+                            value={
+                              data?.user?.role === "admin"
+                                ? "Đặc quyền Quản trị (Tối đa)"
+                                : `${data?.user?.verificationLevelLabel || "Level 1"} - ${data?.user?.subscriptionTier || "Standard"}`
+                            }
                           />
                         </div>
                       </motion.div>

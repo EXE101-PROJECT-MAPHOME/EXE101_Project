@@ -19,7 +19,7 @@ import {
 interface RentalMapViewProps {
   properties: RentalProperty[];
   selectedProperty: RentalProperty | null;
-  onPropertySelect: (property: RentalProperty) => void;
+  onPropertySelect: (property: RentalProperty | null) => void;
   searchLocations?: SearchLocation[];
   searchRadius?: number; // in km
   searchCenter?: [number, number];
@@ -166,6 +166,11 @@ export function RentalMapView({
     // Disable built-in controls (we have custom ones below)
     mapRef.current = map;
 
+    // Add map click listener to deselect property
+    map.on("click", () => {
+      onPropertySelect(null);
+    });
+
     return () => {
       map.remove();
       mapRef.current = null;
@@ -238,7 +243,10 @@ export function RentalMapView({
       `;
 
       marker.setPopup(new goongjs.Popup({ offset: 25 }).setHTML(popupContent));
-      el.addEventListener("click", () => onPropertySelect(property));
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        onPropertySelect(property);
+      });
       markersRef.current.push(marker);
     });
 

@@ -47,3 +47,22 @@ export const formatDateVietnamese = (
 
   return baseFormat;
 };
+
+/**
+ * Get the text for remaining days until expiry
+ * @param expiryDate - Date object or date string
+ * @returns Text representing remaining days (e.g., "(Còn 3 ngày)")
+ */
+export const getDaysLeftText = (expiryDate: Date | string | undefined | null): string => {
+  if (!expiryDate) return "";
+  const dateObj = typeof expiryDate === "string" ? new Date(expiryDate) : expiryDate;
+  if (isNaN(dateObj.getTime())) return "";
+
+  const now = new Date();
+  const timeDiff = dateObj.getTime() - now.getTime();
+  const days = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+  if (days < 0) return "(Đã hết hạn)";
+  if (days === 0) return "(Hết hạn hôm nay)";
+  return `(Còn ${days} ngày)`;
+};

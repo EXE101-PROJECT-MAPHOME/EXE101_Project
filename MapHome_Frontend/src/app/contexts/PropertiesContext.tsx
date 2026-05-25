@@ -66,7 +66,7 @@ export function PropertiesProvider({ children }: { children: ReactNode }) {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/api/properties", { params: { all: true } });
+      const res = await api.get("/api/properties");
       setProperties(res.data.map(mapBackendProperty));
     } catch (err) {
       console.error("Failed to fetch properties:", err);
@@ -83,7 +83,7 @@ export function PropertiesProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post("/api/properties", newProperty);
       if (res.status === 201 || res.status === 200) {
-        setProperties((prev) => [mapBackendProperty(res.data), ...prev]);
+        // Post is submitted as pending, don't show on map yet
         return true;
       }
       throw new Error("Invalid response status");
