@@ -250,6 +250,11 @@ const getProperties = async (req, res) => {
       query.status = "approved"; // Default to approved unless explicitly asking for all
       // Also filter out expired if only approved are requested
       query.status = { $eq: "approved" };
+      query.$or = [
+        { expiryDate: { $gt: new Date() } },
+        { expiryDate: { $exists: false } },
+        { expiryDate: null }
+      ];
     }
 
     if (req.query.verified === "true") query["greenBadge.level"] = "verified";
@@ -597,6 +602,11 @@ const searchProperties = async (req, res) => {
       query.status = status;
     } else {
       query.status = "approved"; // Default to approved for public search
+      query.$or = [
+        { expiryDate: { $gt: new Date() } },
+        { expiryDate: { $exists: false } },
+        { expiryDate: null }
+      ];
     }
 
     // Only filter by available if explicitly requested - map should show all approved listings

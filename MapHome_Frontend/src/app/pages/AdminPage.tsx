@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/contexts/AuthContext";
 import api from "@/app/utils/api";
 import { getAvatarUrl, getInitials } from "@/app/utils/avatarUtils";
-import { formatDateVietnamese } from "@/app/utils/dateUtils";
+import { formatDateVietnamese, getDaysLeftText } from "@/app/utils/dateUtils";
 import { useVerification } from "@/app/contexts/VerificationContext";
 import { useProperties } from "@/app/contexts/useProperties";
 import { Button } from "@/app/components/ui/button";
@@ -202,15 +202,13 @@ export function AdminPage() {
         ...verificationsData.slice(0, 2).map((v: any) => ({
           id: `v-${v._id}`,
           text: `Yêu cầu Tích Xanh cho '${v.propertyId?.name || v.propertyName}' đang ${v.status}`,
-          time: new Date(v.requestedAt || v.createdAt).toLocaleTimeString(
-            "vi-VN",
-          ),
+          time: new Date(v.requestedAt || v.createdAt).toLocaleString("vi-VN"),
           color: v.status === "pending" ? "blue" : "green",
         })),
         ...postsData.slice(0, 1).map((p: any) => ({
           id: `p-${p._id}`,
           text: `Tin đăng mới: '${p.name}'`,
-          time: new Date(p.createdAt).toLocaleTimeString("vi-VN"),
+          time: new Date(p.createdAt).toLocaleString("vi-VN"),
           color: "green",
         })),
       ];
@@ -1520,7 +1518,16 @@ function ExpiredPostsView({
   onUpdateStatus: (id: string, status: string) => void;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const expiredPosts = (posts || []).filter((p) => p.status === "expired");
+  
+  const isPostExpired = (p: any) => {
+    if (p.status === "expired") return true;
+    if (p.status === "approved" && p.expiryDate) {
+      return new Date(p.expiryDate) < new Date();
+    }
+    return false;
+  };
+
+  const expiredPosts = (posts || []).filter(isPostExpired);
 
   const filteredPosts = expiredPosts.filter((post) => {
     const matchesSearch =
@@ -1678,7 +1685,7 @@ function ExpiredPostsView({
                         </span>
                         {post.expiryDate && (
                           <span className="text-[10px] font-bold text-red-500 uppercase">
-                            Hết hạn: {formatDateVietnamese(post.expiryDate)}
+                            Hết hạn: {formatDateVietnamese(post.expiryDate)} <span className="lowercase">{getDaysLeftText(post.expiryDate)}</span>
                           </span>
                         )}
                       </div>
@@ -1767,8 +1774,22 @@ function PostsView({
   >("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const isPostExpired = (p: any) => {
+    if (p.status === "expired") return true;
+    if (p.status === "approved" && p.expiryDate) {
+      return new Date(p.expiryDate) < new Date();
+    }
+    return false;
+  };
+
   const filteredPosts = (posts || []).filter((post) => {
-    const matchesTab = activeTab === "all" || post.status === activeTab;
+    const expired = isPostExpired(post);
+    let matchesTab = false;
+    
+    if (activeTab === "all") matchesTab = true;
+    else if (activeTab === "expired") matchesTab = expired;
+    else matchesTab = post.status === activeTab && !expired;
+
     const matchesSearch =
       post.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.address?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -1850,9 +1871,12 @@ function PostsView({
                 }`}
               >
                 {
-                  (posts || []).filter((p) =>
-                    tab.id === "all" ? true : p.status === tab.id,
-                  ).length
+                  (posts || []).filter((p) => {
+                    const expired = p.status === "expired" || (p.status === "approved" && p.expiryDate && new Date(p.expiryDate) < new Date());
+                    if (tab.id === "all") return true;
+                    if (tab.id === "expired") return expired;
+                    return p.status === tab.id && !expired;
+                  }).length
                 }
               </span>
             </span>
@@ -1898,7 +1922,7 @@ function PostsView({
                     </div>
                   )}
                   <div className="absolute top-2 left-2">
-                    <StatusPill status={post.status} />
+                    <StatusPill status={isPostExpired(post) ? "expired" : post.status} />
                   </div>
                 </div>
 
@@ -1930,12 +1954,12 @@ function PostsView({
                         {post.expiryDate && (
                           <span
                             className={`text-[10px] font-bold uppercase ${
-                              post.status === "expired"
+                              isPostExpired(post)
                                 ? "text-red-500"
                                 : "text-slate-400"
                             }`}
                           >
-                            Hết hạn: {formatDateVietnamese(post.expiryDate)}
+                            Hết hạn: {formatDateVietnamese(post.expiryDate)} <span className="lowercase">{getDaysLeftText(post.expiryDate)}</span>
                           </span>
                         )}
                       </div>
