@@ -373,6 +373,19 @@ export function RoomDetailPage() {
     fetchReviews();
   }, [property]);
 
+  // Increment view count
+  useEffect(() => {
+    if (!property) return;
+    const propertyKey = property._id || property.id;
+    
+    // Check if we've already incremented view for this property in this session to prevent spam
+    const viewKey = `viewed_${propertyKey}`;
+    if (!sessionStorage.getItem(viewKey)) {
+      api.post(`/api/properties/${propertyKey}/view`).catch(err => console.error("Failed to increment view", err));
+      sessionStorage.setItem(viewKey, "true");
+    }
+  }, [property]);
+
   if (loadingProps) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center p-4 bg-gray-50">
