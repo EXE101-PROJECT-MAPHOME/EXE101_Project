@@ -1839,12 +1839,12 @@ export function LandlordDashboardV2() {
                           <div className="flex items-center justify-between pt-6 border-t border-slate-100">
                             <div className="flex items-center gap-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">
                               <span className="flex items-center gap-2 bg-slate-50/50 px-3 py-1.5 rounded-full">
-                                <Eye className="size-3.5 text-slate-300" />{" "}
-                                {post.views || 0}
-                              </span>
-                              <span className="flex items-center gap-2 bg-slate-50/50 px-3 py-1.5 rounded-full">
                                 <Star className="size-3.5 text-amber-300" />{" "}
                                 {post.favorites || 0}
+                              </span>
+                              <span className="flex items-center gap-2 bg-slate-50/50 px-3 py-1.5 rounded-full">
+                                <Eye className="size-3.5 text-blue-400" />{" "}
+                                {post.views || 0}
                               </span>
                             </div>
 

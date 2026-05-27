@@ -1727,8 +1727,9 @@ function ExpiredPostsView({
                         Xóa
                       </button>
 
-                      <button className="p-2 hover:bg-slate-50 text-slate-400 hover:text-blue-500 transition-all rounded-xl">
+                      <button className="p-2 hover:bg-slate-50 text-slate-400 hover:text-blue-500 transition-all rounded-xl flex items-center gap-1">
                         <Eye className="size-5" />
+                        <span className="text-xs font-bold">{post.views || 0}</span>
                       </button>
                     </div>
                   </div>
@@ -2042,8 +2043,9 @@ function PostsView({
                         </>
                       )}
 
-                      <button className="p-2 hover:bg-slate-50 text-slate-400 hover:text-emerald-500 transition-all rounded-xl">
+                      <button className="p-2 hover:bg-slate-50 text-slate-400 hover:text-emerald-500 transition-all rounded-xl flex items-center gap-1">
                         <Eye className="size-5" />
+                        <span className="text-xs font-bold">{post.views || 0}</span>
                       </button>
                     </div>
                   </div>
