@@ -16,10 +16,38 @@ dotenv.config();
 const app = express();
 
 // Middleware
+// CORS config: allow configured web origins plus localhost (any port), and
+// allow non-browser clients (no Origin header) so mobile/native apps can call the API.
+// Configure additional allowed origins with ALLOWED_ORIGINS (comma-separated).
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials: true, // Allow cookies
+    origin: (origin, callback) => {
+      // Allow non-browser tools or native clients that do not set Origin
+      if (!origin) return callback(null, true);
+
+      const envList = (process.env.ALLOWED_ORIGINS || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const allowedOrigins = Array.from(
+        new Set([process.env.FRONTEND_URL, ...envList].filter(Boolean)),
+      );
+
+      // Allow localhost/127.0.0.1 with or without an explicit port
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
+        origin,
+      );
+
+      if (allowedOrigins.includes(origin) || isLocalhost) {
+        return callback(null, true);
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    optionsSuccessStatus: 204,
   }),
 );
 app.use(express.json());
@@ -73,8 +101,22 @@ app.use("/api/map", require("./routes/mapRoutes"));
 
 app.get("/", (req, res) => res.send("API is running..."));
 
-// Health check
-app.get("/health", (req, res) => res.json({ ok: true }));
+// Health check (includes MongoDB connection status)
+const mongoose = require("mongoose");
+
+app.get("/health", (req, res) => {
+  const state = mongoose.connection.readyState; // 0 disconnected, 1 connected, 2 connecting, 3 disconnecting
+  const stateMap = {
+    0: "disconnected",
+    1: "connected",
+    2: "connecting",
+    3: "disconnecting",
+  };
+
+  const dbStatus = stateMap[state] || "unknown";
+  const ok = state === 1;
+  res.status(ok ? 200 : 503).json({ ok, dbStatus });
+});
 
 // 404 handler
 app.use((req, res) => res.status(404).json({ message: "Not Found" }));
