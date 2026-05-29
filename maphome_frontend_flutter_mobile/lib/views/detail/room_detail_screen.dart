@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:maplibre_gl/mapbox_gl.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/goong.dart';
 import '../../models/property_model.dart';
@@ -23,6 +22,7 @@ class RoomDetailScreen extends StatefulWidget {
 
 class _RoomDetailScreenState extends State<RoomDetailScreen> {
   bool _submittingInspection = false;
+  MaplibreMapController? _mapController;
 
   String _formatPrice(int price) {
     if (price >= 1000000) {
@@ -495,32 +495,28 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                       height: 200,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: FlutterMap(
-                          options: MapOptions(
-                            initialCenter: LatLng(property.lat, property.lng),
-                            initialZoom: 15.0,
+                        child: MaplibreMap(
+                          initialCameraPosition: CameraPosition(
+                            target: LatLng(property.lat, property.lng),
+                            zoom: 15.0,
                           ),
-                          children: [
-                            // Goong tiles (no OpenStreetMap fallback)
-                            TileLayer(
-                              urlTemplate:
-                                  'https://tiles.goong.io/tiles/{z}/{x}/{y}.png?api_key=$goongApiKey',
-                            ),
-                            MarkerLayer(
-                              markers: [
-                                Marker(
-                                  point: LatLng(property.lat, property.lng),
-                                  width: 40,
-                                  height: 40,
-                                  child: const Icon(
-                                    Icons.location_on,
-                                    color: AppColors.error,
-                                    size: 40,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                          styleString: useGoong
+                              ? 'https://tiles.goong.io/assets/goong_map_web.json?api_key=$goongMapTilesKey'
+                              : 'https://tiles.stadiamaps.com/styles/alidade_smooth.json',
+                          onMapCreated: (controller) {
+                            _mapController = controller;
+                          },
+                          onStyleLoadedCallback: () {
+                            _mapController?.addCircle(
+                              CircleOptions(
+                                geometry: LatLng(property.lat, property.lng),
+                                circleColor: property.verificationLevel == 'verified' ? '#4CAF50' : '#F44336',
+                                circleRadius: 12.0,
+                                circleStrokeColor: '#FFFFFF',
+                                circleStrokeWidth: 3.0,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'http_client_factory.dart';
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
@@ -10,6 +10,8 @@ class ApiService {
   // Deployed API for testing. Change to your environment if needed.
   static const String baseUrl =
       'https://exe101project-maphome-api.up.railway.app';
+
+  final http.Client _client = createPlatformClient();
 
   String? _token;
   String? _cookie;
@@ -66,12 +68,12 @@ class ApiService {
 
   Future<http.Response> get(String path) async {
     final url = Uri.parse('$baseUrl$path');
-    var response = await http.get(url, headers: _getHeaders());
+    var response = await _client.get(url, headers: _getHeaders());
 
     if (response.statusCode == 401) {
       final refreshed = await _attemptTokenRefresh();
       if (refreshed) {
-        response = await http.get(url, headers: _getHeaders());
+        response = await _client.get(url, headers: _getHeaders());
       }
     }
     return response;
@@ -80,12 +82,12 @@ class ApiService {
   Future<http.Response> post(String path, dynamic body) async {
     final url = Uri.parse('$baseUrl$path');
     final bodyStr = body != null ? jsonEncode(body) : null;
-    var response = await http.post(url, headers: _getHeaders(), body: bodyStr);
+    var response = await _client.post(url, headers: _getHeaders(), body: bodyStr);
 
     if (response.statusCode == 401 && path != '/api/auth/login') {
       final refreshed = await _attemptTokenRefresh();
       if (refreshed) {
-        response = await http.post(url, headers: _getHeaders(), body: bodyStr);
+        response = await _client.post(url, headers: _getHeaders(), body: bodyStr);
       }
     }
     return response;
@@ -95,7 +97,7 @@ class ApiService {
   Future<bool> pingHealth() async {
     try {
       final url = Uri.parse('$baseUrl/health');
-      final res = await http.get(url, headers: {'Accept': 'application/json'});
+      final res = await _client.get(url, headers: {'Accept': 'application/json'});
       return res.statusCode == 200;
     } catch (e) {
       print('Health check failed: $e');
@@ -106,12 +108,12 @@ class ApiService {
   Future<http.Response> put(String path, dynamic body) async {
     final url = Uri.parse('$baseUrl$path');
     final bodyStr = body != null ? jsonEncode(body) : null;
-    var response = await http.put(url, headers: _getHeaders(), body: bodyStr);
+    var response = await _client.put(url, headers: _getHeaders(), body: bodyStr);
 
     if (response.statusCode == 401) {
       final refreshed = await _attemptTokenRefresh();
       if (refreshed) {
-        response = await http.put(url, headers: _getHeaders(), body: bodyStr);
+        response = await _client.put(url, headers: _getHeaders(), body: bodyStr);
       }
     }
     return response;
@@ -119,12 +121,12 @@ class ApiService {
 
   Future<http.Response> delete(String path) async {
     final url = Uri.parse('$baseUrl$path');
-    var response = await http.delete(url, headers: _getHeaders());
+    var response = await _client.delete(url, headers: _getHeaders());
 
     if (response.statusCode == 401) {
       final refreshed = await _attemptTokenRefresh();
       if (refreshed) {
-        response = await http.delete(url, headers: _getHeaders());
+        response = await _client.delete(url, headers: _getHeaders());
       }
     }
     return response;
@@ -138,7 +140,7 @@ class ApiService {
 
     try {
       final url = Uri.parse('$baseUrl/api/auth/refresh');
-      final response = await http.get(
+      final response = await _client.get(
         url,
         headers: {'Content-Type': 'application/json', 'Cookie': _cookie!},
       );
