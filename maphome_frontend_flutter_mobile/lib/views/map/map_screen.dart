@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:maplibre_gl/mapbox_gl.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/goong.dart';
 import '../../models/property_model.dart';
@@ -16,82 +15,104 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  final MapController _mapController = MapController();
+  MaplibreMapController? _mapController;
   RentalProperty? _selectedProperty;
+  List<RentalProperty> _properties = [];
+  bool _isStyleLoaded = false;
+
+  void _onMapCreated(MaplibreMapController controller) {
+    _mapController = controller;
+    _mapController?.onCircleTapped.add(_onCircleTapped);
+  }
+
+  void _onCircleTapped(Circle circle) {
+    final id = circle.data?['id'] as String?;
+    if (id != null) {
+      try {
+        final prop = _properties.firstWhere((p) => p.id == id);
+        setState(() {
+          _selectedProperty = prop;
+        });
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(LatLng(prop.lat, prop.lng), 15.0),
+        );
+      } catch (e) {
+        // Property not found
+      }
+    }
+  }
+
+  void _onStyleLoaded() {
+    _isStyleLoaded = true;
+    _addPropertyMarkers();
+  }
+
+  void _addPropertyMarkers() async {
+    if (_mapController == null || !_isStyleLoaded) return;
+    await _mapController?.clearCircles();
+    for (var prop in _properties) {
+      await _mapController?.addCircle(
+        CircleOptions(
+          geometry: LatLng(prop.lat, prop.lng),
+          circleColor: prop.verificationLevel == 'verified' ? '#4CAF50' : '#2196F3',
+          circleRadius: 10.0,
+          circleStrokeColor: '#FFFFFF',
+          circleStrokeWidth: 2.0,
+        ),
+        {'id': prop.id},
+      );
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final propertiesProvider = Provider.of<PropertiesProvider>(context);
+    if (_properties != propertiesProvider.properties) {
+      _properties = propertiesProvider.properties;
+      _addPropertyMarkers();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final propertiesProvider = Provider.of<PropertiesProvider>(context);
-    final properties = propertiesProvider.properties;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Calculate center coordinates
     LatLng center = const LatLng(21.0285, 105.8542); // Hanoi
-    if (properties.isNotEmpty) {
+    if (_properties.isNotEmpty) {
       double totalLat = 0;
       double totalLng = 0;
-      for (var p in properties) {
+      for (var p in _properties) {
         totalLat += p.lat;
         totalLng += p.lng;
       }
       center = LatLng(
-        totalLat / properties.length,
-        totalLng / properties.length,
+        totalLat / _properties.length,
+        totalLng / _properties.length,
       );
     }
-
-    // Build map markers
-    final markers = properties.map((property) {
-      final isSelected = _selectedProperty?.id == property.id;
-      return Marker(
-        point: LatLng(property.lat, property.lng),
-        width: 40,
-        height: 40,
-        child: GestureDetector(
-          onTap: () {
-            setState(() {
-              _selectedProperty = property;
-            });
-            _mapController.move(LatLng(property.lat, property.lng), 15.0);
-          },
-          child: Icon(
-            Icons.location_on,
-            color: isSelected
-                ? AppColors.error
-                : (property.verificationLevel == 'verified'
-                      ? AppColors.success
-                      : AppColors.info),
-            size: isSelected ? 40 : 32,
-          ),
-        ),
-      );
-    }).toList();
 
     return Scaffold(
       body: Stack(
         children: [
-          // Flutter Map
-          FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: center,
-              initialZoom: 13.0,
-              onTap: (_, __) {
-                setState(() {
-                  _selectedProperty = null;
-                });
-              },
+          // Maplibre Map
+          MaplibreMap(
+            onMapCreated: _onMapCreated,
+            onStyleLoadedCallback: _onStyleLoaded,
+            initialCameraPosition: CameraPosition(
+              target: center,
+              zoom: 13.0,
             ),
-            children: [
-              // Tile Layer: Goong tiles with OpenStreetMap fallback
-              TileLayer(
-                urlTemplate: useGoong
-                    ? 'https://tiles.goong.io/tiles/{z}/{x}/{y}.png?api_key=$goongApiKey'
-                    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.maphome.app',
-              ),
-              MarkerLayer(markers: markers),
-            ],
+            styleString: useGoong
+                ? 'https://tiles.goong.io/assets/goong_map_web.json?api_key=$goongMapTilesKey'
+                : 'https://tiles.stadiamaps.com/styles/alidade_smooth.json',
+            myLocationEnabled: true,
+            onMapClick: (point, latLng) {
+              setState(() {
+                _selectedProperty = null;
+              });
+            },
           ),
 
           // Search Bar overlay
@@ -157,8 +178,10 @@ class _MapScreenState extends State<MapScreen> {
                     ),
                     tooltip: 'Vị trí hiện tại',
                     onPressed: () {
-                      if (properties.isNotEmpty) {
-                        _mapController.move(center, 13.0);
+                      if (_properties.isNotEmpty) {
+                        _mapController?.animateCamera(
+                          CameraUpdate.newLatLngZoom(center, 13.0),
+                        );
                       }
                     },
                   ),

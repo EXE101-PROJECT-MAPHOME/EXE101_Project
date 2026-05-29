@@ -1,5 +1,2 @@
-import 'package:http/http.dart' as http;
-
-/// Default (mobile/desktop) HTTP client factory.
-/// On mobile, a standard IOClient is used — no special config needed.
-http.Client createPlatformClient() => http.Client();
+export 'http_client_factory_mobile.dart'
+    if (dart.library.js_interop) 'http_client_factory_web.dart';
