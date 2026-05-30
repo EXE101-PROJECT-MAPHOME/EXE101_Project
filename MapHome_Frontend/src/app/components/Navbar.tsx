@@ -55,25 +55,26 @@ export function Navbar() {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
           ? "bg-white/80 backdrop-blur-lg shadow-lg py-2"
           : "bg-white/90 backdrop-blur-md shadow-sm py-3 border-b"
-      }`}
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           {/* Logo */}
           <div
-            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2.5 cursor-pointer group"
             onClick={() => navigate("/")}
           >
-            <img 
-              src="/images/MapHome_logo.jpg" 
-              alt="MapHome Logo" 
-              className="h-10 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform" 
-            />
-            <h1 className="text-xl font-black text-emerald-950 tracking-tight">
+            <div className="w-10 h-10 rounded-xl bg-white shadow-md border border-gray-100/50 flex items-center justify-center overflow-hidden shrink-0 group-hover:shadow-lg transition-all duration-300 group-hover:-translate-y-0.5">
+              <img
+                src="/images/MapHome_logo_2.png"
+                alt="MapHome Logo"
+                className="w-[120%] h-[120%] object-cover"
+              />
+            </div>
+            <h1 className="text-2xl font-black bg-gradient-to-br from-emerald-950 via-green-800 to-emerald-600 bg-clip-text text-transparent tracking-tighter group-hover:opacity-80 transition-opacity">
               MapHome
             </h1>
           </div>
