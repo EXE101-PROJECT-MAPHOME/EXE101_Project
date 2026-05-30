@@ -80,7 +80,7 @@ export function PaymentFailurePage() {
   const handleChangePaymentMethod = () => {
     // In real app, show payment method selector
     toast.info(
-      "🔄 Chuyển đến trang chọn phương thức thanh toán...\n\nDemo: Bạn có thể chọn VNPay, MoMo, ZaloPay, v.v.",
+      "🔄 Chuyển đến trang chọn phương thức thanh toán...\n\nDemo: Bạn có thể chọn PayOS, MoMo, ZaloPay, v.v.",
     );
     handleRetry();
   };
@@ -276,7 +276,7 @@ export function PaymentFailurePage() {
               </p>
               <p className="text-amber-800 text-xs leading-relaxed">
                 Không có khoản phí nào được trừ từ tài khoản của bạn. Thông tin
-                thẻ được bảo mật hoàn toàn bởi VNPay.
+                thẻ được bảo mật hoàn toàn bởi PayOS.
               </p>
             </div>
           </div>

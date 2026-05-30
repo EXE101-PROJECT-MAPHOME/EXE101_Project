@@ -178,7 +178,7 @@ export function CheckoutPage() {
       });
 
       if (res.status === 200 && res.data.url) {
-        // 2. Redirect to VNPay
+        // 2. Redirect to PayOS
         window.location.href = res.data.url;
       } else {
         throw new Error("Failed to create payment URL");
@@ -731,7 +731,7 @@ export function CheckoutPage() {
                     ) : (
                       <>
                         <Lock className="size-4 mr-2" />
-                        Thanh toán qua VNPay
+                        Thanh toán qua VietQR (PayOS)
                       </>
                     )}
                   </Button>
@@ -741,14 +741,14 @@ export function CheckoutPage() {
                       <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
                         <span className="text-white font-bold text-xs">VN</span>
                       </div>
-                      <span className="font-bold text-blue-900">VNPay</span>
+                      <span className="font-bold text-green-700">PayOS</span>
                     </div>
                     <Lock className="size-4 text-blue-600" />
                   </div>
 
                   <p className="text-xs text-center text-gray-500 leading-relaxed">
-                    Bạn sẽ được chuyển đến cổng thanh toán VNPay an toàn để hoàn
-                    tất giao dịch
+                    Bạn sẽ được chuyển đến cổng thanh toán PayOS an toàn để hoàn
+                    tất giao dịch.
                   </p>
 
                   <Separator />

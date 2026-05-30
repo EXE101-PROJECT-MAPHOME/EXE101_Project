@@ -953,7 +953,7 @@ export function AdminPage() {
           onClose={() => {
             setIsInspectionDialogOpen(false);
             setSelectedVerification(null);
-            fetchData(); // Refresh data after dialog closes
+            fetchData(true); // Refresh data after dialog closes
           }}
           request={selectedVerification}
         />
@@ -965,7 +965,6 @@ export function AdminPage() {
         onClose={() => {
           setIsUserDetailOpen(false);
           setSelectedUserId(null);
-          fetchData(); // Refresh if status changed
         }}
         userId={selectedUserId}
       />
@@ -1372,6 +1371,41 @@ const DashboardView = forwardRef(function DashboardView(
   );
 });
 
+// small animated number renderer
+function AnimatedNumber({
+  value,
+  duration = 900,
+}: {
+  value: string | number;
+  duration?: number;
+}) {
+  const [display, setDisplay] = useState<number>(0);
+  useEffect(() => {
+    const str = String(value || "0");
+    const match = str.match(/-?[\d,.]+/);
+    const raw = match ? match[0].replace(/,/g, "") : "0";
+    const target = Number(raw) || 0;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      const current = Math.round(target * progress);
+      setDisplay(current);
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+
+  const suffix = String(value).replace(/-?[\d,.]+/, "");
+  return (
+    <>
+      {display.toLocaleString()}
+      {suffix}
+    </>
+  );
+}
+
 // Enhanced KPI Card Component
 function KPICard({
   icon,
@@ -1392,40 +1426,6 @@ function KPICard({
   changeNegative?: boolean;
   topGradient: string;
 }) {
-  // small animated number renderer
-  function AnimatedNumber({
-    value,
-    duration = 900,
-  }: {
-    value: string | number;
-    duration?: number;
-  }) {
-    const [display, setDisplay] = useState<number>(0);
-    useEffect(() => {
-      const str = String(value || "0");
-      const match = str.match(/-?[\d,.]+/);
-      const raw = match ? match[0].replace(/,/g, "") : "0";
-      const target = Number(raw) || 0;
-      let raf = 0;
-      const start = performance.now();
-      const tick = (now: number) => {
-        const progress = Math.min(1, (now - start) / duration);
-        const current = Math.round(target * progress);
-        setDisplay(current);
-        if (progress < 1) raf = requestAnimationFrame(tick);
-      };
-      raf = requestAnimationFrame(tick);
-      return () => cancelAnimationFrame(raf);
-    }, [value, duration]);
-
-    const suffix = String(value).replace(/-?[\d,.]+/, "");
-    return (
-      <>
-        {display.toLocaleString()}
-        {suffix}
-      </>
-    );
-  }
   return (
     <motion.div
       variants={{
@@ -2292,7 +2292,12 @@ function UsersView({
 
               <div className="flex flex-col gap-2 items-end">
                 <button
-                  onClick={() => onViewDetail(user._id)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onViewDetail(user._id);
+                  }}
                   className="p-2.5 bg-slate-50 text-slate-400 hover:text-blue-500 hover:bg-blue-50 transition-all rounded-xl"
                   title="Chi tiết"
                 >
