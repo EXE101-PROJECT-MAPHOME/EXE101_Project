@@ -12,7 +12,7 @@ const validate = require("../middleware/validate");
  * @swagger
  * /api/payments/create:
  *   post:
- *     summary: Create a new payment request (VNPay)
+ *     summary: Create a new payment request (PayOS)
  *     tags: [Payments]
  *     security:
  *       - bearerAuth: []
@@ -38,7 +38,7 @@ router.post("/create", authMiddleware, createPaymentRules, validate, createPayme
  * @swagger
  * /api/payments/callback:
  *   get:
- *     summary: Return URL callback for VNPay
+ *     summary: Return URL callback for PayOS
  *     tags: [Payments]
  *     responses:
  *       200:

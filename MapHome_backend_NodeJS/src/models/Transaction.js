@@ -22,7 +22,7 @@ const TransactionSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      default: "VNPay",
+      default: "PayOS",
     },
     invoiceId: {
       type: String,

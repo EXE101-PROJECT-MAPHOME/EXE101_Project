@@ -2,63 +2,43 @@ const Transaction = require("../models/Transaction");
 const Subscription = require("../models/Subscription");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
-
-// POST /api/payments/create
-const crypto = require("crypto");
-
-// Helper to format date for VNPay
-function formatDate(date) {
-  const pad = (n) => (n < 10 ? `0${n}` : n);
-  return (
-    date.getFullYear() +
-    pad(date.getMonth() + 1) +
-    pad(date.getDate()) +
-    pad(date.getHours()) +
-    pad(date.getMinutes()) +
-    pad(date.getSeconds())
-  );
-}
+const PayOS = require("@payos/node");
+const payosClass = PayOS.default || PayOS.PayOS || PayOS;
+// Initialize PayOS
+const payos = new payosClass(
+  process.env.PAYOS_CLIENT_ID || "CLIENT_ID",
+  process.env.PAYOS_API_KEY || "API_KEY",
+  process.env.PAYOS_CHECKSUM_KEY || "CHECKSUM_KEY"
+);
 
 // POST /api/payments/create
 const createPayment = async (req, res) => {
   try {
     const { amount, description, planId } = req.body;
-    let vnp_Params = {};
-    const date = new Date();
-    const createDate = formatDate(date);
-    const orderId = "RE" + formatDate(date); // Unique order ID
     
-    vnp_Params["vnp_Version"] = "2.1.0";
-    vnp_Params["vnp_Command"] = "pay";
-    vnp_Params["vnp_TmnCode"] = process.env.VNP_TMN_CODE;
-    vnp_Params["vnp_Locale"] = "vn";
-    vnp_Params["vnp_CurrCode"] = "VND";
-    vnp_Params["vnp_TxnRef"] = orderId;
-    vnp_Params["vnp_OrderInfo"] = description || `Thanh toán gói ${planId || "dịch vụ"}`;
-    vnp_Params["vnp_OrderType"] = "other";
-    vnp_Params["vnp_Amount"] = amount * 100; // VNPay amount is already multiplied by 100
-    vnp_Params["vnp_ReturnUrl"] = process.env.VNP_RETURN_URL;
-    vnp_Params["vnp_IpAddr"] = req.headers["x-forwarded-for"] || req.socket.remoteAddress || "127.0.0.1";
-    vnp_Params["vnp_CreateDate"] = createDate;
-
-    if (planId) vnp_Params["vnp_OrderInfo"] += `|${planId}|${req.user.id || req.user._id}`;
-
-    // Sort params alphabetically by key
-    const sortedParams = {};
-    Object.keys(vnp_Params).sort().forEach(key => {
-      sortedParams[key] = encodeURIComponent(vnp_Params[key]).replace(/%20/g, "+");
-    });
-
-    // Create HmacSHA512 hash
-    const signData = Object.entries(sortedParams).map(([k, v]) => `${k}=${v}`).join("&");
-    const hmac = crypto.createHmac("sha512", process.env.VNP_HASH_SECRET);
-    const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
+    // orderCode must be a number, max 53 bits. We use timestamp + random
+    const orderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
     
-    const vnpUrl = `${process.env.VNP_URL}?${signData}&vnp_SecureHash=${signed}`;
+    const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const userId = req.user.id || req.user._id;
     
-    res.status(200).json({ url: vnpUrl });
+    // We pass userId, planId, and desc in the return URL so the callback knows what to update
+    const returnUrl = `${backendUrl}/api/payments/callback?userId=${userId}&planId=${planId || ""}&desc=${encodeURIComponent(description || "")}`;
+    const cancelUrl = `${backendUrl}/api/payments/callback?cancel=true&userId=${userId}&planId=${planId || ""}&desc=${encodeURIComponent(description || "")}`;
+
+    const body = {
+      orderCode: orderCode,
+      amount: amount,
+      description: (description || `Thanh toan don hang`).substring(0, 25),
+      returnUrl: returnUrl,
+      cancelUrl: cancelUrl
+    };
+
+    const paymentLinkData = await payos.createPaymentLink(body);
+
+    res.status(200).json({ url: paymentLinkData.checkoutUrl, orderCode });
   } catch (error) {
-    console.error("[VNPay Error]:", error);
+    console.error("[PayOS Create Error]:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -66,46 +46,45 @@ const createPayment = async (req, res) => {
 // GET /api/payments/callback
 const paymentCallback = async (req, res) => {
   try {
-    let vnp_Params = req.query;
-    const secureHash = vnp_Params["vnp_SecureHash"];
-    
-    delete vnp_Params["vnp_SecureHash"];
-    delete vnp_Params["vnp_SecureHashType"];
-
-    // Sort params alphabetically
-    const sortedParams = {};
-    Object.keys(vnp_Params).sort().forEach(key => {
-      sortedParams[key] = encodeURIComponent(vnp_Params[key]).replace(/%20/g, "+");
-    });
-
-    const secretKey = process.env.VNP_HASH_SECRET;
-    const signData = Object.entries(sortedParams).map(([k, v]) => `${k}=${v}`).join("&");
-    const hmac = crypto.createHmac("sha512", secretKey);
-    const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
-
+    const { code, id, cancel, status, orderCode, userId, planId, desc } = req.query;
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    
+    // If user cancelled the payment
+    if (cancel === "true") {
+      if (userId) {
+        await Transaction.create({
+          userId,
+          amount: 0,
+          description: desc ? desc + " (Đã huỷ)" : "Đã huỷ thanh toán",
+          status: "failed",
+          orderId: orderCode ? String(orderCode) : "",
+          paymentMethod: "PayOS"
+        });
+      }
+      return res.redirect(`${frontendUrl}/payment-failure?code=${code || "cancel"}`);
+    }
 
-    if (secureHash === signed) {
-      const respCode = vnp_Params["vnp_ResponseCode"];
-      const orderInfo = vnp_Params["vnp_OrderInfo"];
-      const amount = vnp_Params["vnp_Amount"] / 100;
-      const [desc, planId, userId] = orderInfo.split("|");
-
-      const successUrl = `${frontendUrl}/payment-success?orderId=${vnp_Params["vnp_TxnRef"]}&amount=${amount}&planId=${planId || ""}&type=subscription`;
-      const failureUrl = `${frontendUrl}/payment-failure?code=${respCode}`;
-
-      if (respCode === "00") {
-        // PAYMENT SUCCESS
+    // Verify payment status with PayOS server to prevent spoofing
+    const paymentData = await payos.getPaymentLinkInformation(orderCode);
+    
+    if (paymentData && paymentData.status === "PAID") {
+      const amount = paymentData.amount;
+      
+      // Prevent duplicate transactions if webhook already processed it
+      const existingTx = await Transaction.findOne({ orderId: String(orderCode), status: "success" });
+      if (!existingTx) {
+        // Create success transaction
         await Transaction.create({
           userId,
           amount,
-          description: desc,
+          description: desc || "Thanh toán qua PayOS",
           status: "success",
-          invoiceId: vnp_Params["vnp_TxnRef"],
-          orderId: vnp_Params["vnp_TxnRef"],
-          paymentMethod: "VNPay"
+          invoiceId: String(orderCode),
+          orderId: String(orderCode),
+          paymentMethod: "PayOS"
         });
 
+        // Upgrade subscription if it's a plan upgrade
         if (planId) {
           const plans = {
             standard: { name: "Standard", term: 30, features: ["20 tin đăng", "Ưu tiên"] },
@@ -131,32 +110,21 @@ const paymentCallback = async (req, res) => {
         await Notification.create({
           userId,
           title: "Thanh toán thành công",
-          message: `Bạn đã nâng cấp thành công gói ${planId}. Mã GD: ${vnp_Params["vnp_TxnRef"]}`,
+          message: `Bạn đã thanh toán thành công đơn hàng qua PayOS. Mã GD: ${orderCode}`,
           type: "success"
         });
-
-        return res.redirect(successUrl);
-      } else {
-        // PAYMENT FAILED
-        if (userId) {
-          await Transaction.create({
-            userId,
-            amount,
-            description: desc + " (Thất bại)",
-            status: "failed",
-            invoiceId: vnp_Params["vnp_TxnRef"],
-            orderId: vnp_Params["vnp_TxnRef"],
-            paymentMethod: "VNPay"
-          });
-        }
-        return res.redirect(failureUrl);
       }
+
+      const successUrl = `${frontendUrl}/payment-success?orderId=${orderCode}&amount=${amount}&planId=${planId || ""}&type=subscription`;
+      return res.redirect(successUrl);
     } else {
-      return res.redirect(`${frontendUrl}/payment-failure?code=97`); // Checksum failed
+      // Payment not PAID
+      return res.redirect(`${frontendUrl}/payment-failure?code=not_paid`);
     }
   } catch (error) {
-    console.error("[VNPay Callback Error]:", error);
-    res.status(500).json({ message: error.message });
+    console.error("[PayOS Callback Error]:", error);
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    res.redirect(`${frontendUrl}/payment-failure?code=error`);
   }
 };
 

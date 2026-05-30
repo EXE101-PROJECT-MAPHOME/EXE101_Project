@@ -68,9 +68,11 @@ export function Navbar() {
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate("/")}
           >
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-600 to-blue-600 flex items-center justify-center shadow-md">
-              <Home className="size-5 text-white" />
-            </div>
+            <img 
+              src="/images/MapHome_logo.jpg" 
+              alt="MapHome Logo" 
+              className="h-10 w-auto object-contain mix-blend-multiply hover:scale-105 transition-transform" 
+            />
             <h1 className="text-xl font-black text-emerald-950 tracking-tight">
               MapHome
             </h1>
