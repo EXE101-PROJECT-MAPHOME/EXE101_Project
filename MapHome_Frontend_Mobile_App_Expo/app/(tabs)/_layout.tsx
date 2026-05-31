@@ -16,7 +16,19 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
-  const bottomSpacing = isIOS ? Math.max(insets.bottom, 10) : 8;
+  const isAndroid = Platform.OS === "android";
+  const isWeb = Platform.OS === "web";
+  
+  // Platform-specific bottom spacing
+  // iOS: Always respect safe area with minimum 10px
+  // Android: Respect safe area, minimum 8px (gesture nav area)
+  // Web: No safe area needed
+  const bottomSpacing = isIOS 
+    ? Math.max(insets.bottom, 10)
+    : isAndroid
+    ? Math.max(insets.bottom, 8)
+    : 8;
+  
   const tint = useThemeColor({}, "tint");
   const icon = useThemeColor({}, "icon");
   const background = useThemeColor({}, "background");
@@ -35,10 +47,28 @@ export default function TabLayout() {
           height: 52 + bottomSpacing,
           paddingBottom: bottomSpacing,
           paddingTop: 8,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+          ...(isAndroid && {
+            elevation: 8,
+          }),
+          ...(isIOS && {
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -1 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }),
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "600",
+        },
+        tabBarItemStyle: {
+          paddingVertical: 4,
+        },
+        sceneContainerStyle: {
+          paddingBottom: 0,
+          backgroundColor: background,
         },
       }}
     >

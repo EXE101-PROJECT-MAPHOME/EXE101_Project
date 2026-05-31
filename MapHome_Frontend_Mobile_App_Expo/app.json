@@ -9,7 +9,13 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.maphome.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "UIStatusBarStyle": "auto",
+        "UIRequiresFullScreen": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,10 +24,15 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "package": "com.maphome.app",
+      "versionCode": 1,
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
       "navigationBarHidden": false,
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "backgroundColor": "#ffffff",
+      "statusBarTranslucent": true,
+      "orientationLock": "portrait",
+      "usesCleartextTraffic": false
     },
     "web": {
       "output": "static",
