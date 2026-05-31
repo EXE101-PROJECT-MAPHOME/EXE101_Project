@@ -17,6 +17,8 @@ import {
   CalendarDays,
   AlertTriangle,
   CreditCard,
+  Ticket,
+  Plus,
 } from "lucide-react-native";
 import api from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -28,7 +30,8 @@ type AdminView =
   | "verification"
   | "bookings"
   | "reports"
-  | "transactions";
+  | "transactions"
+  | "vouchers";
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
@@ -43,6 +46,7 @@ export default function AdminDashboardScreen() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [vouchers, setVouchers] = useState<any[]>([]);
 
   const fetchData = async (active: AdminView) => {
     try {
@@ -86,6 +90,12 @@ export default function AdminDashboardScreen() {
           .get("/api/admin/transactions")
           .catch(() => ({ data: { transactions: [] } }));
         setTransactions(res.data?.transactions || []);
+      }
+      if (active === "vouchers") {
+        const res = await api
+          .get("/api/vouchers")
+          .catch(() => ({ data: [] }));
+        setVouchers(res.data || []);
       }
     } finally {
       setScreenLoading(false);
@@ -160,6 +170,7 @@ export default function AdminDashboardScreen() {
             { id: "bookings", label: "Lịch hẹn", icon: CalendarDays },
             { id: "reports", label: "Báo cáo", icon: AlertTriangle },
             { id: "transactions", label: "Giao dịch", icon: CreditCard },
+            { id: "vouchers", label: "Voucher", icon: Ticket },
           ].map((item) => (
             <TouchableOpacity
               key={item.id}
@@ -205,7 +216,59 @@ export default function AdminDashboardScreen() {
           </View>
         )}
 
-        {view !== "dashboard" && (
+        {view === "vouchers" && (
+          <View className="bg-white rounded-3xl p-5 border border-slate-100">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="text-base font-black text-emerald-950">
+                Danh sách Voucher
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/admin-voucher-add")}
+                className="bg-emerald-100 px-3 py-1.5 rounded-full flex-row items-center"
+              >
+                <Plus size={14} color="#059669" />
+                <Text className="text-emerald-700 font-bold text-xs ml-1">
+                  Tạo mới
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            {vouchers.length === 0 ? (
+              <Text className="text-slate-500">Chưa có voucher nào.</Text>
+            ) : (
+              vouchers.map((v) => (
+                <View
+                  key={v._id}
+                  className="py-3 border-b border-slate-100 flex-row justify-between items-center"
+                >
+                  <View>
+                    <Text className="font-bold text-emerald-950">
+                      {v.code} - Giảm {v.discountPercentage}%
+                    </Text>
+                    <Text className="text-xs text-slate-500">
+                      HSD: {new Date(v.endDate).toLocaleDateString("vi-VN")}
+                    </Text>
+                  </View>
+                  <View
+                    className={`px-2 py-1 rounded-full ${
+                      v.isActive ? "bg-green-100" : "bg-red-100"
+                    }`}
+                  >
+                    <Text
+                      className={`text-[10px] font-bold ${
+                        v.isActive ? "text-green-700" : "text-red-700"
+                      }`}
+                    >
+                      {v.isActive ? "Hoạt động" : "Đã khóa"}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+        {view !== "dashboard" && view !== "vouchers" && (
           <View className="bg-white rounded-3xl p-5 border border-slate-100">
             <Text className="text-base font-black text-emerald-950 mb-3">
               Dữ liệu {view}
