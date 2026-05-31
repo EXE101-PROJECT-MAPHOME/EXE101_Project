@@ -8,7 +8,10 @@ const {
   deleteVoucher,
   validateVoucher,
 } = require("../controllers/voucherController");
-const { protect, admin } = require("../middleware/authMiddleware");
+const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
+
+const protect = authMiddleware;
+const admin = requireRole("admin");
 
 // Routes
 router.route("/")

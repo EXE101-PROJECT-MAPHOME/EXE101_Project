@@ -223,7 +223,7 @@ export default function AdminDashboardScreen() {
                 Danh sách Voucher
               </Text>
               <TouchableOpacity
-                onPress={() => router.push("/admin-voucher-add")}
+                onPress={() => router.push("/admin-voucher-add" as any)}
                 className="bg-emerald-100 px-3 py-1.5 rounded-full flex-row items-center"
               >
                 <Plus size={14} color="#059669" />
