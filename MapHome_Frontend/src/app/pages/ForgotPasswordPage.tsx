@@ -459,11 +459,6 @@ export function ForgotPasswordPage() {
                 )}
               </AnimatePresence>
 
-              {/* Footer */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-400">
-                <button onClick={() => navigate("/login")} className="hover:text-emerald-600">Đã nhớ mật khẩu?</button>
-                <button onClick={() => navigate("/register")} className="text-emerald-600 hover:text-emerald-700">Đăng ký ngay</button>
-              </div>
             </div>
           </motion.div>
         </div>

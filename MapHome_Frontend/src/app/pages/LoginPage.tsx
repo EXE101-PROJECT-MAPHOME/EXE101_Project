@@ -17,6 +17,8 @@ import {
   CheckCircle,
   Shield,
   Building2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   validateUsernameOrEmail,
@@ -90,6 +92,11 @@ export function LoginPage() {
     hasDigit: false,
     hasSpecialChar: false,
   });
+
+  // Show/Hide password states
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,7 +181,7 @@ export function LoginPage() {
           setMode("login");
           setSuccess("");
           // Điền sẵn username vừa đăng ký
-          setLoginUsername(registerData.username);
+          setLoginIdentifier(registerData.username);
           // Reset form
           setRegisterData({
             username: "",
@@ -468,7 +475,7 @@ export function LoginPage() {
                           <Lock className="size-5" />
                         </div>
                         <Input
-                          type="password"
+                          type={showLoginPassword ? "text" : "password"}
                           value={loginPassword}
                           onChange={(e) => {
                             setLoginPassword(e.target.value);
@@ -485,9 +492,20 @@ export function LoginPage() {
                             }
                           }}
                           placeholder="••••••••"
-                          className={`pl-16 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 rounded-2xl transition-all shadow-sm border ${loginErrors.password ? "border-red-500" : "border-slate-200"}`}
+                          className={`pl-16 pr-12 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 rounded-2xl transition-all shadow-sm border ${loginErrors.password ? "border-red-500" : "border-slate-200"}`}
                           required
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowLoginPassword(!showLoginPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition-colors"
+                        >
+                          {showLoginPassword ? (
+                            <EyeOff className="size-5" />
+                          ) : (
+                            <Eye className="size-5" />
+                          )}
+                        </button>
                       </div>
                       {loginErrors.password && (
                         <motion.p
@@ -712,37 +730,50 @@ export function LoginPage() {
                         <label className="text-[12px] font-black text-blue-600/70 uppercase tracking-widest ml-1">
                           Mật khẩu
                         </label>
-                        <Input
-                          type="password"
-                          value={registerData.password}
-                          onChange={(e) => {
-                            setRegisterData({
-                              ...registerData,
-                              password: e.target.value,
-                            });
-                            setPasswordStrength(
-                              getPasswordStrength(e.target.value),
-                            );
-                            if (e.target.value) {
+                        <div className="relative group">
+                          <Input
+                            type={showRegisterPassword ? "text" : "password"}
+                            value={registerData.password}
+                            onChange={(e) => {
+                              setRegisterData({
+                                ...registerData,
+                                password: e.target.value,
+                              });
+                              setPasswordStrength(
+                                getPasswordStrength(e.target.value),
+                              );
+                              if (e.target.value) {
+                                setRegisterErrors({
+                                  ...registerErrors,
+                                  password: "",
+                                });
+                              }
+                            }}
+                            onBlur={() => {
+                              const result = validatePassword(
+                                registerData.password,
+                              );
                               setRegisterErrors({
                                 ...registerErrors,
-                                password: "",
+                                password: result.error || "",
                               });
-                            }
-                          }}
-                          onBlur={() => {
-                            const result = validatePassword(
-                              registerData.password,
-                            );
-                            setRegisterErrors({
-                              ...registerErrors,
-                              password: result.error || "",
-                            });
-                          }}
-                          placeholder="••••••••"
-                          className={`h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.password ? "border-red-500" : "border-slate-200"}`}
-                          required
-                        />
+                            }}
+                            placeholder="••••••••"
+                            className={`h-13 pr-12 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.password ? "border-red-500" : "border-slate-200"}`}
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                          >
+                            {showRegisterPassword ? (
+                              <EyeOff className="size-5" />
+                            ) : (
+                              <Eye className="size-5" />
+                            )}
+                          </button>
+                        </div>
                         {registerErrors.password && (
                           <motion.p
                             initial={{ opacity: 0 }}
@@ -813,35 +844,48 @@ export function LoginPage() {
                       <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1">
                         Xác nhận mật khẩu
                       </label>
-                      <Input
-                        type="password"
-                        value={registerData.confirmPassword}
-                        onChange={(e) => {
-                          setRegisterData({
-                            ...registerData,
-                            confirmPassword: e.target.value,
-                          });
-                          if (e.target.value) {
+                      <div className="relative group">
+                        <Input
+                          type={showRegisterConfirmPassword ? "text" : "password"}
+                          value={registerData.confirmPassword}
+                          onChange={(e) => {
+                            setRegisterData({
+                              ...registerData,
+                              confirmPassword: e.target.value,
+                            });
+                            if (e.target.value) {
+                              setRegisterErrors({
+                                ...registerErrors,
+                                confirmPassword: "",
+                              });
+                            }
+                          }}
+                          onBlur={() => {
+                            const result = validatePasswordMatch(
+                              registerData.password,
+                              registerData.confirmPassword,
+                            );
                             setRegisterErrors({
                               ...registerErrors,
-                              confirmPassword: "",
+                              confirmPassword: result.error || "",
                             });
-                          }
-                        }}
-                        onBlur={() => {
-                          const result = validatePasswordMatch(
-                            registerData.password,
-                            registerData.confirmPassword,
-                          );
-                          setRegisterErrors({
-                            ...registerErrors,
-                            confirmPassword: result.error || "",
-                          });
-                        }}
-                        placeholder="••••••••"
-                        className={`h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.confirmPassword ? "border-red-500" : "border-slate-200"}`}
-                        required
-                      />
+                          }}
+                          placeholder="••••••••"
+                          className={`h-13 pr-12 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.confirmPassword ? "border-red-500" : "border-slate-200"}`}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRegisterConfirmPassword(!showRegisterConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                        >
+                          {showRegisterConfirmPassword ? (
+                            <EyeOff className="size-5" />
+                          ) : (
+                            <Eye className="size-5" />
+                          )}
+                        </button>
+                      </div>
                       {registerErrors.confirmPassword && (
                         <motion.p
                           initial={{ opacity: 0 }}
