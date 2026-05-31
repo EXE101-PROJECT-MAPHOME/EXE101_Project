@@ -666,10 +666,10 @@ export function LandlordDashboardV2() {
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex-1">
-                      <h2 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight mb-2">
+                      <h2 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tight leading-tight mb-2">
                         Khách hàng tiềm năng
                       </h2>
-                      <p className="text-xl text-slate-600 font-bold leading-relaxed">
+                      <p className="text-lg text-indigo-500/80 font-black leading-relaxed">
                         từ{" "}
                         <span className="bg-gradient-to-r from-maphome-600 to-indigo-600 bg-clip-text text-transparent font-black">
                           AI Advisor
