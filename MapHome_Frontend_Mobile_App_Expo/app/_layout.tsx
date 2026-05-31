@@ -5,7 +5,6 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-reanimated";
 
@@ -31,7 +30,19 @@ export default function RootLayout() {
             >
               <Stack>
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="(tabs)"
+                  options={{
+                    headerShown: false,
+                    gestureEnabled: false,
+                  }}
+                  listeners={({ navigation }) => ({
+                    beforeRemove: (e) => {
+                      // Prevent back action on tabs screen
+                      e.preventDefault();
+                    },
+                  })}
+                />
                 <Stack.Screen name="blog" options={{ headerShown: false }} />
                 <Stack.Screen name="contact" options={{ headerShown: false }} />
                 <Stack.Screen name="policy" options={{ headerShown: false }} />

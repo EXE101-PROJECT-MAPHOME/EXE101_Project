@@ -66,10 +66,6 @@ export default function TabLayout() {
         tabBarItemStyle: {
           paddingVertical: 4,
         },
-        sceneContainerStyle: {
-          paddingBottom: 0,
-          backgroundColor: background,
-        },
       }}
     >
       <Tabs.Screen

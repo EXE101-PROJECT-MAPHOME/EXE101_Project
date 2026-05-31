@@ -736,19 +736,19 @@ export default function ProfileScreen() {
                   title: "Quản lý danh sách trọ",
                   desc: `Đang có ${landlordProperties.length} tin đăng phòng trọ`,
                   icon: Building2,
-                  path: "/blog",
+                  path: ROUTES.LANDLORD_DASHBOARD,
                 },
                 {
                   title: "Yêu cầu xác thực phòng",
                   desc: "Quản lý huy hiệu xanh Trust is King",
                   icon: ShieldCheck,
-                  path: "/policy",
+                  path: ROUTES.POLICY,
                 },
                 {
                   title: "Cài đặt hệ thống",
                   desc: "Bảo mật, phân quyền tài khoản",
                   icon: Settings,
-                  path: "/contact",
+                  path: ROUTES.POLICY,
                 },
               ].map((item, i) => (
                 <TouchableOpacity

@@ -29,6 +29,11 @@ export const ROUTES = {
   LANDLORD_DASHBOARD: "/landlord-dashboard",
   ADMIN_DASHBOARD: "/admin-dashboard",
 
+  // Landlord specific
+  LANDLORD_PROPERTIES: (tab?: string) => `/landlord-dashboard?tab=posts`,
+  LANDLORD_VERIFICATION: "/verification-service",
+  LANDLORD_SETTINGS: "/(tabs)/profile",
+
   // Misc / demos
   EXPIRY_WARNING: "/expiry-warning-demo",
 } as const;
