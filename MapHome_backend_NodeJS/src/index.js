@@ -98,6 +98,7 @@ app.use("/api/blogs", require("./routes/blogRoutes"));
 app.use("/api/contacts", require("./routes/contactRoutes"));
 app.use("/api/ai", aiLimiter, require("./routes/aiRoutes"));
 app.use("/api/map", require("./routes/mapRoutes"));
+app.use("/api/vouchers", require("./routes/voucherRoutes"));
 
 app.get("/", (req, res) => res.send("API is running..."));
 

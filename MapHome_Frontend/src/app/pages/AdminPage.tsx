@@ -62,6 +62,7 @@ import { SettingsView } from "./SettingsView";
 import { InspectionsView } from "@/app/components/InspectionsView";
 import { toast } from "sonner";
 import { BlogEditorDialog } from "@/app/components/BlogEditorDialog";
+import { AdminVoucherView } from "./AdminVoucherView";
 
 type AdminView =
   | "dashboard"
@@ -80,6 +81,7 @@ type AdminView =
   | "subscriptions"
   | "global_pricing"
   | "blog"
+  | "vouchers"
   | "settings";
 
 // Note: Mock data constants removed. Data is now fetched from the backend.
@@ -608,6 +610,7 @@ export function AdminPage() {
               title: "Hệ thống",
               items: [
                 { id: "subscriptions", label: "Gói dịch vụ", icon: Ticket },
+                { id: "vouchers", label: "Mã giảm giá", icon: Ticket },
                 {
                   id: "global_pricing",
                   label: "Dịch vụ & Giá",
@@ -737,6 +740,7 @@ export function AdminPage() {
                 {activeView === "blog" && "Kiểm duyệt Blog"}
                 {activeView === "revenue" && "Báo cáo Doanh Thu"}
                 {activeView === "inspections" && "Kiểm tra thực địa"}
+                {activeView === "vouchers" && "Quản lý Mã giảm giá"}
                 {activeView === "settings" && "Cấu hình hệ thống"}
               </div>
             </div>
@@ -938,6 +942,7 @@ export function AdminPage() {
                   )}
                   {activeView === "revenue" && <RevenueView />}
                   {activeView === "inspections" && <InspectionsView />}
+                  {activeView === "vouchers" && <AdminVoucherView />}
                   {activeView === "settings" && <SettingsView />}
                 </motion.div>
               </AnimatePresence>
