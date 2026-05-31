@@ -19,6 +19,7 @@ import {
   Send,
   Clock3,
 } from "lucide-react-native";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import api from "../utils/api";
 
 export default function ContactScreen() {
@@ -31,6 +32,10 @@ export default function ContactScreen() {
     subject: "",
     message: "",
   });
+  const tint = useThemeColor({}, "tint");
+  const info = useThemeColor({}, "info");
+  const warning = useThemeColor({}, "warning");
+  const icon = useThemeColor({}, "icon");
 
   const submit = async () => {
     if (
@@ -72,7 +77,7 @@ export default function ContactScreen() {
             onPress={() => router.back()}
             className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
           >
-            <ArrowLeft size={18} color="#0f172a" />
+            <ArrowLeft size={18} color={icon} />
           </TouchableOpacity>
           <Text className="text-2xl font-black text-emerald-950">Liên hệ</Text>
         </View>
@@ -96,7 +101,7 @@ export default function ContactScreen() {
             onPress={() => Linking.openURL("mailto:support@timnhatro.vn")}
           >
             <View className="w-10 h-10 rounded-xl bg-emerald-50 items-center justify-center mr-3">
-              <Mail size={18} color="#059669" />
+              <Mail size={18} color={tint} />
             </View>
             <View>
               <Text className="text-xs text-slate-400 font-semibold">
@@ -113,7 +118,7 @@ export default function ContactScreen() {
             onPress={() => Linking.openURL("tel:0243654321")}
           >
             <View className="w-10 h-10 rounded-xl bg-blue-50 items-center justify-center mr-3">
-              <Phone size={18} color="#2563eb" />
+              <Phone size={18} color={info} />
             </View>
             <View>
               <Text className="text-xs text-slate-400 font-semibold">
@@ -125,7 +130,7 @@ export default function ContactScreen() {
 
           <View className="flex-row items-start mb-4">
             <View className="w-10 h-10 rounded-xl bg-purple-50 items-center justify-center mr-3">
-              <MapPin size={18} color="#7c3aed" />
+              <MapPin size={18} color={info} />
             </View>
             <View>
               <Text className="text-xs text-slate-400 font-semibold">
@@ -139,7 +144,7 @@ export default function ContactScreen() {
 
           <View className="flex-row items-start">
             <View className="w-10 h-10 rounded-xl bg-amber-50 items-center justify-center mr-3">
-              <Clock3 size={18} color="#d97706" />
+              <Clock3 size={18} color={warning} />
             </View>
             <View>
               <Text className="text-xs text-slate-400 font-semibold">

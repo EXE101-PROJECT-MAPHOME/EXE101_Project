@@ -5,9 +5,11 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import ROUTES, { navigateTo } from "@/constants/routes";
 import {
   ArrowLeft,
   LayoutDashboard,
@@ -92,13 +94,29 @@ export default function AdminDashboardScreen() {
         setTransactions(res.data?.transactions || []);
       }
       if (active === "vouchers") {
-        const res = await api
-          .get("/api/vouchers")
-          .catch(() => ({ data: [] }));
+        const res = await api.get("/api/vouchers").catch(() => ({ data: [] }));
         setVouchers(res.data || []);
       }
     } finally {
       setScreenLoading(false);
+    }
+  };
+
+  const handleUpdateVerificationStatus = async (
+    id: string,
+    status: "approved" | "rejected" | "completed",
+  ) => {
+    try {
+      await api.put(`/api/admin/verifications/${id}/status`, { status });
+      Alert.alert("Thành công", "Đã cập nhật trạng thái yêu cầu xác thực");
+      setVerifications((prev) =>
+        prev.map((v) => (v._id === id ? { ...v, status } : v)),
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi",
+        error.response?.data?.message || "Không thể cập nhật trạng thái",
+      );
     }
   };
 
@@ -125,7 +143,7 @@ export default function AdminDashboardScreen() {
           Bạn không có quyền truy cập trang này
         </Text>
         <TouchableOpacity
-          onPress={() => router.replace("/(auth)/login")}
+          onPress={() => navigateTo(router, ROUTES.LOGIN, true)}
           className="bg-emerald-600 px-6 py-3 rounded-2xl"
         >
           <Text className="text-white font-bold">Đăng nhập lại</Text>
@@ -193,6 +211,12 @@ export default function AdminDashboardScreen() {
         {view === "dashboard" && (
           <View className="flex-row flex-wrap justify-between">
             {[
+              {
+                label: "Doanh thu",
+                value: stats?.totalRevenue
+                  ? `${(stats.totalRevenue / 1000000).toFixed(1)}M`
+                  : "0đ",
+              },
               { label: "Tổng người dùng", value: stats?.totalUsers || 0 },
               { label: "Tổng tin đăng", value: stats?.totalProperties || 0 },
               { label: "Lịch hẹn", value: stats?.totalBookings || 0 },
@@ -223,7 +247,7 @@ export default function AdminDashboardScreen() {
                 Danh sách Voucher
               </Text>
               <TouchableOpacity
-                onPress={() => router.push("/admin-voucher-add" as any)}
+                onPress={() => navigateTo(router, "/admin-voucher-add")}
                 className="bg-emerald-100 px-3 py-1.5 rounded-full flex-row items-center"
               >
                 <Plus size={14} color="#059669" />
@@ -232,7 +256,7 @@ export default function AdminDashboardScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             {vouchers.length === 0 ? (
               <Text className="text-slate-500">Chưa có voucher nào.</Text>
             ) : (
@@ -268,65 +292,172 @@ export default function AdminDashboardScreen() {
           </View>
         )}
 
-        {view !== "dashboard" && view !== "vouchers" && (
+        {view === "verification" && (
           <View className="bg-white rounded-3xl p-5 border border-slate-100">
-            <Text className="text-base font-black text-emerald-950 mb-3">
-              Dữ liệu {view}
+            <Text className="text-base font-black text-emerald-950 mb-4">
+              Quản lý Yêu cầu Xác thực
             </Text>
-            {(view === "posts"
-              ? posts
-              : view === "users"
-                ? users
-                : view === "verification"
-                  ? verifications
+
+            {verifications.length === 0 ? (
+              <Text className="text-slate-500">
+                Không có yêu cầu xác thực nào.
+              </Text>
+            ) : (
+              verifications.map((item) => (
+                <View
+                  key={item._id}
+                  className="py-4 border-b border-slate-100 mb-2 bg-slate-50 p-4 rounded-2xl"
+                >
+                  <View className="flex-row justify-between items-start mb-2">
+                    <View className="flex-1">
+                      <Text
+                        className="font-bold text-emerald-950 text-base"
+                        numberOfLines={1}
+                      >
+                        {item.propertyName || "Căn trọ"}
+                      </Text>
+                      <Text className="text-xs text-slate-500 mt-1">
+                        Chủ trọ: {item.landlordName || "Không rõ"}
+                      </Text>
+                    </View>
+                    <View
+                      className={`px-2 py-1 rounded-full ${item.status === "pending" ? "bg-amber-100" : item.status === "approved" ? "bg-blue-100" : item.status === "completed" ? "bg-emerald-100" : "bg-red-100"}`}
+                    >
+                      <Text
+                        className={`text-[10px] font-bold ${item.status === "pending" ? "text-amber-700" : item.status === "approved" ? "text-blue-700" : item.status === "completed" ? "text-emerald-700" : "text-red-700"}`}
+                      >
+                        {item.status === "pending"
+                          ? "Chờ duyệt"
+                          : item.status === "approved"
+                            ? "Đã duyệt lịch"
+                            : item.status === "completed"
+                              ? "Đã cấp tích xanh"
+                              : "Từ chối"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View className="bg-white p-3 rounded-xl border border-slate-100 mb-3">
+                    <Text className="text-xs font-bold text-slate-700">
+                      Lịch hẹn:
+                    </Text>
+                    <Text className="text-xs text-slate-600">
+                      {item.scheduledDate
+                        ? new Date(item.scheduledDate).toLocaleDateString(
+                            "vi-VN",
+                          )
+                        : ""}{" "}
+                      lúc {item.scheduledTime}
+                    </Text>
+                    {item.notes && (
+                      <Text className="text-xs text-slate-500 mt-1 italic">
+                        Ghi chú: {item.notes}
+                      </Text>
+                    )}
+                  </View>
+
+                  {item.status === "pending" && (
+                    <View className="flex-row gap-2">
+                      <TouchableOpacity
+                        onPress={() =>
+                          handleUpdateVerificationStatus(item._id, "approved")
+                        }
+                        className="flex-1 bg-blue-600 py-2 rounded-xl items-center"
+                      >
+                        <Text className="text-white text-xs font-bold">
+                          Duyệt lịch hẹn
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() =>
+                          handleUpdateVerificationStatus(item._id, "rejected")
+                        }
+                        className="flex-1 bg-red-100 py-2 rounded-xl items-center"
+                      >
+                        <Text className="text-red-700 text-xs font-bold">
+                          Từ chối
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {item.status === "approved" && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        handleUpdateVerificationStatus(item._id, "completed")
+                      }
+                      className="bg-emerald-600 py-2 rounded-xl items-center"
+                    >
+                      <Text className="text-white text-xs font-bold">
+                        Cấp Tích Xanh & Hoàn tất
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+        {view !== "dashboard" &&
+          view !== "vouchers" &&
+          view !== "verification" && (
+            <View className="bg-white rounded-3xl p-5 border border-slate-100">
+              <Text className="text-base font-black text-emerald-950 mb-3">
+                Dữ liệu {view}
+              </Text>
+              {(view === "posts"
+                ? posts
+                : view === "users"
+                  ? users
                   : view === "bookings"
                     ? bookings
                     : view === "reports"
                       ? reports
                       : transactions
-            ).length === 0 ? (
-              <Text className="text-slate-500">Chưa có dữ liệu.</Text>
-            ) : (
-              (view === "posts"
-                ? posts
-                : view === "users"
-                  ? users
-                  : view === "verification"
-                    ? verifications
+              ).length === 0 ? (
+                <Text className="text-slate-500">Chưa có dữ liệu.</Text>
+              ) : (
+                (view === "posts"
+                  ? posts
+                  : view === "users"
+                    ? users
                     : view === "bookings"
                       ? bookings
                       : view === "reports"
                         ? reports
                         : transactions
-              )
-                .slice(0, 12)
-                .map((item: any, idx: number) => (
-                  <View
-                    key={item._id || idx}
-                    className="py-2 border-b border-slate-100"
-                  >
-                    <Text
-                      className="font-bold text-emerald-950"
-                      numberOfLines={1}
+                )
+                  .slice(0, 12)
+                  .map((item: any, idx: number) => (
+                    <View
+                      key={item._id || idx}
+                      className="py-2 border-b border-slate-100"
                     >
-                      {item.name ||
-                        item.title ||
-                        item.fullName ||
-                        item.username ||
-                        "Bản ghi hệ thống"}
-                    </Text>
-                    <Text className="text-xs text-slate-500" numberOfLines={1}>
-                      {item.email ||
-                        item.address ||
-                        item.status ||
-                        item.message ||
-                        item._id}
-                    </Text>
-                  </View>
-                ))
-            )}
-          </View>
-        )}
+                      <Text
+                        className="font-bold text-emerald-950"
+                        numberOfLines={1}
+                      >
+                        {item.name ||
+                          item.title ||
+                          item.fullName ||
+                          item.username ||
+                          "Bản ghi hệ thống"}
+                      </Text>
+                      <Text
+                        className="text-xs text-slate-500"
+                        numberOfLines={1}
+                      >
+                        {item.email ||
+                          item.address ||
+                          item.status ||
+                          item.message ||
+                          item._id}
+                      </Text>
+                    </View>
+                  ))
+              )}
+            </View>
+          )}
       </ScrollView>
     </SafeAreaView>
   );

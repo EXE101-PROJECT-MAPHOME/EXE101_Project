@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import ROUTES, { navigateTo } from "@/constants/routes";
 import {
   ArrowLeft,
   Search,
@@ -106,7 +107,7 @@ export default function BlogScreen() {
     if (!isAuthenticated) {
       Alert.alert("Cần đăng nhập", "Vui lòng đăng nhập để lưu bài viết.", [
         { text: "Để sau", style: "cancel" },
-        { text: "Đăng nhập", onPress: () => router.push("/(auth)/login") },
+        { text: "Đăng nhập", onPress: () => navigateTo(router, ROUTES.LOGIN) },
       ]);
       return;
     }

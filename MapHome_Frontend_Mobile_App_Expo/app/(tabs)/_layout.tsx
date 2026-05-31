@@ -11,22 +11,27 @@ import {
   FileText,
   Mail,
 } from "lucide-react-native";
+import { useThemeColor } from "@/hooks/use-theme-color";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const bottomSpacing = isIOS ? Math.max(insets.bottom, 10) : 8;
+  const tint = useThemeColor({}, "tint");
+  const icon = useThemeColor({}, "icon");
+  const background = useThemeColor({}, "background");
+  const borderTopColor = "#f1f5f9";
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#059669", // emerald-600
-        tabBarInactiveTintColor: "#94a3b8", // slate-400
+        tabBarActiveTintColor: tint,
+        tabBarInactiveTintColor: icon,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#ffffff",
+          backgroundColor: background,
           borderTopWidth: 1,
-          borderTopColor: "#f1f5f9",
+          borderTopColor,
           height: 52 + bottomSpacing,
           paddingBottom: bottomSpacing,
           paddingTop: 8,
