@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
 import ROUTES, { navigateTo } from "@/constants/routes";
 import { WebView } from "react-native-webview";
+import * as Location from "expo-location";
 import {
   Search,
   SlidersHorizontal,
@@ -22,6 +23,8 @@ import {
   Map as MapIcon,
   List,
   Check,
+  Navigation as NavIcon,
+  Loader2,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import {
@@ -80,7 +83,7 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
 <body>
     <div id="map"></div>
     <script>
-        goongjs.accessToken = ${key};
+        goongjs.accessToken = '${key}';
         var map = new goongjs.Map({
             container: 'map',
             style: 'https://tiles.goong.io/assets/goong_map_web.json',
@@ -117,6 +120,10 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
         map.on('click', function() {
              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_CLICK' }));
         });
+        
+        window.zoomToLocation = function(lng, lat, zoom = 15) {
+            map.easeTo({ center: [lng, lat], zoom: zoom });
+        };
     </script>
 </body>
 </html>
@@ -129,10 +136,39 @@ export default function MapScreen() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProperty, setSelectedProperty] =
     useState<RentalProperty | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
   const webViewRef = React.useRef<WebView>(null);
   const tint = useThemeColor({}, "tint");
   const text = useThemeColor({}, "text");
   const icon = useThemeColor({}, "icon");
+
+  const handleUseMyLocation = async () => {
+    try {
+      setIsLocating(true);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        console.log("Location permission denied");
+        setIsLocating(false);
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const { latitude, longitude } = location.coords;
+      
+      // Inject JavaScript to zoom map to current location
+      if (webViewRef.current) {
+        const script = `window.zoomToLocation(${longitude}, ${latitude}, 16); true;`;
+        webViewRef.current.injectJavaScript(script);
+      }
+    } catch (error) {
+      console.error("Error getting location:", error);
+    } finally {
+      setIsLocating(false);
+    }
+  };
 
   const performSearch = (
     term: string,
@@ -389,6 +425,21 @@ export default function MapScreen() {
               webViewRef.current?.injectJavaScript(script);
             }}
           />
+
+          {/* GPS Location Button */}
+          <View className="absolute top-4 right-4 z-20 gap-2">
+            <TouchableOpacity
+              onPress={handleUseMyLocation}
+              disabled={isLocating}
+              className={`w-12 h-12 rounded-2xl items-center justify-center shadow-xl border ${isLocating ? 'bg-indigo-50 border-indigo-300' : 'bg-white border-white'}`}
+            >
+              {isLocating ? (
+                <Loader2 size={22} color="#4f46e5" />
+              ) : (
+                <NavIcon size={22} color="#4f46e5" />
+              )}
+            </TouchableOpacity>
+          </View>
 
           {/* Selected Property Preview Sliding Panel */}
           {selectedProperty && (
