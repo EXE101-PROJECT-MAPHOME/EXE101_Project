@@ -536,7 +536,7 @@ export function AdminPage() {
               <Home className="size-8 text-white" />
             </div>
             <div>
-              <h1 className="font-black text-2xl text-slate-800 tracking-tighter leading-none">
+              <h1 className="font-black text-2xl bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 bg-clip-text text-transparent tracking-tighter leading-none">
                 MapHome
               </h1>
               <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mt-2 inline-block shadow-sm">
@@ -3715,7 +3715,7 @@ const TransactionsView = ({ transactions }: { transactions: any[] }) => {
         <div className="p-8 border-b border-slate-100 flex items-center justify-between">
           <div>
             <h3 className="text-xl font-black text-slate-800 tracking-tight">
-              Lịch sử Giao dịch VNPay
+              Lịch sử Giao dịch
             </h3>
             <p className="text-xs text-slate-500 font-medium mt-1">
               Quản lý và đối soát các giao dịch thanh toán trên hệ thống
