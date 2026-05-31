@@ -24,6 +24,7 @@ import {
   Bell,
 } from "lucide-react-native";
 import { useRouter, type Href } from "expo-router";
+import ROUTES, { navigateTo } from "@/constants/routes";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProperties } from "../../contexts/PropertiesContext";
 import api from "../../utils/api";
@@ -85,7 +86,7 @@ export default function HomePage() {
           </Text>
         </View>
         <TouchableOpacity
-          onPress={() => router.push("/blog" as Href)}
+          onPress={() => navigateTo(router, ROUTES.BLOG)}
           className="w-10 h-10 bg-slate-50 rounded-full items-center justify-center relative"
         >
           <Bell size={20} color="#064e3b" />
@@ -285,7 +286,7 @@ export default function HomePage() {
               <View key={item.id} className="w-[300px] mr-4">
                 <PropertyCard
                   property={item}
-                  onPress={() => router.push(`/room/${item.id}` as Href)}
+                  onPress={() => navigateTo(router, ROUTES.ROOM(item.id))}
                 />
               </View>
             ))}
@@ -293,7 +294,7 @@ export default function HomePage() {
         )}
 
         <TouchableOpacity
-          onPress={() => router.push("/(tabs)/map")}
+          onPress={() => navigateTo(router, ROUTES.MAP)}
           className="bg-emerald-600 mx-8 py-4 rounded-2xl flex-row justify-center items-center mt-4"
         >
           <Text className="text-white font-bold mr-2">
@@ -343,7 +344,7 @@ export default function HomePage() {
           ].map((d, i) => (
             <TouchableOpacity
               key={i}
-              onPress={() => router.push("/(tabs)/map")}
+              onPress={() => navigateTo(router, ROUTES.MAP)}
               className="w-[48%] mb-4 rounded-3xl overflow-hidden relative h-40"
             >
               <Image

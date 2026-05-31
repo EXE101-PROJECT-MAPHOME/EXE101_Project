@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useNavigation, type Href } from "expo-router";
+import ROUTES, { navigateTo } from "@/constants/routes";
 import {
   User as UserIcon,
   LogOut,
@@ -82,7 +83,7 @@ export default function ProfileScreen() {
           style: "destructive",
           onPress: async () => {
             await logout();
-            router.replace("/(tabs)");
+            navigateTo(router, ROUTES.HOME, true);
           },
         },
       ],
@@ -92,16 +93,13 @@ export default function ProfileScreen() {
   const handlePostRoom = () => {
     Alert.alert(
       "Đăng tin phòng trọ mới",
-      "Chức năng đăng tin đang được kết nối với hệ thống duyệt tin tự động của MapHome. Bạn có muốn điền thông tin nhanh không?",
+      "Bạn sẽ được chuyển tới màn đăng tin. Muốn tiếp tục?",
       [
         { text: "Hủy", style: "cancel" },
         {
           text: "Tiếp tục",
           onPress: () => {
-            Alert.alert(
-              "Thành công",
-              "Đã lưu bản nháp đăng tin. Vui lòng hoàn tất trên web hoặc đợi duyệt tin di động.",
-            );
+            navigateTo(router, ROUTES.POST_ROOM);
           },
         },
       ],
@@ -263,14 +261,14 @@ export default function ProfileScreen() {
             </Text>
 
             <TouchableOpacity
-              onPress={() => router.push("/(auth)/login")}
+              onPress={() => navigateTo(router, ROUTES.LOGIN)}
               className="w-full bg-emerald-600 h-14 rounded-2xl items-center justify-center shadow-md mb-4"
             >
               <Text className="text-white font-black text-base">Đăng nhập</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => router.push("/(auth)/register")}
+              onPress={() => navigateTo(router, ROUTES.REGISTER)}
               className="w-full bg-white border border-emerald-600 h-14 rounded-2xl items-center justify-center"
             >
               <Text className="text-emerald-700 font-black text-base">
@@ -321,7 +319,7 @@ export default function ProfileScreen() {
 
               {user.role === "user" && (
                 <TouchableOpacity
-                  onPress={() => router.push("/user-dashboard" as Href)}
+                  onPress={() => navigateTo(router, ROUTES.USER_DASHBOARD)}
                   className="bg-emerald-600 h-12 rounded-2xl items-center justify-center"
                 >
                   <Text className="text-white font-black">
@@ -332,7 +330,7 @@ export default function ProfileScreen() {
 
               {user.role === "admin" && (
                 <TouchableOpacity
-                  onPress={() => router.push("/admin-dashboard" as Href)}
+                  onPress={() => navigateTo(router, ROUTES.ADMIN_DASHBOARD)}
                   className="bg-indigo-600 h-12 rounded-2xl items-center justify-center"
                 >
                   <Text className="text-white font-black">
@@ -478,7 +476,7 @@ export default function ProfileScreen() {
                 ].map((item, i) => (
                   <TouchableOpacity
                     key={i}
-                    onPress={() => router.push(item.path as Href)}
+                    onPress={() => navigateTo(router, item.path)}
                     className="flex-row items-center justify-between p-4 border-b border-slate-50"
                   >
                     <View className="flex-row items-center flex-1 mr-4">
@@ -558,7 +556,7 @@ export default function ProfileScreen() {
 
             {/* Quick Actions */}
             <TouchableOpacity
-              onPress={() => router.push("/landlord-dashboard" as Href)}
+              onPress={() => navigateTo(router, ROUTES.LANDLORD_DASHBOARD)}
               className="bg-slate-900 h-12 rounded-2xl flex-row items-center justify-center"
             >
               <Text className="text-white font-black text-base">
@@ -755,7 +753,7 @@ export default function ProfileScreen() {
               ].map((item, i) => (
                 <TouchableOpacity
                   key={i}
-                  onPress={() => router.push(item.path as Href)}
+                  onPress={() => navigateTo(router, item.path)}
                   className="flex-row items-center justify-between p-4 border-b border-slate-50"
                 >
                   <View className="flex-row items-center flex-1 mr-4">

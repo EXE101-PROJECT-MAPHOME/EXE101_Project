@@ -12,7 +12,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import ROUTES, { navigateTo } from "@/constants/routes";
 import { ArrowLeft, Mail, Phone, KeyRound, Lock } from "lucide-react-native";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import api from "../../utils/api";
 
 type Step = "request" | "verifyOtp" | "resetPassword" | "success";
@@ -20,6 +22,8 @@ type Method = "email" | "phone";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const icon = useThemeColor({}, "icon");
+  const tint = useThemeColor({}, "tint");
   const [method, setMethod] = useState<Method>("email");
   const [step, setStep] = useState<Step>("request");
   const [loading, setLoading] = useState(false);
@@ -166,7 +170,7 @@ export default function ForgotPasswordScreen() {
             Email
           </Text>
           <View className="flex-row items-center bg-slate-50 rounded-2xl border border-slate-200 h-14 px-4">
-            <Mail size={20} color="#94a3b8" />
+            <Mail size={20} color={icon} />
             <TextInput
               value={email}
               onChangeText={setEmail}
@@ -183,7 +187,7 @@ export default function ForgotPasswordScreen() {
             Số điện thoại
           </Text>
           <View className="flex-row items-center bg-slate-50 rounded-2xl border border-slate-200 h-14 px-4">
-            <Phone size={20} color="#94a3b8" />
+            <Phone size={20} color={icon} />
             <TextInput
               value={phone}
               onChangeText={setPhone}
@@ -216,7 +220,7 @@ export default function ForgotPasswordScreen() {
           Mã OTP
         </Text>
         <View className="flex-row items-center bg-slate-50 rounded-2xl border border-slate-200 h-14 px-4">
-          <KeyRound size={20} color="#94a3b8" />
+          <KeyRound size={20} color={icon} />
           <TextInput
             value={otp}
             onChangeText={setOtp}
@@ -258,7 +262,7 @@ export default function ForgotPasswordScreen() {
           Mật khẩu mới
         </Text>
         <View className="flex-row items-center bg-slate-50 rounded-2xl border border-slate-200 h-14 px-4">
-          <Lock size={20} color="#94a3b8" />
+          <Lock size={20} color={icon} />
           <TextInput
             value={newPassword}
             onChangeText={setNewPassword}
@@ -313,7 +317,7 @@ export default function ForgotPasswordScreen() {
           : "Mật khẩu của bạn đã được thay đổi thành công."}
       </Text>
       <TouchableOpacity
-        onPress={() => router.replace("/(auth)/login")}
+        onPress={() => navigateTo(router, ROUTES.LOGIN, true)}
         className="w-full bg-emerald-600 h-14 rounded-2xl items-center justify-center"
       >
         <Text className="text-white font-black text-base">
@@ -338,7 +342,7 @@ export default function ForgotPasswordScreen() {
               onPress={() => router.back()}
               className="flex-row items-center mb-6 self-start"
             >
-              <ArrowLeft size={18} color="#0f172a" />
+              <ArrowLeft size={18} color={icon} />
               <Text className="text-slate-900 font-bold ml-2">Quay lại</Text>
             </TouchableOpacity>
 

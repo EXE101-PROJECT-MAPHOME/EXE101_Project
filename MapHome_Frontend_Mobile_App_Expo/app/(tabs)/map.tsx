@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
+import ROUTES, { navigateTo } from "@/constants/routes";
 import { WebView } from "react-native-webview";
 import {
   Search,
@@ -22,6 +23,7 @@ import {
   List,
   Check,
 } from "lucide-react-native";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import {
   useProperties,
   type RentalProperty,
@@ -35,9 +37,11 @@ const HCM_REGION = {
   longitudeDelta: 0.08,
 };
 
-const GOONG_MAPTILES_KEY = "zkJufOSOzrjhp0HuujejyHhJ2S3G2O6SkK56wiSF";
+const GOONG_MAPTILES_KEY =
+  process.env.EXPO_PUBLIC_GOONG_MAPTILES_KEY ??
+  "zkJufOSOzrjhp0HuujejyHhJ2S3G2O6SkK56wiSF";
 
-const MAP_HTML = `
+const buildMapHtml = (tint: string, text: string, key: string) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -54,18 +58,18 @@ const MAP_HTML = `
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1.5px solid #059669;
-            background-color: white;
+            border: 1.5px solid ${tint};
+          background-color: white;
             font-weight: 900;
             font-size: 13px;
             font-family: sans-serif;
-            color: #022c22;
+            color: ${text};
             cursor: pointer;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
         }
         .marker-price.selected {
-            background-color: #059669;
+            background-color: ${tint};
             border-color: white;
             color: white;
             transform: scale(1.15);
@@ -76,7 +80,7 @@ const MAP_HTML = `
 <body>
     <div id="map"></div>
     <script>
-        goongjs.accessToken = '${GOONG_MAPTILES_KEY}';
+        goongjs.accessToken = ${key};
         var map = new goongjs.Map({
             container: 'map',
             style: 'https://tiles.goong.io/assets/goong_map_web.json',
@@ -126,6 +130,9 @@ export default function MapScreen() {
   const [selectedProperty, setSelectedProperty] =
     useState<RentalProperty | null>(null);
   const webViewRef = React.useRef<WebView>(null);
+  const tint = useThemeColor({}, "tint");
+  const text = useThemeColor({}, "text");
+  const icon = useThemeColor({}, "icon");
 
   const performSearch = (
     term: string,
@@ -270,7 +277,7 @@ export default function MapScreen() {
   // Sync markers to WebView
   React.useEffect(() => {
     if (webViewRef.current && viewMode === "map") {
-      const script = `if (window.updateMarkers) { window.updateMarkers(${JSON.stringify(filteredProperties)}, ${selectedProperty ? JSON.stringify(selectedProperty.id) : 'null'}); } true;`;
+      const script = `if (window.updateMarkers) { window.updateMarkers(${JSON.stringify(filteredProperties)}, ${selectedProperty ? JSON.stringify(selectedProperty.id) : "null"}); } true;`;
       webViewRef.current.injectJavaScript(script);
     }
   }, [filteredProperties, selectedProperty, viewMode]);
@@ -294,7 +301,7 @@ export default function MapScreen() {
         <View className="flex-row items-center space-x-2 mt-2">
           {/* Search Box */}
           <View className="flex-1 flex-row items-center bg-slate-50 border border-slate-200 h-12 rounded-2xl px-3 mr-2">
-            <Search size={18} color="#94a3b8" />
+            <Search size={18} color={icon} />
             <TextInput
               value={searchTerm}
               onChangeText={setSearchTerm}
@@ -324,7 +331,7 @@ export default function MapScreen() {
                   );
                 }}
               >
-                <X size={16} color="#94a3b8" />
+                <X size={16} color={icon} />
               </TouchableOpacity>
             )}
           </View>
@@ -342,7 +349,7 @@ export default function MapScreen() {
           >
             <SlidersHorizontal
               size={18}
-              color={activeFiltersCount > 0 ? "#059669" : "#334155"}
+              color={activeFiltersCount > 0 ? tint : icon}
             />
             {activeFiltersCount > 0 && (
               <View className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full items-center justify-center">
@@ -361,16 +368,16 @@ export default function MapScreen() {
           <WebView
             ref={webViewRef}
             className="w-full h-full"
-            source={{ html: MAP_HTML }}
-            originWhitelist={['*']}
+            source={{ html: buildMapHtml(tint, text, GOONG_MAPTILES_KEY) }}
+            originWhitelist={["*"]}
             javaScriptEnabled={true}
             onMessage={(event) => {
               try {
                 const data = JSON.parse(event.nativeEvent.data);
-                if (data.type === 'PROPERTY_CLICK') {
-                  const prop = filteredProperties.find(p => p.id === data.id);
+                if (data.type === "PROPERTY_CLICK") {
+                  const prop = filteredProperties.find((p) => p.id === data.id);
                   if (prop) setSelectedProperty(prop);
-                } else if (data.type === 'MAP_CLICK') {
+                } else if (data.type === "MAP_CLICK") {
                   setSelectedProperty(null);
                 }
               } catch (e) {
@@ -378,7 +385,7 @@ export default function MapScreen() {
               }
             }}
             onLoadEnd={() => {
-              const script = `if (window.updateMarkers) { window.updateMarkers(${JSON.stringify(filteredProperties)}, ${selectedProperty ? JSON.stringify(selectedProperty.id) : 'null'}); } true;`;
+              const script = `if (window.updateMarkers) { window.updateMarkers(${JSON.stringify(filteredProperties)}, ${selectedProperty ? JSON.stringify(selectedProperty.id) : "null"}); } true;`;
               webViewRef.current?.injectJavaScript(script);
             }}
           />
@@ -405,12 +412,12 @@ export default function MapScreen() {
                         onPress={() => setSelectedProperty(null)}
                         className="p-1"
                       >
-                        <X size={16} color="#94a3b8" />
+                        <X size={16} color={icon} />
                       </TouchableOpacity>
                     </View>
 
                     <View className="flex-row items-center mt-1">
-                      <MapPin size={12} color="#059669" />
+                      <MapPin size={12} color={tint} />
                       <Text
                         className="text-[10px] text-slate-500 ml-0.5 flex-1"
                         numberOfLines={1}
@@ -421,7 +428,7 @@ export default function MapScreen() {
 
                     {selectedProperty.verificationLevel === "verified" && (
                       <View className="flex-row items-center mt-1 bg-emerald-50 self-start px-2 py-0.5 rounded-lg">
-                        <ShieldCheck size={10} color="#059669" />
+                        <ShieldCheck size={10} color={tint} />
                         <Text className="text-[9px] text-emerald-700 font-bold ml-0.5">
                           Xác thực GPS
                         </Text>
@@ -441,7 +448,7 @@ export default function MapScreen() {
 
                     <TouchableOpacity
                       onPress={() =>
-                        router.push(`/room/${selectedProperty.id}` as Href)
+                        navigateTo(router, ROUTES.ROOM(selectedProperty.id))
                       }
                       className="bg-emerald-600 px-3 py-1.5 rounded-xl"
                     >
@@ -478,7 +485,7 @@ export default function MapScreen() {
               <TouchableOpacity
                 key={property.id}
                 activeOpacity={0.9}
-                onPress={() => router.push(`/room/${property.id}` as Href)}
+                onPress={() => navigateTo(router, ROUTES.ROOM(property.id))}
                 className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100 mb-6 flex-row p-3"
               >
                 <Image
@@ -494,7 +501,7 @@ export default function MapScreen() {
                       {property.name}
                     </Text>
                     <View className="flex-row items-center mt-1">
-                      <MapPin size={12} color="#059669" />
+                      <MapPin size={12} color={tint} />
                       <Text
                         className="text-xs text-slate-500 ml-0.5 flex-1"
                         numberOfLines={1}
@@ -562,7 +569,7 @@ export default function MapScreen() {
                 onPress={() => setIsFilterVisible(false)}
                 className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center"
               >
-                <X size={16} color="#334155" />
+                <X size={16} color={icon} />
               </TouchableOpacity>
             </View>
 

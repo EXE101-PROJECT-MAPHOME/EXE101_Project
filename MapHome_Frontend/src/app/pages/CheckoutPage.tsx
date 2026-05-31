@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   Clock,
   Users,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/app/utils/api";
@@ -55,6 +56,9 @@ export function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  const [voucherCode, setVoucherCode] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState<{ discountPercentage: number; voucherId: string; code: string } | null>(null);
+  const [validatingVoucher, setValidatingVoucher] = useState(false);
 
   // Đọc state từ location trước, fallback sessionStorage nếu bị mất (iframe/sandbox issue)
   const rawState =
@@ -152,12 +156,36 @@ export function CheckoutPage() {
   }
 
   const serviceFee: number = 0;
-  const totalAmount = isInspection ? 199000 : selectedTier.price + serviceFee;
+  const baseAmount = isInspection ? 199000 : selectedTier.price;
+  const discountAmount = appliedVoucher ? (baseAmount * appliedVoucher.discountPercentage) / 100 : 0;
+  const totalAmount = baseAmount - discountAmount + serviceFee;
   const duration = isInspection
     ? "1 lần kiểm tra"
     : billingCycle === "monthly"
       ? "1 tháng (30 ngày)"
       : "12 tháng (1 năm)";
+
+  const handleApplyVoucher = async () => {
+    if (!voucherCode.trim()) return;
+    setValidatingVoucher(true);
+    try {
+      const res = await api.post("/api/vouchers/validate", {
+        code: voucherCode,
+        planId: isInspection ? "inspection" : selectedTierId,
+      });
+      setAppliedVoucher({
+        discountPercentage: res.data.discountPercentage,
+        voucherId: res.data.voucherId,
+        code: voucherCode.toUpperCase(),
+      });
+      toast.success(res.data.message || "Áp dụng mã giảm giá thành công!");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Mã giảm giá không hợp lệ");
+      setAppliedVoucher(null);
+    } finally {
+      setValidatingVoucher(false);
+    }
+  };
 
   const handlePayment = async () => {
     if (!agreedToTerms) {
@@ -175,6 +203,7 @@ export function CheckoutPage() {
           ? `Thanh toán kiểm tra căn trọ: ${inspectionData.propertyName}`
           : `Nâng cấp gói: ${selectedTier.name} (${billingCycle})`,
         planId: isInspection ? "inspection" : selectedTierId,
+        voucherId: appliedVoucher?.voucherId || null,
       });
 
       if (res.status === 200 && res.data.url) {
@@ -690,9 +719,20 @@ export function CheckoutPage() {
                         <p className="text-xs text-gray-500">× {duration}</p>
                       </div>
                       <p className="font-extrabold text-2xl text-blue-600">
-                        {totalAmount.toLocaleString("vi-VN")}đ
+                        {baseAmount.toLocaleString("vi-VN")}đ
                       </p>
                     </div>
+
+                    {appliedVoucher && (
+                      <div className="flex items-center justify-between text-sm">
+                        <p className="text-emerald-600 flex items-center gap-1">
+                          <Tag className="size-3" /> Giảm giá ({appliedVoucher.discountPercentage}%)
+                        </p>
+                        <p className="font-bold text-emerald-600">
+                          -{discountAmount.toLocaleString("vi-VN")}đ
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between text-sm">
                       <p className="text-gray-600">Phí dịch vụ</p>
@@ -702,6 +742,40 @@ export function CheckoutPage() {
                           : `${serviceFee.toLocaleString("vi-VN")}đ`}
                       </p>
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Voucher Input */}
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                      <Tag className="size-4 text-emerald-600" /> Mã giảm giá
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Nhập mã voucher"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                        disabled={!!appliedVoucher}
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold uppercase disabled:bg-gray-100 disabled:text-gray-500 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      />
+                      {appliedVoucher ? (
+                        <Button variant="outline" onClick={() => { setAppliedVoucher(null); setVoucherCode(""); }} className="text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600">
+                          Hủy
+                        </Button>
+                      ) : (
+                        <Button onClick={handleApplyVoucher} disabled={!voucherCode || validatingVoucher} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md">
+                          {validatingVoucher ? "..." : "Áp dụng"}
+                        </Button>
+                      )}
+                    </div>
+                    {appliedVoucher && (
+                      <div className="text-xs font-bold text-emerald-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-100 flex items-center justify-between">
+                        <span>Đã áp dụng mã: {appliedVoucher.code}</span>
+                        <span className="bg-emerald-200/50 px-2 py-0.5 rounded">-{appliedVoucher.discountPercentage}%</span>
+                      </div>
+                    )}
                   </div>
 
                   <Separator />

@@ -11,6 +11,7 @@ import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider } from "../contexts/AuthContext";
 import { PropertiesProvider } from "../contexts/PropertiesContext";
+import { CompareProvider } from "../contexts/CompareContext";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -22,9 +23,10 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <PropertiesProvider>
-        <ThemeProvider
-          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
+        <CompareProvider>
+          <ThemeProvider
+            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+          >
           <Stack>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -48,8 +50,9 @@ export default function RootLayout() {
               options={{ presentation: "modal", title: "Modal" }}
             />
           </Stack>
-          <StatusBar style="auto" />
-        </ThemeProvider>
+            <StatusBar style="auto" />
+          </ThemeProvider>
+        </CompareProvider>
       </PropertiesProvider>
     </AuthProvider>
   );

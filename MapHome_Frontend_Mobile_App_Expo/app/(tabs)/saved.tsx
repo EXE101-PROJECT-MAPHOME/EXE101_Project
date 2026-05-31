@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
+import ROUTES, { navigateTo } from "@/constants/routes";
 import { PropertyCard } from "@/components/PropertyCard";
 import { Heart, Search, User } from "lucide-react-native";
 import { useAuth } from "../../contexts/AuthContext";
@@ -49,7 +50,7 @@ export default function SavedScreen() {
           </Text>
 
           <TouchableOpacity
-            onPress={() => router.push("/(auth)/login")}
+            onPress={() => navigateTo(router, ROUTES.LOGIN)}
             className="w-full bg-emerald-600 h-14 rounded-2xl items-center justify-center shadow-md mb-4"
           >
             <Text className="text-white font-black text-base">
@@ -58,7 +59,7 @@ export default function SavedScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push("/(auth)/register")}
+            onPress={() => navigateTo(router, ROUTES.REGISTER)}
             className="w-full bg-white border border-emerald-600 h-14 rounded-2xl items-center justify-center"
           >
             <Text className="text-emerald-700 font-black text-base">
@@ -103,7 +104,7 @@ export default function SavedScreen() {
             Hãy khám phá các tin đăng và lưu lại những căn phòng bạn ưng ý nhất.
           </Text>
           <TouchableOpacity
-            onPress={() => router.push("/(tabs)/map")}
+            onPress={() => navigateTo(router, ROUTES.MAP)}
             className="bg-emerald-600 px-8 py-4 rounded-2xl flex-row items-center shadow-md"
           >
             <Search size={18} color="white" />
@@ -120,7 +121,7 @@ export default function SavedScreen() {
                 property={property}
                 isFavorite={true}
                 onFavoritePress={() => handleToggleFavorite(property.id)}
-                onPress={() => router.push(`/room/${property.id}` as Href)}
+                onPress={() => navigateTo(router, ROUTES.ROOM(property.id))}
               />
             </View>
           ))}

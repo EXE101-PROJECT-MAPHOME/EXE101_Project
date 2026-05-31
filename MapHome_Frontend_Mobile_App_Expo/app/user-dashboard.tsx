@@ -16,9 +16,16 @@ import {
   CheckCircle2,
   BookOpen,
   MapPin,
+  Settings,
+  GitCompare,
+  KeyRound,
+  UserCircle,
 } from "lucide-react-native";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import ROUTES, { navigateTo } from "@/constants/routes";
 import api from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
+import { useCompare } from "../contexts/CompareContext";
 
 export default function UserDashboardScreen() {
   const router = useRouter();
@@ -29,6 +36,13 @@ export default function UserDashboardScreen() {
   const [inspections, setInspections] = useState<any[]>([]);
   const [myBlogs, setMyBlogs] = useState<any[]>([]);
   const [savedBlogs, setSavedBlogs] = useState<any[]>([]);
+  const { compareList } = useCompare();
+  const tint = useThemeColor({}, "tint");
+  const icon = useThemeColor({}, "icon");
+  const info = useThemeColor({}, "info");
+  const warning = useThemeColor({}, "warning");
+  const danger = useThemeColor({}, "danger");
+  const success = useThemeColor({}, "success");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,7 +108,7 @@ export default function UserDashboardScreen() {
   if (loading || screenLoading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color={tint} />
       </SafeAreaView>
     );
   }
@@ -106,7 +120,7 @@ export default function UserDashboardScreen() {
           Bạn không có quyền truy cập trang này
         </Text>
         <TouchableOpacity
-          onPress={() => router.replace("/(auth)/login")}
+          onPress={() => navigateTo(router, ROUTES.LOGIN, true)}
           className="bg-emerald-600 px-6 py-3 rounded-2xl"
         >
           <Text className="text-white font-bold">Đăng nhập lại</Text>
@@ -122,7 +136,7 @@ export default function UserDashboardScreen() {
           onPress={() => router.back()}
           className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
         >
-          <ArrowLeft size={18} color="#0f172a" />
+          <ArrowLeft size={18} color={icon} />
         </TouchableOpacity>
         <View>
           <Text className="text-2xl font-black text-emerald-950">
@@ -184,7 +198,7 @@ export default function UserDashboardScreen() {
                   {item.propertyId?.name || "Phòng trọ"}
                 </Text>
                 <View className="flex-row items-center mt-1">
-                  <MapPin size={12} color="#64748b" />
+                  <MapPin size={12} color={icon} />
                   <Text
                     className="text-xs text-slate-500 ml-1"
                     numberOfLines={1}
@@ -203,7 +217,7 @@ export default function UserDashboardScreen() {
           </Text>
           <View className="flex-row justify-between">
             <View className="items-center flex-1">
-              <BookOpen size={16} color="#2563eb" />
+              <BookOpen size={16} color={info} />
               <Text className="text-2xl font-black text-emerald-950 mt-1">
                 {savedBlogs.length}
               </Text>
@@ -212,7 +226,7 @@ export default function UserDashboardScreen() {
               </Text>
             </View>
             <View className="items-center flex-1">
-              <BookOpen size={16} color="#059669" />
+              <BookOpen size={16} color={tint} />
               <Text className="text-2xl font-black text-emerald-950 mt-1">
                 {myBlogs.length}
               </Text>
@@ -221,7 +235,7 @@ export default function UserDashboardScreen() {
               </Text>
             </View>
             <View className="items-center flex-1">
-              <Calendar size={16} color="#d97706" />
+              <Calendar size={16} color={warning} />
               <Text className="text-2xl font-black text-emerald-950 mt-1">
                 {inspections.length}
               </Text>
@@ -232,18 +246,66 @@ export default function UserDashboardScreen() {
           </View>
         </View>
 
-        <View className="flex-row">
+        <View className="flex-row mb-6">
           <TouchableOpacity
-            onPress={() => router.push("/(tabs)/saved" as Href)}
-            className="flex-1 bg-emerald-600 h-12 rounded-xl items-center justify-center mr-2"
+            onPress={() => navigateTo(router, ROUTES.SAVED)}
+            className="flex-1 bg-emerald-600 h-12 rounded-xl items-center justify-center mr-2 shadow-sm"
           >
             <Text className="text-white font-black">Xem trọ yêu thích</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push("/blog" as Href)}
-            className="flex-1 bg-white border border-slate-200 h-12 rounded-xl items-center justify-center ml-2"
+            onPress={() => navigateTo(router, ROUTES.COMPARE)}
+            className="flex-1 bg-white border border-slate-200 h-12 rounded-xl items-center justify-center ml-2 relative"
           >
-            <Text className="text-slate-700 font-black">Mở Blog</Text>
+            {compareList?.length > 0 && (
+              <View className="absolute -top-2 -right-2 bg-red-500 w-5 h-5 rounded-full items-center justify-center z-10">
+                <Text className="text-[10px] text-white font-bold">
+                  {compareList.length}
+                </Text>
+              </View>
+            )}
+            <Text className="text-slate-700 font-black flex-row items-center">
+              <GitCompare size={14} color={icon} /> So sánh
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Settings Section */}
+        <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
+          <Text className="text-base font-black text-emerald-950 mb-3 flex-row items-center">
+            <Settings size={18} color={tint} /> Cài đặt tài khoản
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => navigateTo(router, ROUTES.PROFILE)}
+            className="flex-row items-center py-3 border-b border-slate-100"
+          >
+            <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center mr-3">
+              <UserCircle size={20} color={info} />
+            </View>
+            <View className="flex-1">
+              <Text className="font-bold text-slate-800">
+                Thông tin cá nhân
+              </Text>
+              <Text className="text-xs text-slate-500">
+                Cập nhật tên, avatar, số điện thoại
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigateTo(router, ROUTES.PROFILE)}
+            className="flex-row items-center py-3"
+          >
+            <View className="w-10 h-10 rounded-full bg-amber-50 items-center justify-center mr-3">
+              <KeyRound size={20} color={warning} />
+            </View>
+            <View className="flex-1">
+              <Text className="font-bold text-slate-800">Đổi mật khẩu</Text>
+              <Text className="text-xs text-slate-500">
+                Bảo mật tài khoản của bạn
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
       </ScrollView>

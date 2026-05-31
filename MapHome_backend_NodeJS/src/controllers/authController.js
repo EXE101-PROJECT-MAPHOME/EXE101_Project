@@ -382,9 +382,15 @@ const googleLogin = async (req, res) => {
     let googleId, email, name, picture;
 
     if (idToken) {
+      // Accept both Web and iOS client IDs as valid audiences
+      const validAudiences = [
+        process.env.GOOGLE_CLIENT_ID, // Web client ID
+        process.env.GOOGLE_IOS_CLIENT_ID, // iOS client ID (Expo Go)
+      ].filter(Boolean);
+
       const ticket = await client.verifyIdToken({
         idToken,
-        audience: process.env.GOOGLE_CLIENT_ID,
+        audience: validAudiences,
       });
       payload = ticket.getPayload();
       googleId = payload.sub;
