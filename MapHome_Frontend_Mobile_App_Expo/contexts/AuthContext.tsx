@@ -19,6 +19,10 @@ export interface User {
   avatar?: string;
   createdAt?: string;
   favorites?: any[];
+  security?: {
+    twoFactorEnabled?: boolean;
+    loginHistory?: any[];
+  };
 }
 
 interface AuthContextType {

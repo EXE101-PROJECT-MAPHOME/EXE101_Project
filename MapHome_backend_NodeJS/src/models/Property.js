@@ -19,8 +19,7 @@ const PropertySchema = new mongoose.Schema(
       },
     },
     amenities: {
-      type: Map,
-      of: Boolean,
+      type: mongoose.Schema.Types.Mixed,
       default: {},
     },
     image: { type: String }, // Deprecated: kept for backward compatibility. Use 'images' instead.

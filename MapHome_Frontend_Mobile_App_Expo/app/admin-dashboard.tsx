@@ -431,8 +431,6 @@ export default function AdminDashboardScreen() {
           </View>
         )}
 
-        )}
-
         {view === "settings" && systemSettings && (
           <View className="space-y-6">
             <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
