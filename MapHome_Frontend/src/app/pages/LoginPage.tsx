@@ -442,9 +442,10 @@ export function LoginPage() {
                             }
                           }}
                           placeholder="Username, email hoặc số điện thoại"
-                          className={`pl-16 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${
+                          className={`h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${
                             loginErrors.identifier ? "border-red-500" : "border-slate-200"
                           }`}
+                          style={{ paddingLeft: '4rem' }}
                           autoComplete="username"
                         />
                       </div>
@@ -492,7 +493,8 @@ export function LoginPage() {
                             }
                           }}
                           placeholder="••••••••"
-                          className={`pl-16 pr-12 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 rounded-2xl transition-all shadow-sm border ${loginErrors.password ? "border-red-500" : "border-slate-200"}`}
+                          className={`h-14 bg-white focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 rounded-2xl transition-all shadow-sm border ${loginErrors.password ? "border-red-500" : "border-slate-200"}`}
+                          style={{ paddingLeft: '4rem', paddingRight: '3rem' }}
                           required
                         />
                         <button
@@ -759,7 +761,8 @@ export function LoginPage() {
                               });
                             }}
                             placeholder="••••••••"
-                            className={`h-13 pr-12 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.password ? "border-red-500" : "border-slate-200"}`}
+                            className={`h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.password ? "border-red-500" : "border-slate-200"}`}
+                            style={{ paddingRight: '3rem' }}
                             required
                           />
                           <button
@@ -871,7 +874,8 @@ export function LoginPage() {
                             });
                           }}
                           placeholder="••••••••"
-                          className={`h-13 pr-12 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.confirmPassword ? "border-red-500" : "border-slate-200"}`}
+                          className={`h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.confirmPassword ? "border-red-500" : "border-slate-200"}`}
+                          style={{ paddingRight: '3rem' }}
                           required
                         />
                         <button

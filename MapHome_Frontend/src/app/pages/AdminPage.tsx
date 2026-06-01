@@ -56,6 +56,8 @@ import {
   DollarSign,
   Zap,
   Save,
+  Menu,
+  X as XIcon,
 } from "lucide-react";
 import { RevenueView } from "./RevenueView";
 import { SettingsView } from "./SettingsView";
@@ -90,6 +92,7 @@ export function AdminPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, logout, isAuthenticated } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState<AdminView>(
     (searchParams.get("view") as AdminView) || "dashboard",
   );
@@ -524,8 +527,38 @@ export function AdminPage() {
       {/* Background Aura Effects */}
       <div className="fixed inset-0 z-0 bg-gradient-to-tr from-[#f0f9f5] via-white to-[#f0f2f9]" />
 
-      {/* Sidebar Navigation */}
-      <aside className="w-80 bg-white/70 backdrop-blur-3xl border-r border-white/40 flex-shrink-0 sticky top-0 h-screen overflow-hidden flex flex-col z-20 shadow-[4px_0_30px_rgba(0,0,0,0.02)]">
+      {/* Mobile Header - Only visible on small screens */}
+      <div className="fixed top-0 left-0 right-0 h-16 md:hidden bg-white border-b border-slate-100 flex items-center px-4 z-40">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          {sidebarOpen ? (
+            <XIcon className="size-6 text-slate-900" />
+          ) : (
+            <Menu className="size-6 text-slate-900" />
+          )}
+        </button>
+        <div className="ml-4 flex items-center gap-2">
+          <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-lg">
+            <Home className="size-4 text-white" />
+          </div>
+          <h1 className="font-black text-lg text-slate-900">MapHome</h1>
+        </div>
+      </div>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Navigation - Responsive */}
+      <aside className={`fixed md:static w-80 h-screen bg-white/70 backdrop-blur-3xl border-r border-white/40 flex-shrink-0 sticky top-0 overflow-hidden flex flex-col z-40 shadow-[4px_0_30px_rgba(0,0,0,0.02)] transition-transform duration-300 ${
+        sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      }`}>
         {/* Logo Section */}
         <div className="p-10">
           <div
@@ -633,7 +666,10 @@ export function AdminPage() {
                       key={item.id}
                       whileHover={{ scale: 1.02, x: 5 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => setActiveView(item.id as any)}
+                      onClick={() => {
+                        setActiveView(item.id as any);
+                        setSidebarOpen(false);
+                      }}
                       className={`w-full flex items-center gap-4 px-5 py-4 rounded-[22px] text-sm font-black tracking-tight transition-all relative group ${
                         isActive
                           ? "bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white shadow-[0_15px_35px_rgba(59,130,246,0.2)]"
@@ -698,7 +734,10 @@ export function AdminPage() {
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="ghost"
-                onClick={() => navigate("/")}
+                onClick={() => {
+                  navigate("/");
+                  setSidebarOpen(false);
+                }}
                 className="rounded-xl h-10 bg-slate-50 hover:bg-white text-slate-500 hover:text-indigo-600 font-black text-[10px] p-0"
               >
                 <Home className="size-3.5 mr-1.5" /> Trang chủ
@@ -716,15 +755,15 @@ export function AdminPage() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative z-10 flex flex-col h-screen">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative z-10 flex flex-col h-screen md:mt-0 mt-16">
         <div className="flex-1 w-full flex flex-col">
           {/* Luminous 3.0: Premium Sticky Header */}
-          <header className="px-10 py-5 flex items-center justify-between sticky top-0 z-40 bg-white/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.03)] border-b border-white mb-6">
+          <header className="px-3 sm:px-6 md:px-10 py-3 sm:py-5 flex items-center justify-between sticky top-0 z-40 bg-white/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.03)] border-b border-white mb-4 sm:mb-6">
             <div className="flex flex-col">
               <h2 className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-1">
                 Hệ thống quản trị
               </h2>
-              <div className="text-4xl font-black bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 bg-clip-text text-transparent tracking-tighter leading-tight">
+              <div className="text-xl sm:text-2xl md:text-4xl font-black bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 bg-clip-text text-transparent tracking-tighter leading-tight line-clamp-2">
                 {activeView === "dashboard" && "Dashboard Tổng Quan"}
                 {activeView === "posts" && "Quản lý Tin đăng"}
                 {activeView === "users" && "Quản lý Người dùng"}
@@ -745,7 +784,7 @@ export function AdminPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 bg-white/60 backdrop-blur-xl border border-white/40 p-2 rounded-[28px] shadow-2xl shadow-slate-200/50">
+            <div className="hidden md:flex items-center gap-4 bg-white/60 backdrop-blur-xl border border-white/40 p-2 rounded-[28px] shadow-2xl shadow-slate-200/50">
               <motion.button
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -832,7 +871,7 @@ export function AdminPage() {
             </div>
           </header>
 
-          <div className="p-8">
+          <div className="p-3 sm:p-6 md:p-8">
             {loading ? (
               <div className="flex items-center justify-center min-h-[500px]">
                 <div className="relative">
@@ -1061,7 +1100,7 @@ const DashboardView = forwardRef(function DashboardView(
       className="space-y-10"
     >
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <KPICard
           icon="🏘️"
           iconBg="#f0fdf4"
@@ -2124,7 +2163,7 @@ function UsersView({
       className="space-y-8"
     >
       {/* Stat Mini Cards */}
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <KPICard
           icon="👥"
           iconBg="#eff6ff"
@@ -2402,7 +2441,7 @@ function VerificationView({
       className="space-y-10"
     >
       {/* Premium Stats Grid */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
         <KPICard
           icon="⏳"
           iconBg="#fffbeb"
@@ -4405,7 +4444,7 @@ const PlanEditorDialog = ({
               <Button
                 onClick={() => onSave(formData)}
                 disabled={isSaving}
-                className="h-12 px-10 rounded-[22px] bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white font-black text-xs uppercase tracking-widest border-none shadow-xl shadow-blue-200/50 hover:scale-105 transition-all text-white"
+                className="h-12 px-10 rounded-[22px] bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white font-black text-xs uppercase tracking-widest border-none shadow-xl shadow-blue-200/50 hover:scale-105 transition-all"
               >
                 {isSaving
                   ? "Đang lưu..."
