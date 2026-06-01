@@ -41,7 +41,7 @@ import {
 import { useThemeColor } from "@/hooks/use-theme-color";
 import api from "@/utils/api";
 import { useCompare } from "@/contexts/CompareContext";
-import { RoomMapPreview } from "@/components/RoomMapPreview";
+import { RoomMapPreview } from "../../components/RoomMapPreview";
 import ROUTES, { navigateTo } from "@/constants/routes";
 
 const { width } = Dimensions.get("window");
@@ -512,7 +512,7 @@ export default function RoomDetailScreen() {
                         {amenity === "ac" && "Điều hòa"}
                         {amenity === "water" && "Nước nóng"}
                         {amenity === "tv" && "Tivi cáp"}
-                        {amenity === "furniture" && "Full nội thất"}
+                        {amenity === "furniture" && "Đầy đủ nội thất"}
                         {amenity === "washingMachine" && "Máy giặt"}
                         {amenity === "kitchen" && "Khu bếp riêng"}
                         {amenity === "refrigerator" && "Tủ lạnh"}

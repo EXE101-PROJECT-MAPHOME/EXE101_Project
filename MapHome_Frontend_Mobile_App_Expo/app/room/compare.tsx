@@ -181,7 +181,7 @@ export default function CompareScreen() {
             </View>
             <View className="py-3 border-b border-slate-100 h-12 justify-center">
               <Text className="font-semibold text-slate-600 text-sm">
-                Nội thất
+                Đầy đủ nội thất
               </Text>
             </View>
             <View className="py-3 border-b border-slate-100 h-12 justify-center">
