@@ -32,7 +32,7 @@ export default function SavedScreen() {
     return (
       <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
         <View className="px-4 py-4 bg-white border-b border-slate-100">
-          <Text className="text-2xl font-black text-emerald-950">
+          <Text className="text-2xl font-black text-emerald-700">
             Phòng đã lưu
           </Text>
         </View>
@@ -41,7 +41,7 @@ export default function SavedScreen() {
           <View className="w-24 h-24 bg-emerald-50 rounded-full mb-6 items-center justify-center border border-emerald-100 shadow-sm">
             <User size={40} color="#059669" />
           </View>
-          <Text className="text-2xl font-black text-emerald-950 text-center mb-2">
+          <Text className="text-2xl font-black text-emerald-700 text-center mb-2">
             Đăng nhập để xem
           </Text>
           <Text className="text-slate-500 text-center text-sm font-semibold max-w-xs mb-8">
@@ -82,7 +82,7 @@ export default function SavedScreen() {
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
       {/* Header */}
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center justify-between">
-        <Text className="text-2xl font-black text-emerald-950">
+        <Text className="text-2xl font-black text-emerald-700">
           Phòng đã lưu
         </Text>
         <View className="bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
@@ -97,7 +97,7 @@ export default function SavedScreen() {
           <View className="w-20 h-20 bg-emerald-50 rounded-full items-center justify-center mb-4 border border-emerald-100">
             <Heart size={36} color="#059669" opacity={0.6} />
           </View>
-          <Text className="text-xl font-bold text-emerald-950 mb-2">
+          <Text className="text-xl font-bold text-emerald-700 mb-2">
             Chưa lưu phòng nào
           </Text>
           <Text className="text-slate-500 text-center mb-8 max-w-xs font-medium">

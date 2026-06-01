@@ -79,7 +79,7 @@ export default function PolicyScreen() {
         >
           <ArrowLeft size={18} color="#0f172a" />
         </TouchableOpacity>
-        <Text className="text-2xl font-black text-emerald-950">
+        <Text className="text-2xl font-black text-emerald-700">
           Trợ giúp & Chính sách
         </Text>
       </View>
@@ -107,7 +107,7 @@ export default function PolicyScreen() {
           <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
             <View className="flex-row items-center mb-3">
               <ShieldCheck size={18} color="#059669" />
-              <Text className="text-base font-black text-emerald-950 ml-2">
+              <Text className="text-base font-black text-emerald-700 ml-2">
                 FAQ nhanh
               </Text>
             </View>
@@ -142,7 +142,7 @@ export default function PolicyScreen() {
           <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
             <View className="flex-row items-center mb-3">
               <FileText size={18} color="#0f766e" />
-              <Text className="text-base font-black text-emerald-950 ml-2">
+              <Text className="text-base font-black text-emerald-700 ml-2">
                 Điều khoản dịch vụ
               </Text>
             </View>
@@ -152,7 +152,7 @@ export default function PolicyScreen() {
           <View className="bg-white rounded-3xl p-5 border border-slate-100">
             <View className="flex-row items-center mb-3">
               <FileText size={18} color="#2563eb" />
-              <Text className="text-base font-black text-emerald-950 ml-2">
+              <Text className="text-base font-black text-emerald-700 ml-2">
                 Chính sách bảo mật
               </Text>
             </View>

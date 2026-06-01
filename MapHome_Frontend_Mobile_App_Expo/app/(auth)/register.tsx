@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   StatusBar,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import ROUTES, { navigateTo } from "@/constants/routes";
@@ -24,6 +25,7 @@ import {
   Home,
   UserCheck,
   Building2,
+  ChevronDown,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useAuth } from "../../contexts/AuthContext";
@@ -60,6 +62,7 @@ export default function RegisterScreen() {
   const [role, setRole] = useState<Role>("user");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -343,64 +346,115 @@ export default function RegisterScreen() {
               >
                 Bạn là
               </Text>
-              <View style={{ flexDirection: "row", gap: 10 }}>
+              <View style={{ position: "relative" }}>
                 <TouchableOpacity
-                  onPress={() => setRole("user")}
+                  onPress={() => setShowRoleDropdown(true)}
                   activeOpacity={0.8}
                   style={{
-                    flex: 1,
                     flexDirection: "row",
                     alignItems: "center",
-                    justifyContent: "center",
-                    padding: 12,
+                    justifyContent: "space-between",
+                    padding: 14,
                     borderRadius: 14,
-                    borderWidth: 2,
-                    borderColor: role === "user" ? tint : "#e2e8f0",
-                    backgroundColor: role === "user" ? tint : background,
+                    borderWidth: 1.5,
+                    borderColor: "#e2e8f0",
+                    backgroundColor: background,
                   }}
                 >
-                  <UserCheck size={18} color={role === "user" ? tint : icon} />
-                  <Text
-                    style={{
-                      marginLeft: 8,
-                      fontWeight: "700",
-                      fontSize: 14,
-                      color: role === "user" ? tint : icon,
-                    }}
-                  >
-                    Người thuê
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    {role === "user" ? (
+                      <UserCheck size={18} color={tint} />
+                    ) : (
+                      <Building2 size={18} color={info} />
+                    )}
+                    <Text
+                      style={{
+                        marginLeft: 8,
+                        fontWeight: "700",
+                        fontSize: 14,
+                        color: role === "user" ? tint : info,
+                      }}
+                    >
+                      {role === "user" ? "Người thuê" : "Chủ nhà"}
+                    </Text>
+                  </View>
+                  <ChevronDown size={18} color={icon} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setRole("landlord")}
-                  activeOpacity={0.8}
-                  style={{
-                    flex: 1,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: 12,
-                    borderRadius: 14,
-                    borderWidth: 2,
-                    borderColor: role === "landlord" ? info : "#e2e8f0",
-                    backgroundColor: role === "landlord" ? info : background,
-                  }}
-                >
-                  <Building2
-                    size={18}
-                    color={role === "landlord" ? info : icon}
-                  />
-                  <Text
+
+                <Modal visible={showRoleDropdown} transparent animationType="fade">
+                  <TouchableOpacity
                     style={{
-                      marginLeft: 8,
-                      fontWeight: "700",
-                      fontSize: 14,
-                      color: role === "landlord" ? info : icon,
+                      flex: 1,
+                      backgroundColor: "rgba(0,0,0,0.3)",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      padding: 24,
                     }}
+                    onPress={() => setShowRoleDropdown(false)}
+                    activeOpacity={1}
                   >
-                    Chủ nhà
-                  </Text>
-                </TouchableOpacity>
+                    <View
+                      style={{
+                        backgroundColor: "white",
+                        width: "100%",
+                        borderRadius: 20,
+                        padding: 12,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          textAlign: "center",
+                          fontWeight: "800",
+                          fontSize: 16,
+                          paddingVertical: 12,
+                          color: textColor,
+                          marginBottom: 8,
+                        }}
+                      >
+                        Chọn vai trò của bạn
+                      </Text>
+                      <TouchableOpacity
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          padding: 16,
+                          borderRadius: 14,
+                          backgroundColor: role === "user" ? tint + "15" : "white",
+                          marginBottom: 8,
+                        }}
+                        onPress={() => {
+                          setRole("user");
+                          setShowRoleDropdown(false);
+                        }}
+                      >
+                        <UserCheck size={22} color={tint} />
+                        <View style={{ marginLeft: 12 }}>
+                          <Text style={{ fontWeight: "800", color: tint, fontSize: 15 }}>Người thuê</Text>
+                          <Text style={{ fontSize: 12, color: icon, marginTop: 2 }}>Tìm phòng trọ, căn hộ cho thuê</Text>
+                        </View>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          padding: 16,
+                          borderRadius: 14,
+                          backgroundColor: role === "landlord" ? info + "15" : "white",
+                        }}
+                        onPress={() => {
+                          setRole("landlord");
+                          setShowRoleDropdown(false);
+                        }}
+                      >
+                        <Building2 size={22} color={info} />
+                        <View style={{ marginLeft: 12 }}>
+                          <Text style={{ fontWeight: "800", color: info, fontSize: 15 }}>Chủ nhà</Text>
+                          <Text style={{ fontSize: 12, color: icon, marginTop: 2 }}>Đăng tin và quản lý phòng trọ</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
               </View>
             </View>
 

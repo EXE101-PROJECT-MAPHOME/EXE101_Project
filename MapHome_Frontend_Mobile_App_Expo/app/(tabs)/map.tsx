@@ -454,7 +454,7 @@ export default function MapScreen() {
                   <View>
                     <View className="flex-row justify-between items-start">
                       <Text
-                        className="text-sm font-black text-emerald-950 flex-1 mr-2"
+                        className="text-sm font-black text-emerald-700 flex-1 mr-2"
                         numberOfLines={1}
                       >
                         {selectedProperty.name}
@@ -546,7 +546,7 @@ export default function MapScreen() {
                 <View className="flex-1 ml-3 justify-between py-1">
                   <View>
                     <Text
-                      className="text-base font-black text-emerald-950"
+                      className="text-base font-black text-emerald-700"
                       numberOfLines={1}
                     >
                       {property.name}
@@ -613,7 +613,7 @@ export default function MapScreen() {
           <View className="bg-white rounded-t-[40px] px-6 py-6 max-h-[85%]">
             {/* Filter Header */}
             <View className="flex-row justify-between items-center pb-4 border-b border-slate-100">
-              <Text className="text-xl font-black text-emerald-950">
+              <Text className="text-xl font-black text-emerald-700">
                 Bộ lọc tìm kiếm
               </Text>
               <TouchableOpacity
@@ -627,7 +627,7 @@ export default function MapScreen() {
             <ScrollView className="mt-4" showsVerticalScrollIndicator={false}>
               {/* Price Filter Section */}
               <View className="mb-6">
-                <Text className="text-sm font-black text-emerald-950 mb-3">
+                <Text className="text-sm font-black text-emerald-700 mb-3">
                   Khoảng giá thuê
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
@@ -654,7 +654,7 @@ export default function MapScreen() {
 
               {/* Area Filter Section */}
               <View className="mb-6">
-                <Text className="text-sm font-black text-emerald-950 mb-3">
+                <Text className="text-sm font-black text-emerald-700 mb-3">
                   Diện tích phòng
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
@@ -682,7 +682,7 @@ export default function MapScreen() {
               {/* Verification Toggle */}
               <View className="mb-6 flex-row justify-between items-center bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
                 <View className="flex-1 mr-4">
-                  <Text className="text-sm font-black text-emerald-900">
+                  <Text className="text-sm font-black text-emerald-700">
                     Chỉ hiển thị tin đã xác thực
                   </Text>
                   <Text className="text-[10px] text-emerald-700 font-medium mt-0.5">
@@ -699,7 +699,7 @@ export default function MapScreen() {
 
               {/* Amenities checklist */}
               <View className="mb-6">
-                <Text className="text-sm font-black text-emerald-950 mb-3">
+                <Text className="text-sm font-black text-emerald-700 mb-3">
                   Tiện nghi có sẵn
                 </Text>
                 <View className="flex-row flex-wrap gap-2">

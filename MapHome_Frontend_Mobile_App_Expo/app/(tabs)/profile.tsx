@@ -231,7 +231,7 @@ export default function ProfileScreen() {
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
       {/* Real app header without demo modes */}
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center justify-between">
-        <Text className="text-2xl font-black text-emerald-950">Tài khoản</Text>
+        <Text className="text-2xl font-black text-emerald-700">Tài khoản</Text>
         {isAuthenticated && user && (
           <View className="bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
             <Text className="text-emerald-700 font-bold text-xs">
@@ -252,7 +252,7 @@ export default function ProfileScreen() {
             <View className="w-24 h-24 bg-emerald-50 rounded-full mb-6 items-center justify-center border border-emerald-100 shadow-sm">
               <UserIcon size={40} color="#059669" />
             </View>
-            <Text className="text-2xl font-black text-emerald-950 text-center mb-2">
+            <Text className="text-2xl font-black text-emerald-700 text-center mb-2">
               Quản lý không gian sống
             </Text>
             <Text className="text-slate-500 text-center text-sm font-semibold max-w-xs mb-8">
@@ -294,7 +294,7 @@ export default function ProfileScreen() {
                   className="w-16 h-16 rounded-2xl mr-4"
                 />
                 <View className="flex-1">
-                  <Text className="text-lg font-black text-emerald-950">
+                  <Text className="text-lg font-black text-emerald-700">
                     {user.fullName || user.username}
                   </Text>
                   <Text className="text-xs text-slate-400 font-bold uppercase tracking-wider">
@@ -376,7 +376,7 @@ export default function ProfileScreen() {
                     >
                       <stat.icon size={16} color="white" />
                     </View>
-                    <Text className="text-base font-black text-emerald-950">
+                    <Text className="text-base font-black text-emerald-700">
                       {stat.value}
                     </Text>
                     <Text className="text-[9px] text-slate-400 font-bold text-center mt-1 leading-tight">
@@ -388,7 +388,7 @@ export default function ProfileScreen() {
 
               {/* Bookings Info */}
               <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <Text className="text-base font-black text-emerald-950 mb-3">
+                <Text className="text-base font-black text-emerald-700 mb-3">
                   Lịch hẹn xem phòng
                 </Text>
 
@@ -413,7 +413,7 @@ export default function ProfileScreen() {
                       >
                         <View className="flex-row justify-between items-start mb-1">
                           <Text
-                            className="text-sm font-bold text-emerald-950 flex-1 mr-2"
+                            className="text-sm font-bold text-emerald-700 flex-1 mr-2"
                             numberOfLines={1}
                           >
                             {booking.propertyId?.name || "Phòng trọ"}
@@ -484,7 +484,7 @@ export default function ProfileScreen() {
                         <item.icon size={18} color="#059669" />
                       </View>
                       <View className="flex-1">
-                        <Text className="text-sm font-black text-emerald-950">
+                        <Text className="text-sm font-black text-emerald-700">
                           {item.title}
                         </Text>
                         <Text className="text-xs text-slate-400 font-medium">
@@ -525,7 +525,7 @@ export default function ProfileScreen() {
               />
               <View className="flex-1">
                 <View className="flex-row items-center">
-                  <Text className="text-lg font-black text-emerald-950">
+                  <Text className="text-lg font-black text-emerald-700">
                     {user.fullName || user.username}
                   </Text>
                   <View className="ml-2 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
@@ -609,7 +609,7 @@ export default function ProfileScreen() {
                   >
                     <stat.icon size={16} color="white" />
                   </View>
-                  <Text className="text-base font-black text-emerald-950">
+                  <Text className="text-base font-black text-emerald-700">
                     {stat.value}
                   </Text>
                   <Text className="text-[9px] text-slate-400 font-bold text-center mt-1 leading-tight">
@@ -621,7 +621,7 @@ export default function ProfileScreen() {
 
             {/* Landlord Bookings (Lịch hẹn của khách) */}
             <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-              <Text className="text-base font-black text-emerald-950 mb-3">
+              <Text className="text-base font-black text-emerald-700 mb-3">
                 Lịch hẹn của khách
               </Text>
 
@@ -646,7 +646,7 @@ export default function ProfileScreen() {
                     >
                       <View className="flex-row justify-between items-start mb-1">
                         <View className="flex-1 mr-2">
-                          <Text className="text-sm font-bold text-emerald-950">
+                          <Text className="text-sm font-bold text-emerald-700">
                             Khách:{" "}
                             {booking.customerName ||
                               booking.userId?.fullName ||
@@ -736,19 +736,19 @@ export default function ProfileScreen() {
                   title: "Quản lý danh sách trọ",
                   desc: `Đang có ${landlordProperties.length} tin đăng phòng trọ`,
                   icon: Building2,
-                  path: ROUTES.LANDLORD_DASHBOARD,
+                  path: ROUTES.LANDLORD_PROPERTIES(),
                 },
                 {
                   title: "Yêu cầu xác thực phòng",
                   desc: "Quản lý huy hiệu xanh Trust is King",
                   icon: ShieldCheck,
-                  path: ROUTES.POLICY,
+                  path: ROUTES.LANDLORD_VERIFICATION,
                 },
                 {
-                  title: "Cài đặt hệ thống",
-                  desc: "Bảo mật, phân quyền tài khoản",
+                  title: "Cài đặt tài khoản",
+                  desc: "Bảo mật, thông tin cá nhân",
                   icon: Settings,
-                  path: ROUTES.POLICY,
+                  path: ROUTES.LANDLORD_SETTINGS,
                 },
               ].map((item, i) => (
                 <TouchableOpacity
@@ -761,7 +761,7 @@ export default function ProfileScreen() {
                       <item.icon size={18} color="#059669" />
                     </View>
                     <View className="flex-1">
-                      <Text className="text-sm font-black text-emerald-950">
+                      <Text className="text-sm font-black text-emerald-700">
                         {item.title}
                       </Text>
                       <Text className="text-xs text-slate-400 font-medium">

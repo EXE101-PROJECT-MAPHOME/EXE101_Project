@@ -79,7 +79,7 @@ export default function ContactScreen() {
           >
             <ArrowLeft size={18} color={icon} />
           </TouchableOpacity>
-          <Text className="text-2xl font-black text-emerald-950">Liên hệ</Text>
+          <Text className="text-2xl font-black text-emerald-700">Liên hệ</Text>
         </View>
 
         <View className="mx-4 mt-4 rounded-3xl bg-gradient-to-r from-emerald-600 to-blue-600 p-5">
@@ -92,7 +92,7 @@ export default function ContactScreen() {
         </View>
 
         <View className="mx-4 mt-4 bg-white rounded-3xl p-5 border border-slate-100">
-          <Text className="text-base font-black text-emerald-950 mb-4">
+          <Text className="text-base font-black text-emerald-700 mb-4">
             Thông tin liên hệ
           </Text>
 
@@ -161,7 +161,7 @@ export default function ContactScreen() {
         </View>
 
         <View className="mx-4 mt-4 bg-white rounded-3xl p-5 border border-slate-100">
-          <Text className="text-base font-black text-emerald-950 mb-4">
+          <Text className="text-base font-black text-emerald-700 mb-4">
             Gửi tin nhắn
           </Text>
 

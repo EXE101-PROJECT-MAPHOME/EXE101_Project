@@ -27,7 +27,7 @@ export default function AdminVoucherAddScreen() {
   if (!isAuthenticated || user?.role !== 'admin') {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center p-6">
-        <Text className="text-emerald-950 font-black text-xl text-center mb-3">Truy cập bị từ chối</Text>
+        <Text className="text-emerald-700 font-black text-xl text-center mb-3">Truy cập bị từ chối</Text>
       </SafeAreaView>
     );
   }

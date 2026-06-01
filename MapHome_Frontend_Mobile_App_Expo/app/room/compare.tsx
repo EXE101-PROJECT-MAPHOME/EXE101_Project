@@ -111,7 +111,7 @@ export default function CompareScreen() {
             <ArrowLeft size={18} color={icon} />
           </TouchableOpacity>
           <View className="flex-1">
-            <Text className="text-xl font-black text-emerald-950">
+            <Text className="text-xl font-black text-emerald-700">
               So sánh phòng trọ
             </Text>
             <Text className="text-xs text-slate-500 font-bold">
@@ -228,7 +228,7 @@ export default function CompareScreen() {
                   </TouchableOpacity>
                 </View>
                 <Text
-                  className="font-bold text-emerald-950 text-sm mb-1 leading-tight"
+                  className="font-bold text-emerald-700 text-sm mb-1 leading-tight"
                   numberOfLines={2}
                 >
                   {property.name}

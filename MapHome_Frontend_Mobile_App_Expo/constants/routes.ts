@@ -32,7 +32,7 @@ export const ROUTES = {
   // Landlord specific
   LANDLORD_PROPERTIES: (tab?: string) => `/landlord-dashboard?tab=posts`,
   LANDLORD_VERIFICATION: "/verification-service",
-  LANDLORD_SETTINGS: "/(tabs)/profile",
+  LANDLORD_SETTINGS: "/settings",
 
   // Misc / demos
   EXPIRY_WARNING: "/expiry-warning-demo",

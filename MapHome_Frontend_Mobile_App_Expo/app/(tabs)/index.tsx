@@ -7,6 +7,11 @@ import {
   Image,
   ActivityIndicator,
 } from "react-native";
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  ZoomIn,
+} from "react-native-reanimated";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { PropertyCard } from "@/components/PropertyCard";
 import {
@@ -73,7 +78,8 @@ export default function HomePage() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View
+      <Animated.View
+        entering={FadeInDown.delay(100).springify()}
         style={{ paddingTop: insets.top > 0 ? insets.top + 8 : 16 }}
         className="flex-row justify-between items-center px-4 pb-4 bg-white border-b border-slate-100"
       >
@@ -81,7 +87,7 @@ export default function HomePage() {
           <View className="w-10 h-10 bg-emerald-600 rounded-xl items-center justify-center mr-2">
             <Home size={24} color="white" />
           </View>
-          <Text className="text-xl font-black text-emerald-950 tracking-tighter">
+          <Text className="text-xl font-black text-emerald-700 tracking-tighter">
             MapHome
           </Text>
         </View>
@@ -92,12 +98,12 @@ export default function HomePage() {
           <Bell size={20} color="#064e3b" />
           <View className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white" />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       <HeroCarousel />
 
       {/* Stats Section */}
-      <View className="py-10 px-4 bg-emerald-600">
+      <Animated.View entering={FadeInRight.delay(200).springify()} className="py-10 px-4 bg-emerald-600">
         <View className="flex-row flex-wrap justify-between">
           {[
             {
@@ -134,12 +140,12 @@ export default function HomePage() {
             </View>
           ))}
         </View>
-      </View>
+      </Animated.View>
 
       {/* Features Section */}
       <View className="py-12 px-4">
         <View className="items-center mb-10">
-          <Text className="text-3xl font-black text-emerald-900 text-center mb-2">
+          <Text className="text-3xl font-black text-emerald-700 text-center mb-2">
             Tại Sao Chọn MapHome?
           </Text>
           <Text className="text-slate-600 text-center px-4">
@@ -168,8 +174,9 @@ export default function HomePage() {
             color: "bg-purple-500",
           },
         ].map((f, i) => (
-          <View
+          <Animated.View
             key={i}
+            entering={FadeInDown.delay(300 + i * 100).springify()}
             className="bg-white rounded-3xl p-6 mb-6 shadow-sm border border-slate-100 items-center"
           >
             <View
@@ -177,11 +184,11 @@ export default function HomePage() {
             >
               <f.icon size={32} color="white" />
             </View>
-            <Text className="font-black text-xl text-emerald-950 mb-2">
+            <Text className="font-black text-xl text-emerald-700 mb-2">
               {f.title}
             </Text>
             <Text className="text-slate-600 text-center">{f.desc}</Text>
-          </View>
+          </Animated.View>
         ))}
       </View>
 
@@ -191,7 +198,7 @@ export default function HomePage() {
           <Text className="text-green-600 font-black text-xs uppercase tracking-widest mb-2">
             Hành trình trải nghiệm
           </Text>
-          <Text className="text-3xl font-black text-emerald-900 text-center mb-2">
+          <Text className="text-3xl font-black text-emerald-700 text-center mb-2">
             Tìm trọ chỉ với 4 bước
           </Text>
         </View>
@@ -226,8 +233,9 @@ export default function HomePage() {
             color: "bg-orange-600",
           },
         ].map((s, i) => (
-          <View
+          <Animated.View
             key={i}
+            entering={FadeInRight.delay(400 + i * 100).springify()}
             className="flex-row items-center mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100"
           >
             <View
@@ -241,12 +249,12 @@ export default function HomePage() {
               </View>
             </View>
             <View className="flex-1">
-              <Text className="font-bold text-lg text-emerald-950 mb-1">
+              <Text className="font-bold text-lg text-emerald-700 mb-1">
                 {s.title}
               </Text>
               <Text className="text-slate-500 text-sm">{s.desc}</Text>
             </View>
-          </View>
+          </Animated.View>
         ))}
       </View>
 
@@ -255,14 +263,14 @@ export default function HomePage() {
         <View className="items-center mb-8">
           <View className="flex-row items-center bg-emerald-50 px-4 py-2 rounded-full mb-4 border border-emerald-100">
             <View className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-            <Text className="text-[10px] font-black text-emerald-900 uppercase tracking-widest">
+            <Text className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
               Hệ thống đã xác thực
             </Text>
           </View>
-          <Text className="text-3xl font-black text-emerald-900 mb-2">
+          <Text className="text-3xl font-black text-emerald-700 mb-2">
             Nhà Trọ Uy Tín
           </Text>
-          <Text className="text-emerald-950/60 text-center px-4">
+          <Text className="text-emerald-700/60 text-center px-4">
             Các tin đăng được xác thực trực tiếp tại chỗ qua hệ thống Trust is
             King
           </Text>
@@ -310,7 +318,7 @@ export default function HomePage() {
           <Text className="text-emerald-600 font-black text-xs uppercase tracking-widest mb-2">
             Thành phố Hồ Chí Minh
           </Text>
-          <Text className="text-3xl font-black text-emerald-900 mb-2">
+          <Text className="text-3xl font-black text-emerald-700 mb-2">
             Khám Phá Theo Quận
           </Text>
         </View>
@@ -342,25 +350,30 @@ export default function HomePage() {
                 "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&q=80",
             },
           ].map((d, i) => (
-            <TouchableOpacity
+            <Animated.View
               key={i}
-              onPress={() => navigateTo(router, ROUTES.MAP)}
-              className="w-[48%] mb-4 rounded-3xl overflow-hidden relative h-40"
+              entering={ZoomIn.delay(500 + i * 100).springify()}
+              className="w-[48%] mb-4"
             >
-              <Image
-                source={{ uri: d.image }}
-                className="w-full h-full absolute"
-              />
-              <View className="absolute inset-0 bg-black/40" />
-              <View className="absolute bottom-4 left-4">
-                <Text className="text-white font-black text-xl mb-1">
-                  {d.name}
-                </Text>
-                <Text className="text-emerald-50/80 text-[10px] font-bold uppercase">
-                  {d.count} phòng trọ
-                </Text>
-              </View>
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigateTo(router, ROUTES.MAP)}
+                className="rounded-3xl overflow-hidden relative h-40 w-full"
+              >
+                <Image
+                  source={{ uri: d.image }}
+                  className="w-full h-full absolute"
+                />
+                <View className="absolute inset-0 bg-black/40" />
+                <View className="absolute bottom-4 left-4">
+                  <Text className="text-white font-black text-xl mb-1">
+                    {d.name}
+                  </Text>
+                  <Text className="text-emerald-50/80 text-[10px] font-bold uppercase">
+                    {d.count} phòng trọ
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </View>
       </View>
