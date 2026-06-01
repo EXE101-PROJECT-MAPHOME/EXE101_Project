@@ -12,6 +12,8 @@ import {
   Mail,
   User,
   LogOut,
+  Menu,
+  X as XIcon,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +25,7 @@ export function Navbar() {
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -50,232 +53,258 @@ export function Navbar() {
     }
   };
 
+  const navItems = [
+    { path: "/", label: "Trang chủ", icon: Home },
+    { path: "/map", label: "Tìm trọ", icon: MapPin },
+    { path: "/blog", label: "Blog", icon: MessageCircle },
+    { path: "/policy", label: "Chính sách", icon: FileText },
+    { path: "/contact", label: "Liên hệ", icon: Mail },
+  ];
+
   return (
-    <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? "bg-white/80 backdrop-blur-lg shadow-lg py-2"
-          : "bg-white/90 backdrop-blur-md shadow-sm py-3 border-b"
+    <>
+      <motion.header
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? "bg-white/80 backdrop-blur-lg shadow-lg py-1.5 sm:py-2"
+            : "bg-white/90 backdrop-blur-md shadow-sm py-2 sm:py-3 border-b"
         }`}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center">
-          {/* Logo */}
-          <div
-            className="flex items-center gap-2.5 cursor-pointer group"
-            onClick={() => navigate("/")}
-          >
-            <div className="w-10 h-10 rounded-xl bg-white shadow-md border border-gray-100/50 flex items-center justify-center overflow-hidden shrink-0 group-hover:shadow-lg transition-all duration-300 group-hover:-translate-y-0.5">
-              <img
-                src="/images/MapHome_logo_2.png"
-                alt="MapHome Logo"
-                className="w-[120%] h-[120%] object-cover"
-              />
-            </div>
-            <h1 className="text-2xl font-black bg-gradient-to-br from-emerald-950 via-green-800 to-emerald-600 bg-clip-text text-transparent tracking-tighter group-hover:opacity-80 transition-opacity">
-              MapHome
-            </h1>
-          </div>
-
-          {/* Navigation Buttons */}
-          <nav className="hidden md:flex items-center gap-1">
-            <Button
-              variant={isActive("/") ? "default" : "ghost"}
-              size="sm"
+      >
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center gap-2 sm:gap-4">
+            {/* Logo */}
+            <div
+              className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer group flex-shrink-0"
               onClick={() => navigate("/")}
-              className={isActive("/") ? "bg-green-600 hover:bg-green-700" : ""}
             >
-              <Home className="size-4 mr-1.5" />
-              Trang chủ
-            </Button>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white shadow-md border border-gray-100/50 flex items-center justify-center overflow-hidden shrink-0 group-hover:shadow-lg transition-all duration-300 group-hover:-translate-y-0.5">
+                <img
+                  src="/images/MapHome_logo_2.png"
+                  alt="MapHome Logo"
+                  className="w-[120%] h-[120%] object-cover"
+                />
+              </div>
+              <h1 className="text-lg sm:text-2xl font-black bg-gradient-to-br from-emerald-950 via-green-800 to-emerald-600 bg-clip-text text-transparent tracking-tighter group-hover:opacity-80 transition-opacity hidden sm:block">
+                MapHome
+              </h1>
+            </div>
 
-            <Button
-              variant={isActive("/map") ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate("/map")}
-              className={
-                isActive("/map") ? "bg-green-600 hover:bg-green-700" : ""
-              }
-            >
-              <MapPin className="size-4 mr-1.5" />
-              Tìm trọ
-            </Button>
-
-            <Button
-              variant={isActive("/blog") ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate("/blog")}
-              className={
-                isActive("/blog") ? "bg-green-600 hover:bg-green-700" : ""
-              }
-            >
-              <MessageCircle className="size-4 mr-1.5" />
-              Blog
-            </Button>
-
-            <Button
-              variant={isActive("/policy") ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate("/policy")}
-              className={
-                isActive("/policy") ? "bg-green-600 hover:bg-green-700" : ""
-              }
-            >
-              <FileText className="size-4 mr-1.5" />
-              Chính sách
-            </Button>
-
-            <Button
-              variant={isActive("/contact") ? "default" : "ghost"}
-              size="sm"
-              onClick={() => navigate("/contact")}
-              className={
-                isActive("/contact") ? "bg-green-600 hover:bg-green-700" : ""
-              }
-            >
-              <Mail className="size-4 mr-1.5" />
-              Liên hệ
-            </Button>
-          </nav>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            {!isAuthenticated ? (
-              <>
-                <motion.button
-                  whileHover={{
-                    scale: 1.05,
-                    boxShadow: "0 15px 30px -10px rgba(16, 185, 129, 0.4)",
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  onClick={() => navigate("/login")}
-                  className="relative group overflow-hidden px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-2xl text-sm font-black shadow-lg will-change-transform flex items-center gap-2"
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-0.5 lg:gap-1">
+              {navItems.map(({ path, label, icon: Icon }) => (
+                <Button
+                  key={path}
+                  variant={isActive(path) ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => navigate(path)}
+                  className={isActive(path) ? "bg-green-600 hover:bg-green-700" : ""}
                 >
-                  <div className="absolute inset-0 w-1/4 h-full bg-white/20 -skew-x-[30deg] -translate-x-[150%] group-hover:translate-x-[400%] transition-transform duration-700 ease-in-out will-change-transform" />
-                  <User className="size-4 shrink-0" />
-                  <span className="hidden sm:inline">Đăng nhập</span>
-                </motion.button>
-              </>
-            ) : (
-              <>
-                <div className="hidden sm:flex items-center gap-3">
-                  <NotificationCenter />
-                  <div
-                    className="w-12 h-12 rounded-full border-2 border-white shadow-md overflow-hidden bg-gradient-to-br from-[#16a34a] to-[#0ea5e9] flex items-center justify-center text-white text-sm font-bold shrink-0 cursor-pointer hover:scale-110 active:scale-95 transition-all"
-                    onClick={handleUserAction}
-                  >
-                    {user?.avatar ? (
-                      <img
-                        src={getAvatarUrl(user.avatar) || ""}
-                        alt="Avatar"
-                        className="w-full h-full object-cover rendering-pixelated"
-                        style={{ imageRendering: "-webkit-optimize-contrast" }}
-                      />
-                    ) : (
-                      getInitials(user?.fullName, user?.username)
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-600">
-                    <strong className="text-sm text-gray-900 block leading-tight">
-                      {user?.fullName || user?.username}
-                    </strong>
-                  </span>
-                  <div onClick={handleUserAction} className="cursor-pointer">
-                    <RoleBadge
-                      role={(user?.role as any) || "user"}
-                      showIcon={true}
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      logout();
-                      navigate("/");
+                  <Icon className="size-3.5 lg:size-4 mr-1" />
+                  <span className="hidden lg:inline">{label}</span>
+                </Button>
+              ))}
+            </nav>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+              {!isAuthenticated ? (
+                <>
+                  <motion.button
+                    whileHover={{
+                      scale: 1.05,
+                      boxShadow: "0 15px 30px -10px rgba(16, 185, 129, 0.4)",
                     }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    onClick={() => navigate("/login")}
+                    className="relative group overflow-hidden px-3 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black shadow-lg will-change-transform flex items-center gap-1 sm:gap-2 whitespace-nowrap"
                   >
-                    <LogOut className="size-4" />
-                  </Button>
-                </div>
-                {/* Mobile - Show user button */}
-                <div className="flex items-center gap-2 sm:hidden">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleUserAction}
+                    <div className="absolute inset-0 w-1/4 h-full bg-white/20 -skew-x-[30deg] -translate-x-[150%] group-hover:translate-x-[400%] transition-transform duration-700 ease-in-out will-change-transform" />
+                    <User className="size-3.5 sm:size-4 shrink-0" />
+                    <span className="hidden sm:inline">Đăng nhập</span>
+                    <span className="sm:hidden">Nhập</span>
+                  </motion.button>
+                </>
+              ) : (
+                <>
+                  {/* Desktop User Section */}
+                  <div className="hidden sm:flex items-center gap-3">
+                    <NotificationCenter />
+                    <div
+                      className="w-10 h-10 lg:w-12 lg:h-12 rounded-full border-2 border-white shadow-md overflow-hidden bg-gradient-to-br from-[#16a34a] to-[#0ea5e9] flex items-center justify-center text-white text-xs lg:text-sm font-bold shrink-0 cursor-pointer hover:scale-110 active:scale-95 transition-all"
+                      onClick={handleUserAction}
+                    >
+                      {user?.avatar ? (
+                        <img
+                          src={getAvatarUrl(user.avatar) || ""}
+                          alt="Avatar"
+                          className="w-full h-full object-cover rendering-pixelated"
+                          style={{ imageRendering: "-webkit-optimize-contrast" }}
+                        />
+                      ) : (
+                        getInitials(user?.fullName, user?.username)
+                      )}
+                    </div>
+                    <div className="hidden lg:block">
+                      <span className="text-xs text-gray-600">
+                        <strong className="text-xs lg:text-sm text-gray-900 block leading-tight line-clamp-1">
+                          {user?.fullName || user?.username}
+                        </strong>
+                      </span>
+                      <div onClick={handleUserAction} className="cursor-pointer">
+                        <RoleBadge
+                          role={(user?.role as any) || "user"}
+                          showIcon={true}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        logout();
+                        navigate("/");
+                      }}
+                    >
+                      <LogOut className="size-3.5 lg:size-4" />
+                    </Button>
+                  </div>
+
+                  {/* Mobile Menu Toggle */}
+                  <button
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <User className="size-4" />
-                  </Button>
-                </div>
-              </>
-            )}
+                    {mobileMenuOpen ? (
+                      <XIcon className="size-5 text-gray-700" />
+                    ) : (
+                      <Menu className="size-5 text-gray-700" />
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
+      </motion.header>
 
-        {/* Mobile Navigation */}
-        <nav className="flex md:hidden items-center gap-1 mt-3 overflow-x-auto pb-1">
-          <Button
-            variant={isActive("/") ? "default" : "ghost"}
-            size="sm"
-            onClick={() => navigate("/")}
-            className={isActive("/") ? "bg-green-600 hover:bg-green-700" : ""}
+      {/* Mobile Menu Dropdown */}
+      <AnimatePresence>
+        {mobileMenuOpen && isAuthenticated && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-16 left-0 right-0 bg-white/95 backdrop-blur-lg border-b border-gray-100 sm:hidden z-40 shadow-lg"
           >
-            <Home className="size-3.5 mr-1" />
-            <span className="text-xs">Trang chủ</span>
-          </Button>
+            <div className="max-w-7xl mx-auto px-3 py-3 space-y-2">
+              {/* User Info */}
+              <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+                <div className="w-10 h-10 rounded-full border-2 border-green-600 overflow-hidden bg-gradient-to-br from-[#16a34a] to-[#0ea5e9] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  {user?.avatar ? (
+                    <img
+                      src={getAvatarUrl(user.avatar) || ""}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    getInitials(user?.fullName, user?.username)
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-gray-900 truncate">
+                    {user?.fullName || user?.username}
+                  </p>
+                  <RoleBadge role={(user?.role as any) || "user"} showIcon={false} />
+                </div>
+              </div>
 
-          <Button
-            variant={isActive("/map") ? "default" : "ghost"}
-            size="sm"
-            onClick={() => navigate("/map")}
-            className={
-              isActive("/map") ? "bg-green-600 hover:bg-green-700" : ""
-            }
-          >
-            <MapPin className="size-3.5 mr-1" />
-            <span className="text-xs">Tìm trọ</span>
-          </Button>
+              {/* Navigation Items */}
+              <div className="space-y-1">
+                {navItems.map(({ path, label, icon: Icon }) => (
+                  <button
+                    key={path}
+                    onClick={() => {
+                      navigate(path);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black transition-all ${
+                      isActive(path)
+                        ? "bg-green-600 text-white shadow-lg"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    <Icon className="size-5 flex-shrink-0" />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
 
-          <Button
-            variant={isActive("/blog") ? "default" : "ghost"}
-            size="sm"
-            onClick={() => navigate("/blog")}
-            className={
-              isActive("/blog") ? "bg-green-600 hover:bg-green-700" : ""
-            }
-          >
-            <MessageCircle className="size-3.5 mr-1" />
-            <span className="text-xs">Blog</span>
-          </Button>
+              {/* User Actions */}
+              <div className="pt-3 border-t border-gray-100 space-y-2">
+                <button
+                  onClick={() => {
+                    handleUserAction();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-gray-700 hover:bg-gray-100 transition-all"
+                >
+                  <User className="size-5 flex-shrink-0" />
+                  <span>Tài khoản</span>
+                </button>
+                <button
+                  onClick={() => {
+                    logout();
+                    navigate("/");
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-red-600 hover:bg-red-50 transition-all"
+                >
+                  <LogOut className="size-5 flex-shrink-0" />
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-          <Button
-            variant={isActive("/policy") ? "default" : "ghost"}
-            size="sm"
-            onClick={() => navigate("/policy")}
-            className={
-              isActive("/policy") ? "bg-green-600 hover:bg-green-700" : ""
-            }
-          >
-            <FileText className="size-3.5 mr-1" />
-            <span className="text-xs">Chính sách</span>
-          </Button>
-
-          <Button
-            variant={isActive("/contact") ? "default" : "ghost"}
-            size="sm"
-            onClick={() => navigate("/contact")}
-            className={
-              isActive("/contact") ? "bg-green-600 hover:bg-green-700" : ""
-            }
-          >
-            <Mail className="size-3.5 mr-1" />
-            <span className="text-xs">Liên hệ</span>
-          </Button>
-        </nav>
-      </div>
-    </motion.header>
+      {/* Mobile Navigation Bar (Simple Icon Tabs) */}
+      {!mobileMenuOpen && isAuthenticated && (
+        <motion.nav
+          initial={{ y: -60 }}
+          animate={{ y: 0 }}
+          className="fixed top-14 sm:hidden left-0 right-0 bg-white/95 backdrop-blur-lg border-b border-gray-100 z-40"
+        >
+          <div className="flex items-center justify-around px-2 py-2">
+            {navItems.map(({ path, label, icon: Icon }) => (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${
+                  isActive(path)
+                    ? "text-green-600 bg-green-50"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+                title={label}
+              >
+                <Icon className="size-5" />
+                <span className="text-[10px] font-bold text-center line-clamp-1">
+                  {label === "Trang chủ"
+                    ? "Nhà"
+                    : label === "Tìm trọ"
+                      ? "Trọ"
+                      : label}
+                </span>
+              </button>
+            ))}
+          </div>
+        </motion.nav>
+      )}
+    </>
   );
 }

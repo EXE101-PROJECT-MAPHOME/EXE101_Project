@@ -75,28 +75,29 @@ export function FilterPanel({ filters, onFiltersChange, activeFiltersCount }: Fi
       <SheetTrigger asChild>
         <Button 
           variant="outline" 
-          className="relative h-12 px-6 rounded-2xl border-emerald-900/10 bg-white/50 backdrop-blur-md hover:bg-emerald-50 hover:border-emerald-600/30 text-emerald-950 font-bold transition-all duration-300 group"
+          className="relative h-10 sm:h-12 px-4 sm:px-6 rounded-lg sm:rounded-2xl border-emerald-900/10 bg-white/50 backdrop-blur-md hover:bg-emerald-50 hover:border-emerald-600/30 text-emerald-950 font-bold transition-all duration-300 group text-sm sm:text-base"
         >
-          <SlidersHorizontal className="size-4 mr-2 text-emerald-600 transition-transform duration-500 group-hover:rotate-180" />
-          Lọc & Sắp xếp
+          <SlidersHorizontal className="size-3.5 sm:size-4 mr-1.5 sm:mr-2 text-emerald-600 transition-transform duration-500 group-hover:rotate-180" />
+          <span className="hidden sm:inline">Lọc & Sắp xếp</span>
+          <span className="sm:hidden">Lọc</span>
           {activeFiltersCount > 0 && (
-            <div className="ml-2 size-5 rounded-full bg-emerald-600 text-[10px] text-white flex items-center justify-center font-black animate-pulse">
+            <div className="ml-1.5 sm:ml-2 size-5 rounded-full bg-emerald-600 text-[9px] sm:text-[10px] text-white flex items-center justify-center font-black animate-pulse">
               {activeFiltersCount}
             </div>
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-full sm:w-[380px] overflow-y-auto bg-white/80 backdrop-blur-3xl border-r border-emerald-900/10 p-0 shadow-[24px_0_80px_-20px_rgba(6,78,59,0.15)]">
-        <div className="p-6 space-y-8 will-change-transform">
-          <SheetHeader className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="size-12 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-900 flex items-center justify-center text-white shadow-lg shadow-emerald-900/20">
-                <Filter className="size-6" />
+      <SheetContent side="left" className="w-full max-w-sm overflow-y-auto bg-white/80 backdrop-blur-3xl border-r border-emerald-900/10 p-4 sm:p-0 shadow-[24px_0_80px_-20px_rgba(6,78,59,0.15)]">
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 will-change-transform">
+          <SheetHeader className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="size-10 sm:size-12 rounded-lg sm:rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-900 flex items-center justify-center text-white shadow-lg shadow-emerald-900/20">
+                <Filter className="size-5 sm:size-6" />
               </div>
               <div>
-                <SheetTitle className="text-2xl font-black text-emerald-950 tracking-tight leading-tight">Bộ lọc & Phân loại</SheetTitle>
-                <SheetDescription className="text-emerald-900/60 font-medium">
-                  Tinh chỉnh tìm kiếm lý tưởng của bạn
+                <SheetTitle className="text-xl sm:text-2xl font-black text-emerald-950 tracking-tight leading-tight">Bộ lọc</SheetTitle>
+                <SheetDescription className="text-emerald-900/60 font-medium text-xs sm:text-sm">
+                  Tinh chỉnh tìm kiếm của bạn
                 </SheetDescription>
               </div>
             </div>

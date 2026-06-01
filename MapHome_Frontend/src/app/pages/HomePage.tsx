@@ -223,17 +223,17 @@ export function HomePage() {
   };
 
   return (
-    <div className="min-h-screen w-screen bg-white flex flex-col">
+    <div className="min-h-screen w-full bg-white flex flex-col">
       <Navbar />
       <HeroCarousel />
 
-      <main className="flex-1">
+      <main className="flex-1 w-full">
         <motion.section
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1 }}
-          className="relative overflow-hidden py-10 md:py-14"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.8 }}
+          className="relative overflow-hidden py-8 md:py-14 w-full"
         >
           {/* Background Aura */}
           <div className="absolute inset-0 bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600" />
@@ -247,7 +247,7 @@ export function HomePage() {
             className="absolute -top-1/2 -left-1/4 w-[100%] h-[200%] bg-white/10 blur-[100px] rounded-full"
           />
 
-          <div className="relative max-w-6xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
+          <div className="relative max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 flex flex-wrap justify-center gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 md:gap-8 text-center">
             {[
               {
                 icon: Building2,
@@ -274,12 +274,12 @@ export function HomePage() {
                 label: "Hài lòng",
               },
             ].map((stat) => (
-              <div key={stat.label} className="group space-y-2">
-                <div className="w-12 h-12 md:w-14 md:h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-3 border border-white/20 group-hover:scale-110 group-hover:bg-white/20 transition-transform duration-300 will-change-transform">
-                  <stat.icon className="size-6 md:size-7 text-green-200" />
+              <div key={stat.label} className="group space-y-1 sm:space-y-2 w-[45%] sm:w-[40%] md:w-[20%] flex flex-col items-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-white/10 backdrop-blur-md rounded-lg sm:rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 border border-white/20 group-hover:scale-110 group-hover:bg-white/20 transition-transform duration-300 will-change-transform">
+                  <stat.icon className="size-5 sm:size-6 md:size-7 text-green-200" />
                 </div>
                 <AnimatedCounter target={stat.target} suffix={stat.suffix} />
-                <p className="text-green-100/80 text-xs md:text-sm font-medium uppercase tracking-wider">
+                <p className="text-green-100/80 text-[10px] sm:text-xs md:text-sm font-medium uppercase tracking-wider">
                   {stat.label}
                 </p>
               </div>
@@ -291,24 +291,24 @@ export function HomePage() {
         <motion.section
           initial="initial"
           whileInView="whileInView"
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="max-w-7xl mx-auto py-20 md:py-32 px-4 relative overflow-hidden"
+          className="max-w-7xl mx-auto py-12 md:py-20 lg:py-32 px-3 sm:px-4 lg:px-6 relative overflow-hidden w-full"
         >
           <div className="absolute top-1/2 left-0 w-64 h-64 bg-green-100/30 blur-[120px] rounded-full -translate-x-1/2" />
 
-          <motion.div variants={fadeIn} className="text-center mb-16 md:mb-24">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-emerald-900 to-emerald-600 bg-clip-text text-transparent pb-3 tracking-tighter will-change-transform">
+          <motion.div variants={fadeIn} className="text-center mb-12 sm:mb-16 md:mb-24">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black bg-gradient-to-r from-emerald-900 to-emerald-600 bg-clip-text text-transparent pb-2 sm:pb-3 tracking-tighter will-change-transform">
               Tại Sao Chọn MapHome?
             </h2>
 
-            <p className="text-base md:text-xl text-slate-600 max-w-3xl mx-auto font-medium mt-4">
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-slate-600 max-w-3xl mx-auto font-medium mt-3 sm:mt-4">
               Nền tảng tìm trọ hiện đại với công nghệ tiên tiến, giúp bạn tìm
               được ngôi nhà thứ hai một cách dễ dàng và nhanh chóng nhất.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 relative z-10 w-full">
             {[
               {
                 icon: MapPin,
@@ -351,30 +351,30 @@ export function HomePage() {
                 whileHover={{ y: -12 }}
                 transition={{ type: "spring", stiffness: 400, damping: 25 }}
                 key={f.title}
-                className={`bg-white rounded-[48px] p-10 shadow-2xl ${f.shadow} hover:shadow-emerald-900/10 group border border-slate-50 flex flex-col items-center text-center relative overflow-hidden will-change-transform h-full`}
+                className={`bg-white rounded-2xl sm:rounded-3xl md:rounded-[48px] p-5 sm:p-6 md:p-10 shadow-lg sm:shadow-xl md:shadow-2xl ${f.shadow} hover:shadow-emerald-900/10 group border border-slate-50 flex flex-col items-center text-center relative overflow-hidden will-change-transform h-full`}
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-slate-50 to-transparent rounded-bl-full opacity-50" />
+                <div className="absolute top-0 right-0 w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 bg-gradient-to-br from-slate-50 to-transparent rounded-bl-full opacity-50" />
 
-                <div className="relative mb-8">
+                <div className="relative mb-4 sm:mb-6 md:mb-8">
                   <div
                     className={`absolute inset-0 bg-gradient-to-br ${f.gradient} blur-2xl opacity-20 group-hover:opacity-40 will-change-[opacity]`}
                   />
                   <div
-                    className={`bg-gradient-to-br ${f.gradient} w-20 h-20 md:w-24 md:h-24 rounded-[32px] flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-6 relative z-10 p-5 will-change-transform`}
+                    className={`bg-gradient-to-br ${f.gradient} w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl sm:rounded-2xl md:rounded-[32px] flex items-center justify-center shadow-lg sm:shadow-xl group-hover:scale-110 group-hover:rotate-6 relative z-10 p-4 sm:p-5 will-change-transform`}
                   >
                     <f.icon className="size-full text-white" />
                   </div>
                 </div>
 
-                <h3 className="font-black text-2xl md:text-3xl mb-4 text-emerald-950 relative z-10 leading-tight">
+                <h3 className="font-black text-lg sm:text-xl md:text-2xl lg:text-3xl mb-2 sm:mb-3 md:mb-4 text-emerald-950 relative z-10 leading-tight">
                   {f.title}
                 </h3>
-                <p className="text-slate-600 text-base md:text-lg leading-relaxed relative z-10 font-medium pb-2 flex-grow">
+                <p className="text-slate-600 text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed relative z-10 font-medium pb-2 flex-grow">
                   {f.desc}
                 </p>
 
                 <div
-                  className={`w-16 h-1.5 bg-gradient-to-r ${f.gradient} mt-8 rounded-full opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-transform duration-300 will-change-transform`}
+                  className={`w-12 h-1 sm:w-14 sm:h-1.5 md:w-16 bg-gradient-to-r ${f.gradient} mt-4 sm:mt-6 md:mt-8 rounded-full opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 will-change-transform`}
                 />
               </motion.div>
             ))}
@@ -383,8 +383,11 @@ export function HomePage() {
 
         {/* ━━━ How It Works ━━━ */}
         <motion.section
-          {...fadeIn}
-          className="bg-gradient-to-b from-slate-50 to-white py-20 md:py-32 relative overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
+          className="bg-gradient-to-b from-slate-50 to-white py-12 md:py-20 lg:py-32 relative overflow-hidden w-full"
         >
           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-green-200 to-transparent" />
 
@@ -487,7 +490,10 @@ export function HomePage() {
         </motion.section>
 
         <motion.section
-          {...fadeIn}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
           className="max-w-7xl mx-auto py-20 md:py-32 px-4 relative overflow-hidden"
         >
           {/* Section Background Aura */}
@@ -563,7 +569,13 @@ export function HomePage() {
         </motion.section>
 
         {/* ━━━ Browse by District ━━━ */}
-        <motion.section {...fadeIn} className="bg-gray-50 py-12 md:py-20">
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
+          className="bg-gray-50 py-12 md:py-20"
+        >
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-16 md:mb-24">
               <span className="text-emerald-600 font-black text-xs uppercase tracking-[0.4em] mb-4 block">
@@ -631,7 +643,10 @@ export function HomePage() {
 
         {/* ━━━ Testimonials ━━━ */}
         <motion.section
-          {...fadeIn}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
           className="relative py-16 md:py-24 overflow-hidden bg-gradient-to-b from-white to-green-50/50"
         >
           <div className="absolute top-1/4 -right-20 w-80 h-80 bg-green-200/20 blur-[100px] rounded-full" />
@@ -727,7 +742,10 @@ export function HomePage() {
 
         {/* ━━━ Blog / Tips ━━━ */}
         <motion.section
-          {...fadeIn}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
           className="bg-slate-50 py-16 md:py-24 relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-full h-20 bg-white" />
@@ -879,14 +897,14 @@ export function HomePage() {
               </motion.button>
             </div>
 
-            <div className="mt-16 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="mt-16 pt-10 border-t border-white/10 flex flex-wrap justify-center gap-y-8 gap-x-2 sm:gap-x-8 text-center">
               {[
                 { label: "Tiếp cận", value: "10k+" },
                 { label: "Tin đăng", value: "50k+" },
                 { label: "Chủ trọ", value: "5k+" },
                 { label: "Xác thực", value: "100%" },
               ].map((item) => (
-                <div key={item.label}>
+                <div key={item.label} className="w-[45%] md:w-[20%] flex flex-col items-center">
                   <p className="text-2xl font-black text-white">{item.value}</p>
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">
                     {item.label}
