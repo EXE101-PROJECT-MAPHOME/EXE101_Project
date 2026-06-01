@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  TextInput,
+  Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -21,6 +23,10 @@ import {
   CreditCard,
   Ticket,
   Plus,
+  Settings,
+  Save,
+  Bell,
+  Globe,
 } from "lucide-react-native";
 import api from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -33,7 +39,8 @@ type AdminView =
   | "bookings"
   | "reports"
   | "transactions"
-  | "vouchers";
+  | "vouchers"
+  | "settings";
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
@@ -49,6 +56,8 @@ export default function AdminDashboardScreen() {
   const [reports, setReports] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [vouchers, setVouchers] = useState<any[]>([]);
+  const [systemSettings, setSystemSettings] = useState<any>(null);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   const fetchData = async (active: AdminView) => {
     try {
@@ -97,6 +106,12 @@ export default function AdminDashboardScreen() {
         const res = await api.get("/api/vouchers").catch(() => ({ data: [] }));
         setVouchers(res.data || []);
       }
+      if (active === "settings") {
+        const res = await api
+          .get("/api/admin/settings")
+          .catch(() => ({ data: null }));
+        setSystemSettings(res.data);
+      }
     } finally {
       setScreenLoading(false);
     }
@@ -120,6 +135,23 @@ export default function AdminDashboardScreen() {
     }
   };
 
+  const handleUpdateSettings = async () => {
+    try {
+      setIsSavingSettings(true);
+      const res = await api.put("/api/admin/settings", systemSettings);
+      if (res.status === 200) {
+        Alert.alert("Thành công", "Cài đặt hệ thống đã được cập nhật!");
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi",
+        error.response?.data?.message || "Không thể lưu cài đặt hệ thống",
+      );
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setScreenLoading(false);
@@ -139,7 +171,7 @@ export default function AdminDashboardScreen() {
   if (!isAuthenticated || !user || user.role !== "admin") {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center p-6">
-        <Text className="text-emerald-950 font-black text-xl text-center mb-3">
+        <Text className="text-emerald-700 font-black text-xl text-center mb-3">
           Bạn không có quyền truy cập trang này
         </Text>
         <TouchableOpacity
@@ -162,7 +194,7 @@ export default function AdminDashboardScreen() {
           <ArrowLeft size={18} color="#0f172a" />
         </TouchableOpacity>
         <View>
-          <Text className="text-2xl font-black text-emerald-950">
+          <Text className="text-2xl font-black text-emerald-700">
             Admin Dashboard
           </Text>
           <Text className="text-xs text-slate-500 font-semibold">
@@ -189,6 +221,7 @@ export default function AdminDashboardScreen() {
             { id: "reports", label: "Báo cáo", icon: AlertTriangle },
             { id: "transactions", label: "Giao dịch", icon: CreditCard },
             { id: "vouchers", label: "Voucher", icon: Ticket },
+            { id: "settings", label: "Cài đặt", icon: Settings },
           ].map((item) => (
             <TouchableOpacity
               key={item.id}
@@ -229,7 +262,7 @@ export default function AdminDashboardScreen() {
                 key={idx}
                 className="w-[48%] bg-white rounded-2xl p-4 border border-slate-100 mb-3"
               >
-                <Text className="text-2xl font-black text-emerald-950">
+                <Text className="text-2xl font-black text-emerald-700">
                   {item.value}
                 </Text>
                 <Text className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
@@ -243,7 +276,7 @@ export default function AdminDashboardScreen() {
         {view === "vouchers" && (
           <View className="bg-white rounded-3xl p-5 border border-slate-100">
             <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-base font-black text-emerald-950">
+              <Text className="text-base font-black text-emerald-700">
                 Danh sách Voucher
               </Text>
               <TouchableOpacity
@@ -266,7 +299,7 @@ export default function AdminDashboardScreen() {
                   className="py-3 border-b border-slate-100 flex-row justify-between items-center"
                 >
                   <View>
-                    <Text className="font-bold text-emerald-950">
+                    <Text className="font-bold text-emerald-700">
                       {v.code} - Giảm {v.discountPercentage}%
                     </Text>
                     <Text className="text-xs text-slate-500">
@@ -294,7 +327,7 @@ export default function AdminDashboardScreen() {
 
         {view === "verification" && (
           <View className="bg-white rounded-3xl p-5 border border-slate-100">
-            <Text className="text-base font-black text-emerald-950 mb-4">
+            <Text className="text-base font-black text-emerald-700 mb-4">
               Quản lý Yêu cầu Xác thực
             </Text>
 
@@ -311,7 +344,7 @@ export default function AdminDashboardScreen() {
                   <View className="flex-row justify-between items-start mb-2">
                     <View className="flex-1">
                       <Text
-                        className="font-bold text-emerald-950 text-base"
+                        className="font-bold text-emerald-700 text-base"
                         numberOfLines={1}
                       >
                         {item.propertyName || "Căn trọ"}
@@ -398,11 +431,131 @@ export default function AdminDashboardScreen() {
           </View>
         )}
 
+        {view === "settings" && systemSettings && (
+          <View className="space-y-6">
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
+              <View className="flex-row items-center mb-4">
+                <Globe size={20} color="#059669" />
+                <Text className="text-base font-black text-emerald-700 ml-2">Thông tin chung</Text>
+              </View>
+              <View className="space-y-4">
+                <View>
+                  <Text className="text-xs font-bold text-slate-500 uppercase mb-2">Tên Website</Text>
+                  <TextInput
+                    value={systemSettings.siteName}
+                    onChangeText={(val) => setSystemSettings({ ...systemSettings, siteName: val })}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 font-bold text-slate-800"
+                  />
+                </View>
+                <View>
+                  <Text className="text-xs font-bold text-slate-500 uppercase mb-2">Email Hỗ trợ</Text>
+                  <TextInput
+                    value={systemSettings.contactEmail}
+                    onChangeText={(val) => setSystemSettings({ ...systemSettings, contactEmail: val })}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 font-bold text-slate-800"
+                  />
+                </View>
+                <View>
+                  <Text className="text-xs font-bold text-slate-500 uppercase mb-2">Hotline</Text>
+                  <TextInput
+                    value={systemSettings.contactPhone}
+                    onChangeText={(val) => setSystemSettings({ ...systemSettings, contactPhone: val })}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 font-bold text-slate-800"
+                  />
+                </View>
+                <View className="flex-row items-center justify-between bg-rose-50 p-4 rounded-2xl border border-rose-100">
+                  <View>
+                    <Text className="font-bold text-rose-900">Chế độ Bảo trì</Text>
+                    <Text className="text-xs text-rose-600">Tạm khóa người dùng truy cập</Text>
+                  </View>
+                  <Switch
+                    value={systemSettings.maintenanceMode}
+                    onValueChange={(val) => setSystemSettings({ ...systemSettings, maintenanceMode: val })}
+                    trackColor={{ false: "#cbd5e1", true: "#e11d48" }}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
+              <View className="flex-row items-center mb-4">
+                <Bell size={20} color="#059669" />
+                <Text className="text-base font-black text-emerald-700 ml-2">Truyền thông hệ thống</Text>
+              </View>
+              <View className="space-y-4">
+                <View>
+                  <Text className="text-xs font-bold text-slate-500 uppercase mb-2">Nội dung thông báo</Text>
+                  <TextInput
+                    value={systemSettings.broadcastMessage}
+                    onChangeText={(val) => setSystemSettings({ ...systemSettings, broadcastMessage: val })}
+                    multiline
+                    className="bg-slate-50 border border-slate-200 rounded-xl p-4 h-32 font-bold text-slate-800"
+                    textAlignVertical="top"
+                  />
+                </View>
+                <View className="flex-row items-center justify-between bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                  <View>
+                    <Text className="font-bold text-emerald-900">Bật thông báo</Text>
+                    <Text className="text-xs text-emerald-600">Hiển thị thông báo trên trang chủ</Text>
+                  </View>
+                  <Switch
+                    value={systemSettings.isBroadcastEnabled}
+                    onValueChange={(val) => setSystemSettings({ ...systemSettings, isBroadcastEnabled: val })}
+                    trackColor={{ false: "#cbd5e1", true: "#059669" }}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
+              <View className="flex-row items-center mb-4">
+                <Settings size={20} color="#059669" />
+                <Text className="text-base font-black text-emerald-700 ml-2">SEO & Tự động hóa</Text>
+              </View>
+              <View className="space-y-4">
+                <View>
+                  <Text className="text-xs font-bold text-slate-500 uppercase mb-2">Tiêu đề SEO</Text>
+                  <TextInput
+                    value={systemSettings.seo?.title || ""}
+                    onChangeText={(val) => setSystemSettings({ ...systemSettings, seo: { ...systemSettings.seo, title: val } })}
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 font-bold text-slate-800"
+                  />
+                </View>
+                <View>
+                  <Text className="text-xs font-bold text-slate-500 uppercase mb-2">Thời hạn tin đăng mặc định (Ngày)</Text>
+                  <TextInput
+                    value={String(systemSettings.automation?.defaultExpiryDays || 30)}
+                    onChangeText={(val) => setSystemSettings({ ...systemSettings, automation: { ...systemSettings.automation, defaultExpiryDays: Number(val) } })}
+                    keyboardType="numeric"
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 font-bold text-slate-800"
+                  />
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleUpdateSettings}
+              disabled={isSavingSettings}
+              className="bg-emerald-600 h-14 rounded-2xl flex-row items-center justify-center shadow-lg shadow-emerald-600/30 mb-8"
+            >
+              {isSavingSettings ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <>
+                  <Save size={20} color="white" />
+                  <Text className="text-white font-black ml-2">Lưu Cài Đặt Hệ Thống</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {view !== "dashboard" &&
           view !== "vouchers" &&
-          view !== "verification" && (
+          view !== "verification" &&
+          view !== "settings" && (
             <View className="bg-white rounded-3xl p-5 border border-slate-100">
-              <Text className="text-base font-black text-emerald-950 mb-3">
+              <Text className="text-base font-black text-emerald-700 mb-3">
                 Dữ liệu {view}
               </Text>
               {(view === "posts"
@@ -434,7 +587,7 @@ export default function AdminDashboardScreen() {
                       className="py-2 border-b border-slate-100"
                     >
                       <Text
-                        className="font-bold text-emerald-950"
+                        className="font-bold text-emerald-700"
                         numberOfLines={1}
                       >
                         {item.name ||

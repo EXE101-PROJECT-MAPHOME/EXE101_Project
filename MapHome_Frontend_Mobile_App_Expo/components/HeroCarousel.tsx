@@ -68,7 +68,7 @@ export function HeroCarousel() {
                 <MapPin size={20} color="#111827" />
                 <Text className="text-gray-900 font-bold ml-2 text-base">
                   Khám phá ngay
-                </Text>~
+                </Text>
               </TouchableOpacity>
             </View>
           </ImageBackground>

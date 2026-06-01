@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ArrowLeft,
@@ -38,14 +39,16 @@ import {
   GitCompare,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import api from "../../utils/api";
-import MapView, { Marker } from "react-native-maps";
-import { useCompare } from "../../contexts/CompareContext";
+import api from "@/utils/api";
+import { useCompare } from "@/contexts/CompareContext";
+import { RoomMapPreview } from "@/components/RoomMapPreview";
+import ROUTES, { navigateTo } from "@/constants/routes";
 
 const { width } = Dimensions.get("window");
 
 export default function RoomDetailScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { id } = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState<"info" | "reviews">("info");
   const [isFavorite, setIsFavorite] = useState(false);
@@ -59,6 +62,15 @@ export default function RoomDetailScreen() {
   const danger = useThemeColor({}, "danger");
   const warning = useThemeColor({}, "warning");
   const success = useThemeColor({}, "success");
+
+  // Handle back navigation with fallback to home
+  const handleGoBack = () => {
+    if (navigation.canGoBack?.()) {
+      router.back();
+    } else {
+      navigateTo(router, ROUTES.HOME, true);
+    }
+  };
 
   // Review form state
   const [rating, setRating] = useState(5);
@@ -274,11 +286,11 @@ export default function RoomDetailScreen() {
   if (!property) {
     return (
       <SafeAreaView className="flex-1 bg-white items-center justify-center p-6">
-        <Text className="text-xl font-bold text-emerald-950 mb-4">
+        <Text className="text-xl font-bold text-emerald-700 mb-4">
           Không tìm thấy phòng trọ
         </Text>
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={handleGoBack}
           className="bg-emerald-600 px-6 py-3 rounded-2xl"
         >
           <Text className="text-white font-bold">Quay lại</Text>
@@ -318,7 +330,7 @@ export default function RoomDetailScreen() {
           {/* Overlay Buttons */}
           <SafeAreaView className="absolute top-0 left-0 right-0 p-4 flex-row justify-between items-center z-10">
             <TouchableOpacity
-              onPress={() => router.back()}
+              onPress={handleGoBack}
               className="w-10 h-10 bg-black/40 rounded-full items-center justify-center"
             >
               <ArrowLeft size={20} color="white" />
@@ -368,7 +380,7 @@ export default function RoomDetailScreen() {
         {/* Content Wrapper */}
         <View className="px-4 py-6">
           {/* Main Title Block */}
-          <Text className="text-2xl font-black text-emerald-950 mb-2 leading-tight">
+          <Text className="text-2xl font-black text-emerald-700 mb-2 leading-tight">
             {property.name}
           </Text>
 
@@ -425,7 +437,7 @@ export default function RoomDetailScreen() {
               <Text className="text-xs text-slate-400 font-medium mb-1">
                 Diện tích
               </Text>
-              <Text className="text-xl font-black text-emerald-950">
+              <Text className="text-xl font-black text-emerald-700">
                 {property.area} m²
               </Text>
               <Text className="text-[10px] text-slate-500 font-bold uppercase mt-0.5">
@@ -463,7 +475,7 @@ export default function RoomDetailScreen() {
             <View className="space-y-6">
               {/* Amenities Grid */}
               <View className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-                <Text className="text-lg font-black text-emerald-950 mb-4">
+                <Text className="text-lg font-black text-emerald-700 mb-4">
                   Tiện nghi phòng trọ
                 </Text>
 
@@ -512,7 +524,7 @@ export default function RoomDetailScreen() {
 
               {/* Description */}
               <View className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-                <Text className="text-lg font-black text-emerald-950 mb-3">
+                <Text className="text-lg font-black text-emerald-700 mb-3">
                   Mô tả chi tiết
                 </Text>
                 <Text className="text-slate-600 text-base leading-relaxed font-medium">
@@ -523,7 +535,7 @@ export default function RoomDetailScreen() {
               {/* GPS verification warning if verified */}
               {property.verificationLevel === "verified" && (
                 <View className="bg-emerald-50 rounded-3xl p-5 border border-emerald-100">
-                  <Text className="text-emerald-900 font-black text-base mb-1">
+                  <Text className="text-emerald-700 font-black text-base mb-1">
                     ✓ Vị trí đã xác thực tại chỗ
                   </Text>
                   <Text className="text-emerald-700 text-xs font-medium leading-relaxed">
@@ -537,30 +549,16 @@ export default function RoomDetailScreen() {
 
               {/* Mini Map */}
               <View className="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
-                <Text className="text-lg font-black text-emerald-950 mb-3">
+                <Text className="text-lg font-black text-emerald-700 mb-3">
                   Bản đồ vị trí
                 </Text>
                 <View className="h-56 w-full rounded-2xl overflow-hidden border border-slate-200">
-                  <MapView
-                    className="w-full h-full"
-                    initialRegion={{
-                      latitude: property.location[1],
-                      longitude: property.location[0],
-                      latitudeDelta: 0.005,
-                      longitudeDelta: 0.005,
-                    }}
-                    scrollEnabled={false}
-                    zoomEnabled={false}
-                  >
-                    <Marker
-                      coordinate={{
-                        latitude: property.location[1],
-                        longitude: property.location[0],
-                      }}
-                      title={property.name}
-                      description={property.address}
-                    />
-                  </MapView>
+                  <RoomMapPreview
+                    latitude={property.location[1]}
+                    longitude={property.location[0]}
+                    name={property.name}
+                    address={property.address}
+                  />
                 </View>
               </View>
 
@@ -575,7 +573,7 @@ export default function RoomDetailScreen() {
                     <Text className="text-xs text-slate-400 font-bold uppercase tracking-wider">
                       Chủ trọ đăng tin
                     </Text>
-                    <Text className="text-base font-black text-emerald-950">
+                    <Text className="text-base font-black text-emerald-700">
                       {property.landlordId.fullName}
                     </Text>
                     <Text className="text-xs text-slate-500 font-medium">
@@ -595,7 +593,7 @@ export default function RoomDetailScreen() {
             <View className="space-y-6">
               {/* Review submit box */}
               <View className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
-                <Text className="text-lg font-black text-emerald-950 mb-3">
+                <Text className="text-lg font-black text-emerald-700 mb-3">
                   Gửi đánh giá của bạn
                 </Text>
 
@@ -660,7 +658,7 @@ export default function RoomDetailScreen() {
                             className="w-10 h-10 rounded-xl mr-2"
                           />
                           <View>
-                            <Text className="text-sm font-black text-emerald-950">
+                            <Text className="text-sm font-black text-emerald-700">
                               {rev.userName}
                             </Text>
                             <Text className="text-[10px] text-slate-400 font-bold">

@@ -308,7 +308,7 @@ export default function ForgotPasswordScreen() {
       <View className="w-20 h-20 rounded-full bg-emerald-100 items-center justify-center mb-5">
         <Text className="text-3xl">✓</Text>
       </View>
-      <Text className="text-2xl font-black text-emerald-950 text-center mb-2">
+      <Text className="text-2xl font-black text-emerald-700 text-center mb-2">
         Khôi phục thành công
       </Text>
       <Text className="text-slate-500 text-center mb-8">
@@ -347,7 +347,7 @@ export default function ForgotPasswordScreen() {
             </TouchableOpacity>
 
             <View className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
-              <Text className="text-2xl font-black text-emerald-950 mb-2">
+              <Text className="text-2xl font-black text-emerald-700 mb-2">
                 Khôi phục mật khẩu
               </Text>
               <Text className="text-slate-500 mb-6">

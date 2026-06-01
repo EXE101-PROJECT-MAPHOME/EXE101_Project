@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, Image } from "react-native";
 import { MapPin, Heart, Phone, Calendar } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import Animated, { FadeInUp } from "react-native-reanimated";
 
 export function PropertyCard({
   property,
@@ -19,11 +20,12 @@ export function PropertyCard({
   const danger = useThemeColor({}, "danger");
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={onPress}
-      className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100 mb-6"
-    >
+    <Animated.View entering={FadeInUp.springify()} className="mb-6">
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100"
+      >
       <View className="relative h-48 w-full">
         <Image
           source={{
@@ -52,7 +54,7 @@ export function PropertyCard({
 
       <View className="p-4">
         <Text
-          className="text-lg font-black text-emerald-950 mb-1"
+          className="text-lg font-black text-emerald-700 mb-1"
           numberOfLines={1}
         >
           {property.name || "Phòng trọ cao cấp"}
@@ -101,5 +103,6 @@ export function PropertyCard({
         </View>
       </View>
     </TouchableOpacity>
+  </Animated.View>
   );
 }
