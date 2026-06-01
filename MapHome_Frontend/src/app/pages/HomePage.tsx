@@ -406,7 +406,7 @@ export function HomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 md:gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-12 md:gap-8">
               {[
                 {
                   step: 1,
@@ -466,20 +466,20 @@ export function HomePage() {
                         stiffness: 400,
                         damping: 20,
                       }}
-                      className={`${s.color} w-24 h-24 rounded-3xl flex items-center justify-center mb-6 shadow-2xl ${s.shadow} relative overflow-hidden will-change-transform`}
+                      className={`${s.color} w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-4 sm:mb-6 shadow-2xl ${s.shadow} relative overflow-hidden will-change-transform`}
                     >
                       <div className="absolute inset-0 bg-white/20 -translate-y-full group-hover:translate-y-full transition-transform duration-500 ease-in-out will-change-transform" />
-                      <s.icon className="size-10 text-white" />
+                      <s.icon className="size-8 sm:size-10 text-white" />
 
-                      <div className="absolute -top-1 -right-1 w-9 h-9 rounded-2xl bg-white shadow-xl flex items-center justify-center text-sm font-black text-slate-800 border-4 border-slate-50 group-hover:bg-emerald-50 group-hover:text-emerald-700 transition-colors duration-300 will-change-transform">
+                      <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-white shadow-xl flex items-center justify-center text-[10px] sm:text-sm font-black text-slate-800 border-2 sm:border-4 border-slate-50 group-hover:bg-emerald-50 group-hover:text-emerald-700 transition-colors duration-300 will-change-transform">
                         {s.step}
                       </div>
                     </motion.div>
 
-                    <h3 className="font-black text-xl mb-3 text-emerald-950 group-hover:text-green-600 transition-colors duration-300">
+                    <h3 className="font-black text-base sm:text-xl mb-2 sm:mb-3 text-emerald-950 group-hover:text-green-600 transition-colors duration-300 text-center">
                       {s.title}
                     </h3>
-                    <p className="text-slate-500 text-sm md:text-base leading-relaxed max-w-[240px] text-center font-medium">
+                    <p className="text-slate-500 text-xs sm:text-sm md:text-base leading-relaxed max-w-[240px] text-center font-medium">
                       {s.desc}
                     </p>
                   </div>
