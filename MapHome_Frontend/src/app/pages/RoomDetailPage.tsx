@@ -377,11 +377,13 @@ export function RoomDetailPage() {
   useEffect(() => {
     if (!property) return;
     const propertyKey = property._id || property.id;
-    
+
     // Check if we've already incremented view for this property in this session to prevent spam
     const viewKey = `viewed_${propertyKey}`;
     if (!sessionStorage.getItem(viewKey)) {
-      api.post(`/api/properties/${propertyKey}/view`).catch(err => console.error("Failed to increment view", err));
+      api
+        .post(`/api/properties/${propertyKey}/view`)
+        .catch((err) => console.error("Failed to increment view", err));
       sessionStorage.setItem(viewKey, "true");
     }
   }, [property]);
@@ -620,7 +622,9 @@ export function RoomDetailPage() {
                     </h1>
                     <div className="flex items-start gap-2 text-gray-600 mb-3">
                       <MapPin className="size-4 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-xs sm:text-sm leading-snug">{property.address}</span>
+                      <span className="text-xs sm:text-sm leading-snug">
+                        {property.address}
+                      </span>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <VerificationBadge
@@ -687,27 +691,43 @@ export function RoomDetailPage() {
                     <p className="text-xs sm:text-sm text-gray-500">/tháng</p>
                   </div>
                 </div>
-                <Separator orientation="horizontal" className="w-full sm:hidden bg-blue-100/50" />
-                <Separator orientation="vertical" className="hidden sm:block h-12 bg-blue-200" />
+                <Separator
+                  orientation="horizontal"
+                  className="w-full sm:hidden bg-blue-100/50"
+                />
+                <Separator
+                  orientation="vertical"
+                  className="hidden sm:block h-12 bg-blue-200"
+                />
                 <div className="flex items-center justify-between sm:block flex-1">
                   <div>
                     <p className="text-lg sm:text-2xl font-bold text-gray-900">
                       {property.area}m²
                     </p>
-                    <p className="text-xs sm:text-sm text-gray-500">Diện tích</p>
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      Diện tích
+                    </p>
                   </div>
                 </div>
-                <Separator orientation="horizontal" className="w-full sm:hidden bg-blue-100/50" />
-                <Separator orientation="vertical" className="hidden sm:block h-12 bg-blue-200" />
+                <Separator
+                  orientation="horizontal"
+                  className="w-full sm:hidden bg-blue-100/50"
+                />
+                <Separator
+                  orientation="vertical"
+                  className="hidden sm:block h-12 bg-blue-200"
+                />
                 <div className="flex items-center justify-between sm:block flex-1">
                   <div>
                     <p className="text-lg sm:text-2xl font-bold text-gray-900">
-                      {Math.round(property.price / property.area).toLocaleString(
-                        "vi-VN",
-                      )}
+                      {Math.round(
+                        property.price / property.area,
+                      ).toLocaleString("vi-VN")}
                       đ
                     </p>
-                    <p className="text-xs sm:text-sm text-gray-500">/m²/tháng</p>
+                    <p className="text-xs sm:text-sm text-gray-500">
+                      /m²/tháng
+                    </p>
                   </div>
                 </div>
               </div>
@@ -796,7 +816,7 @@ export function RoomDetailPage() {
                             {key === "airConditioner" && "Máy lạnh"}
                             {key === "water" && "Nước nóng"}
                             {key === "tv" && "Tivi"}
-                            {key === "furniture" && "Nội thất"}
+                            {key === "furniture" && "Đầy đủ nội thất"}
                             {key === "washingMachine" && "Máy giặt"}
                             {key === "kitchen" && "Nhà bếp"}
                             {key === "refrigerator" && "Tủ lạnh"}
@@ -1197,7 +1217,7 @@ export function RoomDetailPage() {
                           ? sp.distance < 1
                             ? `${Math.round(sp.distance * 1000)}m`
                             : `${sp.distance.toFixed(1)}km`
-                          : ''}
+                          : ""}
                       </span>
                     </div>
                   </CardContent>
