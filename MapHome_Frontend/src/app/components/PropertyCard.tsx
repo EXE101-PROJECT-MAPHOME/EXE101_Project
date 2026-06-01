@@ -181,11 +181,11 @@ export function PropertyCard({
         onClick={onClick}
       >
 
-      <div className="relative h-32 sm:h-40 w-full">
+      <div className="relative h-44 sm:h-52 w-full overflow-hidden shrink-0">
         <ImageWithFallback
           src={property.image}
           alt={property.name}
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
         />
         {property.greenBadge && property.greenBadge.level !== "none" && (
           <GreenBadgeMini level={property.greenBadge.level} />

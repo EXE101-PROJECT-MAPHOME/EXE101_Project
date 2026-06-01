@@ -201,8 +201,8 @@ export function HomePage() {
     pauseOnHover: true,
     arrows: false,
     responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 2 } },
-      { breakpoint: 640, settings: { slidesToShow: 1 } },
+      { breakpoint: 1024, settings: { slidesToShow: 2, slidesToScroll: 1 } },
+      { breakpoint: 768, settings: { slidesToShow: 1, slidesToScroll: 1 } },
     ],
   };
 
@@ -217,8 +217,8 @@ export function HomePage() {
     pauseOnHover: true,
     arrows: false,
     responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 2 } },
-      { breakpoint: 640, settings: { slidesToShow: 1 } },
+      { breakpoint: 1024, settings: { slidesToShow: 2, slidesToScroll: 1 } },
+      { breakpoint: 768, settings: { slidesToShow: 1, slidesToScroll: 1 } },
     ],
   };
 
@@ -591,7 +591,7 @@ export function HomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 md:gap-8">
               {districts.map((d, i) => (
                 <motion.button
                   key={d.name}
@@ -606,7 +606,7 @@ export function HomePage() {
                   }}
                   whileHover={{ y: -8 }}
                   onClick={() => navigate("/map")}
-                  className="group relative rounded-[32px] overflow-hidden aspect-[16/11] cursor-pointer shadow-2xl shadow-slate-200/50 hover:shadow-emerald-900/10 will-change-transform border border-slate-100"
+                  className="w-[47%] md:w-[45%] lg:w-[30%] group relative rounded-[20px] md:rounded-[32px] overflow-hidden aspect-[4/3] md:aspect-[16/11] cursor-pointer shadow-xl hover:shadow-emerald-900/10 will-change-transform border border-slate-100 flex-shrink-0"
                 >
                   <div className="absolute inset-0 z-10 bg-gradient-to-t from-emerald-950/90 via-emerald-900/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500 will-change-opacity" />
 
@@ -616,25 +616,25 @@ export function HomePage() {
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s] ease-out will-change-transform"
                   />
 
-                  <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8 z-20 text-left">
-                    <motion.h3 className="text-white font-black text-xl md:text-2xl lg:text-3xl tracking-tighter mb-1">
+                  <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-8 z-20 text-left">
+                    <motion.h3 className="text-white font-black text-base sm:text-lg md:text-2xl lg:text-3xl tracking-tighter mb-0.5 md:mb-1">
                       {d.name}
                     </motion.h3>
-                    <p className="text-emerald-50/80 text-xs md:text-sm font-bold uppercase tracking-widest">
+                    <p className="text-emerald-50/80 text-[9px] sm:text-[10px] md:text-sm font-bold uppercase tracking-widest">
                       {d.count.toLocaleString("vi-VN")} phòng trọ
                     </p>
                   </div>
 
                   {d.isHot && (
-                    <div className="absolute top-5 right-5 z-20 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center gap-2 shadow-xl">
-                      <div className="size-2 bg-green-400 rounded-full animate-pulse" />
-                      <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">
-                        Hot District
+                    <div className="absolute top-2 right-2 md:top-5 md:right-5 z-20 px-2.5 py-1 md:px-4 md:py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl md:rounded-2xl flex items-center gap-1.5 md:gap-2 shadow-xl">
+                      <div className="size-1.5 md:size-2 bg-green-400 rounded-full animate-pulse" />
+                      <span className="text-[8px] md:text-[10px] font-black text-white uppercase tracking-[0.2em]">
+                        Hot
                       </span>
                     </div>
                   )}
 
-                  <div className="absolute inset-0 border-[6px] border-white/0 group-hover:border-white/10 transition-colors duration-500 rounded-[32px] z-30" />
+                  <div className="absolute inset-0 border-[3px] md:border-[6px] border-white/0 group-hover:border-white/10 transition-colors duration-500 rounded-[20px] md:rounded-[32px] z-30" />
                 </motion.button>
               ))}
             </div>
