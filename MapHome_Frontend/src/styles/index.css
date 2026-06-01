@@ -266,3 +266,214 @@
   scrollbar-color: linear-gradient(to right, #16a34a, #0ea5e9)
     rgba(0, 0, 0, 0.02);
 }
+
+/* ═════════════════════════════════════════════════════════════════ */
+/* RESPONSIVE LAYOUT FIXES FOR MOBILE */
+/* ═════════════════════════════════════════════════════════════════ */
+
+/* Hide scrollbar while maintaining scrollability */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Ensure body and html take full width on mobile */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Fix main content area */
+main, [role="main"] {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+  h1 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    line-height: 1.2;
+  }
+  
+  h2 {
+    font-size: clamp(1.25rem, 3.5vw, 1.75rem);
+    line-height: 1.3;
+  }
+  
+  h3 {
+    font-size: clamp(1rem, 3vw, 1.5rem);
+    line-height: 1.3;
+  }
+  
+  p {
+    font-size: clamp(0.875rem, 2.5vw, 1rem);
+    line-height: 1.5;
+  }
+  
+  body {
+    font-size: 14px;
+  }
+}
+
+/* Fix navbar bottom margin for mobile */
+header {
+  width: 100%;
+}
+
+/* Ensure proper spacing after fixed navbar */
+body {
+  padding-top: 0;
+}
+
+main {
+  margin-top: 3rem;
+}
+
+@media (max-width: 640px) {
+  main {
+    margin-top: 2.5rem;
+  }
+}
+
+/* Grid responsiveness improvements */
+.grid {
+  overflow-x: hidden;
+}
+
+/* Card responsive padding */
+@media (max-width: 640px) {
+  .card, [role="article"] {
+    padding: 1rem;
+  }
+}
+
+/* Input fields responsive sizing */
+input, textarea, select {
+  font-size: 16px; /* Prevents zoom on iOS */
+  min-height: 2.5rem;
+}
+
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px;
+    padding: 0.75rem;
+  }
+}
+
+/* Button responsive sizing */
+button, [role="button"] {
+  min-height: 2.5rem;
+  min-width: 2.5rem;
+  padding: 0.5rem 1rem;
+}
+
+@media (max-width: 640px) {
+  button, [role="button"] {
+    min-height: 2.25rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Image responsive sizing */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Modal/Dialog responsive */
+@media (max-width: 640px) {
+  [role="dialog"], .dialog, .modal {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 1rem 1rem 0 0;
+    max-height: 90vh;
+  }
+}
+
+/* Sheet responsive */
+.sheet-content, [role="complementary"] {
+  width: 100%;
+}
+
+@media (min-width: 641px) {
+  .sheet-content {
+    max-width: 420px;
+  }
+}
+
+/* Container responsive padding */
+@media (max-width: 640px) {
+  .container, .max-w-7xl {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+/* Flex responsive gap */
+@media (max-width: 640px) {
+  .gap-4 {
+    gap: 0.75rem;
+  }
+  
+  .gap-6 {
+    gap: 1rem;
+  }
+  
+  .gap-8 {
+    gap: 1.5rem;
+  }
+}
+
+/* Section padding responsive */
+@media (max-width: 640px) {
+  section {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  
+  .py-10, .py-14, .py-16, .py-20, .py-24, .py-32 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+  
+  .md\:py-14, .md\:py-16, .md\:py-20, .md\:py-24, .md\:py-32 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+}
+
+/* Grid column responsive */
+@media (max-width: 640px) {
+  .grid-cols-2, .grid-cols-3, .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .sm\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Ensure maps and embeds are responsive */
+iframe, video, embed {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Fix overflow issues */
+@media (max-width: 640px) {
+  * {
+    max-width: 100%;
+  }
+  
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}

@@ -326,41 +326,41 @@ export function MapPage() {
   const priceRange = searchSummary?.priceRange ?? localPriceRange;
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="h-screen w-full flex flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
       <motion.header
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="fixed top-0 inset-x-0 bg-white/80 backdrop-blur-xl border-b border-white/20 z-[100] shadow-2xl shadow-emerald-900/5 will-change-transform"
+        className="fixed top-0 inset-x-0 bg-white/80 backdrop-blur-xl border-b border-white/20 z-[100] shadow-2xl shadow-emerald-900/5 will-change-transform w-full overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 w-full">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink min-w-0">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/")}
-                className="mr-2 hover:bg-emerald-50 rounded-2xl transition-colors duration-300"
+                className="mr-1 sm:mr-2 hover:bg-emerald-50 rounded-lg sm:rounded-2xl transition-colors duration-300 h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0"
               >
-                <ArrowLeft className="size-5 text-emerald-950" />
+                <ArrowLeft className="size-4 sm:size-5 text-emerald-950" />
               </Button>
-              <div className="flex items-center gap-2">
-                <div className="size-10 bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-900/20">
-                  <Home className="size-6 text-white" />
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <div className="size-8 sm:size-10 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg sm:rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-900/20 flex-shrink-0">
+                  <Home className="size-4 sm:size-6 text-white" />
                 </div>
-                <h1 className="text-3xl font-black bg-gradient-to-r from-emerald-950 to-emerald-700 bg-clip-text text-transparent tracking-tighter">
+                <h1 className="text-lg sm:text-2xl font-black bg-gradient-to-r from-emerald-950 to-emerald-700 bg-clip-text text-transparent tracking-tighter hidden sm:block">
                   MapHome
                 </h1>
               </div>
             </div>
 
-            <div className="flex gap-2 p-1 bg-emerald-950/5 backdrop-blur-md rounded-2xl border border-emerald-950/5">
+            <div className="flex gap-1 sm:gap-2 p-0.5 sm:p-1 bg-emerald-950/5 backdrop-blur-md rounded-lg sm:rounded-2xl border border-emerald-950/5 flex-shrink">
               {/* Yêu thích */}
               <button
                 onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
                 className={`
-                  flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 will-change-transform
+                  flex items-center gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-bold transition-all duration-300 will-change-transform
                   ${
                     showFavoritesOnly
                       ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-[1.02]"
@@ -369,11 +369,12 @@ export function MapPage() {
                 `}
               >
                 <Heart
-                  className={`size-4 transition-all duration-300 ${showFavoritesOnly ? "fill-current scale-110" : ""}`}
+                  className={`size-3.5 sm:size-4 transition-all duration-300 flex-shrink-0 ${showFavoritesOnly ? "fill-current scale-110" : ""}`}
                 />
-                <span>Yêu thích</span>
+                <span className="hidden sm:inline">Yêu thích</span>
                 <span
-                  className={`text-xs px-1.5 py-0.5 rounded-full font-black ${
+                  className={`text-[9px] sm:text-xs px-1 sm:px-1.5 py-0 sm:py-0.5 rounded-full font-black
+                  ${
                     showFavoritesOnly ? "bg-white/20" : "bg-emerald-950/8"
                   }`}
                 >
@@ -574,12 +575,12 @@ export function MapPage() {
       </motion.header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden relative pt-[164px]">
+      <div className="flex-1 overflow-hidden relative pt-32 sm:pt-40 w-full">
         {viewMode === "map" ? (
           <div className="h-full w-full relative">
             {/* Map */}
             <div className="h-full w-full relative transition-all duration-500 ease-in-out">
-              <div className="h-full w-full p-4">
+              <div className="h-full w-full p-2 sm:p-4 overflow-hidden">
                 <RentalMapView
                   properties={filteredProperties}
                   selectedProperty={selectedProperty}

@@ -46,6 +46,7 @@ import {
   Lock,
   Activity,
   Info,
+  Menu,
 } from "lucide-react";
 import { toast } from "sonner";
 import { amenityMeta } from "@/app/constants/amenities";
@@ -83,6 +84,7 @@ export function UserDashboard() {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [activeView, setActiveView] = useState<UserView>("favorites");
   const [favorites, setFavorites] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -310,48 +312,105 @@ export function UserDashboard() {
           ))}
         </div>
 
-        {/* Navigation Tabs */}
-        <div
-          ref={scrollRef}
-          className="flex items-center gap-3 mb-6 overflow-x-auto pb-4 custom-h-scrollbar relative scroll-smooth"
-        >
-          {[
-            { id: "favorites", label: "Trọ yêu thích", icon: Heart },
-            { id: "search", label: "Tìm kiếm thông minh", icon: Search },
-            { id: "appointments", label: "Lịch hẹn của tôi", icon: Calendar },
-            { id: "inspections", label: "Yêu cầu kiểm tra", icon: ShieldCheck },
-            { id: "saved-blogs", label: "Blog đã lưu", icon: Heart },
-            { id: "my-blogs", label: "Bài viết của tôi", icon: MessageCircle },
-            { id: "history", label: "Lịch sử đã xem", icon: Eye },
-            { id: "settings", label: "Cài đặt", icon: Settings },
-          ].map((tab) => {
-            const isActive = activeView === tab.id;
-            return (
-              <motion.button
-                key={tab.id}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveView(tab.id as UserView)}
-                className={`relative flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-sm z-10 ${
-                  isActive
-                    ? "text-white"
-                    : "bg-white text-gray-500 hover:text-gray-900 border border-gray-100"
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTabIndicator"
-                    className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl z-[-1] shadow-lg shadow-green-500/20"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+        {/* Navigation Tabs - Mobile Dropdown & Desktop Scroll */}
+        <div className="relative mb-6">
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest bg-white border border-gray-100 text-gray-600 hover:text-gray-900 shadow-sm transition-all"
+            >
+              <Menu className="size-4" />
+              {menuOpen ? "Đóng Menu" : "Mở Menu"}
+            </button>
+          </div>
+
+          {/* Mobile Dropdown Menu */}
+          {menuOpen && (
+            <div className="md:hidden mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {[
+                { id: "favorites", label: "Trọ yêu thích", icon: Heart },
+                { id: "search", label: "Tìm kiếm", icon: Search },
+                { id: "appointments", label: "Lịch hẹn", icon: Calendar },
+                { id: "inspections", label: "Kiểm tra", icon: ShieldCheck },
+                { id: "saved-blogs", label: "Blog lưu", icon: Heart },
+                { id: "my-blogs", label: "Bài viết", icon: MessageCircle },
+                { id: "history", label: "Lịch sử", icon: Eye },
+                { id: "settings", label: "Cài đặt", icon: Settings },
+              ].map((tab) => {
+                const isActive = activeView === tab.id;
+                return (
+                  <motion.button
+                    key={tab.id}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setActiveView(tab.id as UserView);
+                      setMenuOpen(false);
+                    }}
+                    className={`relative flex items-center justify-center gap-2 px-3 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all shadow-sm z-10 ${
+                      isActive
+                        ? "text-white"
+                        : "bg-white text-gray-500 hover:text-gray-900 border border-gray-100"
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeTabIndicator"
+                        className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-xl z-[-1] shadow-lg shadow-green-500/20"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <tab.icon className={`size-3 ${isActive ? "text-white" : ""}`} />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Desktop Horizontal Scroll Tabs */}
+          <div
+            ref={scrollRef}
+            className="hidden md:flex items-center gap-3 overflow-x-auto pb-4 custom-h-scrollbar relative scroll-smooth"
+          >
+            {[
+              { id: "favorites", label: "Trọ yêu thích", icon: Heart },
+              { id: "search", label: "Tìm kiếm thông minh", icon: Search },
+              { id: "appointments", label: "Lịch hẹn của tôi", icon: Calendar },
+              { id: "inspections", label: "Yêu cầu kiểm tra", icon: ShieldCheck },
+              { id: "saved-blogs", label: "Blog đã lưu", icon: Heart },
+              { id: "my-blogs", label: "Bài viết của tôi", icon: MessageCircle },
+              { id: "history", label: "Lịch sử đã xem", icon: Eye },
+              { id: "settings", label: "Cài đặt", icon: Settings },
+            ].map((tab) => {
+              const isActive = activeView === tab.id;
+              return (
+                <motion.button
+                  key={tab.id}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveView(tab.id as UserView)}
+                  className={`relative flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-sm z-10 ${
+                    isActive
+                      ? "text-white"
+                      : "bg-white text-gray-500 hover:text-gray-900 border border-gray-100"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTabIndicator"
+                      className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl z-[-1] shadow-lg shadow-green-500/20"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <tab.icon
+                    className={`size-4 ${isActive ? "text-white" : ""}`}
                   />
-                )}
-                <tab.icon
-                  className={`size-4 ${isActive ? "text-white" : ""}`}
-                />
-                {tab.label}
-              </motion.button>
-            );
-          })}
+                  {tab.label}
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Content Views */}
@@ -2471,7 +2530,7 @@ function TabNav({
       </span>
       <span className="relative z-10">{label}</span>
       {active && (
-        <div className="absolute right-4 w-1.5 h-1.5 bg-white rounded-full relative z-10" />
+        <div className="absolute right-4 w-1.5 h-1.5 bg-white rounded-full z-10" />
       )}
     </button>
   );

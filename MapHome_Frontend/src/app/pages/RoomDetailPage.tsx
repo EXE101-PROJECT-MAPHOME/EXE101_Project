@@ -532,14 +532,14 @@ export function RoomDetailPage() {
           className="max-w-6xl mx-auto px-4 py-6"
         >
           {/* === GALLERY === */}
-          <div className="mb-6">
-            <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[420px] rounded-2xl overflow-hidden shadow-xl">
+          <div className="mb-4 sm:mb-6">
+            <div className="grid grid-cols-4 grid-rows-2 gap-1 sm:gap-2 h-[280px] sm:h-[420px] rounded-xl sm:rounded-2xl overflow-hidden shadow-md sm:shadow-xl">
               {/* Main image */}
               <motion.div
                 initial={{ opacity: 0, scale: 1.1 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8 }}
-                className="col-span-2 row-span-2 relative cursor-pointer group"
+                className="col-span-4 sm:col-span-2 row-span-2 relative cursor-pointer group"
                 onClick={() => setFullscreenGallery(0)}
               >
                 <ImageWithFallback
@@ -569,7 +569,7 @@ export function RoomDetailPage() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.1 * (i + 1), duration: 0.5 }}
-                  className="relative cursor-pointer group overflow-hidden"
+                  className="hidden sm:block relative cursor-pointer group overflow-hidden"
                   onClick={() => setFullscreenGallery(i + 1)}
                 >
                   <ImageWithFallback
@@ -613,14 +613,14 @@ export function RoomDetailPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div className="flex-1">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-4 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-xl sm:text-3xl font-bold text-gray-900 mb-2 leading-tight">
                       {property.name}
                     </h1>
-                    <div className="flex items-center gap-2 text-gray-600 mb-3">
-                      <MapPin className="size-4 text-green-600 flex-shrink-0" />
-                      <span className="text-sm">{property.address}</span>
+                    <div className="flex items-start gap-2 text-gray-600 mb-3">
+                      <MapPin className="size-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-xs sm:text-sm leading-snug">{property.address}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <VerificationBadge
@@ -646,7 +646,7 @@ export function RoomDetailPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
                     <Button
                       variant="outline"
                       size="icon"
@@ -678,29 +678,37 @@ export function RoomDetailPage() {
               </motion.div>
 
               {/* Price & Area bar */}
-              <div className="flex items-center gap-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-5 border border-blue-100">
-                <div>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {property.price.toLocaleString("vi-VN")}đ
-                  </p>
-                  <p className="text-sm text-gray-500">/tháng</p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-4 sm:p-5 border border-blue-100">
+                <div className="flex items-center justify-between sm:block flex-1">
+                  <div>
+                    <p className="text-2xl sm:text-3xl font-bold text-blue-600">
+                      {property.price.toLocaleString("vi-VN")}đ
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500">/tháng</p>
+                  </div>
                 </div>
-                <Separator orientation="vertical" className="h-12" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {property.area}m²
-                  </p>
-                  <p className="text-sm text-gray-500">Diện tích</p>
+                <Separator orientation="horizontal" className="w-full sm:hidden bg-blue-100/50" />
+                <Separator orientation="vertical" className="hidden sm:block h-12 bg-blue-200" />
+                <div className="flex items-center justify-between sm:block flex-1">
+                  <div>
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                      {property.area}m²
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500">Diện tích</p>
+                  </div>
                 </div>
-                <Separator orientation="vertical" className="h-12" />
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {Math.round(property.price / property.area).toLocaleString(
-                      "vi-VN",
-                    )}
-                    đ
-                  </p>
-                  <p className="text-sm text-gray-500">/m²/tháng</p>
+                <Separator orientation="horizontal" className="w-full sm:hidden bg-blue-100/50" />
+                <Separator orientation="vertical" className="hidden sm:block h-12 bg-blue-200" />
+                <div className="flex items-center justify-between sm:block flex-1">
+                  <div>
+                    <p className="text-lg sm:text-2xl font-bold text-gray-900">
+                      {Math.round(property.price / property.area).toLocaleString(
+                        "vi-VN",
+                      )}
+                      đ
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500">/m²/tháng</p>
+                  </div>
                 </div>
               </div>
 
