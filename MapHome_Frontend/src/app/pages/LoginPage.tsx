@@ -45,7 +45,7 @@ export function LoginPage() {
     fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/admin-exists`)
       .then((r) => r.json())
       .then((data) => setAdminExists(data.exists))
-      .catch(() => {}); // silently fail - default stays unlocked
+      .catch(() => { }); // silently fail - default stays unlocked
   }, []);
 
   // Login form - single smart identifier field
@@ -398,13 +398,12 @@ export function LoginPage() {
                               initial={{ opacity: 0, scale: 0.8 }}
                               animate={{ opacity: 1, scale: 1 }}
                               exit={{ opacity: 0, scale: 0.8 }}
-                              className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                                inputType === "phone"
-                                  ? "bg-blue-50 text-blue-500"
-                                  : inputType === "email"
-                                    ? "bg-purple-50 text-purple-500"
-                                    : "bg-emerald-50 text-emerald-500"
-                              }`}
+                              className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${inputType === "phone"
+                                ? "bg-blue-50 text-blue-500"
+                                : inputType === "email"
+                                  ? "bg-purple-50 text-purple-500"
+                                  : "bg-emerald-50 text-emerald-500"
+                                }`}
                             >
                               {inputType === "phone" ? (
                                 <><Phone className="inline size-3 mr-1" />Số điện thoại</>
@@ -442,9 +441,8 @@ export function LoginPage() {
                             }
                           }}
                           placeholder="Username, email hoặc số điện thoại"
-                          className={`h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${
-                            loginErrors.identifier ? "border-red-500" : "border-slate-200"
-                          }`}
+                          className={`h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${loginErrors.identifier ? "border-red-500" : "border-slate-200"
+                            }`}
                           style={{ paddingLeft: '4rem' }}
                           autoComplete="username"
                         />
@@ -902,82 +900,25 @@ export function LoginPage() {
                       )}
                     </motion.div>
 
-                    <motion.div variants={itemVariants} className="space-y-4">
-                      <label className="text-[14px] font-[900] bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent ml-1 flex items-center gap-2 uppercase tracking-tight">
-                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                    <motion.div variants={itemVariants} className="space-y-2">
+                      <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                         Lựa chọn vai trò của bạn
                       </label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          {
-                            id: "landlord",
-                            label: "Chủ trọ",
-                            icon: Building2,
-                            desc: "Đăng tin",
-                            color: "emerald",
-                          },
-                          {
-                            id: "user",
-                            label: "Người tìm",
-                            icon: User,
-                            desc: "Tìm thuê",
-                            color: "blue",
-                          },
-                          {
-                            id: "admin",
-                            label: "Quản trị",
-                            icon: Shield,
-                            desc: "Quản lý",
-                            color: "slate",
-                          },
-                        ].map((role) => {
-                          const isAdminLocked = role.id === "admin" && adminExists;
-                          return (
-                          <button
-                            key={role.id}
-                            type="button"
-                            disabled={isAdminLocked}
-                            onClick={() =>
-                              !isAdminLocked && setRegisterData({
-                                ...registerData,
-                                role: role.id as any,
-                              })
-                            }
-                            title={isAdminLocked ? "Hệ thống đã có quản trị viên" : undefined}
-                            className={`relative p-3 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center justify-center gap-1 group overflow-hidden ${
-                              isAdminLocked
-                                ? "opacity-40 cursor-not-allowed bg-slate-50 border-slate-100"
-                                : registerData.role === role.id
-                                  ? `border-${role.color}-500 bg-${role.color}-50 shadow-lg shadow-${role.color}-500/10 scale-[1.02]`
-                                  : "bg-white/40 border-slate-100 hover:border-slate-300 hover:bg-white"
-                            }`}
-                          >
-                            <role.icon
-                              className={`size-6 mb-1 transition-all ${
-                                isAdminLocked
-                                  ? "text-slate-300"
-                                  : registerData.role === role.id
-                                    ? `text-${role.color}-600`
-                                    : "text-slate-400 group-hover:text-slate-600"
-                              }`}
-                            />
-                            <span
-                              className={`text-[12px] font-extrabold ${
-                                isAdminLocked
-                                  ? "text-slate-300"
-                                  : registerData.role === role.id
-                                    ? `text-${role.color}-900`
-                                    : "text-slate-600"
-                              }`}
-                            >
-                              {role.label}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              {isAdminLocked ? "Đã đủ" : role.desc}
-                            </span>
-                          </button>
-                          );
-                        })}
+                      <div className="relative">
+                        <select
+                          value={registerData.role}
+                          onChange={(e) => setRegisterData({ ...registerData, role: e.target.value as "landlord" | "user" })}
+                          className="w-full h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-bold text-slate-700 border border-slate-200 transition-colors px-4 appearance-none outline-none cursor-pointer hover:border-emerald-300"
+                        >
+                          <option value="landlord">Chủ trọ (Đăng tin cho thuê)</option>
+                          <option value="user">Khách thuê (Tìm thuê phòng)</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
+                          <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path>
+                          </svg>
+                        </div>
                       </div>
                     </motion.div>
 
