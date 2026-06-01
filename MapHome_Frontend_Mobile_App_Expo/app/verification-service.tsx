@@ -44,6 +44,10 @@ export default function VerificationServiceScreen() {
   const [pricing, setPricing] = useState({ basicVerification: 199000 });
   const [loading, setLoading] = useState(true);
 
+  const tintColor = useThemeColor({}, "tint");
+  const iconColor = useThemeColor({}, "icon");
+  const infoColor = useThemeColor({}, "info");
+
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "landlord") {
       Alert.alert("Thông báo", "Vui lòng đăng nhập với tài khoản chủ trọ");
@@ -122,7 +126,7 @@ export default function VerificationServiceScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
-        <ActivityIndicator size="large" color={useThemeColor({}, "tint")} />
+        <ActivityIndicator size="large" color={tintColor} />
       </SafeAreaView>
     );
   }
@@ -156,8 +160,8 @@ export default function VerificationServiceScreen() {
         >
           {/* Lợi ích */}
           <View className="bg-emerald-50 rounded-3xl p-5 border border-emerald-100 mb-6">
-            <Text className="text-base font-black text-emerald-950 mb-4 flex-row items-center">
-              <Award size={18} color={useThemeColor({}, "tint")} /> Lợi ích khi
+            <Text className="text-base font-black text-emerald-700 mb-4 flex-row items-center">
+              <Award size={18} color={tintColor} /> Lợi ích khi
               có Tích Xanh
             </Text>
             <View className="flex-row justify-between">
@@ -226,7 +230,7 @@ export default function VerificationServiceScreen() {
             <View className="flex-row justify-between mb-4">
               <View className="w-[48%]">
                 <Text className="font-bold text-slate-700 mb-2 flex-row">
-                  <CalendarIcon size={14} color={useThemeColor({}, "icon")} />{" "}
+                  <CalendarIcon size={14} color={iconColor} />{" "}
                   Ngày hẹn *
                 </Text>
                 <TouchableOpacity
@@ -241,7 +245,7 @@ export default function VerificationServiceScreen() {
 
               <View className="w-[48%]">
                 <Text className="font-bold text-slate-700 mb-2 flex-row">
-                  <ClockIcon size={14} color={useThemeColor({}, "icon")} /> Giờ
+                  <ClockIcon size={14} color={iconColor} /> Giờ
                   hẹn *
                 </Text>
                 {/* Dùng ScrollView ngang cho giờ */}
@@ -270,7 +274,7 @@ export default function VerificationServiceScreen() {
             </View>
 
             <Text className="font-bold text-slate-700 mb-2 flex-row">
-              <FileText size={14} color={useThemeColor({}, "icon")} /> Ghi chú
+              <FileText size={14} color={iconColor} /> Ghi chú
               (Tùy chọn)
             </Text>
             <TextInput
@@ -287,7 +291,7 @@ export default function VerificationServiceScreen() {
           {/* Quy trình */}
           <View className="bg-blue-50 rounded-3xl p-5 border border-blue-100 mb-4">
             <Text className="font-black text-blue-900 mb-3 flex-row items-center">
-              <CheckCircle size={18} color={useThemeColor({}, "info")} /> Quy
+              <CheckCircle size={18} color={infoColor} /> Quy
               trình kiểm tra
             </Text>
             <Text className="text-xs text-blue-800 font-bold mb-1">

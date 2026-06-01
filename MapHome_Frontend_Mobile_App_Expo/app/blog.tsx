@@ -138,7 +138,7 @@ export default function BlogScreen() {
         >
           <ArrowLeft size={18} color="#0f172a" />
         </TouchableOpacity>
-        <Text className="text-2xl font-black text-emerald-950">
+        <Text className="text-2xl font-black text-emerald-700">
           Blog MapHome
         </Text>
       </View>
@@ -243,7 +243,7 @@ export default function BlogScreen() {
                   </View>
 
                   <Text
-                    className="text-base font-black text-emerald-950 mb-2"
+                    className="text-base font-black text-emerald-700 mb-2"
                     numberOfLines={2}
                   >
                     {post.title}

@@ -188,7 +188,7 @@ export default function CheckoutScreen() {
             <ArrowLeft size={18} color={icon} />
           </TouchableOpacity>
           <View>
-            <Text className="text-xl font-black text-emerald-950">
+            <Text className="text-xl font-black text-emerald-700">
               Thanh toán
             </Text>
             <Text className="text-xs text-slate-500 font-bold">
@@ -203,7 +203,7 @@ export default function CheckoutScreen() {
         >
           {/* Order details */}
           <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm mb-4">
-            <Text className="text-base font-black text-emerald-950 mb-4 flex-row items-center">
+            <Text className="text-base font-black text-emerald-700 mb-4 flex-row items-center">
               <CreditCard size={18} color={tint} /> Thông tin đơn hàng
             </Text>
 
@@ -213,14 +213,14 @@ export default function CheckoutScreen() {
                   ? "Kiểm tra thực địa"
                   : `Gói ${selectedTier?.name || planId}`}
               </Text>
-              <Text className="text-emerald-950 font-black">
+              <Text className="text-emerald-700 font-black">
                 {baseAmount.toLocaleString("vi-VN")}đ
               </Text>
             </View>
 
             <View className="flex-row justify-between mb-3">
               <Text className="text-slate-600 font-semibold">Thời hạn</Text>
-              <Text className="text-emerald-950 font-black">
+              <Text className="text-emerald-700 font-black">
                 {durationText}
               </Text>
             </View>
@@ -251,7 +251,7 @@ export default function CheckoutScreen() {
 
           {/* Voucher Input */}
           <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm mb-4">
-            <Text className="text-base font-black text-emerald-950 mb-3 flex-row items-center">
+            <Text className="text-base font-black text-emerald-700 mb-3 flex-row items-center">
               <Tag size={18} color={tint} /> Mã giảm giá
             </Text>
 

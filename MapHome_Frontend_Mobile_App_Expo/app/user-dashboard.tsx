@@ -5,6 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
@@ -20,22 +22,34 @@ import {
   GitCompare,
   KeyRound,
   UserCircle,
+  Eye,
+  Star,
+  Phone,
+  MessageSquare,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import ROUTES, { navigateTo } from "@/constants/routes";
-import api from "../utils/api";
-import { useAuth } from "../contexts/AuthContext";
-import { useCompare } from "../contexts/CompareContext";
+import api from "@/utils/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCompare } from "@/contexts/CompareContext";
+
+type DashboardTab = "overview" | "bookings" | "blogs" | "settings";
 
 export default function UserDashboardScreen() {
   const router = useRouter();
   const { user, isAuthenticated, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
   const [screenLoading, setScreenLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Data states
   const [favorites, setFavorites] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [inspections, setInspections] = useState<any[]>([]);
   const [myBlogs, setMyBlogs] = useState<any[]>([]);
   const [savedBlogs, setSavedBlogs] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
   const { compareList } = useCompare();
   const tint = useThemeColor({}, "tint");
   const icon = useThemeColor({}, "icon");
@@ -44,34 +58,50 @@ export default function UserDashboardScreen() {
   const danger = useThemeColor({}, "danger");
   const success = useThemeColor({}, "success");
 
+  const fetchData = async () => {
+    if (!isAuthenticated || !user) {
+      setScreenLoading(false);
+      return;
+    }
+
+    try {
+      setScreenLoading(true);
+      const [
+        favRes,
+        bookingRes,
+        inspectRes,
+        myBlogsRes,
+        savedBlogsRes,
+        notifRes,
+      ] = await Promise.all([
+        api.get("/api/user/me/favorites").catch(() => ({ data: [] })),
+        api.get("/api/user/bookings").catch(() => ({ data: [] })),
+        api.get("/api/user/inspections").catch(() => ({ data: [] })),
+        api.get("/api/blogs/my-blogs").catch(() => ({ data: [] })),
+        api.get("/api/blogs/me/saved").catch(() => ({ data: [] })),
+        api.get("/api/notifications").catch(() => ({ data: [] })),
+      ]);
+
+      setFavorites(favRes.data || []);
+      setAppointments(bookingRes.data || []);
+      setInspections(inspectRes.data || []);
+      setMyBlogs(myBlogsRes.data || []);
+      setSavedBlogs(savedBlogsRes.data || []);
+      setNotifications(notifRes.data || []);
+    } catch (e) {
+      console.error("Error fetching user data", e);
+    } finally {
+      setScreenLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!isAuthenticated || !user) {
-        setScreenLoading(false);
-        return;
-      }
-      try {
-        setScreenLoading(true);
-        const [favRes, bookingRes, inspectRes, myBlogsRes, savedBlogsRes] =
-          await Promise.all([
-            api.get("/api/user/me/favorites").catch(() => ({ data: [] })),
-            api.get("/api/user/bookings").catch(() => ({ data: [] })),
-            api.get("/api/user/inspections").catch(() => ({ data: [] })),
-            api.get("/api/blogs/my-blogs").catch(() => ({ data: [] })),
-            api.get("/api/blogs/me/saved").catch(() => ({ data: [] })),
-          ]);
-
-        setFavorites(favRes.data || []);
-        setAppointments(bookingRes.data || []);
-        setInspections(inspectRes.data || []);
-        setMyBlogs(myBlogsRes.data || []);
-        setSavedBlogs(savedBlogsRes.data || []);
-      } finally {
-        setScreenLoading(false);
-      }
-    };
-
     fetchData();
+  }, [isAuthenticated, user]);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchData().finally(() => setRefreshing(false));
   }, [isAuthenticated, user]);
 
   const stats = useMemo(
@@ -81,18 +111,21 @@ export default function UserDashboardScreen() {
         value: favorites.length,
         icon: Heart,
         color: "bg-red-500",
+        iconColor: "#ef4444",
       },
       {
         label: "Lịch hẹn",
         value: appointments.length,
         icon: Calendar,
         color: "bg-blue-500",
+        iconColor: "#3b82f6",
       },
       {
         label: "Chờ duyệt",
         value: appointments.filter((item) => item.status === "pending").length,
         icon: Clock3,
         color: "bg-amber-500",
+        iconColor: "#f59e0b",
       },
       {
         label: "Hoàn tất",
@@ -100,10 +133,18 @@ export default function UserDashboardScreen() {
           .length,
         icon: CheckCircle2,
         color: "bg-emerald-500",
+        iconColor: "#10b981",
       },
     ],
-    [favorites.length, appointments],
+    [favorites, appointments],
   );
+
+  const menuItems: Array<{ id: DashboardTab; label: string; icon: any }> = [
+    { id: "overview", label: "Tổng quan", icon: Eye },
+    { id: "bookings", label: "Lịch hẹn", icon: Calendar },
+    { id: "blogs", label: "Bài viết", icon: BookOpen },
+    { id: "settings", label: "Cài đặt", icon: Settings },
+  ];
 
   if (loading || screenLoading) {
     return (
@@ -116,7 +157,7 @@ export default function UserDashboardScreen() {
   if (!isAuthenticated || !user || user.role !== "user") {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center p-6">
-        <Text className="text-emerald-950 font-black text-xl text-center mb-3">
+        <Text className="text-emerald-700 font-black text-xl text-center mb-3">
           Bạn không có quyền truy cập trang này
         </Text>
         <TouchableOpacity
@@ -131,183 +172,547 @@ export default function UserDashboardScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
-      <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
-        >
-          <ArrowLeft size={18} color={icon} />
-        </TouchableOpacity>
-        <View>
-          <Text className="text-2xl font-black text-emerald-950">
-            User Dashboard
-          </Text>
-          <Text className="text-xs text-slate-500 font-semibold">
-            Quản lý hành trình tìm trọ
-          </Text>
+      {/* Header */}
+      <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center justify-between">
+        <View className="flex-row items-center flex-1">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
+          >
+            <ArrowLeft size={18} color={icon} />
+          </TouchableOpacity>
+          <View>
+            <Text className="text-2xl font-black text-emerald-700">
+              Dashboard
+            </Text>
+            <Text className="text-xs text-slate-500 font-semibold">
+              Quản lý hành trình tìm trọ
+            </Text>
+          </View>
         </View>
       </View>
 
+      {/* Tab Navigation */}
+      <View className="px-4 py-3 bg-white border-b border-slate-200">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="flex-row"
+        >
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => setActiveTab(item.id)}
+              className={`flex-row items-center px-4 py-2 rounded-full mr-2 ${
+                activeTab === item.id
+                  ? "bg-emerald-600"
+                  : "bg-slate-100 border border-slate-200"
+              }`}
+            >
+              <item.icon
+                size={16}
+                color={activeTab === item.id ? "white" : icon}
+              />
+              <Text
+                className={`ml-2 font-bold text-sm ${
+                  activeTab === item.id ? "text-white" : "text-slate-700"
+                }`}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Content */}
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
-          <Text className="text-lg font-black text-emerald-950">
-            Xin chào, {user.fullName || user.username}
-          </Text>
-          <Text className="text-slate-500 mt-1">
-            Theo dõi phòng yêu thích, lịch hẹn và bài viết của bạn.
-          </Text>
-        </View>
-
-        <View className="flex-row flex-wrap justify-between mb-4">
-          {stats.map((item, index) => (
-            <View
-              key={index}
-              className="w-[48%] bg-white rounded-2xl p-4 border border-slate-100 mb-3"
-            >
-              <View
-                className={`w-9 h-9 rounded-xl ${item.color} items-center justify-center mb-2`}
-              >
-                <item.icon size={16} color="white" />
-              </View>
-              <Text className="text-2xl font-black text-emerald-950">
-                {item.value}
+        {/* Overview Tab */}
+        {activeTab === "overview" && (
+          <View>
+            {/* Welcome Card */}
+            <View className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl p-5 mb-4 shadow-sm">
+              <Text className="text-white font-black text-xl mb-1">
+                Xin chào, {user.fullName || user.username}! 👋
               </Text>
-              <Text className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                {item.label}
+              <Text className="text-emerald-100 text-sm font-medium">
+                Theo dõi phòng yêu thích, lịch hẹn và bài viết của bạn.
               </Text>
             </View>
-          ))}
-        </View>
 
-        <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
-          <Text className="text-base font-black text-emerald-950 mb-3">
-            Lịch hẹn gần đây
-          </Text>
-          {appointments.length === 0 ? (
-            <Text className="text-slate-500">Bạn chưa có lịch hẹn nào.</Text>
-          ) : (
-            appointments.slice(0, 4).map((item, idx) => (
-              <View
-                key={item._id || idx}
-                className="py-2 border-b border-slate-100"
-              >
-                <Text className="font-bold text-emerald-950" numberOfLines={1}>
-                  {item.propertyId?.name || "Phòng trọ"}
-                </Text>
-                <View className="flex-row items-center mt-1">
-                  <MapPin size={12} color={icon} />
-                  <Text
-                    className="text-xs text-slate-500 ml-1"
-                    numberOfLines={1}
+            {/* Stats Grid */}
+            <View className="flex-row flex-wrap justify-between mb-4">
+              {stats.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  className="w-[48%] bg-white rounded-2xl p-4 border border-slate-100 mb-3 shadow-sm active:opacity-80"
+                >
+                  <View
+                    className={`w-9 h-9 rounded-xl ${item.color} items-center justify-center mb-2`}
                   >
-                    {item.propertyId?.address || "Chưa cập nhật địa chỉ"}
+                    <item.icon size={16} color="white" />
+                  </View>
+                  <Text className="text-2xl font-black text-emerald-700">
+                    {item.value}
+                  </Text>
+                  <Text className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Recent Bookings */}
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+              <View className="flex-row items-center justify-between mb-3">
+                <Text className="text-base font-black text-emerald-700">
+                  Lịch hẹn gần đây
+                </Text>
+                {appointments.length > 0 && (
+                  <Text className="text-xs text-slate-500 font-bold">
+                    {appointments.length} lịch
+                  </Text>
+                )}
+              </View>
+
+              {appointments.length === 0 ? (
+                <View className="items-center py-6">
+                  <Calendar size={32} color={icon} opacity={0.5} />
+                  <Text className="text-slate-500 mt-2 text-center">
+                    Bạn chưa có lịch hẹn nào.
+                  </Text>
+                </View>
+              ) : (
+                appointments.slice(0, 3).map((item, idx) => (
+                  <TouchableOpacity
+                    key={item._id || idx}
+                    className="py-3 border-b border-slate-100 flex-row items-center active:bg-slate-50 px-2 rounded-lg"
+                  >
+                    {item.propertyId?.image && (
+                      <Image
+                        source={{ uri: item.propertyId.image }}
+                        className="w-12 h-12 rounded-lg mr-3"
+                      />
+                    )}
+                    <View className="flex-1">
+                      <Text
+                        className="font-bold text-emerald-700 mb-1"
+                        numberOfLines={1}
+                      >
+                        {item.propertyId?.name || "Phòng trọ"}
+                      </Text>
+                      <View className="flex-row items-center">
+                        <MapPin size={12} color={icon} />
+                        <Text
+                          className="text-xs text-slate-500 ml-1"
+                          numberOfLines={1}
+                        >
+                          {item.propertyId?.address || "Chưa cập nhật"}
+                        </Text>
+                      </View>
+                      <Text className="text-[10px] text-slate-400 mt-1">
+                        {item.bookingDate
+                          ? new Date(item.bookingDate).toLocaleDateString(
+                              "vi-VN",
+                            )
+                          : ""}
+                      </Text>
+                    </View>
+                    <View
+                      className={`px-2 py-1 rounded-full ${
+                        item.status === "completed"
+                          ? "bg-emerald-50"
+                          : "bg-amber-50"
+                      }`}
+                    >
+                      <Text
+                        className={`text-[10px] font-bold ${
+                          item.status === "completed"
+                            ? "text-emerald-700"
+                            : "text-amber-700"
+                        }`}
+                      >
+                        {item.status === "completed" ? "✓ Hoàn tất" : "⏳ Chờ"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+
+              {appointments.length > 3 && (
+                <TouchableOpacity
+                  onPress={() => setActiveTab("bookings")}
+                  className="mt-3 py-2 px-3 rounded-xl bg-emerald-50 items-center"
+                >
+                  <Text className="text-emerald-700 font-bold text-sm">
+                    Xem tất cả {appointments.length} lịch hẹn
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Content Stats */}
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+              <Text className="text-base font-black text-emerald-700 mb-4">
+                Nội dung của bạn
+              </Text>
+              <View className="flex-row justify-between">
+                <TouchableOpacity
+                  onPress={() => setActiveTab("blogs")}
+                  className="items-center flex-1 py-3 px-2 rounded-xl active:bg-slate-50"
+                >
+                  <Heart size={20} color={danger} />
+                  <Text className="text-2xl font-black text-emerald-700 mt-2">
+                    {favorites.length}
+                  </Text>
+                  <Text className="text-[10px] text-slate-500 font-bold uppercase">
+                    Yêu thích
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setActiveTab("blogs")}
+                  className="items-center flex-1 py-3 px-2 rounded-xl active:bg-slate-50"
+                >
+                  <BookOpen size={20} color={info} />
+                  <Text className="text-2xl font-black text-emerald-700 mt-2">
+                    {savedBlogs.length}
+                  </Text>
+                  <Text className="text-[10px] text-slate-500 font-bold uppercase">
+                    Blog đã lưu
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setActiveTab("blogs")}
+                  className="items-center flex-1 py-3 px-2 rounded-xl active:bg-slate-50"
+                >
+                  <BookOpen size={20} color={tint} />
+                  <Text className="text-2xl font-black text-emerald-700 mt-2">
+                    {myBlogs.length}
+                  </Text>
+                  <Text className="text-[10px] text-slate-500 font-bold uppercase">
+                    Blog của tôi
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity className="items-center flex-1 py-3 px-2 rounded-xl active:bg-slate-50">
+                  <Eye size={20} color={warning} />
+                  <Text className="text-2xl font-black text-emerald-700 mt-2">
+                    {inspections.length}
+                  </Text>
+                  <Text className="text-[10px] text-slate-500 font-bold uppercase">
+                    Lượt kiểm tra
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Quick Actions */}
+            <View className="flex-row mb-4 gap-2">
+              <TouchableOpacity
+                onPress={() => navigateTo(router, ROUTES.SAVED)}
+                className="flex-1 bg-emerald-600 h-12 rounded-2xl items-center justify-center shadow-sm active:opacity-80 flex-row"
+              >
+                <Heart size={16} color="white" />
+                <Text className="text-white font-black ml-2">Yêu thích</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => navigateTo(router, ROUTES.COMPARE)}
+                className="flex-1 bg-white border border-slate-200 h-12 rounded-2xl items-center justify-center active:opacity-80 flex-row relative"
+              >
+                {compareList?.length > 0 && (
+                  <View className="absolute -top-2 -right-2 bg-red-500 w-5 h-5 rounded-full items-center justify-center z-10">
+                    <Text className="text-[10px] text-white font-bold">
+                      {compareList.length}
+                    </Text>
+                  </View>
+                )}
+                <GitCompare size={16} color={icon} />
+                <Text className="text-slate-700 font-black ml-2">So sánh</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Bookings Tab */}
+        {activeTab === "bookings" && (
+          <View>
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-lg font-black text-emerald-700">
+                  Lịch hẹn của bạn
+                </Text>
+                <View className="bg-emerald-50 px-3 py-1 rounded-full">
+                  <Text className="text-emerald-700 font-bold text-sm">
+                    {appointments.length}
                   </Text>
                 </View>
               </View>
-            ))
-          )}
-        </View>
 
-        <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
-          <Text className="text-base font-black text-emerald-950 mb-3">
-            Nội dung của bạn
-          </Text>
-          <View className="flex-row justify-between">
-            <View className="items-center flex-1">
-              <BookOpen size={16} color={info} />
-              <Text className="text-2xl font-black text-emerald-950 mt-1">
-                {savedBlogs.length}
-              </Text>
-              <Text className="text-[11px] text-slate-500 font-bold">
-                Blog đã lưu
-              </Text>
-            </View>
-            <View className="items-center flex-1">
-              <BookOpen size={16} color={tint} />
-              <Text className="text-2xl font-black text-emerald-950 mt-1">
-                {myBlogs.length}
-              </Text>
-              <Text className="text-[11px] text-slate-500 font-bold">
-                Blog của tôi
-              </Text>
-            </View>
-            <View className="items-center flex-1">
-              <Calendar size={16} color={warning} />
-              <Text className="text-2xl font-black text-emerald-950 mt-1">
-                {inspections.length}
-              </Text>
-              <Text className="text-[11px] text-slate-500 font-bold">
-                Lượt kiểm tra
-              </Text>
+              {appointments.length === 0 ? (
+                <View className="items-center py-8">
+                  <Calendar size={40} color={icon} opacity={0.5} />
+                  <Text className="text-slate-500 mt-3 text-center font-semibold">
+                    Không có lịch hẹn nào
+                  </Text>
+                </View>
+              ) : (
+                appointments.map((item, idx) => (
+                  <TouchableOpacity
+                    key={item._id || idx}
+                    className="bg-slate-50 rounded-2xl p-4 mb-3 border border-slate-100 active:bg-slate-100"
+                  >
+                    {item.propertyId?.image && (
+                      <Image
+                        source={{ uri: item.propertyId.image }}
+                        className="w-full h-40 rounded-xl mb-3"
+                      />
+                    )}
+                    <Text className="font-black text-emerald-700 text-base mb-1">
+                      {item.propertyId?.name || "Phòng trọ"}
+                    </Text>
+                    <View className="flex-row items-center mb-2">
+                      <MapPin size={14} color={icon} />
+                      <Text className="text-sm text-slate-600 ml-1 flex-1">
+                        {item.propertyId?.address}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center mb-2">
+                      <Calendar size={14} color={icon} />
+                      <Text className="text-sm text-slate-600 ml-1">
+                        {item.bookingDate
+                          ? new Date(item.bookingDate).toLocaleDateString(
+                              "vi-VN",
+                            )
+                          : ""}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center">
+                      <Clock3 size={14} color={icon} />
+                      <Text className="text-sm text-slate-600 ml-1">
+                        {item.bookingTime}
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-slate-200">
+                      <View
+                        className={`px-3 py-1 rounded-full ${
+                          item.status === "completed"
+                            ? "bg-emerald-50"
+                            : "bg-amber-50"
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs font-bold ${
+                            item.status === "completed"
+                              ? "text-emerald-700"
+                              : "text-amber-700"
+                          }`}
+                        >
+                          {item.status === "completed"
+                            ? "✓ Hoàn tất"
+                            : "⏳ Chờ duyệt"}
+                        </Text>
+                      </View>
+                      {item.propertyId?.phone && (
+                        <TouchableOpacity className="flex-row items-center px-3 py-1 rounded-full bg-blue-50">
+                          <Phone size={12} color={info} />
+                          <Text className="text-xs font-bold text-blue-700 ml-1">
+                            Liên hệ
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
           </View>
-        </View>
+        )}
 
-        <View className="flex-row mb-6">
-          <TouchableOpacity
-            onPress={() => navigateTo(router, ROUTES.SAVED)}
-            className="flex-1 bg-emerald-600 h-12 rounded-xl items-center justify-center mr-2 shadow-sm"
-          >
-            <Text className="text-white font-black">Xem trọ yêu thích</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigateTo(router, ROUTES.COMPARE)}
-            className="flex-1 bg-white border border-slate-200 h-12 rounded-xl items-center justify-center ml-2 relative"
-          >
-            {compareList?.length > 0 && (
-              <View className="absolute -top-2 -right-2 bg-red-500 w-5 h-5 rounded-full items-center justify-center z-10">
-                <Text className="text-[10px] text-white font-bold">
-                  {compareList.length}
+        {/* Blogs Tab */}
+        {activeTab === "blogs" && (
+          <View>
+            {/* Saved Blogs */}
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-base font-black text-emerald-700">
+                  Bài viết đã lưu
                 </Text>
+                <View className="bg-red-50 px-3 py-1 rounded-full">
+                  <Text className="text-red-700 font-bold text-sm">
+                    {savedBlogs.length}
+                  </Text>
+                </View>
               </View>
-            )}
-            <Text className="text-slate-700 font-black flex-row items-center">
-              <GitCompare size={14} color={icon} /> So sánh
-            </Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Settings Section */}
-        <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
-          <Text className="text-base font-black text-emerald-950 mb-3 flex-row items-center">
-            <Settings size={18} color={tint} /> Cài đặt tài khoản
-          </Text>
+              {savedBlogs.length === 0 ? (
+                <View className="items-center py-6">
+                  <BookOpen size={32} color={icon} opacity={0.5} />
+                  <Text className="text-slate-500 mt-2 text-center">
+                    Không có bài viết đã lưu
+                  </Text>
+                </View>
+              ) : (
+                savedBlogs.slice(0, 3).map((blog, idx) => (
+                  <TouchableOpacity
+                    key={blog._id || idx}
+                    className="py-3 px-3 border-b border-slate-100 rounded-lg active:bg-slate-50"
+                  >
+                    <Text className="font-bold text-emerald-700 mb-1">
+                      {blog.title || "Bài viết không tiêu đề"}
+                    </Text>
+                    <Text className="text-xs text-slate-500 line-clamp-2">
+                      {blog.description || blog.content || ""}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
 
-          <TouchableOpacity
-            onPress={() => navigateTo(router, ROUTES.PROFILE)}
-            className="flex-row items-center py-3 border-b border-slate-100"
-          >
-            <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center mr-3">
-              <UserCircle size={20} color={info} />
-            </View>
-            <View className="flex-1">
-              <Text className="font-bold text-slate-800">
-                Thông tin cá nhân
-              </Text>
-              <Text className="text-xs text-slate-500">
-                Cập nhật tên, avatar, số điện thoại
-              </Text>
-            </View>
-          </TouchableOpacity>
+            {/* My Blogs */}
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-base font-black text-emerald-700">
+                  Bài viết của tôi
+                </Text>
+                <View className="bg-emerald-50 px-3 py-1 rounded-full">
+                  <Text className="text-emerald-700 font-bold text-sm">
+                    {myBlogs.length}
+                  </Text>
+                </View>
+              </View>
 
-          <TouchableOpacity
-            onPress={() => navigateTo(router, ROUTES.PROFILE)}
-            className="flex-row items-center py-3"
-          >
-            <View className="w-10 h-10 rounded-full bg-amber-50 items-center justify-center mr-3">
-              <KeyRound size={20} color={warning} />
+              {myBlogs.length === 0 ? (
+                <View className="items-center py-6">
+                  <BookOpen size={32} color={icon} opacity={0.5} />
+                  <Text className="text-slate-500 mt-2 text-center">
+                    Bạn chưa viết bài viết nào
+                  </Text>
+                </View>
+              ) : (
+                myBlogs.slice(0, 3).map((blog, idx) => (
+                  <TouchableOpacity
+                    key={blog._id || idx}
+                    className="py-3 px-3 border-b border-slate-100 rounded-lg active:bg-slate-50"
+                  >
+                    <Text className="font-bold text-emerald-700 mb-1">
+                      {blog.title || "Bài viết không tiêu đề"}
+                    </Text>
+                    <View className="flex-row items-center mt-1">
+                      <Star size={12} color={warning} fill={warning} />
+                      <Text className="text-xs text-slate-500 ml-1">
+                        {blog.rating || 0} sao
+                      </Text>
+                      <View className="w-1 h-1 bg-slate-300 rounded-full mx-2" />
+                      <MessageSquare size={12} color={icon} />
+                      <Text className="text-xs text-slate-500 ml-1">
+                        {blog.comments?.length || 0} bình luận
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
-            <View className="flex-1">
-              <Text className="font-bold text-slate-800">Đổi mật khẩu</Text>
-              <Text className="text-xs text-slate-500">
-                Bảo mật tài khoản của bạn
+          </View>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === "settings" && (
+          <View>
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+              <Text className="text-base font-black text-emerald-700 mb-4">
+                Cài đặt tài khoản
               </Text>
+
+              <TouchableOpacity
+                onPress={() => navigateTo(router, ROUTES.PROFILE)}
+                className="flex-row items-center py-4 border-b border-slate-100 active:bg-slate-50 px-2 rounded-lg"
+              >
+                <View className="w-12 h-12 rounded-full bg-blue-50 items-center justify-center mr-3">
+                  <UserCircle size={20} color={info} />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bold text-slate-800">
+                    Thông tin cá nhân
+                  </Text>
+                  <Text className="text-xs text-slate-500">
+                    Cập nhật hồ sơ của bạn
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => navigateTo(router, ROUTES.PROFILE)}
+                className="flex-row items-center py-4 border-b border-slate-100 active:bg-slate-50 px-2 rounded-lg"
+              >
+                <View className="w-12 h-12 rounded-full bg-amber-50 items-center justify-center mr-3">
+                  <KeyRound size={20} color={warning} />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bold text-slate-800">Đổi mật khẩu</Text>
+                  <Text className="text-xs text-slate-500">
+                    Bảo mật tài khoản của bạn
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => navigateTo(router, ROUTES.PROFILE)}
+                className="flex-row items-center py-4 active:bg-slate-50 px-2 rounded-lg"
+              >
+                <View className="w-12 h-12 rounded-full bg-red-50 items-center justify-center mr-3">
+                  <Settings size={20} color={danger} />
+                </View>
+                <View className="flex-1">
+                  <Text className="font-bold text-slate-800">Cài đặt khác</Text>
+                  <Text className="text-xs text-slate-500">
+                    Tùy chỉnh trải nghiệm của bạn
+                  </Text>
+                </View>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </View>
+
+            {/* Notifications Section */}
+            <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-base font-black text-emerald-700">
+                  Thông báo gần đây
+                </Text>
+                {notifications.length > 0 && (
+                  <View className="bg-blue-50 px-3 py-1 rounded-full">
+                    <Text className="text-blue-700 font-bold text-sm">
+                      {notifications.length}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {notifications.length === 0 ? (
+                <Text className="text-slate-500 text-center py-4">
+                  Không có thông báo nào
+                </Text>
+              ) : (
+                notifications.slice(0, 3).map((notif, idx) => (
+                  <View
+                    key={notif._id || idx}
+                    className="py-2 border-b border-slate-100"
+                  >
+                    <Text className="font-bold text-slate-800 text-sm">
+                      {notif.title}
+                    </Text>
+                    <Text className="text-xs text-slate-500 mt-1">
+                      {notif.message}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

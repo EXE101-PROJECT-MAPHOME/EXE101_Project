@@ -5,13 +5,13 @@
 
 import { Platform } from "react-native";
 
-// Primary brand color palette (match web Tailwind `maphome` 500)
-const tintColorLight = "#22c55e";
-const tintColorDark = "#22c55e";
+// Primary brand color palette (match web Tailwind `maphome` 600 / green-600)
+const tintColorLight = "#16a34a";
+const tintColorDark = "#16a34a";
 
 export const Colors = {
   light: {
-    text: "#11181C",
+    text: "#0f172a",
     background: "#fff",
     tint: tintColorLight,
     // semantic tokens

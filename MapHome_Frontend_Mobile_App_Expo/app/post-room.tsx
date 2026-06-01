@@ -11,7 +11,7 @@ export default function PostRoomScreen() {
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
       <View className="p-4">
-        <Text className="text-2xl font-black text-emerald-950 mb-4">
+        <Text className="text-2xl font-black text-emerald-700 mb-4">
           Đăng tin phòng trọ
         </Text>
         <Text className="text-slate-600 mb-6">
