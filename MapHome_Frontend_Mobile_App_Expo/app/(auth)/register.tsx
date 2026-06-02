@@ -218,11 +218,7 @@ export default function RegisterScreen() {
   const inputStyle = (field: string, hasError: boolean) => ({
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    backgroundColor: focused[field]
-      ? field === "password" || field === "confirmPassword"
-        ? info
-        : tint
-      : background,
+    backgroundColor: background,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: hasError

@@ -282,7 +282,7 @@ export default function LoginScreen() {
                   alignItems: "center",
                   height: 56,
                   paddingHorizontal: 16,
-                  backgroundColor: identifierFocused ? tint : background,
+                  backgroundColor: background,
                   borderRadius: 16,
                   borderWidth: 1.5,
                   borderColor: errors.identifier
@@ -368,7 +368,7 @@ export default function LoginScreen() {
                   alignItems: "center",
                   height: 56,
                   paddingHorizontal: 16,
-                  backgroundColor: passwordFocused ? info : background,
+                  backgroundColor: background,
                   borderRadius: 16,
                   borderWidth: 1.5,
                   borderColor: errors.password
