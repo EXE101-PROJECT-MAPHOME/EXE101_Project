@@ -30,7 +30,11 @@ app.use(
         .map((s) => s.trim())
         .filter(Boolean);
       const allowedOrigins = Array.from(
-        new Set([process.env.FRONTEND_URL, ...envList].filter(Boolean)),
+        new Set([
+          process.env.FRONTEND_URL, 
+          "https://exe201-maphome-app.vercel.app", // Đã thêm cứng tên miền mới của Vercel vào đây
+          ...envList
+        ].filter(Boolean)),
       );
 
       // Allow localhost/127.0.0.1 with or without an explicit port
