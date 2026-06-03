@@ -59,21 +59,19 @@ const createPayment = async (req, res) => {
 const paymentCallback = async (req, res) => {
   try {
     const { code, id, cancel, status, orderCode, userId, planId, desc } = req.query;
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
 
     // If user cancelled the payment
     if (cancel === "true") {
-      if (userId) {
-        await Transaction.create({
-          userId,
-          amount: 0,
-          description: desc ? desc + " (Đã huỷ)" : "Đã huỷ thanh toán",
-          status: "failed",
-          orderId: orderCode ? String(orderCode) : "",
-          paymentMethod: "PayOS"
-        });
+      // Cập nhật transaction pending → cancelled (thay vì tạo mới)
+      if (orderCode) {
+        await Transaction.findOneAndUpdate(
+          { orderId: String(orderCode), status: "pending" },
+          { status: "cancelled", description: "Người dùng đã huỷ thanh toán" }
+        );
       }
-      return res.redirect(`${frontendUrl}/payment-failure?code=${code || "cancel"}`);
+      // Redirect về trang chọn gói để user có thể thử lại ngay
+      return res.redirect(`${frontendUrl}/pricing?cancelled=true`);
     }
 
     // Verify payment status with PayOS server to prevent spoofing
@@ -91,6 +89,7 @@ const paymentCallback = async (req, res) => {
         // Nâng cấp gói
         if (planId) {
           const plans = {
+            basic: { name: "Basic", term: 30, features: ["5 tin đăng", "Cơ bản"] },
             standard: { name: "Standard", term: 30, features: ["20 tin đăng", "Ưu tiên"] },
             pro: { name: "Pro", term: 30, features: ["50 tin đăng", "Ưu tiên cao"] },
           };
@@ -127,7 +126,7 @@ const paymentCallback = async (req, res) => {
     }
   } catch (error) {
     console.error("[PayOS Callback Error]:", error);
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
     res.redirect(`${frontendUrl}/payment-failure?code=error`);
   }
 };
@@ -153,6 +152,7 @@ const payosWebhook = async (req, res) => {
         // Upgrade subscription
         if (planId) {
           const plans = {
+            basic: { name: "Basic", term: 30, features: ["5 tin đăng", "Cơ bản"] },
             standard: { name: "Standard", term: 30, features: ["20 tin đăng", "Ưu tiên"] },
             pro: { name: "Pro", term: 30, features: ["50 tin đăng", "Ưu tiên cao"] },
           };
