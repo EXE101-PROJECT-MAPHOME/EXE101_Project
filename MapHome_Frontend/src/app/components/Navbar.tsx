@@ -196,16 +196,16 @@ export function Navbar() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-16 left-0 right-0 bg-white/95 backdrop-blur-lg border-b border-gray-100 sm:hidden z-40 shadow-lg"
+            className="fixed top-[72px] left-4 right-4 bg-white/95 backdrop-blur-xl border border-gray-200/60 rounded-2xl sm:hidden z-50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden"
           >
-            <div className="max-w-7xl mx-auto px-3 py-3 space-y-2">
+            <div className="max-w-7xl mx-auto px-2 py-2 space-y-1.5">
               {/* User Info */}
               {isAuthenticated && user && (
-              <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-3 pb-2 border-b border-gray-100">
                 <div className="w-10 h-10 rounded-full border-2 border-green-600 overflow-hidden bg-gradient-to-br from-[#16a34a] to-[#0ea5e9] flex items-center justify-center text-white text-xs font-bold shrink-0">
                   {user?.avatar ? (
                     <img
@@ -235,7 +235,7 @@ export function Navbar() {
                       navigate(path);
                       setMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black transition-all ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all ${
                       isActive(path)
                         ? "bg-green-600 text-white shadow-lg"
                         : "text-gray-700 hover:bg-gray-100"
@@ -248,7 +248,7 @@ export function Navbar() {
               </div>
 
               {/* User Actions */}
-              <div className="pt-3 border-t border-gray-100 space-y-2">
+              <div className="pt-2 border-t border-gray-100 space-y-1.5">
                 {isAuthenticated ? (
                   <>
                     <button
@@ -256,7 +256,7 @@ export function Navbar() {
                         handleUserAction();
                         setMobileMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-gray-700 hover:bg-gray-100 transition-all"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-gray-700 hover:bg-gray-100 transition-all"
                     >
                       <User className="size-5 flex-shrink-0" />
                       <span>Tài khoản</span>
@@ -267,7 +267,7 @@ export function Navbar() {
                         navigate("/");
                         setMobileMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-red-600 hover:bg-red-50 transition-all"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-red-600 hover:bg-red-50 transition-all"
                     >
                       <LogOut className="size-5 flex-shrink-0" />
                       <span>Đăng xuất</span>
@@ -279,7 +279,7 @@ export function Navbar() {
                       navigate("/login");
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-white bg-green-600 shadow-md hover:bg-green-700 transition-all"
+                    className="w-full flex items-center justify-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-white bg-green-600 shadow-md hover:bg-green-700 transition-all"
                   >
                     <User className="size-5 flex-shrink-0" />
                     <span>Đăng nhập ngay</span>
