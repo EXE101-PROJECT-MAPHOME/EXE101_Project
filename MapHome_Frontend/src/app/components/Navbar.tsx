@@ -120,7 +120,7 @@ export function Navbar() {
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 20 }}
                     onClick={() => navigate("/login")}
-                    className="relative group overflow-hidden px-3 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black shadow-lg will-change-transform flex items-center gap-1 sm:gap-2 whitespace-nowrap"
+                    className="relative group overflow-hidden px-3 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black shadow-lg will-change-transform hidden sm:flex items-center gap-1 sm:gap-2 whitespace-nowrap"
                   >
                     <div className="absolute inset-0 w-1/4 h-full bg-white/20 -skew-x-[30deg] -translate-x-[150%] group-hover:translate-x-[400%] transition-transform duration-700 ease-in-out will-change-transform" />
                     <User className="size-3.5 sm:size-4 shrink-0" />
@@ -248,68 +248,50 @@ export function Navbar() {
               </div>
 
               {/* User Actions */}
-              {isAuthenticated && (
               <div className="pt-3 border-t border-gray-100 space-y-2">
-                <button
-                  onClick={() => {
-                    handleUserAction();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-gray-700 hover:bg-gray-100 transition-all"
-                >
-                  <User className="size-5 flex-shrink-0" />
-                  <span>Tài khoản</span>
-                </button>
-                <button
-                  onClick={() => {
-                    logout();
-                    navigate("/");
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-red-600 hover:bg-red-50 transition-all"
-                >
-                  <LogOut className="size-5 flex-shrink-0" />
-                  <span>Đăng xuất</span>
-                </button>
+                {isAuthenticated ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleUserAction();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-gray-700 hover:bg-gray-100 transition-all"
+                    >
+                      <User className="size-5 flex-shrink-0" />
+                      <span>Tài khoản</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        logout();
+                        navigate("/");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-red-600 hover:bg-red-50 transition-all"
+                    >
+                      <LogOut className="size-5 flex-shrink-0" />
+                      <span>Đăng xuất</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      navigate("/login");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-white bg-green-600 shadow-md hover:bg-green-700 transition-all"
+                  >
+                    <User className="size-5 flex-shrink-0" />
+                    <span>Đăng nhập ngay</span>
+                  </button>
+                )}
               </div>
-              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Mobile Navigation Bar (Simple Icon Tabs) */}
-      {!mobileMenuOpen && (
-        <motion.nav
-          initial={{ y: -60 }}
-          animate={{ y: 0 }}
-          className="fixed top-14 sm:hidden left-0 right-0 bg-white/95 backdrop-blur-lg border-b border-gray-100 z-40"
-        >
-          <div className="flex items-center justify-around px-2 py-2">
-            {navItems.map(({ path, label, icon: Icon }) => (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${
-                  isActive(path)
-                    ? "text-green-600 bg-green-50"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-                title={label}
-              >
-                <Icon className="size-5" />
-                <span className="text-[10px] font-bold text-center line-clamp-1">
-                  {label === "Trang chủ"
-                    ? "Nhà"
-                    : label === "Tìm trọ"
-                      ? "Trọ"
-                      : label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </motion.nav>
-      )}
+
     </>
   );
 }
