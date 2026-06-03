@@ -19,7 +19,7 @@ const createPayment = async (req, res) => {
     // orderCode must be a number, max 53 bits. We use timestamp + random
     const orderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
 
-    const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const backendUrl = process.env.API_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
     const userId = req.user.id || req.user._id;
 
     // We pass userId, planId, and desc in the return URL so the callback knows what to update
@@ -46,7 +46,7 @@ const createPayment = async (req, res) => {
       planId: planId || ""
     });
 
-    const paymentLinkData = await payos.createPaymentLink(body);
+    const paymentLinkData = await payos.paymentRequests.create(body);
 
     res.status(200).json({ url: paymentLinkData.checkoutUrl, orderCode });
   } catch (error) {
@@ -77,7 +77,7 @@ const paymentCallback = async (req, res) => {
     }
 
     // Verify payment status with PayOS server to prevent spoofing
-    const paymentData = await payos.getPaymentLinkInformation(Number(orderCode));
+    const paymentData = await payos.paymentRequests.get(Number(orderCode));
 
     if (paymentData && paymentData.status === "PAID") {
       const amount = paymentData.amount;
@@ -135,10 +135,11 @@ const paymentCallback = async (req, res) => {
 // POST /api/payments/webhook
 const payosWebhook = async (req, res) => {
   try {
-    const webhookData = payos.verifyPaymentWebhookData(req.body);
+    // webhooks.verify() is async in v2 SDK and returns WebhookData directly
+    const webhookData = await payos.webhooks.verify(req.body);
 
-    if (webhookData.code === "00" && webhookData.success) {
-      const orderCode = webhookData.data.orderCode;
+    if (webhookData.code === "00") {
+      const orderCode = webhookData.orderCode;
       
       const existingTx = await Transaction.findOne({ orderId: String(orderCode) });
       
