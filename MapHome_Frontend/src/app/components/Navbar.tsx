@@ -200,9 +200,9 @@ export function Navbar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-[72px] left-4 right-4 bg-white/95 backdrop-blur-xl border border-gray-200/60 rounded-2xl sm:hidden z-50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden"
+            className="fixed top-16 right-3 w-[260px] bg-white/95 backdrop-blur-xl border border-gray-200/60 rounded-2xl sm:hidden z-50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden"
           >
-            <div className="max-w-7xl mx-auto px-2 py-2 space-y-1.5">
+            <div className="px-2 py-2 space-y-1.5">
               {/* User Info */}
               {isAuthenticated && user && (
               <div className="flex items-center gap-3 pb-2 border-b border-gray-100">
