@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createPayment,
   paymentCallback,
+  payosWebhook,
 } = require("../controllers/paymentController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { createPaymentRules } = require("../validators/paymentValidator");
@@ -45,5 +46,17 @@ router.post("/create", authMiddleware, createPaymentRules, validate, createPayme
  *         description: Payment processing result
  */
 router.get("/callback", paymentCallback);
+
+/**
+ * @swagger
+ * /api/payments/webhook:
+ *   post:
+ *     summary: PayOS Webhook endpoint
+ *     tags: [Payments]
+ *     responses:
+ *       200:
+ *         description: Webhook received successfully
+ */
+router.post("/webhook", payosWebhook);
 
 module.exports = router;
