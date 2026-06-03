@@ -120,7 +120,7 @@ export function Navbar() {
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 20 }}
                     onClick={() => navigate("/login")}
-                    className="relative group overflow-hidden px-3 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black shadow-lg will-change-transform flex items-center gap-1 sm:gap-2 whitespace-nowrap"
+                    className="relative group overflow-hidden px-3 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black shadow-lg will-change-transform hidden sm:flex items-center gap-1 sm:gap-2 whitespace-nowrap"
                   >
                     <div className="absolute inset-0 w-1/4 h-full bg-white/20 -skew-x-[30deg] -translate-x-[150%] group-hover:translate-x-[400%] transition-transform duration-700 ease-in-out will-change-transform" />
                     <User className="size-3.5 sm:size-4 shrink-0" />
@@ -173,19 +173,20 @@ export function Navbar() {
                     </Button>
                   </div>
 
-                  {/* Mobile Menu Toggle */}
-                  <button
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    {mobileMenuOpen ? (
-                      <XIcon className="size-5 text-gray-700" />
-                    ) : (
-                      <Menu className="size-5 text-gray-700" />
-                    )}
-                  </button>
                 </>
               )}
+
+              {/* Mobile Menu Toggle */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors ml-1"
+              >
+                {mobileMenuOpen ? (
+                  <XIcon className="size-5 text-gray-700" />
+                ) : (
+                  <Menu className="size-5 text-gray-700" />
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -193,17 +194,18 @@ export function Navbar() {
 
       {/* Mobile Menu Dropdown */}
       <AnimatePresence>
-        {mobileMenuOpen && isAuthenticated && (
+        {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-16 left-0 right-0 bg-white/95 backdrop-blur-lg border-b border-gray-100 sm:hidden z-40 shadow-lg"
+            className="fixed top-16 right-3 w-[260px] bg-white/95 backdrop-blur-xl border border-gray-200/60 rounded-2xl sm:hidden z-50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden"
           >
-            <div className="max-w-7xl mx-auto px-3 py-3 space-y-2">
+            <div className="px-2 py-2 space-y-1.5">
               {/* User Info */}
-              <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
+              {isAuthenticated && user && (
+              <div className="flex items-center gap-3 pb-2 border-b border-gray-100">
                 <div className="w-10 h-10 rounded-full border-2 border-green-600 overflow-hidden bg-gradient-to-br from-[#16a34a] to-[#0ea5e9] flex items-center justify-center text-white text-xs font-bold shrink-0">
                   {user?.avatar ? (
                     <img
@@ -222,6 +224,7 @@ export function Navbar() {
                   <RoleBadge role={(user?.role as any) || "user"} showIcon={false} />
                 </div>
               </div>
+              )}
 
               {/* Navigation Items */}
               <div className="space-y-1">
@@ -232,7 +235,7 @@ export function Navbar() {
                       navigate(path);
                       setMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black transition-all ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all ${
                       isActive(path)
                         ? "bg-green-600 text-white shadow-lg"
                         : "text-gray-700 hover:bg-gray-100"
@@ -245,66 +248,50 @@ export function Navbar() {
               </div>
 
               {/* User Actions */}
-              <div className="pt-3 border-t border-gray-100 space-y-2">
-                <button
-                  onClick={() => {
-                    handleUserAction();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-gray-700 hover:bg-gray-100 transition-all"
-                >
-                  <User className="size-5 flex-shrink-0" />
-                  <span>Tài khoản</span>
-                </button>
-                <button
-                  onClick={() => {
-                    logout();
-                    navigate("/");
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-black text-red-600 hover:bg-red-50 transition-all"
-                >
-                  <LogOut className="size-5 flex-shrink-0" />
-                  <span>Đăng xuất</span>
-                </button>
+              <div className="pt-2 border-t border-gray-100 space-y-1.5">
+                {isAuthenticated ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleUserAction();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-gray-700 hover:bg-gray-100 transition-all"
+                    >
+                      <User className="size-5 flex-shrink-0" />
+                      <span>Tài khoản</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        logout();
+                        navigate("/");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-red-600 hover:bg-red-50 transition-all"
+                    >
+                      <LogOut className="size-5 flex-shrink-0" />
+                      <span>Đăng xuất</span>
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      navigate("/login");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-white bg-green-600 shadow-md hover:bg-green-700 transition-all"
+                  >
+                    <User className="size-5 flex-shrink-0" />
+                    <span>Đăng nhập ngay</span>
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Mobile Navigation Bar (Simple Icon Tabs) */}
-      {!mobileMenuOpen && isAuthenticated && (
-        <motion.nav
-          initial={{ y: -60 }}
-          animate={{ y: 0 }}
-          className="fixed top-14 sm:hidden left-0 right-0 bg-white/95 backdrop-blur-lg border-b border-gray-100 z-40"
-        >
-          <div className="flex items-center justify-around px-2 py-2">
-            {navItems.map(({ path, label, icon: Icon }) => (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all ${
-                  isActive(path)
-                    ? "text-green-600 bg-green-50"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-                title={label}
-              >
-                <Icon className="size-5" />
-                <span className="text-[10px] font-bold text-center line-clamp-1">
-                  {label === "Trang chủ"
-                    ? "Nhà"
-                    : label === "Tìm trọ"
-                      ? "Trọ"
-                      : label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </motion.nav>
-      )}
+
     </>
   );
 }

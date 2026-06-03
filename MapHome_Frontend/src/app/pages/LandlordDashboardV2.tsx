@@ -274,7 +274,7 @@ export function LandlordDashboardV2() {
     if (!isAuthenticated || user?.role !== "landlord") return;
 
     const token = localStorage.getItem("token");
-    const socketUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const socketUrl = import.meta.env.VITE_API_BASE || "http://localhost:5000";
     const socket = io(socketUrl, {
       auth: { token },
       transports: ["websocket"],

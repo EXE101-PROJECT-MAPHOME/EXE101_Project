@@ -33,12 +33,13 @@ app.use(
         new Set([process.env.FRONTEND_URL, ...envList].filter(Boolean)),
       );
 
-      // Allow localhost/127.0.0.1 with or without an explicit port
-      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
-        origin,
-      );
+      // Cho phép các môi trường local
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      
+      // Cho phép BẤT KỲ tên miền nào kết thúc bằng .vercel.app (rất tiện khi Vercel tự sinh link Preview)
+      const isVercel = /^https?:\/\/.*\.vercel\.app$/.test(origin);
 
-      if (allowedOrigins.includes(origin) || isLocalhost) {
+      if (allowedOrigins.includes(origin) || isLocalhost || isVercel) {
         return callback(null, true);
       }
 

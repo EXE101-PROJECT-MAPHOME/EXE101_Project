@@ -55,35 +55,25 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
     <style>
         body { margin: 0; padding: 0; overflow: hidden; }
         #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        .marker-price {
-            padding: 6px 12px;
-            border-radius: 9999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1.5px solid ${tint};
-          background-color: white;
-            font-weight: 900;
-            font-size: 13px;
-            font-family: sans-serif;
-            color: ${text};
-            cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            transition: all 0.2s ease;
+        @keyframes pin-glow {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            50% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; }
         }
-        .marker-price.selected {
-            background-color: ${tint};
-            border-color: white;
-            color: white;
-            transform: scale(1.15);
-            z-index: 100;
+        @keyframes pulse-aura {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes ripple-aura {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
     <script>
-        goongjs.accessToken = '${key}';
+        goongjs.accessToken = '\${key}';
         var map = new goongjs.Map({
             container: 'map',
             style: 'https://tiles.goong.io/assets/goong_map_web.json',
@@ -93,16 +83,97 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
         });
         
         var currentMarkers = [];
+        var userMarker = null;
+
+        function createPropertyIcon(available, isVerified, isSelected) {
+            var color = available ? "#059669" : "#9ca3af";
+            var el = document.createElement("div");
+            el.className = "custom-marker";
+            el.style.width = "32px";
+            el.style.height = "32px";
+            el.style.transition = "transform 0.2s ease, z-index 0.2s ease";
+            if (isSelected) {
+                el.style.transform = "scale(1.2)";
+                el.style.zIndex = "100";
+            }
+
+            var verifiedBadge = isVerified
+                ? \`<div style="position: absolute; top: -4px; right: -4px; background: linear-gradient(135deg, #10b981, #059669); width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 8px rgba(6,78,59,0.3); display: flex; align-items: center; justify-content: center; z-index: 10;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+                </div>\`
+                : "";
+
+            el.innerHTML = \`
+                <div style="position: relative;">
+                \${verifiedBadge}
+                <div style="background-color: \${color}; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 6px 12px rgba(6,78,59,0.2); display: flex; align-items: center; justify-content: center; opacity: 0.95;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="white" style="transform: rotate(45deg);"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                </div>
+                </div>
+            \`;
+            return el;
+        }
+
+        function createPinnedPropertyIcon(available, isSelected) {
+            var gradient = available
+                ? "linear-gradient(135deg, #059669, #064e3b)"
+                : "linear-gradient(135deg, #f97316, #ea580c)";
+            var glowColor = available ? "rgba(5,150,105,0.4)" : "rgba(249,115,22,0.4)";
+
+            var el = document.createElement("div");
+            el.className = "pinned-marker";
+            el.style.width = "42px";
+            el.style.height = "42px";
+            el.style.transition = "transform 0.2s ease, z-index 0.2s ease";
+            if (isSelected) {
+                el.style.transform = "scale(1.2)";
+                el.style.zIndex = "100";
+            }
+
+            el.innerHTML = \`
+                <div style="position: relative;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; border-radius: 50%; background: \${glowColor}; animation: pin-glow 2s infinite;"></div>
+                <div style="background: \${gradient}; width: 42px; height: 42px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 8px 16px rgba(6,78,59,0.3); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white" style="transform: rotate(45deg);">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </div>
+                </div>
+            \`;
+            return el;
+        }
+
+        function createUserLocationIcon() {
+            var el = document.createElement("div");
+            el.className = "user-location-marker";
+            el.innerHTML = \`
+                <div style="position: relative;">
+                <div style="background-color: #10b981; width: 44px; height: 44px; border-radius: 50%; border: 4px solid white; box-shadow: 0 8px 16px rgba(6,78,59,0.4); display: flex; align-items: center; justify-content: center; animation: pulse-aura 2.5s infinite ease-out; z-index: 10; position: relative;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                </div>
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90px; height: 90px; border-radius: 50%; background-color: rgba(16, 185, 129, 0.15); border: 2px solid rgba(16, 185, 129, 0.3); animation: ripple-aura 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                </div>
+            \`;
+            return el;
+        }
         
         window.updateMarkers = function(properties, selectedId) {
             currentMarkers.forEach(function(m) { m.remove(); });
             currentMarkers = [];
             
             properties.forEach(function(prop) {
-                var el = document.createElement('div');
                 var isSelected = prop.id === selectedId;
-                el.className = 'marker-price' + (isSelected ? ' selected' : '');
-                el.innerHTML = (prop.price / 1000000).toFixed(1) + 'M';
+                var isPinned = !!prop.pinInfo;
+                var isVerified = prop.verificationLevel === "verified" || prop.greenBadge?.level === "verified";
+                var available = prop.available;
+                
+                var el = isPinned 
+                    ? createPinnedPropertyIcon(available, isSelected)
+                    : createPropertyIcon(available, isVerified, isSelected);
                 
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -121,8 +192,16 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
              window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_CLICK' }));
         });
         
-        window.zoomToLocation = function(lng, lat, zoom = 15) {
-            map.easeTo({ center: [lng, lat], zoom: zoom });
+        window.zoomToLocation = function(lng, lat, zoom) {
+            var z = zoom || 15;
+            map.easeTo({ center: [lng, lat], zoom: z });
+            if (!userMarker) {
+                userMarker = new goongjs.Marker(createUserLocationIcon())
+                    .setLngLat([lng, lat])
+                    .addTo(map);
+            } else {
+                userMarker.setLngLat([lng, lat]);
+            }
         };
     </script>
 </body>
