@@ -54,6 +54,15 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// Intercept JSON parse errors for PayOS webhook ONLY — PayOS test requests
+// may have unexpected body format, so we must always return 200
+app.use((err, req, res, next) => {
+  if (req.path && req.path.includes('/payments/webhook')) {
+    return res.status(200).json({ success: true });
+  }
+  next(err);
+});
+
 
 const aiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
