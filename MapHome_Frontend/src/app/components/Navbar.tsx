@@ -173,19 +173,20 @@ export function Navbar() {
                     </Button>
                   </div>
 
-                  {/* Mobile Menu Toggle */}
-                  <button
-                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                    className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    {mobileMenuOpen ? (
-                      <XIcon className="size-5 text-gray-700" />
-                    ) : (
-                      <Menu className="size-5 text-gray-700" />
-                    )}
-                  </button>
                 </>
               )}
+
+              {/* Mobile Menu Toggle */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors ml-1"
+              >
+                {mobileMenuOpen ? (
+                  <XIcon className="size-5 text-gray-700" />
+                ) : (
+                  <Menu className="size-5 text-gray-700" />
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -193,7 +194,7 @@ export function Navbar() {
 
       {/* Mobile Menu Dropdown */}
       <AnimatePresence>
-        {mobileMenuOpen && isAuthenticated && (
+        {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -203,6 +204,7 @@ export function Navbar() {
           >
             <div className="max-w-7xl mx-auto px-3 py-3 space-y-2">
               {/* User Info */}
+              {isAuthenticated && user && (
               <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
                 <div className="w-10 h-10 rounded-full border-2 border-green-600 overflow-hidden bg-gradient-to-br from-[#16a34a] to-[#0ea5e9] flex items-center justify-center text-white text-xs font-bold shrink-0">
                   {user?.avatar ? (
@@ -222,6 +224,7 @@ export function Navbar() {
                   <RoleBadge role={(user?.role as any) || "user"} showIcon={false} />
                 </div>
               </div>
+              )}
 
               {/* Navigation Items */}
               <div className="space-y-1">
@@ -245,6 +248,7 @@ export function Navbar() {
               </div>
 
               {/* User Actions */}
+              {isAuthenticated && (
               <div className="pt-3 border-t border-gray-100 space-y-2">
                 <button
                   onClick={() => {
@@ -268,13 +272,14 @@ export function Navbar() {
                   <span>Đăng xuất</span>
                 </button>
               </div>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Mobile Navigation Bar (Simple Icon Tabs) */}
-      {!mobileMenuOpen && isAuthenticated && (
+      {!mobileMenuOpen && (
         <motion.nav
           initial={{ y: -60 }}
           animate={{ y: 0 }}
