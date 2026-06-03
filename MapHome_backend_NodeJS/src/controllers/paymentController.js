@@ -46,7 +46,7 @@ const createPayment = async (req, res) => {
       planId: planId || ""
     });
 
-    const paymentLinkData = await payos.paymentRequests.create(body);
+    const paymentLinkData = await payos.createPaymentLink(body);
 
     res.status(200).json({ url: paymentLinkData.checkoutUrl, orderCode });
   } catch (error) {
@@ -77,7 +77,7 @@ const paymentCallback = async (req, res) => {
     }
 
     // Verify payment status with PayOS server to prevent spoofing
-    const paymentData = await payos.paymentRequests.get(Number(orderCode));
+    const paymentData = await payos.getPaymentLinkInformation(Number(orderCode));
 
     if (paymentData && paymentData.status === "PAID") {
       const amount = paymentData.amount;
@@ -180,12 +180,10 @@ const payosWebhook = async (req, res) => {
         });
       }
     }
-
-    res.status(200).json({ success: true });
   } catch (error) {
     console.error("[PayOS Webhook Error]:", error);
-    res.status(400).json({ success: false, message: error.message });
   }
+  return res.status(200).json({ success: true });
 };
 
 module.exports = { createPayment, paymentCallback, payosWebhook };
