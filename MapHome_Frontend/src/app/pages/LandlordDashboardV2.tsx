@@ -631,7 +631,8 @@ export function LandlordDashboardV2() {
       { label: "Cấp 3", color: "bg-green-100 text-green-800" },
     ];
     const badge = badges[level] || badges[0];
-    const tier = user?.subscriptionTier || "Standard";
+    // subscriptionTier từ API /user/me luôn là planName thực từ DB (Basic, Standard, Pro, v.v.)
+    const tier = user?.subscriptionTier || "Free";
     return (
       <span
         className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}
