@@ -365,20 +365,7 @@ input, textarea, select {
   }
 }
 
-/* Button responsive sizing */
-button, [role="button"] {
-  min-height: 2.5rem;
-  min-width: 2.5rem;
-  padding: 0.5rem 1rem;
-}
-
-@media (max-width: 640px) {
-  button, [role="button"] {
-    min-height: 2.25rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-}
+/* Button responsive sizing - removed to prevent huge carousel dots */
 
 /* Image responsive sizing */
 img {
@@ -450,16 +437,7 @@ img {
   }
 }
 
-/* Grid column responsive */
-@media (max-width: 640px) {
-  .grid-cols-2, .grid-cols-3, .grid-cols-4 {
-    grid-template-columns: 1fr !important;
-  }
-  
-  .sm\:grid-cols-2 {
-    grid-template-columns: 1fr !important;
-  }
-}
+/* Grid column responsive override removed to allow Tailwind classes to work correctly */
 
 /* Ensure maps and embeds are responsive */
 iframe, video, embed {
@@ -469,9 +447,6 @@ iframe, video, embed {
 
 /* Fix overflow issues */
 @media (max-width: 640px) {
-  * {
-    max-width: 100%;
-  }
   
   .overflow-x-auto {
     -webkit-overflow-scrolling: touch;

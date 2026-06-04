@@ -1,4 +1,10 @@
 const bcrypt = require("bcryptjs");
+const admin = require("firebase-admin");
+
+if (!admin.apps.length) {
+  admin.initializeApp({ projectId: "maphome-auth" });
+}
+
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
@@ -644,6 +650,44 @@ const resetPasswordPhone = async (req, res) => {
   }
 };
 
+// POST /api/auth/reset-password-firebase
+const resetPasswordFirebase = async (req, res) => {
+  try {
+    const { firebaseToken, newPassword } = req.body;
+    if (!firebaseToken || !newPassword) {
+      return res.status(400).json({ message: "Token và mật khẩu mới là bắt buộc" });
+    }
+
+    // Verify firebase token
+    const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
+    const phoneNumber = decodedToken.phone_number; // e.g., +84912345678
+
+    if (!phoneNumber) {
+      return res.status(400).json({ message: "Token không chứa thông tin số điện thoại" });
+    }
+
+    // Normalize phone number: +849... -> 09...
+    let localPhone = phoneNumber;
+    if (localPhone.startsWith("+84")) {
+      localPhone = "0" + localPhone.slice(3);
+    }
+
+    const user = await User.findOne({ phone: localPhone });
+    if (!user)
+      return res.status(404).json({ message: "Người dùng không tồn tại" });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.status(200).json({ message: "Đổi mật khẩu thành công" });
+  } catch (error) {
+    console.error("[Auth Error]:", error.message);
+    res.status(500).json({ message: "Xác thực thất bại hoặc token đã hết hạn" });
+  }
+};
+
+
 // POST /api/auth/check-phone-exists
 const checkPhoneExists = async (req, res) => {
   try {
@@ -807,6 +851,7 @@ module.exports = {
   forgotPasswordPhone,
   verifyOtpPhone,
   resetPasswordPhone,
+  resetPasswordFirebase,
   checkPhoneExists,
   sendOtpToPhone,
   verifyOtpGeneral,

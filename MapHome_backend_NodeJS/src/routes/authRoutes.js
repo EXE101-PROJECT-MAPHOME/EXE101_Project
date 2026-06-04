@@ -10,6 +10,7 @@ const {
   forgotPasswordPhone,
   verifyOtpPhone,
   resetPasswordPhone,
+  resetPasswordFirebase,
   checkPhoneExists,
   sendOtpToPhone,
   verifyOtpGeneral,
@@ -406,6 +407,36 @@ router.post("/verify-otp-phone", verifyOtpPhone);
  *         description: Password reset successful
  */
 router.post("/reset-password-phone", resetPasswordPhone);
+
+/**
+ * @swagger
+ * /api/auth/reset-password-firebase:
+ *   post:
+ *     summary: Reset password with Firebase ID token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - firebaseToken
+ *               - newPassword
+ *             properties:
+ *               firebaseToken:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Missing token or password
+ *       500:
+ *         description: Token verification failed
+ */
+router.post("/reset-password-firebase", resetPasswordFirebase);
 
 // Phone Auth Routes
 router.post("/check-phone-exists", checkPhoneExists);
