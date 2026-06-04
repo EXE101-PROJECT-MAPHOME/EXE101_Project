@@ -21,7 +21,7 @@ import {
 export function PaymentSuccessPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
 
   const [searchParams] = useSearchParams();
 
@@ -77,6 +77,13 @@ export function PaymentSuccessPage() {
       navigate("/pricing");
     }
   }, [loading, planIdFromUrl, amount, orderId, navigate, isInspection]);
+
+  // Refresh profile context on successful payment confirmation
+  useEffect(() => {
+    if (!loading && tier && amount && orderId) {
+      refreshProfile();
+    }
+  }, [loading, tier, amount, orderId]);
 
   // Auto-redirect countdown after data loaded successfully
   useEffect(() => {

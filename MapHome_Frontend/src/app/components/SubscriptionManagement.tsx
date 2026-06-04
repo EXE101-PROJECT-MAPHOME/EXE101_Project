@@ -25,7 +25,7 @@ import { toast } from "sonner";
 
 export function SubscriptionManagement() {
   const navigate = useNavigate();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, refreshProfile } = useAuth();
   const [showComparison, setShowComparison] = useState(false);
   const [subscription, setSubscription] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -78,10 +78,7 @@ export function SubscriptionManagement() {
         setSubscription(subRes.data);
 
         // Kích hoạt cập nhật thông tin user mới từ API về profile context
-        const userRes = await api.get("/api/user/me");
-        if (userRes.status === 200) {
-          updateUser(userRes.data);
-        }
+        await refreshProfile();
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Không thể hủy gói dịch vụ");
