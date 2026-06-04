@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -31,6 +31,8 @@ export function SubscriptionManagement() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const location = useLocation();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -51,7 +53,8 @@ export function SubscriptionManagement() {
     };
 
     if (user) fetchData();
-  }, [user]);
+    // Refetch khi user quay về từ trang payment-success (state.refresh = true)
+  }, [user, location.key]);
 
   const handleRenew = () => navigate("/pricing");
   const handleUpgrade = () => navigate("/pricing");
@@ -90,9 +93,6 @@ export function SubscriptionManagement() {
     { label: "Tin đã đăng", value: "0/1", icon: Zap, color: "blue", trend: "+100%" },
     { label: "Lượt xem", value: "0", icon: TrendingUp, color: "emerald", trend: "0" },
     { label: "Xác thực", value: "0", icon: ShieldCheck, color: "amber", trend: "Dự kiến 1" },
-    { label: "Tin đã đăng", value: "0/1", icon: Zap, color: "violet", trend: "+100%" },
-    { label: "Lượt xem", value: "0", icon: TrendingUp, color: "rose", trend: "0" },
-    { label: "Xác thực", value: "0", icon: ShieldCheck, color: "fuchsia", trend: "Dự kiến 1" },
   ];
 
   const comparisonFeatures = [
