@@ -64,11 +64,6 @@ app.use((err, req, res, next) => {
 });
 
 
-const aiLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 10, // Limit each IP to 10 AI requests per minute
-  message: { message: "Bạn đang hỏi quá nhanh. Vui lòng đợi một chút." },
-});
 
 // Cloudinary is now used for all images, no local /uploads static serving needed.
 
@@ -96,7 +91,7 @@ app.use("/api/transactions", require("./routes/transactionRoutes"));
 app.use("/api/reports", require("./routes/reportRoutes"));
 app.use("/api/blogs", require("./routes/blogRoutes"));
 app.use("/api/contacts", require("./routes/contactRoutes"));
-app.use("/api/ai", aiLimiter, require("./routes/aiRoutes"));
+
 app.use("/api/map", require("./routes/mapRoutes"));
 app.use("/api/vouchers", require("./routes/voucherRoutes"));
 
