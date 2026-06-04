@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import api from "@/app/utils/api";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 import {
   Home,
@@ -36,7 +38,8 @@ export function ForgotPasswordPage() {
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [resetToken, setResetToken] = useState(""); // Server-generated reset token after OTP verify
+  const [firebaseToken, setFirebaseToken] = useState(""); // Firebase ID Token
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -76,7 +79,7 @@ export function ForgotPasswordPage() {
     }
   };
 
-  // Step 1 (Phone): Request OTP via our Backend (using eSMS.vn)
+  // Step 1 (Phone): Request OTP via Firebase
   const handleRequestPhoneOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -89,21 +92,53 @@ export function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      // Call backend to generate and send OTP
-      const response = await api.post("/api/auth/forgot-password-phone", { phone });
+      // Format phone number to E.164 (+84...)
+      let formattedPhone = phone;
+      if (formattedPhone.startsWith("0")) {
+        formattedPhone = "+84" + formattedPhone.slice(1);
+      }
+
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          "recaptcha-container",
+          {
+            size: "invisible",
+            callback: () => {
+              // reCAPTCHA solved
+            }
+          }
+        );
+      }
+
+      const appVerifier = window.recaptchaVerifier;
+
+      const result = await signInWithPhoneNumber(
+        auth,
+        formattedPhone,
+        appVerifier
+      );
+
+      setConfirmationResult(result);
       setStep("otp_verify");
-      toast.success(response.data.message || "Mã OTP đã được gửi đến điện thoại của bạn");
+      toast.success("Mã OTP đã được gửi đến điện thoại của bạn");
     } catch (err: any) {
       console.error(err);
-      const errorMsg = err?.response?.data?.message || "Không thể gửi OTP. Vui lòng thử lại.";
+      const errorMsg = "Không thể gửi OTP. Vui lòng kiểm tra lại số điện thoại.";
       setError(errorMsg);
       toast.error(errorMsg);
+      
+      // Reset reCAPTCHA on error so user can try again
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = undefined;
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Step 2 (Phone): Verify OTP with our Backend
+  // Step 2 (Phone): Verify OTP with Firebase
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -114,16 +149,25 @@ export function ForgotPasswordPage() {
       return;
     }
 
+    if (!confirmationResult) {
+      setError("Vui lòng yêu cầu gửi lại mã OTP");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Verify OTP and get a temporary Reset Token
-      const response = await api.post("/api/auth/verify-otp-phone", { phone, otp });
-      setResetToken(response.data.resetToken);
+      // Verify OTP with Firebase
+      const result = await confirmationResult.confirm(otp);
+      
+      // Get Firebase ID Token
+      const token = await result.user.getIdToken(true);
+      setFirebaseToken(token);
+      
       setStep("reset_password");
       toast.success("Xác thực OTP thành công");
     } catch (err: any) {
       console.error(err);
-      const errorMsg = err?.response?.data?.message || "Mã OTP không đúng hoặc đã hết hạn";
+      const errorMsg = "Mã OTP không đúng hoặc đã hết hạn";
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -131,7 +175,7 @@ export function ForgotPasswordPage() {
     }
   };
 
-  // Step 3 (Phone): Reset Password with Reset Token
+  // Step 3 (Phone): Reset Password using Firebase Token
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -150,9 +194,12 @@ export function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      await api.post("/api/auth/reset-password-phone", { resetToken, newPassword });
+      await api.post("/api/auth/reset-password-firebase", { firebaseToken, newPassword });
       setStep("success");
       toast.success("Đổi mật khẩu thành công");
+      
+      // Sign out from Firebase since we only needed it for verification
+      auth.signOut();
     } catch (err: any) {
       const errorMsg = err?.response?.data?.message || "Có lỗi xảy ra khi đổi mật khẩu";
       setError(errorMsg);
@@ -282,6 +329,9 @@ export function ForgotPasswordPage() {
                   <p className="text-red-700 font-medium">{error}</p>
                 </motion.div>
               )}
+              
+              {/* Recaptcha container for Firebase */}
+              <div id="recaptcha-container"></div>
 
               {/* Forms Container */}
               <AnimatePresence mode="wait">
