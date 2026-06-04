@@ -33,6 +33,9 @@ const TransactionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    planId: {
+      type: String,
+    },
   },
   { timestamps: true },
 );

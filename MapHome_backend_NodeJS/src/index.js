@@ -35,7 +35,7 @@ app.use(
 
       // Cho phép các môi trường local
       const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-      
+
       // Cho phép BẤT KỲ tên miền nào kết thúc bằng .vercel.app (rất tiện khi Vercel tự sinh link Preview)
       const isVercel = /^https?:\/\/.*\.vercel\.app$/.test(origin);
 
@@ -54,16 +54,15 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-// Rate Limiting
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // Limit each IP to 20 login/register requests per windowMs
-  message: {
-    message: "Quá nhiều yêu cầu đăng nhập. Vui lòng thử lại sau 15 phút.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
+// Intercept JSON parse errors for PayOS webhook ONLY — PayOS test requests
+// may have unexpected body format, so we must always return 200
+app.use((err, req, res, next) => {
+  if (req.path && req.path.includes('/payments/webhook')) {
+    return res.status(200).json({ success: true });
+  }
+  next(err);
 });
+
 
 const aiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
@@ -82,7 +81,7 @@ app.use("/api/landlords", require("./routes/landlordRoutes"));
 app.use("/api/landlord", require("./routes/landlordDashboardRoutes"));
 app.use("/api/verifications", require("./routes/verificationRoutes"));
 app.use("/api/reviews", require("./routes/reviewRoutes"));
-app.use("/api/auth", authLimiter, require("./routes/authRoutes"));
+app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/user", require("./routes/userRoutes")); // alias for singular

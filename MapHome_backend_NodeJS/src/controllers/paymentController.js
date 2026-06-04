@@ -19,7 +19,7 @@ const createPayment = async (req, res) => {
     // orderCode must be a number, max 53 bits. We use timestamp + random
     const orderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 1000));
 
-    const backendUrl = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const backendUrl = process.env.API_URL || process.env.BACKEND_URL || `http://localhost:${process.env.PORT || 5000}`;
     const userId = req.user.id || req.user._id;
 
     // We pass userId, planId, and desc in the return URL so the callback knows what to update
@@ -34,7 +34,19 @@ const createPayment = async (req, res) => {
       cancelUrl: cancelUrl
     };
 
-    const paymentLinkData = await payos.createPaymentLink(body);
+    // Tạo giao dịch nháp (pending) để Webhook có thể nhận diện được
+    await Transaction.create({
+      userId,
+      amount,
+      description: body.description,
+      status: "pending",
+      invoiceId: String(orderCode),
+      orderId: String(orderCode),
+      paymentMethod: "PayOS",
+      planId: planId || ""
+    });
+
+    const paymentLinkData = await payos.paymentRequests.create(body);
 
     res.status(200).json({ url: paymentLinkData.checkoutUrl, orderCode });
   } catch (error) {
@@ -47,46 +59,100 @@ const createPayment = async (req, res) => {
 const paymentCallback = async (req, res) => {
   try {
     const { code, id, cancel, status, orderCode, userId, planId, desc } = req.query;
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
 
     // If user cancelled the payment
     if (cancel === "true") {
-      if (userId) {
-        await Transaction.create({
-          userId,
-          amount: 0,
-          description: desc ? desc + " (Đã huỷ)" : "Đã huỷ thanh toán",
-          status: "failed",
-          orderId: orderCode ? String(orderCode) : "",
-          paymentMethod: "PayOS"
-        });
+      // Cập nhật transaction pending → cancelled (thay vì tạo mới)
+      if (orderCode) {
+        await Transaction.findOneAndUpdate(
+          { orderId: String(orderCode), status: "pending" },
+          { status: "cancelled", description: "Người dùng đã huỷ thanh toán" }
+        );
       }
-      return res.redirect(`${frontendUrl}/payment-failure?code=${code || "cancel"}`);
+      // Redirect về trang chọn gói để user có thể thử lại ngay
+      return res.redirect(`${frontendUrl}/pricing?cancelled=true`);
     }
 
     // Verify payment status with PayOS server to prevent spoofing
-    const paymentData = await payos.getPaymentLinkInformation(orderCode);
+    const paymentData = await payos.paymentRequests.get(Number(orderCode));
 
     if (paymentData && paymentData.status === "PAID") {
       const amount = paymentData.amount;
 
-      // Prevent duplicate transactions if webhook already processed it
-      const existingTx = await Transaction.findOne({ orderId: String(orderCode), status: "success" });
-      if (!existingTx) {
-        // Create success transaction
-        await Transaction.create({
-          userId,
-          amount,
-          description: desc || "Thanh toán qua PayOS",
-          status: "success",
-          invoiceId: String(orderCode),
-          orderId: String(orderCode),
-          paymentMethod: "PayOS"
-        });
+      // Cập nhật giao dịch thành công (nếu webhook chưa làm)
+      const existingTx = await Transaction.findOne({ orderId: String(orderCode) });
+      if (existingTx && existingTx.status === "pending") {
+        existingTx.status = "success";
+        await existingTx.save();
 
-        // Upgrade subscription if it's a plan upgrade
+        // Nâng cấp gói
         if (planId) {
           const plans = {
+            basic: { name: "Basic", term: 30, features: ["5 tin đăng", "Cơ bản"] },
+            standard: { name: "Standard", term: 30, features: ["20 tin đăng", "Ưu tiên"] },
+            pro: { name: "Pro", term: 30, features: ["50 tin đăng", "Ưu tiên cao"] },
+          };
+          const plan = plans[planId];
+          if (plan) {
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + 30);
+
+            await Subscription.findOneAndUpdate(
+              { userId: existingTx.userId },
+              { planName: plan.name, status: "active", expiryDate, features: plan.features },
+              { upsert: true, new: true }
+            );
+
+            if (planId === "pro") {
+              await User.findByIdAndUpdate(existingTx.userId, { verificationLevel: 3 });
+            }
+          }
+        }
+
+        await Notification.create({
+          userId: existingTx.userId,
+          title: "Thanh toán thành công",
+          message: `Bạn đã thanh toán thành công đơn hàng qua PayOS. Mã GD: ${orderCode}`,
+          type: "success"
+        });
+      }
+
+      const successUrl = `${frontendUrl}/payment-success?orderId=${orderCode}&amount=${amount}&planId=${planId || ""}&type=subscription`;
+      return res.redirect(successUrl);
+    } else {
+      // Payment not PAID
+      return res.redirect(`${frontendUrl}/payment-failure?code=not_paid`);
+    }
+  } catch (error) {
+    console.error("[PayOS Callback Error]:", error);
+    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+    res.redirect(`${frontendUrl}/payment-failure?code=error`);
+  }
+};
+
+// POST /api/payments/webhook
+const payosWebhook = async (req, res) => {
+  try {
+    // webhooks.verify() is async in v2 SDK and returns WebhookData directly
+    const webhookData = await payos.webhooks.verify(req.body);
+
+    if (webhookData.code === "00") {
+      const orderCode = webhookData.orderCode;
+      
+      const existingTx = await Transaction.findOne({ orderId: String(orderCode) });
+      
+      if (existingTx && existingTx.status === "pending") {
+        existingTx.status = "success";
+        await existingTx.save();
+
+        const userId = existingTx.userId;
+        const planId = existingTx.planId;
+
+        // Upgrade subscription
+        if (planId) {
+          const plans = {
+            basic: { name: "Basic", term: 30, features: ["5 tin đăng", "Cơ bản"] },
             standard: { name: "Standard", term: 30, features: ["20 tin đăng", "Ưu tiên"] },
             pro: { name: "Pro", term: 30, features: ["50 tin đăng", "Ưu tiên cao"] },
           };
@@ -114,18 +180,11 @@ const paymentCallback = async (req, res) => {
           type: "success"
         });
       }
-
-      const successUrl = `${frontendUrl}/payment-success?orderId=${orderCode}&amount=${amount}&planId=${planId || ""}&type=subscription`;
-      return res.redirect(successUrl);
-    } else {
-      // Payment not PAID
-      return res.redirect(`${frontendUrl}/payment-failure?code=not_paid`);
     }
   } catch (error) {
-    console.error("[PayOS Callback Error]:", error);
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    res.redirect(`${frontendUrl}/payment-failure?code=error`);
+    console.error("[PayOS Webhook Error]:", error);
   }
+  return res.status(200).json({ success: true });
 };
 
-module.exports = { createPayment, paymentCallback };
+module.exports = { createPayment, paymentCallback, payosWebhook };
