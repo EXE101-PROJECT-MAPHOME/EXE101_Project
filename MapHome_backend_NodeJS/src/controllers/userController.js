@@ -1,35 +1,52 @@
+const Subscription = require("../models/Subscription");
 const User = require("../models/User");
 
-/**
- * Map subscription plan to verification level and label
- * @param {Object} subscription - Subscription object with planId and planName
- * @returns {Object} { level: number, label: string, tier: string }
- */
-const getVerificationLevelFromSubscription = (subscription) => {
-  if (!subscription) {
-    return { level: 1, label: "Level 1", tier: "Standard" };
-  }
+const getMyProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select("-password")
+      .populate("favorites");
 
-  const planId =
-    subscription.planId?.planId ||
-    subscription.planName?.toLowerCase() ||
-    "free";
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-  const levelMap = {
-    free: { level: 1, label: "Level 1", tier: "Standard" },
-    basic: { level: 1, label: "Level 1", tier: "Standard" },
-    standard: { level: 2, label: "Level 2", tier: "Standard" },
-    pro: { level: 3, label: "Level 3", tier: "Premium" },
-    premium: { level: 3, label: "Level 3", tier: "Premium" },
-  };
+    // Lấy subscription thực tế từ DB theo userId (không dựa vào subscriptionId trên User)
+    // để đảm bảo luôn phản ánh trạng thái mới nhất sau thanh toán
+    const subscription = await Subscription.findOne({
+      userId: user._id,
+      status: "active",
+    }).populate({ path: "planId", select: "planId name" });
 
-  return (
-    levelMap[planId.toLowerCase()] || {
-      level: 1,
-      label: "Level 1",
-      tier: "Standard",
+    let subscriptionTier = "Free";
+    let verificationLevel = user.verificationLevel || 1;
+    let verificationLevelLabel = `Cấp ${verificationLevel}`;
+
+    if (subscription && subscription.status === "active") {
+      // Lấy planName thực tế từ Subscription (do admin tạo trong DB)
+      subscriptionTier = subscription.planName || "Free";
+
+      // verificationLevel: nếu là Pro thì level 3, còn lại giữ nguyên từ DB user
+      const planSlug = (
+        subscription.planId?.planId ||
+        subscription.planName ||
+        ""
+      ).toLowerCase();
+      if (planSlug === "pro") {
+        verificationLevel = 3;
+        verificationLevelLabel = "Cấp 3";
+      }
     }
-  );
+
+    const userResponse = user.toObject();
+    userResponse.verificationLevel = verificationLevel;
+    userResponse.verificationLevelLabel = verificationLevelLabel;
+    userResponse.subscriptionTier = subscriptionTier; // planName thực tế từ DB
+    userResponse.subscriptionPlanId = subscription?.planId?.planId || null;
+    userResponse.subscriptionExpiry = subscription?.expiryDate || null;
+
+    res.status(200).json(userResponse);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 const getUserById = async (req, res) => {
@@ -37,34 +54,6 @@ const getUserById = async (req, res) => {
     const user = await User.findById(req.params.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-const getMyProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id)
-      .select("-password")
-      .populate("favorites")
-      .populate({
-        path: "subscriptionId",
-        populate: { path: "planId", select: "planId name" },
-      });
-
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    // Calculate verification level and tier based on subscription
-    const verificationInfo = getVerificationLevelFromSubscription(
-      user.subscriptionId,
-    );
-
-    const userResponse = user.toObject();
-    userResponse.verificationLevel = verificationInfo.level;
-    userResponse.verificationLevelLabel = verificationInfo.label;
-    userResponse.subscriptionTier = verificationInfo.tier;
-
-    res.status(200).json(userResponse);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
