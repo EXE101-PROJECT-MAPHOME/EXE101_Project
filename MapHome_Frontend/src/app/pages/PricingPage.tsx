@@ -20,7 +20,8 @@ import {
   CardHeader,
 } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { Navbar } from "@/app/components/Navbar";
 import api from "@/app/utils/api";
 import { Footer } from "@/app/components/Footer";
@@ -299,6 +300,16 @@ export function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("cancelled") === "true") {
+      toast.warning("Bạn đã hủy giao dịch thanh toán gói cước.");
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("cancelled");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const fetchPlans = async () => {

@@ -153,7 +153,7 @@ const paymentCallback = async (req, res) => {
     const { cancel, orderCode, planId } = req.query;
     const frontendUrl = (
       process.env.FRONTEND_URL || "http://localhost:5173"
-    ).replace(/\/$/, "");
+    ).trim().replace(/^['"]|['"]$/g, "").replace(/\/$/, "");
 
     // Người dùng huỷ thanh toán
     if (cancel === "true") {
@@ -202,9 +202,12 @@ const paymentCallback = async (req, res) => {
         }
       }
 
+      const paymentType = (planId === "inspection" || (existingTx && existingTx.planId === "inspection"))
+        ? "inspection"
+        : "subscription";
       const successUrl = `${frontendUrl}/payment-success?orderId=${orderCode}&amount=${amount}&planId=${
         planId || ""
-      }&type=subscription`;
+      }&type=${paymentType}`;
       return res.redirect(successUrl);
     } else {
       return res.redirect(`${frontendUrl}/payment-failure?code=not_paid`);
@@ -213,7 +216,7 @@ const paymentCallback = async (req, res) => {
     console.error("[PayOS Callback Error]:", error);
     const frontendUrl = (
       process.env.FRONTEND_URL || "http://localhost:5173"
-    ).replace(/\/$/, "");
+    ).trim().replace(/^['"]|['"]$/g, "").replace(/\/$/, "");
     res.redirect(`${frontendUrl}/payment-failure?code=error`);
   }
 };

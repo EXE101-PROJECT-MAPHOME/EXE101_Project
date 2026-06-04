@@ -71,12 +71,12 @@ export function PaymentSuccessPage() {
   const orderId = location.state?.orderId || searchParams.get("orderId");
   const inspectionData = location.state?.inspectionData;
 
-  // Chỉ redirect nếu KHÔNG có cả planId lẫn amount lẫn orderId (thực sự không hợp lệ)
+  // Redirect to pricing page if parameters are missing or invalid
   useEffect(() => {
-    if (!loading && !isInspection && !planIdFromUrl && (!amount || !orderId)) {
+    if (!loading && (!planIdFromUrl || !amount || !orderId)) {
       navigate("/pricing");
     }
-  }, [loading, planIdFromUrl, amount, orderId, navigate, isInspection]);
+  }, [loading, planIdFromUrl, amount, orderId, navigate]);
 
   // Refresh profile context on successful payment confirmation
   useEffect(() => {
