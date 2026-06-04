@@ -17,12 +17,14 @@ const getMyProfile = async (req, res) => {
     }).populate({ path: "planId", select: "planId name" });
 
     let subscriptionTier = "Free";
-    let verificationLevel = user.verificationLevel || 1;
-    let verificationLevelLabel = `Cấp ${verificationLevel}`;
+    let verificationLevel = 0;
+    let verificationLevelLabel = "Chưa xác thực";
 
     if (subscription && subscription.status === "active") {
       // Lấy planName thực tế từ Subscription (do admin tạo trong DB)
       subscriptionTier = subscription.planName || "Free";
+      verificationLevel = user.verificationLevel || 1;
+      verificationLevelLabel = `Cấp ${verificationLevel}`;
 
       // verificationLevel: nếu là Pro thì level 3, còn lại giữ nguyên từ DB user
       const planSlug = (

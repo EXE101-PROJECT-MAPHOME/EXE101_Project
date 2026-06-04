@@ -25,7 +25,7 @@ import { toast } from "sonner";
 
 export function SubscriptionManagement() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [showComparison, setShowComparison] = useState(false);
   const [subscription, setSubscription] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -59,6 +59,37 @@ export function SubscriptionManagement() {
   const handleRenew = () => navigate("/pricing");
   const handleUpgrade = () => navigate("/pricing");
 
+  const handleCancelSubscription = async () => {
+    if (
+      !window.confirm(
+        "Bạn có chắc chắn muốn hủy gói dịch vụ hiện tại? Hành động này sẽ làm mới gói dịch vụ của bạn về trạng thái Free"
+      )
+    )
+      return;
+    try {
+      setLoading(true);
+      const res = await api.post("/api/subscriptions/cancel");
+      if (res.status === 200) {
+        toast.success(
+          "Đã hủy gói dịch vụ thành công! Tài khoản của bạn đã quay về gói Free."
+        );
+        // Lấy lại thông tin subscription mới (Free)
+        const subRes = await api.get("/api/subscriptions/me");
+        setSubscription(subRes.data);
+
+        // Kích hoạt cập nhật thông tin user mới từ API về profile context
+        const userRes = await api.get("/api/user/me");
+        if (userRes.status === 200) {
+          updateUser(userRes.data);
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Không thể hủy gói dịch vụ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDownloadInvoice = (invoiceId: string) => {
     toast.info(`📥 Đang tải hóa đơn ${invoiceId}...\n\nDemo: File PDF sẽ được tải xuống.`);
   };
@@ -82,12 +113,16 @@ export function SubscriptionManagement() {
     features: ["Đăng tin thường", "Hiển thị bảng lọc cơ bản", "Hỗ trợ cộng đồng"],
   };
 
-  const daysRemaining = currentSub.expiryDate 
+  const daysRemaining = currentSub.expiryDate
     ? Math.max(0, Math.ceil((new Date(currentSub.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
-  
+
   const totalDays = 30;
   const progressPercent = currentSub.expiryDate ? (daysRemaining / totalDays) * 100 : 0;
+
+  const isPaidPlan = currentSub.planName &&
+    !currentSub.planName.toLowerCase().includes("free") &&
+    !currentSub.planName.toLowerCase().includes("miễn phí");
 
   const usageStats = subscription?.usageStats || [
     { label: "Tin đã đăng", value: "0/1", icon: Zap, color: "blue", trend: "+100%" },
@@ -107,7 +142,7 @@ export function SubscriptionManagement() {
   return (
     <div className="space-y-12 pb-20">
       {/* 1. Glassmorphic Hero Banner */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative group rounded-[3rem] overflow-hidden bg-slate-50 border border-slate-200 shadow-xl shadow-slate-200/40 p-[1px]"
@@ -115,20 +150,20 @@ export function SubscriptionManagement() {
         {/* Elegant Muted Mesh Background */}
         <div className="absolute inset-0 bg-white" />
         <div className="absolute inset-0 opacity-20">
-           <div className="absolute top-0 left-0 w-full h-full bg-slate-50 animate-pulse" />
-           <div className="absolute -top-[10%] -right-[10%] w-[70%] h-[70%] bg-violet-400/10 blur-[120px] rounded-full animate-bounce" />
-           <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] bg-rose-500/10 blur-[100px] rounded-full animate-pulse" />
-           <div className="absolute top-1/2 left-1/4 w-[40%] h-[40%] bg-cyan-400/5 blur-[110px] rounded-full" />
+          <div className="absolute top-0 left-0 w-full h-full bg-slate-50 animate-pulse" />
+          <div className="absolute -top-[10%] -right-[10%] w-[70%] h-[70%] bg-violet-400/10 blur-[120px] rounded-full animate-bounce" />
+          <div className="absolute -bottom-[20%] -left-[10%] w-[60%] h-[60%] bg-rose-500/10 blur-[100px] rounded-full animate-pulse" />
+          <div className="absolute top-1/2 left-1/4 w-[40%] h-[40%] bg-cyan-400/5 blur-[110px] rounded-full" />
         </div>
-        
+
         {/* Subtle Texture Overlay */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] mix-blend-multiply" />
-        
+
         <div className="relative z-10 p-10 md:p-14 bg-white/40 backdrop-blur-[2px] h-full flex flex-col lg:flex-row items-center justify-between gap-12 border border-white/50">
           {/* Left Side: Plan Info */}
           <div className="flex-1 w-full">
             <div className="flex items-center gap-6 mb-8">
-              <motion.div 
+              <motion.div
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 1 }}
                 className="w-20 h-20 rounded-3xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-2xl flex-shrink-0"
@@ -147,7 +182,7 @@ export function SubscriptionManagement() {
                 </div>
                 <p className="text-slate-400 font-bold flex items-center gap-2">
                   <Calendar className="size-4 text-blue-500" />
-                  Kích hoạt: {new Date(currentSub.startDate).toLocaleDateString("vi-VN")} 
+                  Kích hoạt: {new Date(currentSub.startDate).toLocaleDateString("vi-VN")}
                   {currentSub.expiryDate && ` • Hết hạn: ${new Date(currentSub.expiryDate).toLocaleDateString("vi-VN")}`}
                 </p>
               </div>
@@ -163,7 +198,7 @@ export function SubscriptionManagement() {
                   <span className="text-blue-600 font-black text-xs uppercase tracking-widest">{progressPercent.toFixed(0)}% Còn lại</span>
                 </div>
                 <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200 p-1 shadow-inner">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercent}%` }}
                     transition={{ duration: 1, ease: "easeOut" }}
@@ -172,13 +207,13 @@ export function SubscriptionManagement() {
                 </div>
               </div>
             ) : (
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.01, x: 2 }}
                 className="p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm max-w-md ring-1 ring-slate-100/50"
               >
                 <p className="text-slate-600 font-bold leading-relaxed flex items-center gap-3">
-                   <Zap className="size-5 text-yellow-500" />
-                   Bạn đang sử dụng gói mặc định. Nâng cấp để nhận nhiều ưu tiên hiển thị hơn!
+                  <Zap className="size-5 text-yellow-500" />
+                  Bạn đang sử dụng gói mặc định. Nâng cấp để nhận nhiều ưu tiên hiển thị hơn!
                 </p>
               </motion.div>
             )}
@@ -200,6 +235,15 @@ export function SubscriptionManagement() {
               <Zap className="size-6 mr-3 text-yellow-500 fill-yellow-500" />
               Nâng cấp lên Pro
             </Button>
+            {isPaidPlan && (
+              <Button
+                onClick={handleCancelSubscription}
+                className="h-20 px-8 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 border-2 border-rose-100 rounded-3xl font-black text-lg shadow-lg shadow-rose-50/50 transition-all hover:scale-[1.02] active:scale-95 flex-1 lg:flex-none flex items-center justify-center gap-3"
+              >
+                <X className="size-6" />
+                Hủy gói cước
+              </Button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -213,20 +257,20 @@ export function SubscriptionManagement() {
             Tính năng sở hữu
           </h4>
           <div className="space-y-3">
-             {currentSub.features.map((feature: string, idx: number) => (
-                <motion.div 
-                  key={idx}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow group"
-                >
-                  <div className="p-2 bg-green-50 rounded-lg group-hover:scale-110 transition-transform">
-                    <Check className="size-4 text-green-600" />
-                  </div>
-                  <span className="font-bold text-gray-700">{feature}</span>
-                </motion.div>
-             ))}
+            {currentSub.features.map((feature: string, idx: number) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                className="flex items-center gap-4 p-5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow group"
+              >
+                <div className="p-2 bg-green-50 rounded-lg group-hover:scale-110 transition-transform">
+                  <Check className="size-4 text-green-600" />
+                </div>
+                <span className="font-bold text-gray-700">{feature}</span>
+              </motion.div>
+            ))}
           </div>
         </div>
 
@@ -248,7 +292,7 @@ export function SubscriptionManagement() {
               amber: "from-amber-400 to-orange-500 shadow-amber-100"
             };
             const gradientClass = cardGradients[stat.color as keyof typeof cardGradients] || cardGradients.blue;
-            
+
             return (
               <motion.div
                 key={idx}
@@ -257,13 +301,13 @@ export function SubscriptionManagement() {
               >
                 {/* Vibrant Background Aura */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${gradientClass.split(' shadow')[0]} opacity-5 group-hover:opacity-10 transition-opacity blur-3xl`} />
-                
+
                 <div className="relative bg-white/60 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-8 h-full flex flex-col items-center border border-white">
-                   {/* Icon with Vibrant Gradient Container */}
-                   <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-2xl transition-transform group-hover:scale-110 group-hover:rotate-3 bg-gradient-to-br ${gradientClass.split(' shadow')[0]} ${gradientClass.split(' ')[2]}`}>
+                  {/* Icon with Vibrant Gradient Container */}
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-2xl transition-transform group-hover:scale-110 group-hover:rotate-3 bg-gradient-to-br ${gradientClass.split(' shadow')[0]} ${gradientClass.split(' ')[2]}`}>
                     <Icon className="size-8 text-white" />
                   </div>
-                  
+
                   <div className="relative z-10 text-center">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
                     <p className={`text-5xl font-black tracking-tighter mb-2 bg-gradient-to-br ${gradientClass.split(' shadow')[0]} bg-clip-text text-transparent`}>
@@ -300,7 +344,7 @@ export function SubscriptionManagement() {
 
         <AnimatePresence>
           {showComparison && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
@@ -353,7 +397,7 @@ export function SubscriptionManagement() {
         {/* History Table */}
         <div className="xl:col-span-8 space-y-6">
           <div className="flex items-center justify-between ml-2">
-             <h4 className="text-2xl font-black bg-gradient-to-r from-slate-800 to-indigo-900 bg-clip-text text-transparent flex items-center gap-3">
+            <h4 className="text-2xl font-black bg-gradient-to-r from-slate-800 to-indigo-900 bg-clip-text text-transparent flex items-center gap-3">
               <CreditCard className="size-6 text-indigo-600" />
               Lịch sử giao dịch
             </h4>
@@ -375,8 +419,8 @@ export function SubscriptionManagement() {
                     <tr>
                       <td colSpan={4} className="py-20 text-center">
                         <div className="flex flex-col items-center gap-3 text-gray-300 font-bold italic">
-                           <CreditCard className="size-10" />
-                           Chưa ghi nhận giao dịch nào
+                          <CreditCard className="size-10" />
+                          Chưa ghi nhận giao dịch nào
                         </div>
                       </td>
                     </tr>
@@ -397,7 +441,7 @@ export function SubscriptionManagement() {
                           <span className="font-black text-indigo-600 text-lg">{(t.amount || 0).toLocaleString("vi-VN")}đ</span>
                         </td>
                         <td className="py-5 px-6 text-center">
-                          <motion.button 
+                          <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => handleDownloadInvoice(t.invoiceId)}
@@ -414,24 +458,24 @@ export function SubscriptionManagement() {
             </div>
           </div>
         </div>
-        
+
         {/* 5. Support Card (Vibrant Light) */}
         <div className="xl:col-span-4 h-full">
-          <motion.div 
+          <motion.div
             whileHover={{ y: -10 }}
             className="relative h-full rounded-[3rem] overflow-hidden group shadow-2xl shadow-indigo-100/30 bg-white border border-white"
           >
             {/* Animated Mesh Background (Soft & Vibrant) */}
             <div className="absolute inset-0 opacity-40">
-               <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500/20 via-blue-400/10 to-emerald-300/20 animate-pulse" />
-               <div className="absolute -top-[20%] -right-[20%] w-[120%] h-[120%] bg-indigo-500/10 blur-[100px] rounded-full" />
-               <div className="absolute -bottom-[20%] -left-[20%] w-[110%] h-[110%] bg-blue-500/10 blur-[80px] rounded-full animate-pulse" />
+              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-500/20 via-blue-400/10 to-emerald-300/20 animate-pulse" />
+              <div className="absolute -top-[20%] -right-[20%] w-[120%] h-[120%] bg-indigo-500/10 blur-[100px] rounded-full" />
+              <div className="absolute -bottom-[20%] -left-[20%] w-[110%] h-[110%] bg-blue-500/10 blur-[80px] rounded-full animate-pulse" />
             </div>
-            
+
             <div className="relative z-10 p-10 h-full backdrop-blur-3xl flex flex-col justify-between">
               <div>
                 <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center mb-8 shadow-xl shadow-indigo-100">
-                   <Star className="size-8 text-white fill-white" />
+                  <Star className="size-8 text-white fill-white" />
                 </div>
                 <h4 className="text-3xl font-black text-slate-900 mb-4 tracking-tight leading-tight">
                   Cần tư vấn <br /> về gói cước?
@@ -440,10 +484,10 @@ export function SubscriptionManagement() {
                   Đội ngũ chuyên viên MapHome luôn sẵn sàng hỗ trợ bạn lựa chọn giải pháp tối ưu nhất.
                 </p>
               </div>
-              
+
               <Button className="w-full h-16 mt-8 bg-indigo-600 text-white hover:bg-indigo-700 rounded-2xl font-black text-lg shadow-xl shadow-indigo-100 transition-all flex items-center justify-center gap-3 border-none">
-                 Liên hệ ngay
-                 <ArrowRight className="size-5" />
+                Liên hệ ngay
+                <ArrowRight className="size-5" />
               </Button>
             </div>
           </motion.div>
