@@ -5,8 +5,20 @@ function initSocket(server) {
   const { Server } = require("socket.io");
   const io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || "http://localhost:5173",
-      methods: ["GET", "POST"],
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const envList = (process.env.ALLOWED_ORIGINS || "").split(",").map(s => s.trim()).filter(Boolean);
+        const allowedOrigins = Array.from(new Set([process.env.FRONTEND_URL, ...envList].filter(Boolean)));
+        const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+        const isVercel = /^https?:\/\/.*\.vercel\.app$/.test(origin);
+        const isRailway = /^https?:\/\/.*\.up\.railway\.app$/.test(origin);
+        
+        if (allowedOrigins.includes(origin) || isLocalhost || isVercel || isRailway) {
+          return callback(null, true);
+        }
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+      },
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       credentials: true,
     },
   });

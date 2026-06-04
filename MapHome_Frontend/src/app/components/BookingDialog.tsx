@@ -82,9 +82,11 @@ export function BookingDialog({ open, onOpenChange, property }: BookingDialogPro
     try {
       const res = await api.post("/api/bookings", {
         propertyId: property.id || property._id,
-        date: selectedDate.toISOString(),
-        time: selectedTime,
-        message: note || `Tên: ${customerName}\nSĐT: ${customerPhone}`
+        customerName: customerName,
+        customerPhone: customerPhone,
+        bookingDate: selectedDate.toISOString(),
+        bookingTime: selectedTime,
+        note: note || undefined,
       });
 
       if (res.status === 200 || res.status === 201) {

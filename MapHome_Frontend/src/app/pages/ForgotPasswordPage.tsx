@@ -4,8 +4,6 @@ import { useNavigate } from "react-router-dom";
 import api from "@/app/utils/api";
 import { toast } from "sonner";
 import { Button } from "@/app/components/ui/button";
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 
 import {
   Home,
@@ -156,7 +154,7 @@ export function ForgotPasswordPage() {
                   <p className="text-red-700 font-medium">{error}</p>
                 </motion.div>
               )}
-              
+
               {/* Recaptcha container for Firebase */}
               <div id="recaptcha-container"></div>
 

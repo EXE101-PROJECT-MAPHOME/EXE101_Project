@@ -21,7 +21,7 @@ import {
 export function PaymentSuccessPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
 
   const [searchParams] = useSearchParams();
 
@@ -52,22 +52,38 @@ export function PaymentSuccessPage() {
     fetchPlans();
   }, []);
 
-  const tier =
+  // Tìm tier trong danh sách plans đã load từ API
+  const tierFromList =
     location.state?.tier ||
     (planIdFromUrl
       ? availablePlans.find((p) => p.planId === planIdFromUrl)
       : null);
+
+  // Fallback: Nếu API không trả về plan (ví dụ plan đã bị admin xóa),
+  // vẫn hiển thị thông tin cơ bản dựa vào planId trong URL để không mất trang success
+  const tier = tierFromList || (planIdFromUrl && !loading
+    ? { planId: planIdFromUrl, name: planIdFromUrl.charAt(0).toUpperCase() + planIdFromUrl.slice(1) }
+    : null);
+
   const amountStr = searchParams.get("amount");
   const amount =
     location.state?.amount || (amountStr ? Number(amountStr) : null);
   const orderId = location.state?.orderId || searchParams.get("orderId");
   const inspectionData = location.state?.inspectionData;
 
+  // Chỉ redirect nếu KHÔNG có cả planId lẫn amount lẫn orderId (thực sự không hợp lệ)
   useEffect(() => {
-    if (!loading && (!tier || !amount || !orderId)) {
-      navigate(isInspection ? "/admin/dashboard" : "/pricing");
+    if (!loading && !isInspection && !planIdFromUrl && (!amount || !orderId)) {
+      navigate("/pricing");
     }
-  }, [loading, tier, amount, orderId, navigate, isInspection]);
+  }, [loading, planIdFromUrl, amount, orderId, navigate, isInspection]);
+
+  // Refresh profile context on successful payment confirmation
+  useEffect(() => {
+    if (!loading && tier && amount && orderId) {
+      refreshProfile();
+    }
+  }, [loading, tier, amount, orderId]);
 
   // Auto-redirect countdown after data loaded successfully
   useEffect(() => {
@@ -78,7 +94,8 @@ export function PaymentSuccessPage() {
         ? "/user/dashboard" 
         : "/landlord/dashboard";
     if (countdown <= 0) {
-      navigate(destination);
+      // replace:true → location.key thay đổi → SubscriptionManagement sẽ refetch subscription mới
+      navigate(destination, { replace: true });
       return;
     }
     const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);

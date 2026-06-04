@@ -89,7 +89,7 @@ const formatTrendNumber = (num: number) => {
 export function LandlordDashboardV2() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, logout, isAuthenticated, updateUser } = useAuth();
+  const { user, logout, isAuthenticated, updateUser, refreshProfile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [editingProperty, setEditingProperty] = useState<RentalProperty | null>(
@@ -202,6 +202,12 @@ export function LandlordDashboardV2() {
 
   // Get active tab from URL params, default to 'overview'
   const activeTab = (searchParams.get("tab") as DashboardTab) || "overview";
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshProfile();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "landlord") {
@@ -631,7 +637,8 @@ export function LandlordDashboardV2() {
       { label: "Cấp 3", color: "bg-green-100 text-green-800" },
     ];
     const badge = badges[level] || badges[0];
-    const tier = user?.subscriptionTier || "Standard";
+    // subscriptionTier từ API /user/me luôn là planName thực từ DB (Basic, Standard, Pro, v.v.)
+    const tier = user?.subscriptionTier || "Free";
     return (
       <span
         className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}

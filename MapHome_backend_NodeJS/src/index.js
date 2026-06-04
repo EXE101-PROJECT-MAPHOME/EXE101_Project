@@ -39,7 +39,10 @@ app.use(
       // Cho phép BẤT KỲ tên miền nào kết thúc bằng .vercel.app (rất tiện khi Vercel tự sinh link Preview)
       const isVercel = /^https?:\/\/.*\.vercel\.app$/.test(origin);
 
-      if (allowedOrigins.includes(origin) || isLocalhost || isVercel) {
+      // Cho phép BẤT KỲ tên miền nào kết thúc bằng .up.railway.app (cho Swagger UI trên API)
+      const isRailway = /^https?:\/\/.*\.up\.railway\.app$/.test(origin);
+
+      if (allowedOrigins.includes(origin) || isLocalhost || isVercel || isRailway) {
         return callback(null, true);
       }
 
