@@ -5,6 +5,8 @@ const VerificationRequest = require("../models/VerificationRequest");
 const Booking = require("../models/Booking");
 const Review = require("../models/Review");
 const Transaction = require("../models/Transaction");
+const Subscription = require("../models/Subscription");
+
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -245,6 +247,39 @@ const getUserDetail = async (req, res) => {
     const user = await User.findById(req.params.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Lấy subscription thực tế
+    const subscription = await Subscription.findOne({
+      userId: user._id,
+      status: "active",
+    }).populate({ path: "planId", select: "planId name" });
+
+    let subscriptionTier = "Free";
+    let verificationLevel = 0;
+    let verificationLevelLabel = "Chưa xác thực";
+
+    if (subscription && subscription.status === "active") {
+      subscriptionTier = subscription.planName || "Free";
+      verificationLevel = user.verificationLevel || 1;
+      verificationLevelLabel = `Cấp ${verificationLevel}`;
+
+      const planSlug = (
+        subscription.planId?.planId ||
+        subscription.planName ||
+        ""
+      ).toLowerCase();
+      if (planSlug === "pro") {
+        verificationLevel = 3;
+        verificationLevelLabel = "Cấp 3";
+      }
+    }
+
+    const userObj = user.toObject();
+    userObj.verificationLevel = verificationLevel;
+    userObj.verificationLevelLabel = verificationLevelLabel;
+    userObj.subscriptionTier = subscriptionTier;
+    userObj.subscriptionPlanId = subscription?.planId?.planId || null;
+    userObj.subscriptionExpiry = subscription?.expiryDate || null;
+
     let properties = [];
     if (user.role === "landlord") {
       properties = await Property.find({ landlordId: user._id });
@@ -260,7 +295,7 @@ const getUserDetail = async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.status(200).json({
-      user,
+      user: userObj,
       properties,
       bookings,
     });

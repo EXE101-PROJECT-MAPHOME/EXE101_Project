@@ -3,6 +3,8 @@ const SubscriptionPlan = require("../models/SubscriptionPlan");
 const Property = require("../models/Property");
 const Landlord = require("../models/Landlord");
 const VerificationRequest = require("../models/VerificationRequest");
+const User = require("../models/User");
+
 
 // Helper: ensure generated planId is unique in the collection
 const ensureUniquePlanId = async (baseId) => {
@@ -350,7 +352,33 @@ const deleteSubscriptionPlan = async (req, res) => {
     plan.isActive = false;
     await plan.save();
 
-    res.status(200).json({ message: "Plan deactivated successfully" });
+    // Tìm tất cả subscription đang hoạt động của gói này
+    const activeSubs = await Subscription.find({
+      planId: plan._id,
+      status: "active",
+    });
+
+    if (activeSubs.length > 0) {
+      const subIds = activeSubs.map((s) => s._id);
+      const userIds = activeSubs.map((s) => s.userId);
+
+      // Cập nhật các subscription đó thành cancelled
+      await Subscription.updateMany(
+        { _id: { $in: subIds } },
+        { status: "cancelled" }
+      );
+
+      // Cập nhật User về lại gói free (subscriptionId: null) và cấp 0 (verificationLevel: 0)
+      await User.updateMany(
+        { _id: { $in: userIds } },
+        { subscriptionId: null, verificationLevel: 0 }
+      );
+    }
+
+    res.status(200).json({
+      message:
+        "Plan deactivated and related user subscriptions reverted to Free level 0 successfully",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -451,6 +479,39 @@ const resetSubscriptionPlans = async (req, res) => {
   }
 };
 
+// @desc    Cancel current user's active subscription
+// @route   POST /api/subscriptions/cancel
+const cancelMySubscription = async (req, res) => {
+  try {
+    const subscription = await Subscription.findOne({
+      userId: req.user._id,
+      status: "active",
+    });
+
+    if (!subscription) {
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy gói đăng ký nào đang hoạt động." });
+    }
+
+    subscription.status = "cancelled";
+    await subscription.save();
+
+    // Revert user to free / level 0 in DB
+    await User.findByIdAndUpdate(req.user._id, {
+      subscriptionId: null,
+      verificationLevel: 0,
+    });
+
+    res.status(200).json({
+      message:
+        "Đã hủy gói dịch vụ thành công! Tài khoản của bạn đã quay về gói Free với cấp độ xác thực 0.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getMySubscription,
   getAvailablePlans,
@@ -459,4 +520,6 @@ module.exports = {
   createSubscriptionPlan,
   deleteSubscriptionPlan,
   resetSubscriptionPlans,
+  cancelMySubscription,
 };
+
