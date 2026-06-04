@@ -6,6 +6,7 @@ const SubscriptionPlanSchema = new mongoose.Schema(
     name: { type: String, required: true },
     price: { type: Number, required: true },
     yearlyPrice: { type: Number, required: true },
+    termDays: { type: Number, default: 30 }, // Số ngày có hiệu lực sau khi kích hoạt (admin cấu hình)
     description: { type: String },
     features: [
       {

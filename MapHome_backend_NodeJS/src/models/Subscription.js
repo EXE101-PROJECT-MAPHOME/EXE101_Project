@@ -10,7 +10,6 @@ const SubscriptionSchema = new mongoose.Schema(
     planId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "SubscriptionPlan",
-      required: true,
     },
     planName: {
       type: String,
