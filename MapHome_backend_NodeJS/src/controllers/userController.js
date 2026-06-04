@@ -23,18 +23,26 @@ const getMyProfile = async (req, res) => {
     if (subscription && subscription.status === "active") {
       // Lấy planName thực tế từ Subscription (do admin tạo trong DB)
       subscriptionTier = subscription.planName || "Free";
-      verificationLevel = user.verificationLevel || 1;
-      verificationLevelLabel = `Cấp ${verificationLevel}`;
 
-      // verificationLevel: nếu là Pro thì level 3, còn lại giữ nguyên từ DB user
       const planSlug = (
         subscription.planId?.planId ||
         subscription.planName ||
         ""
       ).toLowerCase();
-      if (planSlug === "pro") {
+
+      if (planSlug.includes("pro")) {
         verificationLevel = 3;
         verificationLevelLabel = "Cấp 3";
+      } else if (planSlug.includes("standard")) {
+        verificationLevel = 2;
+        verificationLevelLabel = "Cấp 2";
+      } else if (planSlug.includes("basic")) {
+        verificationLevel = 1;
+        verificationLevelLabel = "Cấp 1";
+      } else {
+        // Fallback cho các gói khác hoặc theo user.verificationLevel
+        verificationLevel = user.verificationLevel || 1;
+        verificationLevelLabel = `Cấp ${verificationLevel}`;
       }
     }
 
