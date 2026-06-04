@@ -69,13 +69,24 @@ const activateSubscription = async (planSlug, userId) => {
     { upsert: true, new: true }
   );
 
-  // Cập nhật subscriptionId trên User
-  await User.findByIdAndUpdate(userId, { subscriptionId: updatedSub._id });
-
-  // Nếu là gói Pro → nâng verificationLevel lên 3
-  if (planSlug.toLowerCase() === "pro") {
-    await User.findByIdAndUpdate(userId, { verificationLevel: 3 });
+  // Xác định verification level dựa theo slug gói đăng ký
+  let verificationLevel = 0;
+  const slug = planSlug.toLowerCase();
+  if (slug === "basic") {
+    verificationLevel = 1;
+  } else if (slug === "standard") {
+    verificationLevel = 2;
+  } else if (slug === "pro") {
+    verificationLevel = 3;
+  } else {
+    verificationLevel = 0;
   }
+
+  // Cập nhật subscriptionId và verificationLevel trên User trong DB
+  await User.findByIdAndUpdate(userId, {
+    subscriptionId: updatedSub._id,
+    verificationLevel,
+  });
 
   console.log(
     `[activateSubscription] User ${userId} upgraded to plan "${planDoc.name}" (expires ${expiryDate.toISOString()})`
