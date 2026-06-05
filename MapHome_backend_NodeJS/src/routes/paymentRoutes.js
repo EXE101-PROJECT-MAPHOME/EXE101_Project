@@ -4,6 +4,7 @@ const {
   createPayment,
   paymentCallback,
   payosWebhook,
+  getInspectionFee,
 } = require("../controllers/paymentController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { createPaymentRules } = require("../validators/paymentValidator");
@@ -33,6 +34,25 @@ const validate = require("../middleware/validate");
  *       200:
  *         description: Redirect URL for payment
  */
+/**
+ * @swagger
+ * /api/payments/inspection-fee:
+ *   get:
+ *     summary: Get the inspection/verification fee for tenants
+ *     tags: [Payments]
+ *     responses:
+ *       200:
+ *         description: Inspection fee amount
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 fee: { type: number, example: 119000 }
+ *                 currency: { type: string, example: "VND" }
+ */
+router.get("/inspection-fee", getInspectionFee);
+
 router.post("/create", authMiddleware, createPaymentRules, validate, createPayment);
 
 /**

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { formatDateVietnamese } from "@/app/utils/dateUtils";
@@ -47,6 +47,13 @@ import {
   Activity,
   Info,
   Menu,
+  Shield,
+  CreditCard,
+  ExternalLink,
+  ImageIcon,
+  CheckCheck,
+  Hourglass,
+  BadgeCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { amenityMeta } from "@/app/constants/amenities";
@@ -82,6 +89,7 @@ interface ConfirmModalState {
 
 export function UserDashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout, isAuthenticated } = useAuth();
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -92,6 +100,7 @@ export function UserDashboard() {
   const [myBlogs, setMyBlogs] = useState<any[]>([]);
   const [savedBlogs, setSavedBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [highlightedBookingId, setHighlightedBookingId] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<ConfirmModalState>({
     open: false,
   });
@@ -100,6 +109,32 @@ export function UserDashboard() {
     subject: "",
     message: "",
   });
+
+  // Xử lý query params từ redirect PayOS (payment=cancelled hoặc tab=appointments)
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const payment = searchParams.get("payment");
+    const bookingId = searchParams.get("bookingId");
+
+    if (tab === "appointments") {
+      setActiveView("appointments");
+      if (payment === "cancelled") {
+        toast.warning("Bạn đã hủy thanh toán xác minh. Lịch hẹn vẫn còn hiệu lực — bạn có thể thanh toán lại bất cứ lúc nào.", {
+          duration: 6000,
+          icon: "⚠️",
+        });
+      }
+      if (bookingId) {
+        setHighlightedBookingId(bookingId);
+        // Xóa params khỏi URL sau khi đã xử lý
+        setTimeout(() => {
+          setSearchParams({}, { replace: true });
+          setHighlightedBookingId(null);
+        }, 5000);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -434,6 +469,9 @@ export function UserDashboard() {
               <AppointmentsView
                 appointments={appointments}
                 setAppointments={setAppointments}
+                inspections={inspections}
+                setInspections={setInspections}
+                highlightedBookingId={highlightedBookingId}
                 setConfirmModal={setConfirmModal}
               />
             )}
@@ -1240,20 +1278,34 @@ function SearchView() {
 function AppointmentsView({
   appointments,
   setAppointments,
+  inspections,
+  setInspections,
+  highlightedBookingId,
   setConfirmModal,
 }: {
   appointments: any[];
   setAppointments: (appointments: any[]) => void;
+  inspections: any[];
+  setInspections: (inspections: any[]) => void;
+  highlightedBookingId: string | null;
   setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalState>>;
 }) {
   const [filter, setFilter] = useState<
     "all" | "pending" | "confirmed" | "completed" | "cancelled"
   >("all");
+  const [paymentModal, setPaymentModal] = useState<{
+    open: boolean;
+    booking: any | null;
+  }>({ open: false, booking: null });
 
   const filteredAppointments =
     filter === "all"
       ? appointments
       : appointments.filter((a) => a.status === filter);
+
+  // Kiểm tra booking đã có VerificationRequest chưa
+  const hasVerificationRequest = (bookingId: string) =>
+    inspections.some((insp) => String(insp.bookingId) === String(bookingId));
 
   const handleCancelAppointment = async (id: string) => {
     setConfirmModal({
@@ -1390,7 +1442,11 @@ function AppointmentsView({
                 show: { opacity: 1, x: 0 },
               }}
               whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
-              className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-6"
+              className={`bg-white rounded-xl shadow hover:shadow-lg transition-all p-6 ${
+                highlightedBookingId === appointment._id
+                  ? "ring-2 ring-orange-400 ring-offset-2 shadow-orange-100"
+                  : ""
+              }`}
             >
               <div className="flex items-start gap-6">
                 {/* Property Image */}
@@ -1478,13 +1534,231 @@ function AppointmentsView({
                       </Button>
                     </div>
                   )}
+
+                  {/* Nút thanh toán xác minh khi booking được confirm */}
+                  {appointment.status === "confirmed" && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                      {hasVerificationRequest(appointment._id) ? (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-200">
+                          <CheckCheck className="size-4 text-green-600" />
+                          <span className="text-sm font-bold text-green-700">Yêu cầu xác minh đã được gửi</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <Shield className="size-4 text-blue-500" />
+                            <span>Xác minh để đảm bảo trọ có thật</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-md shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                            onClick={() =>
+                              setPaymentModal({ open: true, booking: appointment })
+                            }
+                          >
+                            <Shield className="size-4" />
+                            Thanh toán xác minh trọ
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
           ))}
         </motion.div>
       )}
+
+      {/* Modal xác nhận thanh toán phí xác minh */}
+      <InspectionPaymentModal
+        open={paymentModal.open}
+        booking={paymentModal.booking}
+        onClose={() => setPaymentModal({ open: false, booking: null })}
+        onSuccess={(newInspection) => {
+          if (newInspection) setInspections([...inspections, newInspection]);
+          setPaymentModal({ open: false, booking: null });
+        }}
+      />
     </div>
+  );
+}
+
+// ─── InspectionPaymentModal ────────────────────────────────────────────────────
+function InspectionPaymentModal({
+  open,
+  booking,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  booking: any | null;
+  onClose: () => void;
+  onSuccess: (newInspection?: any) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [fee, setFee] = useState<number>(119000);
+
+  useEffect(() => {
+    if (open) {
+      api
+        .get("/api/payments/inspection-fee")
+        .then((res) => setFee(res.data.fee || 119000))
+        .catch(() => setFee(119000));
+    }
+  }, [open]);
+
+  const handlePay = async () => {
+    if (!booking) return;
+    setLoading(true);
+    try {
+      const res = await api.post("/api/payments/create", {
+        amount: fee,
+        planId: "inspection",
+        bookingId: booking._id,
+        description: "Phi xac minh tro",
+      });
+      // Redirect đến PayOS checkout
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Không thể tạo thanh toán. Vui lòng thử lại.");
+      setLoading(false);
+    }
+  };
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
+
+  return (
+    <AnimatePresence>
+      {open && booking && (
+        <motion.div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-md px-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
+          <motion.div
+            className="bg-white rounded-[28px] shadow-2xl w-full max-w-md overflow-hidden border border-white/20"
+            initial={{ scale: 0.9, y: 24, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 24, opacity: 0 }}
+            transition={{ type: "spring", bounce: 0.25 }}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-7 text-white relative overflow-hidden">
+              <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" />
+              <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/5 rounded-full" />
+              <button
+                onClick={onClose}
+                className="absolute top-5 right-5 p-1.5 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="size-5" />
+              </button>
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                  <Shield className="size-8" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black tracking-tight">Xác minh phòng trọ</h2>
+                  <p className="text-blue-100 text-sm font-medium mt-0.5">
+                    Đảm bảo trọ có thật trước khi ký hợp đồng
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-7 space-y-5">
+              {/* Thông tin booking */}
+              <div className="bg-slate-50 rounded-2xl p-5 space-y-3 border border-slate-100">
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                  Thông tin lịch hẹn
+                </p>
+                <div className="flex items-start gap-3">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 overflow-hidden flex-shrink-0">
+                    <img
+                      src={
+                        getImageUrl(booking.propertyId?.image) ||
+                        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=200"
+                      }
+                      alt={booking.propertyId?.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">
+                      {booking.propertyId?.name || "Căn phòng"}
+                    </p>
+                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                      <MapPin className="size-3" />
+                      {booking.propertyId?.address?.split(",")[0] || "Địa chỉ"}
+                    </p>
+                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                      <Calendar className="size-3" />
+                      {formatDateVietnamese(booking.bookingDate)} lúc {booking.bookingTime}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phí */}
+              <div className="flex items-center justify-between p-5 bg-blue-50 rounded-2xl border border-blue-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-xl">
+                    <CreditCard className="size-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">Phí xác minh trọ</p>
+                    <p className="text-xs text-gray-500">Một lần duy nhất</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-blue-700">{formatPrice(fee)}</p>
+              </div>
+
+              {/* Mô tả dịch vụ */}
+              <div className="space-y-2.5">
+                {[
+                  { icon: CheckCheck, text: "Nhân viên kiểm tra thực địa tại địa chỉ trọ" },
+                  { icon: BadgeCheck, text: "Xác nhận trọ tồn tại và đúng với thông tin đăng" },
+                  { icon: Shield, text: "Cấp huy hiệu ✓ Verified nếu đạt tiêu chuẩn" },
+                ].map(({ icon: Icon, text }, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm text-gray-600">
+                    <div className="p-1 bg-green-50 rounded-lg flex-shrink-0">
+                      <Icon className="size-4 text-green-600" />
+                    </div>
+                    {text}
+                  </div>
+                ))}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-500 hover:bg-slate-50"
+                  disabled={loading}
+                >
+                  Để sau
+                </Button>
+                <Button
+                  onClick={handlePay}
+                  loading={loading}
+                  className="flex-[2] h-12 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-black shadow-xl shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+                >
+                  <ExternalLink className="size-4" />
+                  Thanh toán qua PayOS
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -1616,28 +1890,48 @@ function InspectionsView({
   };
 
   const getStatusBadge = (status: string) => {
-    const badges = {
+    const badges: Record<string, { label: string; color: string; icon: any }> = {
       pending: {
-        label: "Đang chờ",
+        label: "Đang chờ xét duyệt",
         color: "bg-orange-100 text-orange-800",
-        icon: Clock,
+        icon: Hourglass,
       },
-      completed: {
-        label: "Đã hoàn thành",
-        color: "bg-green-100 text-green-800",
+      approved: {
+        label: "Đã duyệt — Chờ kiểm tra",
+        color: "bg-blue-100 text-blue-800",
         icon: CheckCircle,
       },
-      cancelled: {
-        label: "Đã hủy",
+      awaiting_photos: {
+        label: "Cần gửi ảnh",
+        color: "bg-yellow-100 text-yellow-800",
+        icon: ImageIcon,
+      },
+      photos_submitted: {
+        label: "Ảnh đã gửi — Chờ duyệt",
+        color: "bg-purple-100 text-purple-800",
+        icon: Upload,
+      },
+      completed: {
+        label: "Xác minh thành công",
+        color: "bg-green-100 text-green-800",
+        icon: BadgeCheck,
+      },
+      rejected: {
+        label: "Không đạt yêu cầu",
         color: "bg-red-100 text-red-800",
         icon: XCircle,
       },
+      cancelled: {
+        label: "Đã hủy",
+        color: "bg-gray-100 text-gray-600",
+        icon: XCircle,
+      },
     };
-    const badge = badges[status as keyof typeof badges] || badges.pending;
+    const badge = badges[status] || badges.pending;
     const Icon = badge.icon;
     return (
       <span
-        className={`px-3 py-1 rounded-full text-xs font-medium ${badge.color} flex items-center gap-1 w-fit`}
+        className={`px-3 py-1 rounded-full text-xs font-bold ${badge.color} flex items-center gap-1 w-fit`}
       >
         <Icon className="size-3" />
         {badge.label}
@@ -1756,27 +2050,73 @@ function InspectionsView({
                         {formatDateVietnamese(insp.createdAt)}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Địa điểm</p>
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {insp.propertyId?.address}
-                      </p>
-                    </div>
+                    {insp.scheduledDate ? (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Ngày kiểm tra dự kiến</p>
+                        <p className="text-sm font-semibold text-blue-700 flex items-center gap-1">
+                          <Calendar className="size-3" />
+                          {formatDateVietnamese(insp.scheduledDate)}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Địa điểm</p>
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {insp.propertyId?.address}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  {insp.status === "pending" && (
-                    <div className="flex justify-end mt-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50"
-                        onClick={() => handleCancelInspection(insp._id)}
-                      >
-                        <XCircle className="size-4 mr-2" />
-                        Hủy yêu cầu
-                      </Button>
-                    </div>
-                  )}
+                  {/* Nút hành động tùy theo trạng thái */}
+                  <div className="flex items-center justify-between mt-4">
+                    {insp.status === "awaiting_photos" && (
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="flex items-center gap-2 text-xs text-yellow-700 bg-yellow-50 px-3 py-2 rounded-xl border border-yellow-200 flex-1">
+                          <ImageIcon className="size-4 flex-shrink-0" />
+                          <span>Vui lòng gửi ảnh thực địa để hoàn tất xác minh</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl font-bold shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap"
+                          onClick={() => toast.info("Tính năng gửi ảnh đang được phát triển. Vui lòng liên hệ hỗ trợ.")}
+                        >
+                          <Camera className="size-4" />
+                          Gửi ảnh ngay
+                        </Button>
+                      </div>
+                    )}
+
+                    {insp.status === "pending" && (
+                      <div className="flex justify-end w-full">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50"
+                          onClick={() => handleCancelInspection(insp._id)}
+                        >
+                          <XCircle className="size-4 mr-2" />
+                          Hủy yêu cầu
+                        </Button>
+                      </div>
+                    )}
+
+                    {insp.status === "completed" && insp.badgeAwarded && insp.badgeAwarded !== "none" && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-200">
+                        <BadgeCheck className="size-5 text-green-600" />
+                        <span className="text-sm font-bold text-green-700">
+                          Huy hiệu: {insp.badgeAwarded === "premium" ? "🏆 Premium" : "✅ Verified"}
+                        </span>
+                      </div>
+                    )}
+
+                    {insp.status === "rejected" && insp.inspectorNotes && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-red-50 rounded-xl border border-red-100 text-sm text-red-700 flex-1">
+                        <AlertCircle className="size-4 flex-shrink-0" />
+                        <span className="line-clamp-2">{insp.inspectorNotes}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>

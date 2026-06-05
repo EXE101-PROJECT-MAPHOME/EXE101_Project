@@ -3,6 +3,9 @@ const Subscription = require("../models/Subscription");
 const SubscriptionPlan = require("../models/SubscriptionPlan");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
+const Booking = require("../models/Booking");
+const VerificationRequest = require("../models/VerificationRequest");
+const Property = require("../models/Property");
 const PayOS = require("@payos/node");
 const payosClass = PayOS.default || PayOS.PayOS || PayOS;
 
@@ -14,6 +17,81 @@ const payos = new payosClass({
 });
 
 /**
+ * Helper: Sau khi thanh toán phí xác minh (planId="inspection") thành công,
+ * tự động tạo VerificationRequest nếu chưa có.
+ *
+ * @param {object} transaction  - Document Transaction đã saved
+ * @returns {Promise<boolean>}
+ */
+const handleInspectionPayment = async (transaction) => {
+  try {
+    const booking = await Booking.findById(transaction.bookingId);
+    if (!booking) {
+      console.warn(`[handleInspectionPayment] Booking ${transaction.bookingId} not found`);
+      return false;
+    }
+    if (booking.status !== "confirmed") {
+      console.warn(`[handleInspectionPayment] Booking ${booking._id} is not confirmed (status: ${booking.status})`);
+      return false;
+    }
+
+    // Tránh tạo trùng VerificationRequest cho cùng một booking
+    const existing = await VerificationRequest.findOne({ bookingId: booking._id });
+    if (existing) {
+      console.log(`[handleInspectionPayment] VerificationRequest already exists for booking ${booking._id}`);
+      return true;
+    }
+
+    // Lấy thông tin property để bổ sung vào VerificationRequest
+    const property = await Property.findById(booking.propertyId);
+    const propertyName = property ? property.name : "N/A";
+    const address = property ? property.address : "N/A";
+
+    // Lấy thông tin landlord (landlordId trong booking là ObjectId của Landlord)
+    const Landlord = require("../models/Landlord");
+    const landlord = await Landlord.findById(booking.landlordId);
+    const landlordName = landlord ? (landlord.businessName || landlord.name || "N/A") : "N/A";
+
+    await VerificationRequest.create({
+      propertyId: booking.propertyId,
+      propertyName,
+      landlordId: booking.landlordId,
+      landlordName,
+      phone: booking.customerPhone,
+      address,
+      scheduledDate: booking.bookingDate,
+      scheduledTime: booking.bookingTime,
+      notes: booking.note || "",
+      status: "pending",
+      requesterType: "user",
+      requesterId: String(booking.userId),
+      requesterName: booking.customerName,
+      requesterPhone: booking.customerPhone,
+      amount: transaction.amount,
+      packageType: "basic",
+      bookingId: booking._id,
+      transactionId: transaction._id,
+      paymentStatus: "paid",
+    });
+
+    // Notify tenant
+    await Notification.create({
+      userId: booking.userId,
+      title: "🏠 Yêu cầu xác minh đã được tạo!",
+      message: `Thanh toán thành công. Yêu cầu xác minh phòng "${propertyName}" đã được gửi đến hệ thống. Chúng tôi sẽ liên hệ với bạn sớm.`,
+      type: "success",
+      link: `/room/${booking.propertyId}`,
+    });
+
+    console.log(`[handleInspectionPayment] VerificationRequest created for booking ${booking._id}`);
+    return true;
+  } catch (err) {
+    console.error("[handleInspectionPayment] Error:", err.message);
+    return false;
+  }
+};
+
+/**
  * Helper: Tra cứu plan từ DB và kích hoạt/cập nhật subscription cho user.
  * Dùng chung cho cả callback và webhook để tránh trùng lặp logic.
  *
@@ -21,8 +99,17 @@ const payos = new payosClass({
  * @param {ObjectId} userId  - _id của user cần kích hoạt
  * @returns {Promise<boolean>} - true nếu kích hoạt thành công, false nếu plan không tìm thấy
  */
-const activateSubscription = async (planSlug, userId) => {
-  if (!planSlug || planSlug === "inspection") return false;
+const activateSubscription = async (planSlug, userId, transaction = null) => {
+  // Nếu là thanh toán phí xác minh thực địa → chạy handler riêng
+  if (planSlug === "inspection") {
+    if (transaction) {
+      return await handleInspectionPayment(transaction);
+    }
+    console.warn("[activateSubscription] inspection planId nhưng không có transaction object");
+    return false;
+  }
+
+  if (!planSlug) return false;
 
   // Lấy plan từ DB (admin đã tạo)
   const planDoc = await SubscriptionPlan.findOne({
@@ -97,7 +184,28 @@ const activateSubscription = async (planSlug, userId) => {
 // ─── POST /api/payments/create ────────────────────────────────────────────────
 const createPayment = async (req, res) => {
   try {
-    const { amount, description, planId } = req.body;
+    const { amount, description, planId, bookingId } = req.body;
+
+    // ── Validate: nếu là inspection thì booking phải tồn tại và đã confirmed ──
+    if (planId === "inspection") {
+      if (!bookingId) {
+        return res.status(400).json({ message: "bookingId là bắt buộc khi thanh toán phí xác minh trọ." });
+      }
+      const booking = await Booking.findById(bookingId);
+      if (!booking) {
+        return res.status(404).json({ message: "Không tìm thấy lịch hẹn." });
+      }
+      if (booking.status !== "confirmed") {
+        return res.status(400).json({ 
+          message: "Lịch hẹn chưa được landlord xác nhận. Bạn chỉ có thể thanh toán xác minh sau khi lịch hẹn được xác nhận." 
+        });
+      }
+      // Kiểm tra đã có VerificationRequest cho booking này chưa
+      const existingVR = await VerificationRequest.findOne({ bookingId });
+      if (existingVR) {
+        return res.status(400).json({ message: "Yêu cầu xác minh cho lịch hẹn này đã tồn tại." });
+      }
+    }
 
     // orderCode must be a number, max 53 bits. We use timestamp + random
     const orderCode = Number(
@@ -136,6 +244,7 @@ const createPayment = async (req, res) => {
       orderId: String(orderCode),
       paymentMethod: "PayOS",
       planId: planId || "",
+      bookingId: bookingId || null,
     });
 
     const paymentLinkData = await payos.paymentRequests.create(body);
@@ -157,11 +266,33 @@ const paymentCallback = async (req, res) => {
 
     // Người dùng huỷ thanh toán
     if (cancel === "true") {
+      let cancelledTx = null;
       if (orderCode) {
-        await Transaction.findOneAndUpdate(
+        cancelledTx = await Transaction.findOneAndUpdate(
           { orderId: String(orderCode), status: "pending" },
-          { status: "cancelled", description: "Người dùng đã huỷ thanh toán" }
+          { status: "cancelled", description: "Người dùng đã huỷ thanh toán" },
+          { new: true } // lấy document sau khi update để đọc planId, bookingId
         );
+      }
+
+      // Gửi notification nếu là inspection
+      if (cancelledTx && cancelledTx.planId === "inspection" && cancelledTx.userId) {
+        try {
+          await Notification.create({
+            userId: cancelledTx.userId,
+            title: "❌ Thanh toán xác minh bị huỷ",
+            message: "Bạn đã huỷ thanh toán phí xác minh trọ. Lịch hẹn vẫn còn hiệu lực — bạn có thể thanh toán lại bất cứ lúc nào.",
+            type: "warning",
+          });
+        } catch (notifErr) {
+          console.error("[Cancel] Failed to send notification:", notifErr.message);
+        }
+      }
+
+      // Redirect đúng trang tuỳ loại thanh toán
+      const isInspection = cancelledTx && cancelledTx.planId === "inspection";
+      if (isInspection && cancelledTx.bookingId) {
+        return res.redirect(`${frontendUrl}/user/dashboard?tab=appointments&bookingId=${cancelledTx.bookingId}&payment=cancelled`);
       }
       return res.redirect(`${frontendUrl}/pricing?cancelled=true`);
     }
@@ -183,22 +314,24 @@ const paymentCallback = async (req, res) => {
           await existingTx.save();
         }
 
-        // Kích hoạt subscription từ DB plan (không hardcode)
+        // Kích hoạt subscription hoặc tạo VerificationRequest tùy loại thanh toán
         const effectivePlanId = planId || existingTx.planId;
-        await activateSubscription(effectivePlanId, existingTx.userId);
+        await activateSubscription(effectivePlanId, existingTx.userId, existingTx);
 
-        // Tạo thông báo nếu chưa có
-        const existingNotif = await Notification.findOne({
-          userId: existingTx.userId,
-          message: { $regex: String(orderCode) },
-        });
-        if (!existingNotif) {
-          await Notification.create({
+        // Chỉ tạo thông báo chung với subscription (inspection đã có thông báo riêng trong handleInspectionPayment)
+        if (effectivePlanId !== "inspection") {
+          const existingNotif = await Notification.findOne({
             userId: existingTx.userId,
-            title: "Thanh toán thành công",
-            message: `Bạn đã thanh toán thành công đơn hàng qua PayOS. Mã GD: ${orderCode}`,
-            type: "success",
+            message: { $regex: String(orderCode) },
           });
+          if (!existingNotif) {
+            await Notification.create({
+              userId: existingTx.userId,
+              title: "Thanh toán thành công",
+              message: `Bạn đã thanh toán thành công đơn hàng qua PayOS. Mã GD: ${orderCode}`,
+              type: "success",
+            });
+          }
         }
       }
 
@@ -239,15 +372,18 @@ const payosWebhook = async (req, res) => {
 
         const { userId, planId } = existingTx;
 
-        // Kích hoạt subscription từ DB plan (không hardcode)
-        await activateSubscription(planId, userId);
+        // Kích hoạt subscription hoặc tạo VerificationRequest tùy loại thanh toán
+        await activateSubscription(planId, userId, existingTx);
 
-        await Notification.create({
-          userId,
-          title: "Thanh toán thành công",
-          message: `Bạn đã thanh toán thành công đơn hàng qua PayOS. Mã GD: ${orderCode}`,
-          type: "success",
-        });
+        // Chỉ tạo thông báo chung với subscription (inspection đã có thông báo riêng)
+        if (planId !== "inspection") {
+          await Notification.create({
+            userId,
+            title: "Thanh toán thành công",
+            message: `Bạn đã thanh toán thành công đơn hàng qua PayOS. Mã GD: ${orderCode}`,
+            type: "success",
+          });
+        }
       }
     }
   } catch (error) {
@@ -257,4 +393,19 @@ const payosWebhook = async (req, res) => {
   return res.status(200).json({ success: true });
 };
 
-module.exports = { createPayment, paymentCallback, payosWebhook };
+// ─── GET /api/payments/inspection-fee ────────────────────────────────────────
+const getInspectionFee = async (req, res) => {
+  try {
+    const SystemSetting = require("../models/SystemSetting");
+    const settings = await SystemSetting.findOne();
+    const fee =
+      settings && settings.pricing && settings.pricing.basicVerification
+        ? settings.pricing.basicVerification
+        : 119000; // Mức phí mặc định: 119,000đ
+    res.status(200).json({ fee, currency: "VND" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { createPayment, paymentCallback, payosWebhook, getInspectionFee };
