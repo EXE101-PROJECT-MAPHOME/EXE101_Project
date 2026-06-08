@@ -41,7 +41,9 @@ import {
 import { useThemeColor } from "@/hooks/use-theme-color";
 import api from "@/utils/api";
 import { useCompare } from "@/contexts/CompareContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { RoomMapPreview } from "../../components/RoomMapPreview";
+import { BookingModal } from "../../components/BookingModal";
 import ROUTES, { navigateTo } from "@/constants/routes";
 
 const { width } = Dimensions.get("window");
@@ -52,7 +54,10 @@ export default function RoomDetailScreen() {
   const { id } = useLocalSearchParams();
   const [activeTab, setActiveTab] = useState<"info" | "reviews">("info");
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isBookingModalVisible, setIsBookingModalVisible] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
+  const { isAuthenticated } = useAuth();
   const { addToCompare, removeFromCompare, isInCompare, compareList } =
     useCompare();
   // theme tokens (call hooks once)
@@ -91,6 +96,16 @@ export default function RoomDetailScreen() {
         const detailRes = await api.get(`/api/properties/${id}`);
         // 2. Fetch reviews
         const reviewsRes = await api.get(`/api/reviews/property/${id}`);
+        
+        // 3. Fetch user's favorites if authenticated
+        if (isAuthenticated) {
+          try {
+            const favRes = await api.get("/api/user/me/favorites");
+            const favoritesList = favRes.data || [];
+            const favIds = favoritesList.map((f: any) => f._id || f);
+            setIsFavorite(favIds.includes(id as string));
+          } catch (e) {}
+        }
 
         // Map property
         const prop = detailRes.data;
@@ -160,7 +175,7 @@ export default function RoomDetailScreen() {
         }));
         setReviewsList(mappedReviews);
 
-        // 3. Increment views
+        // 4. Increment views
         api.post(`/api/properties/${id}/view`).catch(() => {});
       } catch (e) {
         console.error("Error fetching room detail", e);
@@ -199,42 +214,7 @@ export default function RoomDetailScreen() {
 
   const handleBook = () => {
     if (!property) return;
-    Alert.alert(
-      "Đặt lịch xem phòng",
-      `Bạn có muốn đăng ký xem phòng này vào ngày mai với chủ trọ ${property.landlordId.fullName}?`,
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Đặt lịch",
-          onPress: async () => {
-            try {
-              const res = await api.post("/api/bookings", {
-                propertyId: id,
-                customerName: "Khách hàng di động",
-                customerPhone: property.landlordId.phone,
-                bookingDate: new Date(Date.now() + 86400000)
-                  .toISOString()
-                  .split("T")[0], // Tomorrow
-                bookingTime: "14:00",
-                note: "Khách hàng đặt lịch hẹn từ ứng dụng Expo di động.",
-              });
-              if (res.status === 201 || res.status === 200) {
-                Alert.alert(
-                  "Thành công",
-                  "Đã đặt lịch hẹn xem phòng trên hệ thống. Chủ trọ sẽ sớm liên hệ.",
-                );
-              }
-            } catch (err: any) {
-              Alert.alert(
-                "Lỗi",
-                err.response?.data?.message ||
-                  "Không thể đặt lịch. Bạn cần đăng nhập trước.",
-              );
-            }
-          },
-        },
-      ],
-    );
+    setIsBookingModalVisible(true);
   };
 
   const handleSendReview = async () => {
@@ -357,7 +337,26 @@ export default function RoomDetailScreen() {
                 <Share2 size={20} color="white" />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setIsFavorite(!isFavorite)}
+                onPress={async () => {
+                  if (!isAuthenticated) {
+                    Alert.alert("Lỗi", "Vui lòng đăng nhập để lưu phòng.");
+                    return;
+                  }
+                  if (isTogglingFavorite) return;
+                  setIsTogglingFavorite(true);
+                  // Optimistic update
+                  setIsFavorite(!isFavorite);
+                  try {
+                    await api.post("/api/user/me/favorites/toggle", { propertyId: id });
+                  } catch (e) {
+                    // Revert on error
+                    setIsFavorite(isFavorite);
+                    Alert.alert("Lỗi", "Không thể lưu phòng vào yêu thích.");
+                  } finally {
+                    setIsTogglingFavorite(false);
+                  }
+                }}
+                disabled={isTogglingFavorite}
                 className="w-10 h-10 bg-black/40 rounded-full items-center justify-center"
               >
                 <Heart
@@ -714,6 +713,12 @@ export default function RoomDetailScreen() {
           </Text>
         </TouchableOpacity>
       </SafeAreaView>
+
+      <BookingModal
+        visible={isBookingModalVisible}
+        onClose={() => setIsBookingModalVisible(false)}
+        property={property}
+      />
     </KeyboardAvoidingView>
   );
 }

@@ -13,6 +13,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import * as ExpoLinking from "expo-linking";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -133,6 +135,7 @@ export default function CheckoutScreen() {
 
     try {
       setIsProcessing(true);
+      const appReturnUrl = ExpoLinking.createURL('/');
       const res = await api.post("/api/payments/create", {
         amount: totalAmount,
         description: isInspection
@@ -140,18 +143,30 @@ export default function CheckoutScreen() {
           : `Nang cap goi ${planId} (${billingCycle})`,
         planId: isInspection ? "inspection" : planId,
         voucherId: appliedVoucher?.voucherId || null,
+        appReturnUrl,
       });
 
       if (res.status === 200 && res.data.url) {
-        // Redirect to PayOS
-        Linking.openURL(res.data.url);
-        // After redirect, backend redirects to success page. For mobile we might need deep linking
-        // For now, let user manually return
-        Alert.alert(
-          "Chuyển hướng",
-          "Trình duyệt sẽ mở cổng thanh toán. Sau khi thanh toán xong hãy quay lại ứng dụng.",
-          [{ text: "OK", onPress: () => router.back() }],
-        );
+        // Mở cổng thanh toán trong ứng dụng bằng WebBrowser
+        const result = await WebBrowser.openAuthSessionAsync(res.data.url, appReturnUrl);
+        
+        if (result.type === "success") {
+          // Parse URL trả về để lấy thông tin route
+          const parsed = ExpoLinking.parse(result.url);
+          
+          if (parsed.path?.includes("payment-success")) {
+             router.push({ pathname: "/payment-success", params: parsed.queryParams as any });
+          } else if (parsed.path?.includes("payment-failure")) {
+             router.push({ pathname: "/payment-failure", params: parsed.queryParams as any });
+          } else if (parsed.path?.includes("user/dashboard") || parsed.path?.includes("dashboard")) {
+             router.push({ pathname: "/user-dashboard", params: parsed.queryParams as any });
+          } else {
+             // Fallback
+             router.replace("/(tabs)");
+          }
+        } else if (result.type === "cancel" || result.type === "dismiss") {
+          Alert.alert("Đã hủy", "Bạn đã hủy quá trình thanh toán.");
+        }
       }
     } catch (error: any) {
       Alert.alert(

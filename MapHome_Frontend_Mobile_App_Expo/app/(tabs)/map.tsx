@@ -8,6 +8,7 @@ import {
   Modal,
   Pressable,
   Image,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
@@ -240,7 +241,9 @@ export default function MapScreen() {
         webViewRef.current.injectJavaScript(script);
       }
     } catch (error) {
-      console.error("Error getting location:", error);
+      // Avoid console.error to prevent red screen in Expo Dev Client
+      console.log("Error getting location:", error);
+      Alert.alert("Lỗi GPS", "Không thể lấy vị trí hiện tại. Nếu bạn đang dùng Simulator, hãy bật giả lập vị trí (Features > Location).");
     } finally {
       setIsLocating(false);
     }
