@@ -57,7 +57,7 @@ const createBooking = async (req, res) => {
   try {
     const payload = { ...req.body };
 
-    if (req.user && req.user.role === "user") {
+    if (req.user) {
       payload.userId = req.user._id;
     }
 

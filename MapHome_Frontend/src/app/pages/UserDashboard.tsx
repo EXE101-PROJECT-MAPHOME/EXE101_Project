@@ -1454,6 +1454,7 @@ function AppointmentsView({
                   <img
                     src={
                       getImageUrl(appointment.propertyId?.image) ||
+                      getImageUrl(appointment.propertyId?.images?.[0]) ||
                       "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400"
                     }
                     alt={appointment.propertyId?.name}
@@ -1496,8 +1497,8 @@ function AppointmentsView({
                       <p className="text-xs text-gray-500 mb-1">Chủ trọ</p>
                       <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
                         <User className="size-4" />
-                        {appointment.landlordId?.fullName ||
-                          appointment.landlordId?.username ||
+                        {appointment.landlordId?.name ||
+                          appointment.customerName ||
                           "Chủ trọ"}
                       </p>
                     </div>
@@ -1505,18 +1506,18 @@ function AppointmentsView({
                       <p className="text-xs text-gray-500 mb-1">Liên hệ</p>
                       <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
                         <Phone className="size-4" />
-                        {appointment.phone ||
+                        {appointment.customerPhone ||
                           appointment.landlordId?.phone ||
                           "N/A"}
                       </p>
                     </div>
                   </div>
 
-                  {appointment.notes && (
+                  {(appointment.note || appointment.notes) && (
                     <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                       <p className="text-xs text-gray-500 mb-1">Ghi chú:</p>
                       <p className="text-sm text-gray-700">
-                        {appointment.notes}
+                        {appointment.note || appointment.notes}
                       </p>
                     </div>
                   )}

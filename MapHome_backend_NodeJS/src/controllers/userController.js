@@ -147,8 +147,8 @@ const getMyBookings = async (req, res) => {
   try {
     const Booking = require("../models/Booking");
     const bookings = await Booking.find({ userId: req.user._id })
-      .populate("propertyId", "name address")
-      .populate("landlordId", "name phone")
+      .populate("propertyId", "name address image images")
+      .populate("landlordId", "name phone email userId")
       .sort({ createdAt: -1 });
 
     res.status(200).json(bookings);
