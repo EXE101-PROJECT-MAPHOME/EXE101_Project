@@ -235,6 +235,22 @@ export default function MapScreen() {
 
       const { latitude, longitude } = location.coords;
       
+      // Check if location is roughly inside Vietnam
+      const isInsideVietnam = 
+        latitude >= 8.0 && latitude <= 24.0 &&
+        longitude >= 102.0 && longitude <= 110.0;
+        
+      if (!isInsideVietnam) {
+        Alert.alert(
+          "Vị trí giả lập", 
+          "Vị trí hiện tại của thiết bị đang ở ngoài lãnh thổ Việt Nam (thường do Emulator mặc định ở Mỹ). Sẽ chuyển về trung tâm TP.HCM."
+        );
+        if (webViewRef.current) {
+          webViewRef.current.injectJavaScript(`window.zoomToLocation(106.7009, 10.7769, 15); true;`);
+        }
+        return;
+      }
+
       // Inject JavaScript to zoom map to current location
       if (webViewRef.current) {
         const script = `window.zoomToLocation(${longitude}, ${latitude}, 16); true;`;
