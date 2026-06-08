@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MapHome_Frontend_Mobile_App_Expo",
-    "slug": "MapHome_Frontend_Mobile_App_Expo",
+    "name": "MapHome",
+    "slug": "maphome",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
