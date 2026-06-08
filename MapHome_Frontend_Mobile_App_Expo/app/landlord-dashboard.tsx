@@ -29,6 +29,7 @@ import {
 } from "lucide-react-native";
 import api from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { LinearGradient } from "expo-linear-gradient";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
 type DashboardTab =
@@ -351,14 +352,19 @@ export default function LandlordDashboardScreen() {
         {activeTab === "overview" && (
           <View>
             {/* Welcome Card */}
-            <View className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl p-5 mb-4 shadow-sm">
+            <LinearGradient
+              colors={['#16a34a', '#15803d']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="rounded-3xl p-5 mb-4 shadow-sm"
+            >
               <Text className="text-white font-black text-xl mb-1">
                 Xin chào, {user.fullName || user.username}! 👋
               </Text>
               <Text className="text-emerald-100 text-sm font-medium">
                 Quản lý tin đăng và lịch hẹn khách thuê
               </Text>
-            </View>
+            </LinearGradient>
 
             <ExpiryWarningBanner />
 

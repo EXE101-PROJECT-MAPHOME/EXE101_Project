@@ -23,6 +23,7 @@ import {
 } from "lucide-react-native";
 import api from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
+import { LinearGradient } from "expo-linear-gradient";
 
 type BlogPost = {
   id?: string;
@@ -147,14 +148,19 @@ export default function BlogScreen() {
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
       >
-        <View className="bg-gradient-to-r from-emerald-600 to-blue-600 rounded-3xl p-5 mb-4">
+        <LinearGradient
+          colors={['#16a34a', '#2563eb']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          className="rounded-3xl p-5 mb-4"
+        >
           <Text className="text-white text-xl font-black">
             Kiến thức & Kinh nghiệm thuê trọ
           </Text>
           <Text className="text-emerald-50 mt-1">
             Cập nhật bài viết hữu ích từ cộng đồng MapHome.
           </Text>
-        </View>
+        </LinearGradient>
 
         <View className="bg-white rounded-2xl border border-slate-200 h-12 px-3 flex-row items-center mb-4">
           <Search size={16} color="#94a3b8" />
@@ -188,7 +194,7 @@ export default function BlogScreen() {
 
         {loading ? (
           <View className="py-16 items-center justify-center">
-            <ActivityIndicator size="large" color="#059669" />
+            <ActivityIndicator size="large" color="#16a34a" />
           </View>
         ) : filteredPosts.length === 0 ? (
           <View className="py-16 items-center justify-center">
@@ -222,7 +228,7 @@ export default function BlogScreen() {
                 <View className="p-4">
                   <View className="flex-row items-center justify-between mb-2">
                     <View className="bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg flex-row items-center">
-                      <Tag size={12} color="#059669" />
+                      <Tag size={12} color="#16a34a" />
                       <Text className="text-[10px] text-emerald-700 font-bold ml-1">
                         {post.category || "Bài viết"}
                       </Text>
@@ -233,9 +239,9 @@ export default function BlogScreen() {
                       disabled={savingId === pid}
                     >
                       {savingId === pid ? (
-                        <ActivityIndicator size="small" color="#059669" />
+                        <ActivityIndicator size="small" color="#16a34a" />
                       ) : isSaved ? (
-                        <BookmarkCheck size={18} color="#059669" />
+                        <BookmarkCheck size={18} color="#16a34a" />
                       ) : (
                         <Bookmark size={18} color="#64748b" />
                       )}

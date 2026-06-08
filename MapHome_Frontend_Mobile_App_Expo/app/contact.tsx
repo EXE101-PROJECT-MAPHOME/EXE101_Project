@@ -21,6 +21,7 @@ import {
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import api from "../utils/api";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function ContactScreen() {
   const router = useRouter();
@@ -82,14 +83,19 @@ export default function ContactScreen() {
           <Text className="text-2xl font-black text-emerald-700">Liên hệ</Text>
         </View>
 
-        <View className="mx-4 mt-4 rounded-3xl bg-gradient-to-r from-emerald-600 to-blue-600 p-5">
+        <LinearGradient
+          colors={['#16a34a', '#2563eb']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          className="mx-4 mt-4 rounded-3xl p-5"
+        >
           <Text className="text-white text-xl font-black mb-1">
             MapHome Support
           </Text>
           <Text className="text-emerald-50">
             Chúng tôi luôn sẵn sàng hỗ trợ bạn 7 ngày/tuần.
           </Text>
-        </View>
+        </LinearGradient>
 
         <View className="mx-4 mt-4 bg-white rounded-3xl p-5 border border-slate-100">
           <Text className="text-base font-black text-emerald-700 mb-4">

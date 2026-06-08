@@ -26,6 +26,7 @@ import api from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useProperties } from "../contexts/PropertiesContext";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function VerificationServiceScreen() {
   const router = useRouter();
@@ -137,7 +138,12 @@ export default function VerificationServiceScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <View className="px-4 py-4 bg-gradient-to-r from-emerald-600 to-blue-600 flex-row items-center">
+        <LinearGradient
+          colors={['#16a34a', '#2563eb']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          className="px-4 py-4 flex-row items-center"
+        >
           <TouchableOpacity
             onPress={() => router.back()}
             className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center mr-3"
@@ -152,7 +158,7 @@ export default function VerificationServiceScreen() {
               Nâng cao độ tin cậy tin đăng
             </Text>
           </View>
-        </View>
+        </LinearGradient>
 
         <ScrollView
           className="flex-1"

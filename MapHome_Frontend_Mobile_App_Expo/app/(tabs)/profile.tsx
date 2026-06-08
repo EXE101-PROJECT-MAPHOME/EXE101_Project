@@ -222,7 +222,7 @@ export default function ProfileScreen() {
   if (authLoading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color="#16a34a" />
       </SafeAreaView>
     );
   }
@@ -250,7 +250,7 @@ export default function ProfileScreen() {
         {(!isAuthenticated || !user) && (
           <View className="px-6 py-12 justify-center items-center">
             <View className="w-24 h-24 bg-emerald-50 rounded-full mb-6 items-center justify-center border border-emerald-100 shadow-sm">
-              <UserIcon size={40} color="#059669" />
+              <UserIcon size={40} color="#16a34a" />
             </View>
             <Text className="text-2xl font-black text-emerald-700 text-center mb-2">
               Quản lý không gian sống
@@ -395,7 +395,7 @@ export default function ProfileScreen() {
                 {loadingData ? (
                   <ActivityIndicator
                     size="small"
-                    color="#059669"
+                    color="#16a34a"
                     className="py-4"
                   />
                 ) : tenantBookings.length === 0 ? (
@@ -481,7 +481,7 @@ export default function ProfileScreen() {
                   >
                     <View className="flex-row items-center flex-1 mr-4">
                       <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3 border border-emerald-100">
-                        <item.icon size={18} color="#059669" />
+                        <item.icon size={18} color="#16a34a" />
                       </View>
                       <View className="flex-1">
                         <Text className="text-sm font-black text-emerald-700">
@@ -628,7 +628,7 @@ export default function ProfileScreen() {
               {loadingData ? (
                 <ActivityIndicator
                   size="small"
-                  color="#059669"
+                  color="#16a34a"
                   className="py-4"
                 />
               ) : landlordBookings.length === 0 ? (
@@ -758,7 +758,7 @@ export default function ProfileScreen() {
                 >
                   <View className="flex-row items-center flex-1 mr-4">
                     <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3 border border-emerald-100">
-                      <item.icon size={18} color="#059669" />
+                      <item.icon size={18} color="#16a34a" />
                     </View>
                     <View className="flex-1">
                       <Text className="text-sm font-black text-emerald-700">

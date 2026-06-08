@@ -11,30 +11,66 @@ const tintColorDark = "#16a34a";
 
 export const Colors = {
   light: {
-    text: "#0f172a",
-    background: "#fff",
+    // Basic text / background / tint matching Web
+    text: "#202020", // oklch(0.145 0 0)
+    background: "#ffffff",
     tint: tintColorLight,
-    // semantic tokens
+    icon: "#717182", // --muted-foreground
+    tabIconDefault: "#717182",
+    tabIconSelected: tintColorLight,
+
+    // Semantic tokens
     success: tintColorLight,
-    danger: "#ef4444",
+    danger: "#d4183d", // --destructive
     warning: "#d97706",
     info: "#2563eb",
-    icon: "#687076",
-    tabIconDefault: "#687076",
-    tabIconSelected: tintColorLight,
+
+    // Web theme tokens matching theme.css
+    primary: "#030213",
+    primaryForeground: "#ffffff",
+    secondary: "#eceef5", // oklch(0.95 0.0058 264.53)
+    secondaryForeground: "#030213",
+    muted: "#ececf0",
+    mutedForeground: "#717182",
+    accent: "#e9ebef",
+    accentForeground: "#030213",
+    destructive: "#d4183d",
+    destructiveForeground: "#ffffff",
+    border: "rgba(0, 0, 0, 0.1)",
+    inputBackground: "#f3f3f5",
+    card: "#ffffff",
+    cardForeground: "#202020",
   },
   dark: {
-    text: "#ECEDEE",
-    background: "#151718",
+    // Basic text / background / tint matching Web
+    text: "#fafafa", // oklch(0.985 0 0)
+    background: "#202020", // oklch(0.145 0 0)
     tint: tintColorDark,
-    // semantic tokens
+    icon: "#acacac", // --muted-foreground oklch(0.708 0 0)
+    tabIconDefault: "#acacac",
+    tabIconSelected: tintColorDark,
+
+    // Semantic tokens
     success: tintColorDark,
-    danger: "#ef4444",
+    danger: "#f24957", // --destructive-foreground oklch(0.637 0.237 25.331)
     warning: "#d97706",
     info: "#2563eb",
-    icon: "#9BA1A6",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: tintColorDark,
+
+    // Web theme tokens matching theme.css
+    primary: "#fafafa",
+    primaryForeground: "#2e2e2e",
+    secondary: "#3e3e3e",
+    secondaryForeground: "#fafafa",
+    muted: "#3e3e3e",
+    mutedForeground: "#acacac",
+    accent: "#3e3e3e",
+    accentForeground: "#fafafa",
+    destructive: "#7f232b",
+    destructiveForeground: "#ffffff",
+    border: "#3e3e3e",
+    inputBackground: "#2e2e2e",
+    card: "#202020",
+    cardForeground: "#fafafa",
   },
 };
 

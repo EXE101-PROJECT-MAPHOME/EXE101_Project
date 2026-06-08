@@ -73,7 +73,7 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
 <body>
     <div id="map"></div>
     <script>
-        goongjs.accessToken = '\${key}';
+        goongjs.accessToken = '${key}';
         var map = new goongjs.Map({
             container: 'map',
             style: 'https://tiles.goong.io/assets/goong_map_web.json',
@@ -86,7 +86,7 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
         var userMarker = null;
 
         function createPropertyIcon(available, isVerified, isSelected) {
-            var color = available ? "#059669" : "#9ca3af";
+            var color = available ? "#16a34a" : "#9ca3af";
             var el = document.createElement("div");
             el.className = "custom-marker";
             el.style.width = "32px";
@@ -98,27 +98,26 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
             }
 
             var verifiedBadge = isVerified
-                ? \`<div style="position: absolute; top: -4px; right: -4px; background: linear-gradient(135deg, #10b981, #059669); width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 8px rgba(6,78,59,0.3); display: flex; align-items: center; justify-content: center; z-index: 10;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
-                </div>\`
+                ? '<div style="position: absolute; top: -4px; right: -4px; background: linear-gradient(135deg, #22c55e, #16a34a); width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 4px 8px rgba(20,82,49,0.3); display: flex; align-items: center; justify-content: center; z-index: 10;">' +
+                  '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>' +
+                  '</div>'
                 : "";
 
-            el.innerHTML = \`
-                <div style="position: relative;">
-                \${verifiedBadge}
-                <div style="background-color: \${color}; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 6px 12px rgba(6,78,59,0.2); display: flex; align-items: center; justify-content: center; opacity: 0.95;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="white" style="transform: rotate(45deg);"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-                </div>
-                </div>
-            \`;
+            el.innerHTML = 
+                '<div style="position: relative;">' +
+                verifiedBadge +
+                '<div style="background-color: ' + color + '; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 6px 12px rgba(20,82,49,0.2); display: flex; align-items: center; justify-content: center; opacity: 0.95;">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="white" style="transform: rotate(45deg);"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>' +
+                '</div>' +
+                '</div>';
             return el;
         }
 
         function createPinnedPropertyIcon(available, isSelected) {
             var gradient = available
-                ? "linear-gradient(135deg, #059669, #064e3b)"
+                ? "linear-gradient(135deg, #16a34a, #145231)"
                 : "linear-gradient(135deg, #f97316, #ea580c)";
-            var glowColor = available ? "rgba(5,150,105,0.4)" : "rgba(249,115,22,0.4)";
+            var glowColor = available ? "rgba(22,163,74,0.4)" : "rgba(249,115,22,0.4)";
 
             var el = document.createElement("div");
             el.className = "pinned-marker";
@@ -130,34 +129,32 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
                 el.style.zIndex = "100";
             }
 
-            el.innerHTML = \`
-                <div style="position: relative;">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; border-radius: 50%; background: \${glowColor}; animation: pin-glow 2s infinite;"></div>
-                <div style="background: \${gradient}; width: 42px; height: 42px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 8px 16px rgba(6,78,59,0.3); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white" style="transform: rotate(45deg);">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                    </svg>
-                </div>
-                </div>
-            \`;
+            el.innerHTML = 
+                '<div style="position: relative;">' +
+                '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; border-radius: 50%; background: ' + glowColor + '; animation: pin-glow 2s infinite;"></div>' +
+                '<div style="background: ' + gradient + '; width: 42px; height: 42px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 8px 16px rgba(20,82,49,0.3); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white" style="transform: rotate(45deg);">' +
+                    '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>' +
+                    '<polyline points="9 22 9 12 15 12 15 22"></polyline>' +
+                    '</svg>' +
+                '</div>' +
+                '</div>';
             return el;
         }
 
         function createUserLocationIcon() {
             var el = document.createElement("div");
             el.className = "user-location-marker";
-            el.innerHTML = \`
-                <div style="position: relative;">
-                <div style="background-color: #10b981; width: 44px; height: 44px; border-radius: 50%; border: 4px solid white; box-shadow: 0 8px 16px rgba(6,78,59,0.4); display: flex; align-items: center; justify-content: center; animation: pulse-aura 2.5s infinite ease-out; z-index: 10; position: relative;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                    </svg>
-                </div>
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90px; height: 90px; border-radius: 50%; background-color: rgba(16, 185, 129, 0.15); border: 2px solid rgba(16, 185, 129, 0.3); animation: ripple-aura 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);"></div>
-                </div>
-            \`;
+            el.innerHTML = 
+                '<div style="position: relative;">' +
+                '<div style="background-color: #22c55e; width: 44px; height: 44px; border-radius: 50%; border: 4px solid white; box-shadow: 0 8px 16px rgba(20,82,49,0.4); display: flex; align-items: center; justify-content: center; animation: pulse-aura 2.5s infinite ease-out; z-index: 10; position: relative;">' +
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>' +
+                    '<circle cx="12" cy="10" r="3"></circle>' +
+                    '</svg>' +
+                '</div>' +
+                '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90px; height: 90px; border-radius: 50%; background-color: rgba(34, 197, 94, 0.15); border: 2px solid rgba(34, 197, 94, 0.3); animation: ripple-aura 2.5s infinite cubic-bezier(0.4, 0, 0.2, 1);"></div>' +
+                '</div>';
             return el;
         }
         

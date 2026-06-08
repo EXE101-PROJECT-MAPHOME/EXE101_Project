@@ -241,7 +241,7 @@ const getProperties = async (req, res) => {
       query.available = req.query.available === "true";
     } else if (!req.query.all) {
       // Default to only showing available properties for public users
-      query.available = true;
+      // query.available = true; // Bỏ lọc available mặc định để đồng nhất với Search API
     }
 
     // Add status and verified filters

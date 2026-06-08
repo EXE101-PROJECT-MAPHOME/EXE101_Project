@@ -32,6 +32,7 @@ import ROUTES, { navigateTo } from "@/constants/routes";
 import api from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompare } from "@/contexts/CompareContext";
+import { LinearGradient } from "expo-linear-gradient";
 
 type DashboardTab = "overview" | "bookings" | "blogs" | "settings";
 
@@ -133,7 +134,7 @@ export default function UserDashboardScreen() {
           .length,
         icon: CheckCircle2,
         color: "bg-emerald-500",
-        iconColor: "#10b981",
+        iconColor: "#22c55e",
       },
     ],
     [favorites, appointments],
@@ -237,14 +238,19 @@ export default function UserDashboardScreen() {
         {activeTab === "overview" && (
           <View>
             {/* Welcome Card */}
-            <View className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl p-5 mb-4 shadow-sm">
+            <LinearGradient
+              colors={['#16a34a', '#15803d']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="rounded-3xl p-5 mb-4 shadow-sm"
+            >
               <Text className="text-white font-black text-xl mb-1">
                 Xin chào, {user.fullName || user.username}! 👋
               </Text>
               <Text className="text-emerald-100 text-sm font-medium">
                 Theo dõi phòng yêu thích, lịch hẹn và bài viết của bạn.
               </Text>
-            </View>
+            </LinearGradient>
 
             {/* Stats Grid */}
             <View className="flex-row flex-wrap justify-between mb-4">
