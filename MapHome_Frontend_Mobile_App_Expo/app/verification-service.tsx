@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import ROUTES, { safeBack } from "@/constants/routes";
 import {
   ArrowLeft,
   ShieldCheck,
@@ -42,7 +43,7 @@ export default function VerificationServiceScreen() {
   const [notes, setNotes] = useState("");
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pricing, setPricing] = useState({ basicVerification: 199000 });
+  const [pricing, setPricing] = useState({ basicVerification: 119000 });
   const [loading, setLoading] = useState(true);
 
   const tintColor = useThemeColor({}, "tint");
@@ -52,7 +53,7 @@ export default function VerificationServiceScreen() {
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "landlord") {
       Alert.alert("Thông báo", "Vui lòng đăng nhập với tài khoản chủ trọ");
-      router.back();
+      safeBack(router);
       return;
     }
 
@@ -62,7 +63,7 @@ export default function VerificationServiceScreen() {
           api.get("/api/landlord/properties"),
           api
             .get("/api/verifications/pricing")
-            .catch(() => ({ data: { basicVerification: 199000 } })),
+            .catch(() => ({ data: { basicVerification: 119000 } })),
         ]);
         setLandlordProperties(propRes.data);
         if (priceRes.data) setPricing(priceRes.data);
@@ -106,7 +107,7 @@ export default function VerificationServiceScreen() {
         Alert.alert(
           "Thành công",
           "Yêu cầu kiểm tra đã được gửi! Admin sẽ liên hệ với bạn sớm.",
-          [{ text: "OK", onPress: () => router.back() }],
+          [{ text: "OK", onPress: () => safeBack(router, ROUTES.USER_DASHBOARD) }],
         );
       }
     } catch (error: any) {
@@ -145,7 +146,7 @@ export default function VerificationServiceScreen() {
           className="px-4 py-4 flex-row items-center"
         >
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => safeBack(router)}
             className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center mr-3"
           >
             <ArrowLeft size={18} color="white" />

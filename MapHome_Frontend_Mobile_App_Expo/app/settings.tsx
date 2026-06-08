@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import { ArrowLeft, User, Phone, Save, Lock, Key, Shield, Clock } from "lucide-react-native";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../utils/api";
@@ -117,7 +118,7 @@ export default function SettingsScreen() {
       >
         <View className="px-4 py-4 bg-emerald-600 flex-row items-center">
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => safeBack(router)}
             className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center mr-3"
           >
             <ArrowLeft size={18} color="white" />

@@ -31,7 +31,7 @@ import {
   MessageSquare,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import ROUTES, { navigateTo } from "@/constants/routes";
+import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import api from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompare } from "@/contexts/CompareContext";
@@ -219,7 +219,7 @@ export default function UserDashboardScreen() {
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => safeBack(router)}
             className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
           >
             <ArrowLeft size={18} color={icon} />

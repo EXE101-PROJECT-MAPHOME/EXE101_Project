@@ -44,7 +44,7 @@ import { useCompare } from "@/contexts/CompareContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { RoomMapPreview } from "../../components/RoomMapPreview";
 import { BookingModal } from "../../components/BookingModal";
-import ROUTES, { navigateTo } from "@/constants/routes";
+import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 
 const { width } = Dimensions.get("window");
 
@@ -71,7 +71,7 @@ export default function RoomDetailScreen() {
   // Handle back navigation with fallback to home
   const handleGoBack = () => {
     if (navigation.canGoBack?.()) {
-      router.back();
+      safeBack(router);
     } else {
       navigateTo(router, ROUTES.HOME, true);
     }

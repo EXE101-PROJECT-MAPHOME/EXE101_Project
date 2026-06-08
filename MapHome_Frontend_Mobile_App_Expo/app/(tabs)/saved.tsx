@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
 import ROUTES, { navigateTo } from "@/constants/routes";
 import { PropertyCard } from "@/components/PropertyCard";
-import { Heart, Search, User } from "lucide-react-native";
+import { Heart, Search, User, ArrowLeft } from "lucide-react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { mapBackendProperty } from "../../contexts/PropertiesContext";
 
@@ -31,7 +31,13 @@ export default function SavedScreen() {
   if (!isAuthenticated || !user) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
-        <View className="px-4 py-4 bg-white border-b border-slate-100">
+        <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
+          <TouchableOpacity
+            onPress={() => navigateTo(router, ROUTES.USER_DASHBOARD)}
+            className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
+          >
+            <ArrowLeft size={18} color="#16a34a" />
+          </TouchableOpacity>
           <Text className="text-2xl font-black text-emerald-700">
             Phòng đã lưu
           </Text>
@@ -82,9 +88,17 @@ export default function SavedScreen() {
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
       {/* Header */}
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center justify-between">
-        <Text className="text-2xl font-black text-emerald-700">
-          Phòng đã lưu
-        </Text>
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => navigateTo(router, ROUTES.USER_DASHBOARD)}
+            className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
+          >
+            <ArrowLeft size={18} color="#16a34a" />
+          </TouchableOpacity>
+          <Text className="text-2xl font-black text-emerald-700">
+            Phòng đã lưu
+          </Text>
+        </View>
         <View className="bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
           <Text className="text-emerald-700 font-bold text-xs">
             {savedProperties.length} phòng

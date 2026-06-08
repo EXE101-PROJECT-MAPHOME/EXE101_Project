@@ -2605,6 +2605,7 @@ function VerificationView({
                         >
                           <Calendar className="size-3.5" /> Phân công
                         </motion.button>
+                        {/*
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -2620,6 +2621,7 @@ function VerificationView({
                         >
                           <XCircle className="size-3.5" /> Từ chối
                         </motion.button>
+                        */}
                       </div>
                     )}
 
