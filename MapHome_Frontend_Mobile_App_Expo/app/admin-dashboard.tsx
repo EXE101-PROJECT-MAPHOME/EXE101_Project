@@ -163,7 +163,7 @@ export default function AdminDashboardScreen() {
   if (loading || screenLoading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color="#16a34a" />
       </SafeAreaView>
     );
   }
@@ -283,7 +283,7 @@ export default function AdminDashboardScreen() {
                 onPress={() => navigateTo(router, "/admin-voucher-add")}
                 className="bg-emerald-100 px-3 py-1.5 rounded-full flex-row items-center"
               >
-                <Plus size={14} color="#059669" />
+                <Plus size={14} color="#16a34a" />
                 <Text className="text-emerald-700 font-bold text-xs ml-1">
                   Tạo mới
                 </Text>
@@ -435,7 +435,7 @@ export default function AdminDashboardScreen() {
           <View className="space-y-6">
             <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
               <View className="flex-row items-center mb-4">
-                <Globe size={20} color="#059669" />
+                <Globe size={20} color="#16a34a" />
                 <Text className="text-base font-black text-emerald-700 ml-2">Thông tin chung</Text>
               </View>
               <View className="space-y-4">
@@ -479,7 +479,7 @@ export default function AdminDashboardScreen() {
 
             <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
               <View className="flex-row items-center mb-4">
-                <Bell size={20} color="#059669" />
+                <Bell size={20} color="#16a34a" />
                 <Text className="text-base font-black text-emerald-700 ml-2">Truyền thông hệ thống</Text>
               </View>
               <View className="space-y-4">
@@ -501,7 +501,7 @@ export default function AdminDashboardScreen() {
                   <Switch
                     value={systemSettings.isBroadcastEnabled}
                     onValueChange={(val) => setSystemSettings({ ...systemSettings, isBroadcastEnabled: val })}
-                    trackColor={{ false: "#cbd5e1", true: "#059669" }}
+                    trackColor={{ false: "#cbd5e1", true: "#16a34a" }}
                   />
                 </View>
               </View>
@@ -509,7 +509,7 @@ export default function AdminDashboardScreen() {
 
             <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
               <View className="flex-row items-center mb-4">
-                <Settings size={20} color="#059669" />
+                <Settings size={20} color="#16a34a" />
                 <Text className="text-base font-black text-emerald-700 ml-2">SEO & Tự động hóa</Text>
               </View>
               <View className="space-y-4">

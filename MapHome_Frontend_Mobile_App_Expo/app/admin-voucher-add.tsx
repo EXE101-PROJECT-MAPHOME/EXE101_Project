@@ -6,6 +6,7 @@ import { ArrowLeft, Ticket, Calendar as CalendarIcon, Check, X, ShieldCheck } fr
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import api from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AdminVoucherAddScreen() {
   const router = useRouter();
@@ -77,7 +78,12 @@ export default function AdminVoucherAddScreen() {
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['top']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
-        <View className="px-4 py-4 bg-gradient-to-r from-emerald-600 to-indigo-600 flex-row items-center">
+        <LinearGradient
+          colors={['#16a34a', '#4f46e5']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          className="px-4 py-4 flex-row items-center"
+        >
           <TouchableOpacity 
             onPress={() => router.back()}
             className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center mr-3"
@@ -88,7 +94,7 @@ export default function AdminVoucherAddScreen() {
             <Text className="text-xl font-black text-white">Thêm Mã Giảm Giá</Text>
             <Text className="text-xs text-emerald-100 font-bold">Thiết lập khuyến mãi mới</Text>
           </View>
-        </View>
+        </LinearGradient>
 
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
           
@@ -150,7 +156,7 @@ export default function AdminVoucherAddScreen() {
                 onPress={() => setIsActive(true)}
                 className={`flex-1 h-12 rounded-xl flex-row items-center justify-center border ${isActive ? 'bg-emerald-50 border-emerald-500' : 'bg-slate-50 border-slate-200'}`}
               >
-                {isActive && <Check size={16} color="#10b981" />}
+                {isActive && <Check size={16} color="#22c55e" />}
                 <Text className={`font-bold ml-2 ${isActive ? 'text-emerald-700' : 'text-slate-500'}`}>Hoạt động</Text>
               </TouchableOpacity>
 

@@ -227,7 +227,7 @@ export default function SettingsScreen() {
                 onValueChange={(val) => {
                   setTwoFactorEnabled(val);
                 }}
-                trackColor={{ false: "#cbd5e1", true: "#059669" }}
+                trackColor={{ false: "#cbd5e1", true: "#16a34a" }}
               />
             </View>
 
@@ -315,7 +315,7 @@ export default function SettingsScreen() {
             {/* Lịch sử đăng nhập */}
             <View className="mt-6 border-t border-slate-100 pt-5">
               <View className="flex-row items-center mb-4">
-                <Clock size={16} color="#059669" />
+                <Clock size={16} color="#16a34a" />
                 <Text className="text-sm font-black text-emerald-700 ml-2">Lịch sử đăng nhập (10 phiên gần nhất)</Text>
               </View>
               

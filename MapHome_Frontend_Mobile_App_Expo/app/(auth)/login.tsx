@@ -267,7 +267,7 @@ export default function LoginScreen() {
                 style={{
                   fontSize: 11,
                   fontWeight: "800",
-                  color: "#059669",
+                  color: "#16a34a",
                   textTransform: "uppercase",
                   letterSpacing: 1.5,
                   marginBottom: 8,

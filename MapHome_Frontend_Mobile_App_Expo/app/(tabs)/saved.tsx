@@ -22,7 +22,7 @@ export default function SavedScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color="#16a34a" />
       </SafeAreaView>
     );
   }
@@ -39,7 +39,7 @@ export default function SavedScreen() {
 
         <View className="flex-1 items-center justify-center px-6 py-12">
           <View className="w-24 h-24 bg-emerald-50 rounded-full mb-6 items-center justify-center border border-emerald-100 shadow-sm">
-            <User size={40} color="#059669" />
+            <User size={40} color="#16a34a" />
           </View>
           <Text className="text-2xl font-black text-emerald-700 text-center mb-2">
             Đăng nhập để xem
@@ -95,7 +95,7 @@ export default function SavedScreen() {
       {savedProperties.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <View className="w-20 h-20 bg-emerald-50 rounded-full items-center justify-center mb-4 border border-emerald-100">
-            <Heart size={36} color="#059669" opacity={0.6} />
+            <Heart size={36} color="#16a34a" opacity={0.6} />
           </View>
           <Text className="text-xl font-bold text-emerald-700 mb-2">
             Chưa lưu phòng nào
