@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/app/utils/api";
+import { useAuth } from "@/app/contexts/AuthContext";
 
 interface PricingTier {
   id: string;
@@ -52,6 +53,7 @@ const inspectionTypeLabels: Record<string, string> = {
 export function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshProfile } = useAuth();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
@@ -195,6 +197,28 @@ export function CheckoutPage() {
 
     try {
       setIsProcessing(true);
+
+      // Nếu là gói miễn phí (amount = 0), kích hoạt trực tiếp không qua cổng thanh toán
+      if (!isInspection && totalAmount === 0) {
+        try {
+          const res = await api.post("/api/subscriptions/subscribe", {
+            planId: selectedTierId,
+          });
+          if (res.status === 200) {
+            toast.success("Kích hoạt gói dịch vụ miễn phí thành công! 🎉");
+            // Gọi refreshProfile để cập nhật state sidebar
+            await refreshProfile();
+            navigate(`/payment-success?planId=${selectedTierId}&orderId=free-${Date.now()}&amount=0`);
+          }
+          return;
+        } catch (error: any) {
+          console.error("Free subscription activation failed:", error);
+          toast.error(
+            error.response?.data?.message || "Không thể kích hoạt gói dịch vụ miễn phí."
+          );
+          return;
+        }
+      }
 
       // 1. Create payment on backend
       const res = await api.post("/api/payments/create", {
@@ -805,70 +829,82 @@ export function CheckoutPage() {
                     ) : (
                       <>
                         <Lock className="size-4 mr-2" />
-                        Thanh toán qua VietQR (PayOS)
+                        {totalAmount === 0
+                          ? "Kích hoạt gói dịch vụ (Miễn phí)"
+                          : "Thanh toán qua VietQR (PayOS)"}
                       </>
                     )}
                   </Button>
 
-                  <div className="flex items-center justify-center gap-2 py-3 bg-blue-50 rounded-lg border border-blue-100">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                        <span className="text-white font-bold text-xs">VN</span>
+                  {totalAmount > 0 && (
+                    <>
+                      <div className="flex items-center justify-center gap-2 py-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                            <span className="text-white font-bold text-xs">VN</span>
+                          </div>
+                          <span className="font-bold text-green-700">PayOS</span>
+                        </div>
+                        <Lock className="size-4 text-blue-600" />
                       </div>
-                      <span className="font-bold text-green-700">PayOS</span>
-                    </div>
-                    <Lock className="size-4 text-blue-600" />
-                  </div>
 
-                  <p className="text-xs text-center text-gray-500 leading-relaxed">
-                    Bạn sẽ được chuyển đến cổng thanh toán PayOS an toàn để hoàn
-                    tất giao dịch.
-                  </p>
+                      <p className="text-xs text-center text-gray-500 leading-relaxed">
+                        Bạn sẽ được chuyển đến cổng thanh toán PayOS an toàn để hoàn
+                        tất giao dịch.
+                      </p>
 
-                  <Separator />
+                      <Separator />
 
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 mb-3 text-center">
-                      Phương thức thanh toán được chấp nhận
+                      <div>
+                        <p className="text-xs font-semibold text-gray-700 mb-3 text-center">
+                          Phương thức thanh toán được chấp nhận
+                        </p>
+                        <div className="grid grid-cols-4 gap-3">
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
+                            <div className="text-center">
+                              <Smartphone className="size-6 text-gray-600 mx-auto mb-1" />
+                              <p className="text-[10px] text-gray-600 font-medium">
+                                QR Pay
+                              </p>
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
+                            <div className="text-center">
+                              <CreditCard className="size-6 text-gray-600 mx-auto mb-1" />
+                              <p className="text-[10px] text-gray-600 font-medium">
+                                ATM
+                              </p>
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="text-lg font-bold text-blue-700 mb-1">
+                                VISA
+                              </div>
+                            </div>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="w-6 h-6 rounded-full bg-pink-600 mx-auto mb-1 flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">
+                                  M
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-gray-600 font-medium">
+                                MoMo
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {totalAmount === 0 && (
+                    <p className="text-xs text-center text-gray-500 leading-relaxed py-2">
+                      Gói dịch vụ này hoàn toàn miễn phí. Bấm nút phía trên để kích hoạt ngay lập tức mà không cần thanh toán.
                     </p>
-                    <div className="grid grid-cols-4 gap-3">
-                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
-                        <div className="text-center">
-                          <Smartphone className="size-6 text-gray-600 mx-auto mb-1" />
-                          <p className="text-[10px] text-gray-600 font-medium">
-                            QR Pay
-                          </p>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
-                        <div className="text-center">
-                          <CreditCard className="size-6 text-gray-600 mx-auto mb-1" />
-                          <p className="text-[10px] text-gray-600 font-medium">
-                            ATM
-                          </p>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-blue-700 mb-1">
-                            VISA
-                          </div>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="w-6 h-6 rounded-full bg-pink-600 mx-auto mb-1 flex items-center justify-center">
-                            <span className="text-white text-xs font-bold">
-                              M
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-gray-600 font-medium">
-                            MoMo
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  )}
 
                   <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
                     <Shield className="size-4 text-green-600 flex-shrink-0 mt-0.5" />

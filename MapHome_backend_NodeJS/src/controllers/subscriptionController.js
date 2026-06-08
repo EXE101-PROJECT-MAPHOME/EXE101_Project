@@ -261,9 +261,23 @@ const subscribe = async (req, res) => {
       });
     }
 
-    // Update User's subscriptionId to link to the subscription
+    // Xác định verification level dựa theo slug gói đăng ký
+    let verificationLevel = 0;
+    const slug = planId.toLowerCase();
+    if (slug === "basic") {
+      verificationLevel = 1;
+    } else if (slug === "standard") {
+      verificationLevel = 2;
+    } else if (slug === "pro") {
+      verificationLevel = 3;
+    } else {
+      verificationLevel = 0;
+    }
+
+    // Update User's subscriptionId and verificationLevel in DB
     await User.findByIdAndUpdate(req.user._id, {
       subscriptionId: subscription._id,
+      verificationLevel,
     });
 
     res.status(200).json(subscription);

@@ -23,6 +23,11 @@ const createPaymentRules = [
     .trim()
     .isLength({ max: 255 })
     .withMessage("Mô tả giao dịch không được quá 255 ký tự"),
+
+  body("bookingId")
+    .optional()
+    .isMongoId()
+    .withMessage("bookingId phải là MongoDB ObjectId hợp lệ"),
 ];
 
 module.exports = {
