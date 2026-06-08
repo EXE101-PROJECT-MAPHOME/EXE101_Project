@@ -184,7 +184,7 @@ const activateSubscription = async (planSlug, userId, transaction = null) => {
 // ─── POST /api/payments/create ────────────────────────────────────────────────
 const createPayment = async (req, res) => {
   try {
-    const { amount, description, planId, bookingId } = req.body;
+    const { amount, description, planId, bookingId, appReturnUrl } = req.body;
 
     // ── Validate: nếu là inspection thì booking phải tồn tại và đã confirmed ──
     if (planId === "inspection") {
@@ -218,13 +218,13 @@ const createPayment = async (req, res) => {
       `http://localhost:${process.env.PORT || 5000}`;
     const userId = req.user.id || req.user._id;
 
-    // Pass userId & planId in return URL so callback knows what to activate
+    // Pass userId & planId & appReturnUrl in return URL so callback knows what to activate and where to redirect
     const returnUrl = `${backendUrl}/api/payments/callback?userId=${userId}&planId=${
       planId || ""
-    }&desc=${encodeURIComponent(description || "")}`;
+    }&desc=${encodeURIComponent(description || "")}&appReturnUrl=${encodeURIComponent(appReturnUrl || "")}`;
     const cancelUrl = `${backendUrl}/api/payments/callback?cancel=true&userId=${userId}&planId=${
       planId || ""
-    }&desc=${encodeURIComponent(description || "")}`;
+    }&desc=${encodeURIComponent(description || "")}&appReturnUrl=${encodeURIComponent(appReturnUrl || "")}`;
 
     const body = {
       orderCode,
@@ -259,10 +259,17 @@ const createPayment = async (req, res) => {
 // ─── GET /api/payments/callback ───────────────────────────────────────────────
 const paymentCallback = async (req, res) => {
   try {
-    const { cancel, orderCode, planId } = req.query;
-    const frontendUrl = (
-      process.env.FRONTEND_URL || "http://localhost:5173"
-    ).trim().replace(/^['"]|['"]$/g, "").replace(/\/$/, "");
+    const { cancel, orderCode, planId, appReturnUrl } = req.query;
+    
+    // Nếu có appReturnUrl từ query thì dùng nó làm base URL (hỗ trợ Mobile Deep Link)
+    let frontendUrl = "";
+    if (appReturnUrl && appReturnUrl.trim() !== "") {
+      frontendUrl = decodeURIComponent(appReturnUrl).replace(/\/$/, "");
+    } else {
+      frontendUrl = (
+        process.env.FRONTEND_URL || "http://localhost:5173"
+      ).trim().replace(/^['"]|['"]$/g, "").replace(/\/$/, "");
+    }
 
     // Người dùng huỷ thanh toán
     if (cancel === "true") {

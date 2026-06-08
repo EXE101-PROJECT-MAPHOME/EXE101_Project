@@ -1,5 +1,6 @@
 const Subscription = require("../models/Subscription");
 const User = require("../models/User");
+const Property = require("../models/Property");
 
 const getMyProfile = async (req, res) => {
   try {
@@ -116,8 +117,10 @@ const toggleFavoriteProperty = async (req, res) => {
       user.favorites = user.favorites.filter(
         (id) => String(id) !== String(propertyId),
       );
+      await Property.findByIdAndUpdate(propertyId, { $inc: { favorites: -1 } });
     } else {
       user.favorites.push(propertyId);
+      await Property.findByIdAndUpdate(propertyId, { $inc: { favorites: 1 } });
     }
     await user.save();
     await user.populate("favorites");
