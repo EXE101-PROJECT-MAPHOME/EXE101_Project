@@ -23,7 +23,7 @@ import {
   Home,
 } from "lucide-react";
 
-const VERIFICATION_FEE = 299000;
+const VERIFICATION_FEE = 119000;
 const RENEWAL_FEE = 199000;
 
 const howItWorksSteps = [

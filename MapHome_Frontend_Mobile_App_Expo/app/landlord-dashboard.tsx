@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import ROUTES, { navigateTo } from "@/constants/routes";
+import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import {
   ArrowLeft,
   LayoutDashboard,
@@ -292,7 +292,7 @@ export default function LandlordDashboardScreen() {
       {/* Header */}
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => safeBack(router)}
           className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
         >
           <ArrowLeft size={18} color={icon} />

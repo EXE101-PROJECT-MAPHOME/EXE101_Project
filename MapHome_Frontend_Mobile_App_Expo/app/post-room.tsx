@@ -45,6 +45,7 @@ import {
 import Animated, { FadeInDown, FadeInRight, FadeOutLeft } from "react-native-reanimated";
 import api from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
+import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
@@ -180,7 +181,7 @@ export default function PostRoomScreen() {
     if (prevIndex >= 0) {
       setStep(stepsInfo[prevIndex].key as Step);
     } else {
-      router.back();
+      safeBack(router);
     }
   };
 

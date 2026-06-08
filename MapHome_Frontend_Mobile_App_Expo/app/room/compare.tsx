@@ -23,7 +23,7 @@ import {
   Info,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import ROUTES, { navigateTo } from "@/constants/routes";
+import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import { useCompare } from "../../contexts/CompareContext";
 
 const { width } = Dimensions.get("window");
@@ -105,7 +105,7 @@ export default function CompareScreen() {
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center justify-between z-10 shadow-sm">
         <View className="flex-row items-center flex-1">
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => safeBack(router)}
             className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
           >
             <ArrowLeft size={18} color={icon} />

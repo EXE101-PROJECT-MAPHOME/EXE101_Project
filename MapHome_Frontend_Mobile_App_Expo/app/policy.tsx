@@ -17,6 +17,7 @@ import {
   ChevronUp,
 } from "lucide-react-native";
 import api from "../utils/api";
+import ROUTES, { safeBack } from "@/constants/routes";
 import { LinearGradient } from "expo-linear-gradient";
 
 const FAQS = [
@@ -75,7 +76,7 @@ export default function PolicyScreen() {
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => safeBack(router)}
           className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
         >
           <ArrowLeft size={18} color="#0f172a" />

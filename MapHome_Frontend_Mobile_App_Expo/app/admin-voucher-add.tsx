@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Ticket, Calendar as CalendarIcon, Check, X, ShieldCheck } from 'lucide-react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import ROUTES, { safeBack } from "@/constants/routes";
 import api from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -66,7 +67,7 @@ export default function AdminVoucherAddScreen() {
 
       await api.post("/api/vouchers", payload);
       Alert.alert("Thành công", "Tạo voucher thành công!", [
-        { text: "OK", onPress: () => router.back() }
+        { text: "OK", onPress: () => safeBack(router, ROUTES.ADMIN_DASHBOARD) }
       ]);
     } catch (error: any) {
       Alert.alert("Lỗi", error.response?.data?.message || "Không thể tạo voucher");
@@ -85,7 +86,7 @@ export default function AdminVoucherAddScreen() {
           className="px-4 py-4 flex-row items-center"
         >
           <TouchableOpacity 
-            onPress={() => router.back()}
+            onPress={() => safeBack(router)}
             className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center mr-3"
           >
             <ArrowLeft size={18} color="white" />

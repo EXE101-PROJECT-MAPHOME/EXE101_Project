@@ -189,7 +189,7 @@ const submitUserPhotos = async (req, res) => {
 const getVerificationPricing = async (req, res) => {
   try {
     const settings = await SystemSetting.findOne();
-    const pricing = settings ? settings.pricing : { basicVerification: 0, premiumVerification: 0 };
+    const pricing = settings ? settings.pricing : { basicVerification: 119000, premiumVerification: 0 };
     res.status(200).json(pricing);
   } catch (error) {
     res.status(500).json({ message: error.message });
