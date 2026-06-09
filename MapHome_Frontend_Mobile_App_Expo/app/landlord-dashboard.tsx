@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import ROUTES, { navigateTo } from "@/constants/routes";
+import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import {
   ArrowLeft,
   LayoutDashboard,
@@ -29,6 +29,7 @@ import {
 } from "lucide-react-native";
 import api from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { LinearGradient } from "expo-linear-gradient";
 import { useThemeColor } from "@/hooks/use-theme-color";
 
 type DashboardTab =
@@ -291,7 +292,7 @@ export default function LandlordDashboardScreen() {
       {/* Header */}
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => safeBack(router)}
           className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
         >
           <ArrowLeft size={18} color={icon} />
@@ -351,14 +352,19 @@ export default function LandlordDashboardScreen() {
         {activeTab === "overview" && (
           <View>
             {/* Welcome Card */}
-            <View className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl p-5 mb-4 shadow-sm">
+            <LinearGradient
+              colors={['#16a34a', '#15803d']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="rounded-3xl p-5 mb-4 shadow-sm"
+            >
               <Text className="text-white font-black text-xl mb-1">
                 Xin chào, {user.fullName || user.username}! 👋
               </Text>
               <Text className="text-emerald-100 text-sm font-medium">
                 Quản lý tin đăng và lịch hẹn khách thuê
               </Text>
-            </View>
+            </LinearGradient>
 
             <ExpiryWarningBanner />
 

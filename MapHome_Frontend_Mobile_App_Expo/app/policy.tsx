@@ -17,6 +17,8 @@ import {
   ChevronUp,
 } from "lucide-react-native";
 import api from "../utils/api";
+import ROUTES, { safeBack } from "@/constants/routes";
+import { LinearGradient } from "expo-linear-gradient";
 
 const FAQS = [
   {
@@ -74,7 +76,7 @@ export default function PolicyScreen() {
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => safeBack(router)}
           className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
         >
           <ArrowLeft size={18} color="#0f172a" />
@@ -86,14 +88,19 @@ export default function PolicyScreen() {
 
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#059669" size="large" />
+          <ActivityIndicator color="#16a34a" size="large" />
         </View>
       ) : (
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ padding: 16, paddingBottom: 28 }}
         >
-          <View className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-5 mb-4">
+          <LinearGradient
+            colors={['#16a34a', '#0d9488']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            className="rounded-3xl p-5 mb-4"
+          >
             <HelpCircle size={28} color="white" />
             <Text className="text-white text-xl font-black mt-2">
               Thông tin pháp lý và hướng dẫn
@@ -102,11 +109,11 @@ export default function PolicyScreen() {
               Tổng hợp FAQ, điều khoản sử dụng và chính sách bảo mật của
               MapHome.
             </Text>
-          </View>
+          </LinearGradient>
 
           <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4">
             <View className="flex-row items-center mb-3">
-              <ShieldCheck size={18} color="#059669" />
+              <ShieldCheck size={18} color="#16a34a" />
               <Text className="text-base font-black text-emerald-700 ml-2">
                 FAQ nhanh
               </Text>

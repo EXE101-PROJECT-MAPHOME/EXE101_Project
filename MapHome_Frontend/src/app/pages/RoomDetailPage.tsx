@@ -84,6 +84,7 @@ import {
   Review,
 } from "@/app/components/types";
 import { useRecentlyViewed } from "@/app/hooks/useRecentlyViewed";
+import { useFavorites } from "@/app/hooks/useFavorites";
 
 // === SUB-COMPONENTS ===
 
@@ -296,7 +297,6 @@ export function RoomDetailPage() {
   const [fullscreenGallery, setFullscreenGallery] = useState<number | null>(
     null,
   );
-  const [favorite, setFavorite] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isRequestInspectionOpen, setIsRequestInspectionOpen] = useState(false);
@@ -311,6 +311,7 @@ export function RoomDetailPage() {
   const { user } = useAuth();
   const { properties, loading: loadingProps } = useProperties();
   const { trackView } = useRecentlyViewed();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const property = useMemo(
     () => properties.find((p) => p.id === routeId || p._id === routeId),
@@ -420,11 +421,6 @@ export function RoomDetailPage() {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const toggleFavorite = (propertyId: string) => {
-    setFavorite(!favorite);
-    // Logic to save to storage/API
   };
 
   const handleSubmitReview = async () => {
@@ -654,11 +650,11 @@ export function RoomDetailPage() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => toggleFavorite(property.id)}
+                      onClick={() => toggleFavorite(property.id || property._id)}
                       className="h-10 w-10"
                     >
                       <Heart
-                        className={`size-5 ${favorite ? "fill-red-500 text-red-500" : "text-gray-500"}`}
+                        className={`size-5 ${isFavorite(property.id || property._id) ? "fill-red-500 text-red-500" : "text-gray-500"}`}
                       />
                     </Button>
                     <Button

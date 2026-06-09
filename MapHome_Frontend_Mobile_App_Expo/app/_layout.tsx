@@ -7,6 +7,12 @@ import {
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-reanimated";
+import { cssInterop } from "nativewind";
+import { LinearGradient } from "expo-linear-gradient";
+
+cssInterop(LinearGradient, {
+  className: "style",
+});
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider } from "../contexts/AuthContext";
@@ -29,6 +35,7 @@ export default function RootLayout() {
               value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
             >
               <Stack>
+                <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen
                   name="(tabs)"

@@ -59,4 +59,15 @@ export function navigateTo(router: any, path: string, replace = false) {
   }
 }
 
+/**
+ * Helper to safely go back without crashing if there is no screen in the stack
+ */
+export function safeBack(router: any, fallbackPath: string = ROUTES.HOME) {
+  if (typeof router.canGoBack === "function" && router.canGoBack()) {
+    router.back();
+  } else {
+    navigateTo(router, fallbackPath, true);
+  }
+}
+
 export default ROUTES;

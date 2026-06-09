@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Image,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
@@ -16,6 +17,8 @@ import {
   Calendar,
   Clock3,
   CheckCircle2,
+  CheckCheck,
+  Shield,
   BookOpen,
   MapPin,
   Settings,
@@ -28,10 +31,13 @@ import {
   MessageSquare,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import ROUTES, { navigateTo } from "@/constants/routes";
+import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import api from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompare } from "@/contexts/CompareContext";
+import { LinearGradient } from "expo-linear-gradient";
+import * as WebBrowser from "expo-web-browser";
+import * as ExpoLinking from "expo-linking";
 
 type DashboardTab = "overview" | "bookings" | "blogs" | "settings";
 
@@ -133,7 +139,7 @@ export default function UserDashboardScreen() {
           .length,
         icon: CheckCircle2,
         color: "bg-emerald-500",
-        iconColor: "#10b981",
+        iconColor: "#22c55e",
       },
     ],
     [favorites, appointments],
@@ -145,6 +151,43 @@ export default function UserDashboardScreen() {
     { id: "blogs", label: "Bài viết", icon: BookOpen },
     { id: "settings", label: "Cài đặt", icon: Settings },
   ];
+
+  const handleInspectionPayment = async (booking: any) => {
+    try {
+      setScreenLoading(true);
+      // Lấy phí xác minh (có thể gọi API hoặc dùng cứng, ở đây ta gọi API)
+      const feeRes = await api.get("/api/payments/inspection-fee").catch(() => ({ data: { fee: 119000 } }));
+      const fee = feeRes.data.fee || 119000;
+
+      const appReturnUrl = ExpoLinking.createURL("/");
+      const res = await api.post("/api/payments/create", {
+        amount: fee,
+        planId: "inspection",
+        bookingId: booking._id,
+        description: "Phi xac minh tro",
+        appReturnUrl,
+      });
+
+      if (res.status === 200 && res.data.url) {
+        // Mở PayOS trong in-app browser
+        const result = await WebBrowser.openAuthSessionAsync(res.data.url, appReturnUrl);
+        
+        if (result.type === "success") {
+          Alert.alert("Thành công", "Đã xử lý thanh toán. Dữ liệu đang được làm mới.");
+          await fetchData();
+        } else if (result.type === "cancel" || result.type === "dismiss") {
+          Alert.alert("Đã hủy", "Bạn đã hủy thanh toán.");
+        }
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi thanh toán",
+        error.response?.data?.message || "Không thể khởi tạo thanh toán."
+      );
+    } finally {
+      setScreenLoading(false);
+    }
+  };
 
   if (loading || screenLoading) {
     return (
@@ -176,7 +219,7 @@ export default function UserDashboardScreen() {
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center justify-between">
         <View className="flex-row items-center flex-1">
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => safeBack(router)}
             className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
           >
             <ArrowLeft size={18} color={icon} />
@@ -237,14 +280,19 @@ export default function UserDashboardScreen() {
         {activeTab === "overview" && (
           <View>
             {/* Welcome Card */}
-            <View className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-3xl p-5 mb-4 shadow-sm">
+            <LinearGradient
+              colors={['#16a34a', '#15803d']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="rounded-3xl p-5 mb-4 shadow-sm"
+            >
               <Text className="text-white font-black text-xl mb-1">
                 Xin chào, {user.fullName || user.username}! 👋
               </Text>
               <Text className="text-emerald-100 text-sm font-medium">
                 Theo dõi phòng yêu thích, lịch hẹn và bài viết của bạn.
               </Text>
-            </View>
+            </LinearGradient>
 
             {/* Stats Grid */}
             <View className="flex-row flex-wrap justify-between mb-4">
@@ -502,6 +550,8 @@ export default function UserDashboardScreen() {
                         className={`px-3 py-1 rounded-full ${
                           item.status === "completed"
                             ? "bg-emerald-50"
+                            : item.status === "confirmed"
+                            ? "bg-blue-50"
                             : "bg-amber-50"
                         }`}
                       >
@@ -509,23 +559,47 @@ export default function UserDashboardScreen() {
                           className={`text-xs font-bold ${
                             item.status === "completed"
                               ? "text-emerald-700"
+                              : item.status === "confirmed"
+                              ? "text-blue-700"
                               : "text-amber-700"
                           }`}
                         >
                           {item.status === "completed"
                             ? "✓ Hoàn tất"
+                            : item.status === "confirmed"
+                            ? "✓ Đã xác nhận"
                             : "⏳ Chờ duyệt"}
                         </Text>
                       </View>
                       {item.propertyId?.phone && (
-                        <TouchableOpacity className="flex-row items-center px-3 py-1 rounded-full bg-blue-50">
-                          <Phone size={12} color={info} />
-                          <Text className="text-xs font-bold text-blue-700 ml-1">
+                        <TouchableOpacity className="flex-row items-center px-3 py-1 rounded-full bg-slate-100">
+                          <Phone size={12} color={icon} />
+                          <Text className="text-xs font-bold text-slate-700 ml-1">
                             Liên hệ
                           </Text>
                         </TouchableOpacity>
                       )}
                     </View>
+
+                    {/* Nút thanh toán phí xác minh */}
+                    {item.status === "confirmed" && (
+                      <View className="mt-3 pt-3 border-t border-slate-100">
+                        {inspections.some((insp) => String(insp.bookingId) === String(item._id)) ? (
+                          <View className="flex-row items-center px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <CheckCheck size={16} color={success} />
+                            <Text className="text-sm font-bold text-emerald-700 ml-2">Yêu cầu xác minh đã gửi</Text>
+                          </View>
+                        ) : (
+                          <TouchableOpacity 
+                            onPress={() => handleInspectionPayment(item)}
+                            className="flex-row items-center justify-center px-4 py-3 bg-blue-600 rounded-xl shadow-sm active:opacity-80"
+                          >
+                            <Shield size={16} color="white" />
+                            <Text className="text-sm font-black text-white ml-2">Thanh toán xác minh trọ</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
                   </TouchableOpacity>
                 ))
               )}

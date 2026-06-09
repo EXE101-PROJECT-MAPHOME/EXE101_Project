@@ -10,7 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
 import ROUTES, { navigateTo } from "@/constants/routes";
 import { PropertyCard } from "@/components/PropertyCard";
-import { Heart, Search, User } from "lucide-react-native";
+import { Heart, Search, User, ArrowLeft } from "lucide-react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { mapBackendProperty } from "../../contexts/PropertiesContext";
 
@@ -22,7 +22,7 @@ export default function SavedScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color="#16a34a" />
       </SafeAreaView>
     );
   }
@@ -31,7 +31,13 @@ export default function SavedScreen() {
   if (!isAuthenticated || !user) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
-        <View className="px-4 py-4 bg-white border-b border-slate-100">
+        <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
+          <TouchableOpacity
+            onPress={() => navigateTo(router, ROUTES.USER_DASHBOARD)}
+            className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
+          >
+            <ArrowLeft size={18} color="#16a34a" />
+          </TouchableOpacity>
           <Text className="text-2xl font-black text-emerald-700">
             Phòng đã lưu
           </Text>
@@ -39,7 +45,7 @@ export default function SavedScreen() {
 
         <View className="flex-1 items-center justify-center px-6 py-12">
           <View className="w-24 h-24 bg-emerald-50 rounded-full mb-6 items-center justify-center border border-emerald-100 shadow-sm">
-            <User size={40} color="#059669" />
+            <User size={40} color="#16a34a" />
           </View>
           <Text className="text-2xl font-black text-emerald-700 text-center mb-2">
             Đăng nhập để xem
@@ -82,9 +88,17 @@ export default function SavedScreen() {
     <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
       {/* Header */}
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center justify-between">
-        <Text className="text-2xl font-black text-emerald-700">
-          Phòng đã lưu
-        </Text>
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => navigateTo(router, ROUTES.USER_DASHBOARD)}
+            className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
+          >
+            <ArrowLeft size={18} color="#16a34a" />
+          </TouchableOpacity>
+          <Text className="text-2xl font-black text-emerald-700">
+            Phòng đã lưu
+          </Text>
+        </View>
         <View className="bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
           <Text className="text-emerald-700 font-bold text-xs">
             {savedProperties.length} phòng
@@ -95,7 +109,7 @@ export default function SavedScreen() {
       {savedProperties.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <View className="w-20 h-20 bg-emerald-50 rounded-full items-center justify-center mb-4 border border-emerald-100">
-            <Heart size={36} color="#059669" opacity={0.6} />
+            <Heart size={36} color="#16a34a" opacity={0.6} />
           </View>
           <Text className="text-xl font-bold text-emerald-700 mb-2">
             Chưa lưu phòng nào

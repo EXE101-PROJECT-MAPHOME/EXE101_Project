@@ -4,8 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Ticket, Calendar as CalendarIcon, Check, X, ShieldCheck } from 'lucide-react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
+import ROUTES, { safeBack } from "@/constants/routes";
 import api from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AdminVoucherAddScreen() {
   const router = useRouter();
@@ -65,7 +67,7 @@ export default function AdminVoucherAddScreen() {
 
       await api.post("/api/vouchers", payload);
       Alert.alert("Thành công", "Tạo voucher thành công!", [
-        { text: "OK", onPress: () => router.back() }
+        { text: "OK", onPress: () => safeBack(router, ROUTES.ADMIN_DASHBOARD) }
       ]);
     } catch (error: any) {
       Alert.alert("Lỗi", error.response?.data?.message || "Không thể tạo voucher");
@@ -77,9 +79,14 @@ export default function AdminVoucherAddScreen() {
   return (
     <SafeAreaView className="flex-1 bg-slate-50" edges={['top']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1">
-        <View className="px-4 py-4 bg-gradient-to-r from-emerald-600 to-indigo-600 flex-row items-center">
+        <LinearGradient
+          colors={['#16a34a', '#4f46e5']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          className="px-4 py-4 flex-row items-center"
+        >
           <TouchableOpacity 
-            onPress={() => router.back()}
+            onPress={() => safeBack(router)}
             className="w-10 h-10 rounded-xl bg-white/20 items-center justify-center mr-3"
           >
             <ArrowLeft size={18} color="white" />
@@ -88,7 +95,7 @@ export default function AdminVoucherAddScreen() {
             <Text className="text-xl font-black text-white">Thêm Mã Giảm Giá</Text>
             <Text className="text-xs text-emerald-100 font-bold">Thiết lập khuyến mãi mới</Text>
           </View>
-        </View>
+        </LinearGradient>
 
         <ScrollView className="flex-1" contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
           
@@ -150,7 +157,7 @@ export default function AdminVoucherAddScreen() {
                 onPress={() => setIsActive(true)}
                 className={`flex-1 h-12 rounded-xl flex-row items-center justify-center border ${isActive ? 'bg-emerald-50 border-emerald-500' : 'bg-slate-50 border-slate-200'}`}
               >
-                {isActive && <Check size={16} color="#10b981" />}
+                {isActive && <Check size={16} color="#22c55e" />}
                 <Text className={`font-bold ml-2 ${isActive ? 'text-emerald-700' : 'text-slate-500'}`}>Hoạt động</Text>
               </TouchableOpacity>
 
