@@ -708,7 +708,7 @@ export default function HomePage() {
             {blogPosts.map((post, index) => (
               <TouchableOpacity
                 key={post._id || post.id || index}
-                onPress={() => navigateTo(router, ROUTES.BLOG)}
+                onPress={() => router.push(`/blog/${post._id || post.id}` as any)}
                 className="bg-white rounded-[24px] overflow-hidden mb-6 shadow-lg shadow-slate-200/50 border border-slate-100"
               >
                 <View className="h-48 relative">

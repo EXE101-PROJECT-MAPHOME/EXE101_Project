@@ -326,7 +326,7 @@ export function BlogPage() {
         >
           <article
             className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden cursor-pointer group hover:shadow-2xl hover:shadow-maphome-500/10 transition-all duration-500"
-            onClick={() => {}}
+            onClick={() => navigate(`/blog/${featuredPost.id}`)}
           >
             <div className="grid grid-cols-1 lg:grid-cols-2">
               {featuredPost.image && (
@@ -521,6 +521,7 @@ export function BlogPage() {
                         },
                       }}
                       whileHover={{ y: -4 }}
+                      onClick={() => navigate(`/blog/${post.id}`)}
                       className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl border border-gray-100 transition-all duration-400 cursor-pointer group"
                     >
                       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-maphome-50 to-green-50">
@@ -699,6 +700,7 @@ export function BlogPage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 1.5 + i * 0.08, duration: 0.4 }}
                     whileHover={{ x: 4 }}
+                    onClick={() => navigate(`/blog/${post.id}`)}
                     className="flex gap-3 cursor-pointer group"
                   >
                     <motion.span

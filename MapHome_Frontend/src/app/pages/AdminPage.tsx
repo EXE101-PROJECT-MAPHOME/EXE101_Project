@@ -165,7 +165,7 @@ export function AdminPage() {
         api.get("/api/admin/notifications"),
         api.get("/api/admin/transactions"),
         api.get("/api/subscriptions/plans"),
-        api.get("/api/blogs"),
+        api.get("/api/blogs/admin/all"),
       ]);
 
       const stats = statsRes.data;
