@@ -26,6 +26,18 @@ exports.getBlogs = async (req, res) => {
   }
 };
 
+// Get distinct categories
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await Blog.distinct("category", { status: "approved" });
+    // Filter out any falsy values (null, empty strings)
+    const validCategories = categories.filter(c => c && c.trim() !== "");
+    res.json(validCategories);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Get all blogs for admin (all statuses)
 exports.getAllBlogsAdmin = async (req, res) => {
   try {

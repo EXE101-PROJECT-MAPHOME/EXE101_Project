@@ -51,15 +51,7 @@ interface BlogPost {
   featured?: boolean;
 }
 
-const ALL_CATEGORIES = [
-  "Tất cả",
-  "Kinh nghiệm",
-  "Hướng dẫn",
-  "Thị trường",
-  "Pháp luật",
-  "Mẹo hay",
-  "Tính năng",
-];
+
 
 const POPULAR_TAGS = [
   "tìm trọ",
@@ -88,11 +80,37 @@ export function BlogPage() {
   const { user, isAuthenticated } = useAuth();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [categories, setCategories] = useState<string[]>(["Tất cả"]);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await api.get("/api/blogs/categories");
+        setCategories(["Tất cả", ...res.data]);
+      } catch (err) {
+        console.error("Failed to fetch categories", err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         setLoading(true);
-        const res = await api.get("/api/blogs");
+        const params = new URLSearchParams();
+        if (activeCategory !== "Tất cả") params.append("category", activeCategory);
+        if (debouncedSearchQuery) params.append("search", debouncedSearchQuery);
+        
+        const res = await api.get(`/api/blogs?${params.toString()}`);
         if (res.status === 200) {
           const data = res.data;
           setBlogs(data.map((b: any) => ({ ...b, id: b._id })));
@@ -120,7 +138,7 @@ export function BlogPage() {
 
     fetchBlogs();
     fetchSavedBlogs();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, activeCategory, debouncedSearchQuery]);
 
   const toggleBookmark = async (id: number | string) => {
     if (!isAuthenticated) {
@@ -175,23 +193,8 @@ export function BlogPage() {
   // Filtered posts (excluding featured from grid)
   const filteredPosts = useMemo(() => {
     if (!blogs.length) return [];
-
-    return blogs
-      .filter((p) => p.id !== (featuredPost?.id || featuredPost?._id))
-
-      .filter(
-        (p) => activeCategory === "Tất cả" || p.category === activeCategory,
-      )
-      .filter((p) => {
-        if (!searchQuery) return true;
-        const q = searchQuery.toLowerCase();
-        return (
-          p.title.toLowerCase().includes(q) ||
-          p.excerpt.toLowerCase().includes(q) ||
-          (p.tags && p.tags.some((t) => t.toLowerCase().includes(q)))
-        );
-      });
-  }, [activeCategory, searchQuery]);
+    return blogs.filter((p) => p.id !== (featuredPost?.id || featuredPost?._id));
+  }, [blogs, featuredPost]);
 
   // Pagination
   const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
@@ -433,7 +436,7 @@ export function BlogPage() {
         className="max-w-7xl mx-auto px-4 mb-8"
       >
         <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {ALL_CATEGORIES.map((cat, idx) => (
+          {categories.map((cat, idx) => (
             <motion.button
               key={cat}
               initial={{ opacity: 0, y: 20 }}
