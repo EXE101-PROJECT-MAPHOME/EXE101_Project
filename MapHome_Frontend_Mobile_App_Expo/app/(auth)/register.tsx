@@ -109,8 +109,10 @@ export default function RegisterScreen() {
       case "password":
         if (!value) msg = "Vui lòng nhập mật khẩu";
         else if (value.length < 8) msg = "Mật khẩu ít nhất 8 ký tự";
+        else if (!/[a-z]/.test(value)) msg = "Cần ít nhất 1 chữ thường";
         else if (!/[A-Z]/.test(value)) msg = "Cần ít nhất 1 chữ hoa";
         else if (!/[0-9]/.test(value)) msg = "Cần ít nhất 1 chữ số";
+        else if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) msg = "Cần ít nhất 1 ký tự đặc biệt";
         break;
       case "confirmPassword":
         if (!value) msg = "Vui lòng xác nhận mật khẩu";
@@ -166,8 +168,10 @@ export default function RegisterScreen() {
         case "password":
           if (!value) msg = "Vui lòng nhập mật khẩu";
           else if (value.length < 8) msg = "Mật khẩu ít nhất 8 ký tự";
+          else if (!/[a-z]/.test(value)) msg = "Cần ít nhất 1 chữ thường";
           else if (!/[A-Z]/.test(value)) msg = "Cần ít nhất 1 chữ hoa";
           else if (!/[0-9]/.test(value)) msg = "Cần ít nhất 1 chữ số";
+          else if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) msg = "Cần ít nhất 1 ký tự đặc biệt";
           break;
         case "confirmPassword":
           if (!value) msg = "Vui lòng xác nhận mật khẩu";
@@ -193,6 +197,7 @@ export default function RegisterScreen() {
         username,
         email,
         password,
+        confirmPassword,
         fullName,
         phone,
         role,
@@ -671,7 +676,7 @@ export default function RegisterScreen() {
                     setFieldFocus("password", false);
                     validateField("password", password);
                   }}
-                  placeholder="Tối thiểu 8 ký tự, 1 chữ hoa, 1 số"
+                  placeholder="Mật khẩu mạnh (hoa, thường, số, ký tự đặc biệt)"
                   placeholderTextColor={icon}
                   secureTextEntry={!showPassword}
                   style={{
