@@ -53,18 +53,7 @@ interface BlogPost {
 
 
 
-const POPULAR_TAGS = [
-  "tìm trọ",
-  "sinh viên",
-  "Hà Nội",
-  "tiết kiệm",
-  "pháp luật",
-  "hợp đồng",
-  "decor",
-  "Trust is King",
-  "thị trường",
-  "mẹo hay",
-];
+
 
 const POSTS_PER_PAGE = 6;
 
@@ -81,6 +70,7 @@ export function BlogPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [categories, setCategories] = useState<string[]>(["Tất cả"]);
+  const [popularTags, setPopularTags] = useState<string[]>([]);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
   useEffect(() => {
@@ -91,15 +81,25 @@ export function BlogPage() {
   }, [searchQuery]);
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchInitialData = async () => {
       try {
-        const res = await api.get("/api/blogs/categories");
-        setCategories(["Tất cả", ...res.data]);
+        const [catRes, tagsRes] = await Promise.all([
+          api.get("/api/blogs/categories").catch(() => ({ data: [] })),
+          api.get("/api/blogs/tags/popular").catch(() => ({ data: [] }))
+        ]);
+        
+        if (catRes.data && Array.isArray(catRes.data)) {
+          setCategories(["Tất cả", ...catRes.data]);
+        }
+        
+        if (tagsRes.data && Array.isArray(tagsRes.data)) {
+          setPopularTags(tagsRes.data);
+        }
       } catch (err) {
-        console.error("Failed to fetch categories", err);
+        console.error("Failed to fetch initial data", err);
       }
     };
-    fetchCategories();
+    fetchInitialData();
   }, []);
 
   useEffect(() => {
@@ -788,7 +788,7 @@ export function BlogPage() {
                 Tags phổ biến
               </h3>
               <div className="flex flex-wrap gap-2">
-                {POPULAR_TAGS.map((tag, idx) => (
+                {popularTags.map((tag, idx) => (
                   <motion.button
                     key={tag}
                     initial={{ opacity: 0, scale: 0.8 }}
