@@ -509,7 +509,7 @@ export default function ProfileScreen() {
                 className="bg-white border border-red-200 h-14 rounded-2xl flex-row items-center justify-center shadow-sm"
               >
                 <LogOut size={18} color="#ef4444" />
-                <Text className="text-red-500 font-black text-base ml-2">
+                <Text className="text-red-500 font-black text-base ml-2 px-1">
                   Đăng xuất
                 </Text>
               </TouchableOpacity>
@@ -792,7 +792,7 @@ export default function ProfileScreen() {
               className="bg-white border border-red-200 h-14 rounded-2xl flex-row items-center justify-center shadow-sm"
             >
               <LogOut size={18} color="#ef4444" />
-              <Text className="text-red-500 font-black text-base ml-2">
+              <Text className="text-red-500 font-black text-base ml-2 px-1">
                 Đăng xuất
               </Text>
             </TouchableOpacity>
