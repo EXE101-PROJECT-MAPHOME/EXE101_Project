@@ -41,6 +41,24 @@ const VoucherSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    title: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    bannerImage: {
+      type: String,
+      default: "",
+    },
+    showOnHome: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
