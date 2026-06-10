@@ -90,6 +90,7 @@ export default function LoginScreen() {
     title: "",
     message: "",
     type: "success" as "success" | "error" | "info",
+    hideButtons: false,
     onConfirm: () => {},
   });
 
@@ -140,11 +141,13 @@ export default function LoginScreen() {
           title: "Đăng nhập thành công",
           message: "Chào mừng bạn đến với MapHome!",
           type: "success",
-          onConfirm: () => {
-            setAlertConfig(prev => ({ ...prev, visible: false }));
-            navigateByRole(res.role);
-          }
+          hideButtons: true,
+          onConfirm: () => {},
         });
+        setTimeout(() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          navigateByRole(res.role);
+        }, 1500);
       } else {
         setError(res.message || "Đăng nhập Google thất bại.");
       }
@@ -195,11 +198,13 @@ export default function LoginScreen() {
           title: "Đăng nhập thành công",
           message: "Chào mừng bạn đến với MapHome!",
           type: "success",
-          onConfirm: () => {
-            setAlertConfig(prev => ({ ...prev, visible: false }));
-            navigateByRole(res.role);
-          }
+          hideButtons: true,
+          onConfirm: () => {},
         });
+        setTimeout(() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          navigateByRole(res.role);
+        }, 1500);
       } else {
         setError(res.message || "Tài khoản hoặc mật khẩu không đúng");
       }

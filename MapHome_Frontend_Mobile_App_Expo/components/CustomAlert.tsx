@@ -11,6 +11,7 @@ interface CustomAlertProps {
   confirmText?: string;
   onCancel?: () => void;
   cancelText?: string;
+  hideButtons?: boolean;
 }
 
 export default function CustomAlert({
@@ -22,6 +23,7 @@ export default function CustomAlert({
   confirmText = "OK",
   onCancel,
   cancelText = "Hủy",
+  hideButtons = false,
 }: CustomAlertProps) {
   const scaleValue = useRef(new Animated.Value(0)).current;
   const opacityValue = useRef(new Animated.Value(0)).current;
@@ -95,27 +97,29 @@ export default function CustomAlert({
           </Text>
 
           {/* Buttons */}
-          <View className="w-full flex-row space-x-3">
-            {onCancel && (
+          {!hideButtons && (
+            <View className="w-full flex-row space-x-3">
+              {onCancel && (
+                <TouchableOpacity
+                  onPress={onCancel}
+                  className="flex-1 h-14 bg-slate-100 rounded-2xl items-center justify-center"
+                >
+                  <Text className="text-slate-600 font-bold text-base">
+                    {cancelText}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
-                onPress={onCancel}
-                className="flex-1 h-14 bg-slate-100 rounded-2xl items-center justify-center"
+                onPress={onConfirm}
+                style={{ backgroundColor: iconColor }}
+                className="flex-1 h-14 rounded-2xl items-center justify-center shadow-md"
               >
-                <Text className="text-slate-600 font-bold text-base">
-                  {cancelText}
+                <Text className="text-white font-bold text-base">
+                  {confirmText}
                 </Text>
               </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              onPress={onConfirm}
-              style={{ backgroundColor: iconColor }}
-              className="flex-1 h-14 rounded-2xl items-center justify-center shadow-md"
-            >
-              <Text className="text-white font-bold text-base">
-                {confirmText}
-              </Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          )}
         </Animated.View>
       </View>
     </Modal>
