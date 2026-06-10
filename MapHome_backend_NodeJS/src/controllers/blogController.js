@@ -38,6 +38,35 @@ exports.getCategories = async (req, res) => {
   }
 };
 
+// Get popular tags based on frequency in approved blogs
+exports.getPopularTags = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const tags = await Blog.aggregate([
+      { $match: { status: "approved", tags: { $exists: true, $not: { $size: 0 } } } },
+      { $unwind: "$tags" },
+      { 
+        $group: { 
+          _id: { $trim: { input: "$tags" } }, 
+          count: { $sum: 1 } 
+        } 
+      },
+      { $sort: { count: -1 } },
+      { $limit: limit }
+    ]);
+    
+    // Filter out empty tags and return array of string
+    const popularTags = tags
+      .map(t => t._id)
+      .filter(t => t && t.trim() !== "");
+      
+    res.json(popularTags);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Get all blogs for admin (all statuses)
 exports.getAllBlogsAdmin = async (req, res) => {
   try {

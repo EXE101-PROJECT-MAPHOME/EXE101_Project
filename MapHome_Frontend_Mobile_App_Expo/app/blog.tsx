@@ -53,6 +53,7 @@ export default function BlogScreen() {
   const [category, setCategory] = useState("Tất cả");
 
   const [categories, setCategories] = useState<string[]>(["Tất cả"]);
+  const [popularTags, setPopularTags] = useState<string[]>([]);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
@@ -66,8 +67,9 @@ export default function BlogScreen() {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [catRes, savedRes] = await Promise.all([
+        const [catRes, tagsRes, savedRes] = await Promise.all([
           api.get("/api/blogs/categories").catch(() => ({ data: [] })),
+          api.get("/api/blogs/tags/popular").catch(() => ({ data: [] })),
           isAuthenticated
             ? api.get("/api/blogs/me/saved").catch(() => ({ data: [] }))
             : Promise.resolve({ data: [] }),
@@ -75,6 +77,10 @@ export default function BlogScreen() {
 
         if (catRes.data && Array.isArray(catRes.data)) {
            setCategories(["Tất cả", ...catRes.data]);
+        }
+        
+        if (tagsRes.data && Array.isArray(tagsRes.data)) {
+           setPopularTags(tagsRes.data);
         }
 
         const savedIds = new Set<string>(
@@ -200,6 +206,27 @@ export default function BlogScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {popularTags.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-[11px] font-black uppercase text-slate-400 mb-3 tracking-widest">
+              Thẻ phổ biến
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {popularTags.map((tag) => (
+                <TouchableOpacity
+                  key={tag}
+                  onPress={() => setQuery(tag)}
+                  className="bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100"
+                >
+                  <Text className="text-emerald-700 font-bold text-[10px]">
+                    #{tag}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {loading ? (
           <View className="py-16 items-center justify-center">
