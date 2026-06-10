@@ -2879,9 +2879,21 @@ function BookingsView({
                       </div>
                     </div>
                   </div>
-                  <div className="px-3 py-1.5 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-slate-200">
-                    {b.status}
-                  </div>
+                  {(() => {
+                    const statusConfig: Record<string, string> = {
+                      pending: "bg-amber-50 text-amber-600 border-amber-200 shadow-amber-100",
+                      confirmed: "bg-emerald-50 text-emerald-600 border-emerald-200 shadow-emerald-100",
+                      completed: "bg-blue-50 text-blue-600 border-blue-200 shadow-blue-100",
+                      cancelled: "bg-rose-50 text-rose-600 border-rose-200 shadow-rose-100",
+                    };
+                    const s = (b.status || "pending").toLowerCase();
+                    const colorClass = statusConfig[s] || "bg-slate-50 text-slate-600 border-slate-200 shadow-slate-100";
+                    return (
+                      <div className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm ${colorClass}`}>
+                        {b.status}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Details Grid */}
@@ -2891,7 +2903,7 @@ function BookingsView({
                       Khách thuê
                     </span>
                     <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[8px] font-black text-white">
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500 flex items-center justify-center text-[10px] font-black text-white shadow-sm">
                         {(b.userId?.fullName || b.userId?.username || "A")
                           .substring(0, 1)
                           .toUpperCase()}
@@ -2922,7 +2934,7 @@ function BookingsView({
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => onDeleteBooking(b._id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-[11px] font-black transition-all border border-rose-100"
+                    className="flex items-center gap-2 px-4 py-2 bg-white text-rose-500 hover:bg-gradient-to-r hover:from-rose-500 hover:to-red-500 hover:text-white rounded-xl text-[11px] font-black transition-all border border-rose-100 shadow-sm shadow-rose-50"
                   >
                     <Trash2 className="size-3.5" /> Huỷ lịch
                   </motion.button>
