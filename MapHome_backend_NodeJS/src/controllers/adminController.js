@@ -617,8 +617,9 @@ const broadcastNotification = async (req, res) => {
 
 const getAdminNotifications = async (req, res) => {
   try {
+    const Blog = require("../models/Blog");
     // Get latest system events across models
-    const [newUsers, newProperties, newVerifications, newBookings] =
+    const [newUsers, newProperties, newVerifications, newBookings, newBlogs] =
       await Promise.all([
         User.find().sort({ createdAt: -1 }).limit(5),
         Property.find()
@@ -633,6 +634,9 @@ const getAdminNotifications = async (req, res) => {
           .sort({ createdAt: -1 })
           .limit(5)
           .populate("userId", "fullName"),
+        Blog.find({ status: "pending" })
+          .sort({ createdAt: -1 })
+          .limit(5),
       ]);
 
     // Format all events into a unified notification structure
@@ -668,6 +672,14 @@ const getAdminNotifications = async (req, res) => {
         time: b.createdAt,
         type: "booking",
         icon: "📅",
+      })),
+      ...newBlogs.map((b) => ({
+        id: `blog-${b._id}`,
+        title: "Bài blog chờ duyệt",
+        message: `Bài blog "${b.title}" từ ${b.author || "chủ trọ"} đang chờ duyệt.`,
+        time: b.createdAt,
+        type: "blog",
+        icon: "📝",
       })),
     ]
       .sort((a, b) => new Date(b.time) - new Date(a.time))

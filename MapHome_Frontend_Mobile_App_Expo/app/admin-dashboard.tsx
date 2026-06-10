@@ -40,6 +40,7 @@ type AdminView =
   | "reports"
   | "transactions"
   | "vouchers"
+  | "blogs"
   | "settings";
 
 export default function AdminDashboardScreen() {
@@ -63,6 +64,7 @@ export default function AdminDashboardScreen() {
   const [reports, setReports] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [vouchers, setVouchers] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<any[]>([]);
   const [systemSettings, setSystemSettings] = useState<any>(null);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
@@ -112,6 +114,12 @@ export default function AdminDashboardScreen() {
       if (active === "vouchers") {
         const res = await api.get("/api/vouchers").catch(() => ({ data: [] }));
         setVouchers(res.data || []);
+      }
+      if (active === "blogs") {
+        const res = await api
+          .get("/api/blogs/admin/all")
+          .catch(() => ({ data: [] }));
+        setBlogs(res.data || []);
       }
       if (active === "settings") {
         const res = await api
@@ -228,6 +236,7 @@ export default function AdminDashboardScreen() {
             { id: "reports", label: "Báo cáo", icon: AlertTriangle },
             { id: "transactions", label: "Giao dịch", icon: CreditCard },
             { id: "vouchers", label: "Voucher", icon: Ticket },
+            { id: "blogs", label: "Blog", icon: FileText },
             { id: "settings", label: "Hệ thống", icon: Settings },
           ].map((item) => (
             <TouchableOpacity
@@ -575,7 +584,9 @@ export default function AdminDashboardScreen() {
                     ? bookings
                     : view === "reports"
                       ? reports
-                      : transactions
+                      : view === "blogs"
+                        ? blogs
+                        : transactions
               ).length === 0 ? (
                 <Text className="text-slate-500">Chưa có dữ liệu.</Text>
               ) : (
@@ -587,7 +598,9 @@ export default function AdminDashboardScreen() {
                       ? bookings
                       : view === "reports"
                         ? reports
-                        : transactions
+                        : view === "blogs"
+                          ? blogs
+                          : transactions
                 )
                   .slice(0, 12)
                   .map((item: any, idx: number) => (

@@ -207,8 +207,9 @@ export default function BlogScreen() {
             const pid = String(post.id || post._id || "");
             const isSaved = bookmarked.has(pid);
             return (
-              <View
+              <TouchableOpacity
                 key={pid}
+                onPress={() => router.push(`/blog/${pid}` as any)}
                 className="bg-white rounded-3xl border border-slate-100 overflow-hidden mb-4"
               >
                 {post.image ? (
@@ -273,7 +274,7 @@ export default function BlogScreen() {
                     </View>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
