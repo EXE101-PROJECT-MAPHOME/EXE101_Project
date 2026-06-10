@@ -129,9 +129,10 @@ export default function RoomDetailScreen() {
           available: prop.available !== undefined ? prop.available : true,
           verificationLevel:
             prop.verificationLevel ||
-            (prop.badgeAwarded === "verified" ? "verified" : "none"),
+            (prop.greenBadge?.level === "verified" ? "verified" : "none"),
           verifiedAt: prop.verifiedAt || prop.createdAt,
           locationAccuracy: prop.locationAccuracy || 5,
+          greenBadge: prop.greenBadge,
           location:
             prop.location && Array.isArray(prop.location)
               ? [prop.location[0], prop.location[1]]
@@ -543,6 +544,82 @@ export default function RoomDetailScreen() {
                     {property.locationAccuracy} mét. Bạn có thể tin cậy 100% vào
                     bản đồ chỉ đường.
                   </Text>
+                </View>
+              )}
+
+              {/* MapHome Verification Report */}
+              {property.greenBadge?.inspectionChecklist && (
+                <View className="bg-emerald-50 rounded-3xl p-5 border border-emerald-200">
+                  <View className="flex-row items-center mb-4">
+                    <View className="bg-emerald-600 rounded-full p-2 mr-3">
+                      <ShieldCheck size={20} color="white" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-emerald-900 font-black text-lg">Báo cáo xác thực</Text>
+                      <Text className="text-emerald-700 text-xs font-medium">Từ đội ngũ chuyên viên MapHome</Text>
+                    </View>
+                  </View>
+
+                  <View className="bg-white rounded-2xl p-4 mb-3 border border-emerald-100">
+                    <Text className="text-slate-800 font-bold text-sm uppercase mb-3">Tiêu chí kiểm tra</Text>
+                    
+                    <View className="space-y-3">
+                      <View className="flex-row items-center">
+                        <View className={`w-6 h-6 rounded-full items-center justify-center mr-3 ${property.greenBadge.inspectionChecklist.isAccurate ? 'bg-emerald-100' : 'bg-rose-100'}`}>
+                          {property.greenBadge.inspectionChecklist.isAccurate ? <Text className="text-emerald-600 font-bold">✓</Text> : <Text className="text-rose-600 font-bold">✕</Text>}
+                        </View>
+                        <Text className="text-slate-700 font-medium">Hình ảnh & mô tả trung thực</Text>
+                      </View>
+                      
+                      <View className="flex-row items-center mt-2">
+                        <View className={`w-6 h-6 rounded-full items-center justify-center mr-3 ${property.greenBadge.inspectionChecklist.hasAmenities ? 'bg-emerald-100' : 'bg-rose-100'}`}>
+                          {property.greenBadge.inspectionChecklist.hasAmenities ? <Text className="text-emerald-600 font-bold">✓</Text> : <Text className="text-rose-600 font-bold">✕</Text>}
+                        </View>
+                        <Text className="text-slate-700 font-medium">Tiện nghi hoạt động tốt</Text>
+                      </View>
+
+                      <View className="flex-row items-center mt-2">
+                        <View className={`w-6 h-6 rounded-full items-center justify-center mr-3 ${property.greenBadge.inspectionChecklist.isSecure ? 'bg-emerald-100' : 'bg-rose-100'}`}>
+                          {property.greenBadge.inspectionChecklist.isSecure ? <Text className="text-emerald-600 font-bold">✓</Text> : <Text className="text-rose-600 font-bold">✕</Text>}
+                        </View>
+                        <Text className="text-slate-700 font-medium">An ninh & PCCC đảm bảo</Text>
+                      </View>
+
+                      <View className="flex-row items-center mt-2">
+                        <View className={`w-6 h-6 rounded-full items-center justify-center mr-3 ${property.greenBadge.inspectionChecklist.isLegal ? 'bg-emerald-100' : 'bg-rose-100'}`}>
+                          {property.greenBadge.inspectionChecklist.isLegal ? <Text className="text-emerald-600 font-bold">✓</Text> : <Text className="text-rose-600 font-bold">✕</Text>}
+                        </View>
+                        <Text className="text-slate-700 font-medium">Pháp lý hợp lệ</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {property.greenBadge.inspectionNotes && (
+                    <View className="bg-white rounded-2xl p-4 border border-emerald-100 mb-3">
+                      <Text className="text-slate-800 font-bold text-sm uppercase mb-2">Ghi chú chuyên viên</Text>
+                      <Text className="text-slate-600 text-sm italic">"{property.greenBadge.inspectionNotes}"</Text>
+                    </View>
+                  )}
+
+                  {property.greenBadge.inspectionMedia?.length > 0 && (
+                    <View className="bg-white rounded-2xl p-4 border border-emerald-100">
+                      <Text className="text-slate-800 font-bold text-sm uppercase mb-3">Minh chứng</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                        {property.greenBadge.inspectionMedia.map((url: string, index: number) => {
+                          const isVideo = url.match(/\.(mp4|webm|ogg)$/i) || url.includes('/video/upload/');
+                          return (
+                            <View key={index} className="w-24 h-24 rounded-xl overflow-hidden mr-3 bg-slate-100 border border-slate-200 justify-center items-center">
+                              {isVideo ? (
+                                <Text className="text-xs font-bold text-slate-500">Video</Text>
+                              ) : (
+                                <Image source={{ uri: url }} className="w-full h-full" resizeMode="cover" />
+                              )}
+                            </View>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+                  )}
                 </View>
               )}
 

@@ -6,6 +6,13 @@ export interface GreenBadge {
   awardedAt: string; // ISO date string
   awardedBy: string; // Admin ID
   inspectionNotes?: string;
+  inspectionMedia?: string[];
+  inspectionChecklist?: {
+    isAccurate: boolean;
+    hasAmenities: boolean;
+    isSecure: boolean;
+    isLegal: boolean;
+  };
 }
 
 export interface VerificationRequest {

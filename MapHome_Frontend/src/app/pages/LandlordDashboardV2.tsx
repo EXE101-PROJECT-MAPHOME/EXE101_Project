@@ -1053,7 +1053,7 @@ export function LandlordDashboardV2() {
                       </div>
 
                       {req.notes && (
-                        <div className="p-4 bg-white/30 rounded-2xl border border-white/20">
+                        <div className="p-4 bg-white/30 rounded-2xl border border-white/20 mb-4">
                           <p className="text-xs text-gray-500 font-bold uppercase tracking-tighter mb-1">
                             Ghi chú từ MapHome
                           </p>
@@ -1061,6 +1061,16 @@ export function LandlordDashboardV2() {
                             "{req.notes}"
                           </p>
                         </div>
+                      )}
+
+                      {req.status === "completed" && req.propertyId && (
+                        <Button
+                          onClick={() => navigate(`/room/${req.propertyId}`)}
+                          className="w-full bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all shadow-sm rounded-xl py-6 font-bold flex items-center justify-center gap-2"
+                        >
+                          <Eye className="size-4" />
+                          Xem chi tiết Báo cáo xác thực
+                        </Button>
                       )}
                     </div>
                   ))}

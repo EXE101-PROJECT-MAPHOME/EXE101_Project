@@ -49,6 +49,8 @@ import {
   Refrigerator,
   Car,
   GraduationCap,
+  FileCheck,
+  Video
 } from "lucide-react";
 
 import { Button } from "@/app/components/ui/button";
@@ -285,6 +287,90 @@ const LocationVerificationInfo = ({
     </div>
   </div>
 );
+
+const MapHomeVerificationReport = ({
+  greenBadge,
+}: {
+  greenBadge: any;
+}) => {
+  if (!greenBadge?.inspectionChecklist) return null;
+
+  return (
+    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border-2 border-green-200 mt-6 mb-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="bg-green-600 rounded-full p-2.5 shadow-lg shadow-green-200">
+          <FileCheck className="size-6 text-white" />
+        </div>
+        <div>
+          <h3 className="font-bold text-green-900 text-lg">Báo cáo xác thực từ MapHome</h3>
+          <p className="text-sm text-green-700">Được kiểm tra trực tiếp bởi đội ngũ chuyên viên</p>
+        </div>
+      </div>
+
+      <div className="bg-white/80 rounded-xl p-5 border border-green-100 shadow-sm mb-4">
+        <h4 className="font-semibold text-gray-800 mb-4 text-sm uppercase tracking-wider">Tiêu chí đã kiểm tra</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full ${greenBadge.inspectionChecklist.isAccurate ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              {greenBadge.inspectionChecklist.isAccurate ? <Check className="size-4" /> : <X className="size-4" />}
+            </div>
+            <span className="text-sm text-gray-700 font-medium">Hình ảnh & mô tả trung thực</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full ${greenBadge.inspectionChecklist.hasAmenities ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              {greenBadge.inspectionChecklist.hasAmenities ? <Check className="size-4" /> : <X className="size-4" />}
+            </div>
+            <span className="text-sm text-gray-700 font-medium">Tiện nghi hoạt động tốt</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full ${greenBadge.inspectionChecklist.isSecure ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              {greenBadge.inspectionChecklist.isSecure ? <Check className="size-4" /> : <X className="size-4" />}
+            </div>
+            <span className="text-sm text-gray-700 font-medium">An ninh & PCCC đảm bảo</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center w-6 h-6 rounded-full ${greenBadge.inspectionChecklist.isLegal ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+              {greenBadge.inspectionChecklist.isLegal ? <Check className="size-4" /> : <X className="size-4" />}
+            </div>
+            <span className="text-sm text-gray-700 font-medium">Pháp lý hợp lệ</span>
+          </div>
+        </div>
+      </div>
+
+      {greenBadge.inspectionNotes && (
+        <div className="bg-white/80 rounded-xl p-5 border border-green-100 shadow-sm mb-4">
+          <h4 className="font-semibold text-gray-800 mb-2 text-sm uppercase tracking-wider">Ghi chú từ chuyên viên</h4>
+          <p className="text-sm text-gray-700 italic">"{greenBadge.inspectionNotes}"</p>
+        </div>
+      )}
+
+      {greenBadge.inspectionMedia && greenBadge.inspectionMedia.length > 0 && (
+        <div className="bg-white/80 rounded-xl p-5 border border-green-100 shadow-sm">
+          <h4 className="font-semibold text-gray-800 mb-4 text-sm uppercase tracking-wider">Hình ảnh/Video xác thực</h4>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {greenBadge.inspectionMedia.map((url: string, index: number) => {
+              const isVideo = url.match(/\.(mp4|webm|ogg)$/i) || url.includes('/video/upload/');
+              return (
+                <div key={index} className="w-32 h-24 rounded-lg overflow-hidden flex-shrink-0 relative border shadow-sm">
+                  {isVideo ? (
+                    <>
+                      <video src={url} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <Video className="text-white size-6 drop-shadow-md" />
+                      </div>
+                    </>
+                  ) : (
+                    <img src={url} alt={`Minh chứng ${index + 1}`} className="w-full h-full object-cover" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // === MAIN PAGE COMPONENT ===
 
@@ -774,6 +860,9 @@ export function RoomDetailPage() {
                           locationAccuracy={property.locationAccuracy}
                         />
                       )}
+                    {property.verificationLevel === "verified" && property.greenBadge && (
+                      <MapHomeVerificationReport greenBadge={property.greenBadge} />
+                    )}
 
                     {/* Features/Amenities */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 bg-white p-6 rounded-2xl border shadow-sm">
