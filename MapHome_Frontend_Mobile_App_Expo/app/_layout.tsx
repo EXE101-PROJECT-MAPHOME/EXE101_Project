@@ -18,6 +18,12 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider } from "../contexts/AuthContext";
 import { PropertiesProvider } from "../contexts/PropertiesContext";
 import { CompareProvider } from "../contexts/CompareContext";
+import { LogBox } from "react-native";
+
+LogBox.ignoreLogs([
+  "[Reanimated] Reduced motion setting is enabled on this device.",
+  "ImagePicker.MediaTypeOptions have been deprecated", // Just in case any old dependency still triggers it
+]);
 
 export const unstable_settings = {
   anchor: "(tabs)",

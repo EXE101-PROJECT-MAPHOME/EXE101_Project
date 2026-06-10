@@ -1,9 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, ImageBackground, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, ImageBackground, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-
-const { width } = Dimensions.get('window');
 
 const defaultSlides = [
   {
@@ -31,19 +29,48 @@ const defaultSlides = [
 
 export function HeroCarousel() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [isAutoPlay, setIsAutoPlay] = useState(true);
+
+  useEffect(() => {
+    if (!isAutoPlay) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => {
+        const nextIndex = (prev + 1) % defaultSlides.length;
+        scrollViewRef.current?.scrollTo({
+          x: nextIndex * width,
+          animated: true,
+        });
+        return nextIndex;
+      });
+    }, 4000); // Tự động cuộn sau mỗi 4 giây
+
+    return () => clearInterval(interval);
+  }, [isAutoPlay, width]);
 
   return (
     <View className="relative h-[400px]">
       <ScrollView
+        ref={scrollViewRef}
         horizontal
         pagingEnabled
+        snapToInterval={width}
+        snapToAlignment="center"
+        decelerationRate="fast"
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => {
+        nestedScrollEnabled={true}
+        onScrollBeginDrag={() => setIsAutoPlay(false)}
+        onScrollEndDrag={() => setIsAutoPlay(true)}
+        onScroll={(e) => {
           const contentOffsetX = e.nativeEvent.contentOffset.x;
           const currentIndex = Math.round(contentOffsetX / width);
-          setActiveIndex(currentIndex);
+          if (currentIndex !== activeIndex && currentIndex >= 0 && currentIndex < defaultSlides.length) {
+             setActiveIndex(currentIndex);
+          }
         }}
+        scrollEventThrottle={16}
       >
         {defaultSlides.map((slide) => (
           <ImageBackground

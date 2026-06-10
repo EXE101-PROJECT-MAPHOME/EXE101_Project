@@ -70,8 +70,8 @@ const notifyLandlordNewBooking = async ({
 }) => {
   await createNotification({
     userId: landlordUserId,
-    title: "📅 New Viewing Appointment!",
-    message: `${customerName} has requested to view "${propertyName}" on ${bookingDate} at ${bookingTime}.`,
+    title: "📅 Lịch hẹn xem phòng mới!",
+    message: `${customerName} đã yêu cầu xem "${propertyName}" vào ngày ${bookingDate} lúc ${bookingTime}.`,
     type: "booking",
     link: propertyId ? `/room/${propertyId}` : undefined,
   });
@@ -89,8 +89,8 @@ const notifyTenantBookingConfirmed = async ({
 }) => {
   await createNotification({
     userId: tenantUserId,
-    title: "✅ Appointment Confirmed!",
-    message: `Your viewing of "${propertyName}" on ${bookingDate} at ${bookingTime} has been confirmed. Don't be late!`,
+    title: "✅ Lịch hẹn đã được xác nhận!",
+    message: `Lịch xem "${propertyName}" vào ngày ${bookingDate} lúc ${bookingTime} của bạn đã được xác nhận. Vui lòng đến đúng giờ!`,
     type: "success",
     link: propertyId ? `/room/${propertyId}` : undefined,
   });
@@ -105,14 +105,14 @@ const notifyTenantBookingCancelled = async ({
   cancelledBy,
   propertyId,
 }) => {
-  const byText =
+  const messageText =
     cancelledBy === "landlord"
-      ? "The landlord has cancelled"
-      : "Your appointment has been cancelled";
+      ? `Chủ trọ đã hủy lịch xem "${propertyName}" của bạn. Bạn có thể đặt lại lịch hoặc tìm phòng khác.`
+      : `Lịch hẹn xem "${propertyName}" của bạn đã bị hủy. Bạn có thể đặt lại lịch hoặc tìm phòng khác.`;
   await createNotification({
     userId: tenantUserId,
-    title: "❌ Appointment Cancelled",
-    message: `${byText} your viewing of "${propertyName}". You can reschedule or find another room.`,
+    title: "❌ Lịch hẹn đã bị hủy",
+    message: messageText,
     type: "warning",
     link: propertyId ? `/room/${propertyId}` : undefined,
   });
@@ -128,8 +128,8 @@ const notifyTenantBookingCompleted = async ({
 }) => {
   await createNotification({
     userId: tenantUserId,
-    title: "🏠 Viewing Completed!",
-    message: `You have finished viewing "${propertyName}". Leave a review to help other renters!`,
+    title: "🏠 Đã xem phòng xong!",
+    message: `Bạn đã xem xong "${propertyName}". Hãy để lại đánh giá để giúp những người thuê khác nhé!`,
     type: "info",
     link: propertyId ? `/room/${propertyId}` : undefined,
   });
@@ -147,8 +147,8 @@ const notifyLandlordBookingCancelledByTenant = async ({
 }) => {
   await createNotification({
     userId: landlordUserId,
-    title: "🔔 Tenant Cancelled Appointment",
-    message: `${customerName} has cancelled their viewing of "${propertyName}" scheduled for ${bookingDate} at ${bookingTime}.`,
+    title: "🔔 Khách thuê đã hủy lịch",
+    message: `${customerName} đã hủy lịch xem "${propertyName}" vào ngày ${bookingDate} lúc ${bookingTime}.`,
     type: "warning",
   });
 };
@@ -164,12 +164,12 @@ const notifyBookingReminder = async ({
   propertyId,
 }) => {
   const roleText = isLandlord
-    ? "You have a viewing appointment"
-    : "Don't forget your viewing appointment";
+    ? "Bạn có lịch cho khách xem"
+    : "Đừng quên lịch hẹn xem";
   await createNotification({
     userId,
-    title: "⏰ Appointment Reminder",
-    message: `${roleText} for "${propertyName}" at ${bookingTime}.`,
+    title: "⏰ Nhắc nhở lịch hẹn",
+    message: `${roleText} "${propertyName}" lúc ${bookingTime}.`,
     type: "info",
     link: propertyId ? `/room/${propertyId}` : undefined,
   });
