@@ -25,6 +25,7 @@ import {
 } from "lucide-react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import api from "../../utils/api";
+import CustomAlert from "@/components/CustomAlert";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -36,6 +37,17 @@ export default function ProfileScreen() {
   const [landlordStats, setLandlordStats] = useState<any>(null);
   const [landlordBookings, setLandlordBookings] = useState<any[]>([]);
   const [landlordProperties, setLandlordProperties] = useState<any[]>([]);
+
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    type: "success" as "success" | "error" | "info",
+    onConfirm: () => {},
+    confirmText: "OK",
+    onCancel: undefined as (() => void) | undefined,
+    cancelText: "Hủy",
+  });
 
   // Function to load all data based on user role
   const fetchProfileData = useCallback(async () => {
@@ -73,21 +85,31 @@ export default function ProfileScreen() {
   }, [navigation, fetchProfileData]);
 
   const handleLogout = () => {
-    Alert.alert(
-      "Đăng xuất",
-      "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Xác nhận",
-          style: "destructive",
-          onPress: async () => {
-            await logout();
+    setAlertConfig({
+      visible: true,
+      title: "Đăng xuất",
+      message: "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?",
+      type: "info",
+      confirmText: "Xác nhận",
+      cancelText: "Hủy",
+      onCancel: () => setAlertConfig(prev => ({ ...prev, visible: false })),
+      onConfirm: async () => {
+        await logout();
+        setAlertConfig({
+          visible: true,
+          title: "Đăng xuất thành công",
+          message: "Bạn đã đăng xuất khỏi tài khoản.",
+          type: "success",
+          confirmText: "OK",
+          onCancel: undefined,
+          cancelText: "",
+          onConfirm: () => {
+            setAlertConfig(prev => ({ ...prev, visible: false }));
             navigateTo(router, ROUTES.HOME, true);
-          },
-        },
-      ],
-    );
+          }
+        });
+      }
+    });
   };
 
   const handlePostRoom = () => {
@@ -799,6 +821,7 @@ export default function ProfileScreen() {
           </View>
         )}
       </ScrollView>
+      <CustomAlert {...alertConfig} />
     </SafeAreaView>
   );
 }
