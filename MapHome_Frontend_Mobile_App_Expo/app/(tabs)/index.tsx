@@ -509,8 +509,8 @@ export default function HomePage() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 16 }}
             >
-              {verifiedProperties.map((item) => (
-                <View key={item.id} className="w-[300px] mr-4 pb-4">
+              {verifiedProperties.map((item, index) => (
+                <View key={item._id || item.id || index} className="w-[300px] mr-4 pb-4">
                   <PropertyCard
                     property={item}
                     onPress={() => navigateTo(router, ROUTES.ROOM(item.id))}
@@ -629,8 +629,8 @@ export default function HomePage() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: 16 }}
             >
-              {testimonials.map((t) => (
-                <View key={t.id} className="w-[320px] mr-4 pb-6 pt-4">
+              {testimonials.map((t, index) => (
+                <View key={t._id || t.id || index} className="w-[320px] mr-4 pb-6 pt-4">
                   <View className="bg-white rounded-[40px] p-6 shadow-xl shadow-green-900/10 border border-slate-50 relative">
                     <View className="absolute -top-4 -right-4 w-12 h-12 bg-white rounded-2xl shadow-md items-center justify-center border border-green-50 z-10">
                       <Quote size={20} color="#22c55e" opacity={0.5} />
@@ -705,9 +705,9 @@ export default function HomePage() {
               </TouchableOpacity>
             </View>
 
-            {blogPosts.map((post) => (
+            {blogPosts.map((post, index) => (
               <TouchableOpacity
-                key={post.id}
+                key={post._id || post.id || index}
                 onPress={() => navigateTo(router, ROUTES.BLOG)}
                 className="bg-white rounded-[24px] overflow-hidden mb-6 shadow-lg shadow-slate-200/50 border border-slate-100"
               >

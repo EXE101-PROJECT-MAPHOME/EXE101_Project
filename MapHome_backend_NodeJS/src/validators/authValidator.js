@@ -37,20 +37,15 @@ const registerRules = [
     .withMessage("Password is required")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long")
-    .matches(/[a-z]/)
-    .withMessage("Password must contain at least one lowercase letter")
     .matches(/[A-Z]/)
     .withMessage("Password must contain at least one uppercase letter")
     .matches(/[0-9]/)
-    .withMessage("Password must contain at least one number")
-    .matches(/[!@#$%^&*(),.?":{}|<>]/)
-    .withMessage("Password must contain at least one special character"),
+    .withMessage("Password must contain at least one number"),
 
   body("confirmPassword")
-    .notEmpty()
-    .withMessage("Confirmation password is required")
+    .optional()
     .custom((value, { req }) => {
-      if (value !== req.body.password) {
+      if (value && value !== req.body.password) {
         throw new Error("Passwords do not match");
       }
       return true;
@@ -116,20 +111,15 @@ const resetPasswordRules = [
     .withMessage("New password is required")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long")
-    .matches(/[a-z]/)
-    .withMessage("Password must contain at least one lowercase letter")
     .matches(/[A-Z]/)
     .withMessage("Password must contain at least one uppercase letter")
     .matches(/[0-9]/)
-    .withMessage("Password must contain at least one number")
-    .matches(/[!@#$%^&*(),.?":{}|<>]/)
-    .withMessage("Password must contain at least one special character"),
+    .withMessage("Password must contain at least one number"),
 
   body("confirmPassword")
-    .notEmpty()
-    .withMessage("Confirmation password is required")
+    .optional()
     .custom((value, { req }) => {
-      if (value !== req.body.newPassword) {
+      if (value && value !== req.body.newPassword) {
         throw new Error("Passwords do not match");
       }
       return true;
@@ -146,14 +136,10 @@ const changePasswordRules = [
     .withMessage("New password is required")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long")
-    .matches(/[a-z]/)
-    .withMessage("Password must contain at least one lowercase letter")
     .matches(/[A-Z]/)
     .withMessage("Password must contain at least one uppercase letter")
     .matches(/[0-9]/)
-    .withMessage("Password must contain at least one number")
-    .matches(/[!@#$%^&*(),.?":{}|<>]/)
-    .withMessage("Password must contain at least one special character"),
+    .withMessage("Password must contain at least one number"),
 
   body("confirmPassword")
     .optional()
