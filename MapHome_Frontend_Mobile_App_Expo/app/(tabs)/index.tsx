@@ -92,15 +92,31 @@ export default function HomePage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotifLoading, setIsNotifLoading] = useState(false);
 
-  // Helper to translate common English notification phrases to Vietnamese
+  // Helper to translate old English notifications in the database to Vietnamese
   const translateNotification = (text: string) => {
     if (!text) return text;
-    const t = text.toLowerCase();
-    if (t.includes("welcome")) return "Chào mừng đến với MapHome";
-    if (t.includes("booking")) return "Cập nhật lịch hẹn của bạn";
-    if (t.includes("payment")) return "Thanh toán thành công";
-    if (t.includes("verified")) return "Phòng trọ đã được xác thực";
-    return text; // Return original if no translation matches
+    let t = text;
+
+    // Translate specific Titles
+    if (t === "Appointment Reminder") return "Nhắc nhở lịch hẹn";
+    if (t === "New Viewing Appointment!") return "Lịch hẹn xem phòng mới!";
+    if (t.includes("Viewing Appointment Cancelled")) return "Lịch hẹn đã bị hủy";
+    if (t.includes("Booking Confirmed")) return "Xác nhận lịch hẹn";
+    
+    // Translate specific Messages using Regex
+    t = t.replace(/You have a viewing appointment for "(.*?)" at (.*?)\./g, "Bạn có lịch hẹn xem phòng \"$1\" vào lúc $2.");
+    t = t.replace(/(.*?) has requested to view "(.*?)" on [a-zA-Z]+, (.*?) at (.*?)\./g, "$1 đã yêu cầu xem phòng \"$2\" vào ngày $3 lúc $4.");
+
+    // Fallbacks
+    t = t.replace(/has requested to view/g, "đã yêu cầu xem");
+    t = t.replace(/You have a viewing appointment/g, "Bạn có lịch hẹn xem phòng");
+    
+    const tLower = t.toLowerCase();
+    if (tLower.includes("welcome")) return "Chào mừng đến với MapHome";
+    if (tLower.includes("payment")) return "Thanh toán thành công";
+    if (tLower.includes("verified")) return "Phòng trọ đã được xác thực";
+    
+    return t; 
   };
 
   const getNotificationStyle = (type: string, title: string = "") => {
@@ -869,14 +885,14 @@ export default function HomePage() {
                       <View className="flex-1 pt-1">
                         <View className="flex-row items-center mb-1">
                           <Text className={`font-black text-[15px] flex-1 ${style.textColor} ${notif.isRead ? 'opacity-70' : ''}`}>
-                            {notif.title}
+                            {translateNotification(notif.title)}
                           </Text>
                           {!notif.isRead && (
                             <View className={`w-2 h-2 rounded-full ${style.accentColor} ml-2`} />
                           )}
                         </View>
                         <Text className={`text-[13px] leading-relaxed ${notif.isRead ? 'text-slate-400' : 'text-slate-700 font-medium'}`}>
-                          {notif.message}
+                          {translateNotification(notif.message)}
                         </Text>
                         {notif.createdAt && (
                           <Text className="text-[10px] text-slate-400 font-bold mt-3 uppercase tracking-wider">
