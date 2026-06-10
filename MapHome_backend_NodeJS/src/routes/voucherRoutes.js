@@ -5,7 +5,6 @@ const {
   getVouchers,
   getVoucherById,
   updateVoucher,
-  updateVoucher,
   deleteVoucher,
   validateVoucher,
   getPromotedVouchers,
