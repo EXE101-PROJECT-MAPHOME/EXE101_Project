@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProperties } from "@/app/contexts/useProperties";
+import { useAuth } from "@/app/contexts/AuthContext";
 import { PropertyCard } from "@/app/components/PropertyCard";
 import { Footer } from "@/app/components/Footer";
 import { Navbar } from "@/app/components/Navbar";
@@ -192,6 +193,7 @@ export function HomePage() {
   }, []);
 
   const { properties } = useProperties();
+  const { user } = useAuth();
   const verifiedProperties = properties
     .filter((p) => p.verificationLevel === "verified")
     .slice(0, 8);
@@ -235,7 +237,7 @@ export function HomePage() {
 
       <main className="flex-1 w-full">
         {/* ━━━ Promoted Vouchers ━━━ */}
-        {promotedVouchers.length > 0 && (
+        {user?.role === "landlord" && promotedVouchers.length > 0 && (
           <section className="bg-slate-50 py-8 border-b border-slate-100">
             <div className="max-w-7xl mx-auto px-4">
               <div className="flex items-center gap-2 mb-6">

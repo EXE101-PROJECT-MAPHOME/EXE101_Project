@@ -317,7 +317,7 @@ export default function HomePage() {
         <HeroCarousel />
 
         {/* ━━━ Promoted Vouchers ━━━ */}
-        {promotedVouchers.length > 0 && (
+        {user?.role === "landlord" && promotedVouchers.length > 0 && (
           <Animated.View entering={FadeInDown.delay(100).springify()} className="bg-slate-50 py-6 border-b border-slate-100">
             <View className="px-4 flex-row items-center mb-4">
               <View className="bg-emerald-100 p-2 rounded-xl mr-2">

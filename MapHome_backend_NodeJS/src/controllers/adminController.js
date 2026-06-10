@@ -6,6 +6,7 @@ const Booking = require("../models/Booking");
 const Review = require("../models/Review");
 const Transaction = require("../models/Transaction");
 const Subscription = require("../models/Subscription");
+const { uploadToCloudinary } = require("../services/cloudinaryService");
 
 
 const getDashboardStats = async (req, res) => {
@@ -160,15 +161,42 @@ const rejectVerification = async (req, res) => {
 
 const completeVerification = async (req, res) => {
   try {
-    const { badgeAwarded, inspectorNotes } = req.body;
+    const { badgeAwarded, inspectorNotes, inspectionChecklist } = req.body;
+
+    // Process files if any
+    let uploadedMediaUrls = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await uploadToCloudinary(file.buffer, "maphome/verification_media");
+        uploadedMediaUrls.push(result.secure_url);
+      }
+    }
+
+    let parsedChecklist = {};
+    if (inspectionChecklist) {
+      try {
+        parsedChecklist = typeof inspectionChecklist === "string" ? JSON.parse(inspectionChecklist) : inspectionChecklist;
+      } catch (e) {
+        console.error("Parse checklist error", e);
+      }
+    }
+
+    const updateData = {
+      status: badgeAwarded === "none" ? "rejected" : "completed",
+      completedAt: new Date(),
+      inspectorNotes: inspectorNotes || "",
+    };
+    
+    if (uploadedMediaUrls.length > 0) {
+      updateData.inspectionMedia = uploadedMediaUrls;
+    }
+    if (Object.keys(parsedChecklist).length > 0) {
+      updateData.inspectionChecklist = parsedChecklist;
+    }
 
     const verification = await VerificationRequest.findByIdAndUpdate(
       req.params.id,
-      {
-        status: badgeAwarded === "none" ? "rejected" : "completed",
-        completedAt: new Date(),
-        inspectorNotes: inspectorNotes || "",
-      },
+      updateData,
       { new: true },
     );
 
@@ -186,6 +214,8 @@ const completeVerification = async (req, res) => {
           awardedAt: new Date(),
           awardedBy: "admin", // Or req.user.id if available
           inspectionNotes: inspectorNotes || "",
+          inspectionMedia: uploadedMediaUrls,
+          inspectionChecklist: parsedChecklist,
         },
       });
     }
