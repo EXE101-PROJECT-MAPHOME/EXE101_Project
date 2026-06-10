@@ -14,6 +14,10 @@ const createVoucher = async (req, res) => {
       endDate,
       isActive,
       maxUses,
+      title,
+      description,
+      bannerImage,
+      showOnHome,
     } = req.body;
 
     // Check if code already exists
@@ -30,6 +34,10 @@ const createVoucher = async (req, res) => {
       endDate,
       isActive: isActive !== undefined ? isActive : true,
       maxUses: maxUses || null,
+      title,
+      description,
+      bannerImage,
+      showOnHome,
     });
 
     res.status(201).json(voucher);
@@ -83,6 +91,10 @@ const updateVoucher = async (req, res) => {
       endDate,
       isActive,
       maxUses,
+      title,
+      description,
+      bannerImage,
+      showOnHome,
     } = req.body;
 
     let voucher = await Voucher.findById(req.params.id);
@@ -105,6 +117,10 @@ const updateVoucher = async (req, res) => {
     if (endDate) voucher.endDate = endDate;
     if (isActive !== undefined) voucher.isActive = isActive;
     if (maxUses !== undefined) voucher.maxUses = maxUses;
+    if (title !== undefined) voucher.title = title;
+    if (description !== undefined) voucher.description = description;
+    if (bannerImage !== undefined) voucher.bannerImage = bannerImage;
+    if (showOnHome !== undefined) voucher.showOnHome = showOnHome;
 
     const updatedVoucher = await voucher.save();
     res.json(updatedVoucher);
@@ -186,6 +202,31 @@ const validateVoucher = async (req, res) => {
   }
 };
 
+// @desc    Get promoted active vouchers for home page
+// @route   GET /api/vouchers/promoted
+// @access  Public
+const getPromotedVouchers = async (req, res) => {
+  try {
+    const now = new Date();
+    const promotedVouchers = await Voucher.find({
+      showOnHome: true,
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).select("code discountPercentage title description bannerImage endDate maxUses usedCount");
+    
+    // Filter out fully used vouchers
+    const availableVouchers = promotedVouchers.filter(v => 
+      v.maxUses === null || v.usedCount < v.maxUses
+    );
+    
+    res.json(availableVouchers);
+  } catch (error) {
+    console.error("Get promoted vouchers error:", error);
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+  }
+};
+
 module.exports = {
   createVoucher,
   getVouchers,
@@ -193,4 +234,5 @@ module.exports = {
   updateVoucher,
   deleteVoucher,
   validateVoucher,
+  getPromotedVouchers,
 };
