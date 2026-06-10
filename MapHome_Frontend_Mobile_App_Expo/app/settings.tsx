@@ -22,10 +22,6 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { user, updateUser } = useAuth();
   
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [username, setUsername] = useState("");
-  
   const [isSaving, setIsSaving] = useState(false);
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -36,9 +32,6 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     if (user) {
-      setFullName(user.fullName || "");
-      setPhone(user.phone || "");
-      setUsername(user.username || "");
       setTwoFactorEnabled(user.security?.twoFactorEnabled || false);
       setLoginHistory(user.security?.loginHistory || []);
     }
@@ -50,9 +43,6 @@ export default function SettingsScreen() {
       setIsSaving(true);
       const userId = user.id || user._id;
       const res = await api.put(`/api/user/${userId}`, {
-        fullName,
-        phone,
-        username,
         security: {
           twoFactorEnabled,
           loginHistory,
@@ -132,78 +122,6 @@ export default function SettingsScreen() {
           className="flex-1"
           contentContainerStyle={{ padding: 16 }}
         >
-          {/* Thông tin cá nhân */}
-          <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-6 shadow-sm">
-            <Text className="text-base font-black text-emerald-700 mb-4">
-              Thông tin cá nhân
-            </Text>
-
-            <View className="space-y-4">
-              <View>
-                <Text className="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">
-                  Họ và tên
-                </Text>
-                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 h-12">
-                  <User size={16} color="#94a3b8" />
-                  <TextInput
-                    value={fullName}
-                    onChangeText={setFullName}
-                    className="flex-1 ml-3 font-bold text-slate-800"
-                    placeholder="Nhập họ và tên"
-                  />
-                </View>
-              </View>
-
-              <View>
-                <Text className="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">
-                  Tên đăng nhập
-                </Text>
-                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 h-12">
-                  <User size={16} color="#94a3b8" />
-                  <TextInput
-                    value={username}
-                    onChangeText={setUsername}
-                    className="flex-1 ml-3 font-bold text-slate-800"
-                    placeholder="Nhập tên đăng nhập"
-                  />
-                </View>
-              </View>
-
-              <View>
-                <Text className="text-xs font-bold text-slate-500 uppercase mb-2 ml-1">
-                  Số điện thoại
-                </Text>
-                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 h-12">
-                  <Phone size={16} color="#94a3b8" />
-                  <TextInput
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                    className="flex-1 ml-3 font-bold text-slate-800"
-                    placeholder="Nhập số điện thoại"
-                  />
-                </View>
-              </View>
-
-              <TouchableOpacity
-                onPress={handleSaveProfile}
-                disabled={isSaving}
-                className="mt-4 bg-emerald-600 h-12 rounded-2xl flex-row items-center justify-center shadow-md"
-              >
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <>
-                    <Save size={18} color="white" />
-                    <Text className="text-white font-black text-sm ml-2">
-                      Lưu thay đổi
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-
           {/* Bảo mật */}
           <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm mb-6">
             <Text className="text-base font-black text-emerald-700 mb-4">

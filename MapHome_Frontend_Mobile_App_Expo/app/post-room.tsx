@@ -215,7 +215,7 @@ export default function PostRoomScreen() {
   const handlePickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ["images"],
         allowsMultipleSelection: true,
         selectionLimit: 5 - uploadedImages.length,
         quality: 0.8,

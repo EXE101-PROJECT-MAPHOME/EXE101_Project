@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, type Href } from "expo-router";
+import { useRouter, useLocalSearchParams, type Href } from "expo-router";
 import {
   ArrowLeft,
   Heart,
@@ -29,6 +29,7 @@ import {
   Star,
   Phone,
   MessageSquare,
+  Bell,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
@@ -39,12 +40,19 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
 import * as ExpoLinking from "expo-linking";
 
-type DashboardTab = "overview" | "bookings" | "blogs" | "settings";
+type DashboardTab = "overview" | "bookings" | "blogs" | "notifications";
 
 export default function UserDashboardScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ tab?: string }>();
   const { user, isAuthenticated, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
+  const [activeTab, setActiveTab] = useState<DashboardTab>((params.tab as DashboardTab) || "overview");
+
+  useEffect(() => {
+    if (params.tab) {
+      setActiveTab(params.tab as DashboardTab);
+    }
+  }, [params.tab]);
   const [screenLoading, setScreenLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -149,7 +157,7 @@ export default function UserDashboardScreen() {
     { id: "overview", label: "Tổng quan", icon: Eye },
     { id: "bookings", label: "Lịch hẹn", icon: Calendar },
     { id: "blogs", label: "Bài viết", icon: BookOpen },
-    { id: "settings", label: "Cài đặt", icon: Settings },
+    { id: "notifications", label: "Thông báo", icon: Bell },
   ];
 
   const handleInspectionPayment = async (booking: any) => {
@@ -694,67 +702,14 @@ export default function UserDashboardScreen() {
           </View>
         )}
 
-        {/* Settings Tab */}
-        {activeTab === "settings" && (
+        {/* Notifications Tab */}
+        {activeTab === "notifications" && (
           <View>
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
-              <Text className="text-base font-black text-emerald-700 mb-4">
-                Cài đặt tài khoản
-              </Text>
-
-              <TouchableOpacity
-                onPress={() => navigateTo(router, ROUTES.PROFILE)}
-                className="flex-row items-center py-4 border-b border-slate-100 active:bg-slate-50 px-2 rounded-lg"
-              >
-                <View className="w-12 h-12 rounded-full bg-blue-50 items-center justify-center mr-3">
-                  <UserCircle size={20} color={info} />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-bold text-slate-800">
-                    Thông tin cá nhân
-                  </Text>
-                  <Text className="text-xs text-slate-500">
-                    Cập nhật hồ sơ của bạn
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => navigateTo(router, ROUTES.PROFILE)}
-                className="flex-row items-center py-4 border-b border-slate-100 active:bg-slate-50 px-2 rounded-lg"
-              >
-                <View className="w-12 h-12 rounded-full bg-amber-50 items-center justify-center mr-3">
-                  <KeyRound size={20} color={warning} />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-bold text-slate-800">Đổi mật khẩu</Text>
-                  <Text className="text-xs text-slate-500">
-                    Bảo mật tài khoản của bạn
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => navigateTo(router, ROUTES.PROFILE)}
-                className="flex-row items-center py-4 active:bg-slate-50 px-2 rounded-lg"
-              >
-                <View className="w-12 h-12 rounded-full bg-red-50 items-center justify-center mr-3">
-                  <Settings size={20} color={danger} />
-                </View>
-                <View className="flex-1">
-                  <Text className="font-bold text-slate-800">Cài đặt khác</Text>
-                  <Text className="text-xs text-slate-500">
-                    Tùy chỉnh trải nghiệm của bạn
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
             {/* Notifications Section */}
             <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-base font-black text-emerald-700">
-                  Thông báo gần đây
+                  Thông báo của bạn
                 </Text>
                 {notifications.length > 0 && (
                   <View className="bg-blue-50 px-3 py-1 rounded-full">
@@ -770,10 +725,10 @@ export default function UserDashboardScreen() {
                   Không có thông báo nào
                 </Text>
               ) : (
-                notifications.slice(0, 3).map((notif, idx) => (
+                notifications.map((notif, idx) => (
                   <View
                     key={notif._id || idx}
-                    className="py-2 border-b border-slate-100"
+                    className="py-3 border-b border-slate-100"
                   >
                     <Text className="font-bold text-slate-800 text-sm">
                       {notif.title}

@@ -459,13 +459,19 @@ export default function ProfileScreen() {
                     title: "Thông tin cá nhân",
                     desc: "Họ tên, SĐT, Căn cước công dân",
                     icon: UserIcon,
+                    path: "/personal-info",
+                  },
+                  {
+                    title: "Liên hệ hỗ trợ",
+                    desc: "Góp ý, báo lỗi, trợ giúp",
+                    icon: Mail,
                     path: "/contact",
                   },
                   {
                     title: "Cài đặt tài khoản",
                     desc: "Bảo mật, thông báo ứng dụng",
                     icon: Settings,
-                    path: "/policy",
+                    path: "/settings",
                   },
                   {
                     title: "Blog & Kiến thức",
@@ -745,8 +751,14 @@ export default function ProfileScreen() {
                   path: ROUTES.LANDLORD_VERIFICATION,
                 },
                 {
+                  title: "Thông tin cá nhân",
+                  desc: "Họ tên, SĐT, Căn cước công dân",
+                  icon: UserIcon,
+                  path: "/personal-info",
+                },
+                {
                   title: "Cài đặt tài khoản",
-                  desc: "Bảo mật, thông tin cá nhân",
+                  desc: "Bảo mật, đăng nhập",
                   icon: Settings,
                   path: ROUTES.LANDLORD_SETTINGS,
                 },
