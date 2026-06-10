@@ -72,6 +72,7 @@ export default function RegisterScreen() {
     title: "",
     message: "",
     type: "success" as "success" | "error" | "info",
+    hideButtons: false,
     onConfirm: () => {},
   });
 
@@ -216,13 +217,15 @@ export default function RegisterScreen() {
         setAlertConfig({
           visible: true,
           title: "Đăng ký thành công",
-          message: "Tài khoản của bạn đã được tạo thành công. Vui lòng đăng nhập để tiếp tục.",
+          message: "Tài khoản của bạn đã được tạo thành công. Đang chuyển hướng...",
           type: "success",
-          onConfirm: () => {
-            setAlertConfig(prev => ({ ...prev, visible: false }));
-            navigateTo(router, ROUTES.LOGIN, true);
-          }
+          hideButtons: true,
+          onConfirm: () => {},
         });
+        setTimeout(() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          navigateTo(router, ROUTES.LOGIN, true);
+        }, 1500);
       } else {
         setError(
           res.message || "Đăng ký tài khoản thất bại. Vui lòng thử lại.",
