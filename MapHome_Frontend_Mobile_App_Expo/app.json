@@ -51,7 +51,13 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Ứng dụng cần quyền truy cập thư viện ảnh để bạn có thể chọn avatar và đăng ảnh phòng trọ."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -10,7 +10,7 @@ import {
   Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import {
   ArrowLeft,
@@ -44,8 +44,15 @@ type AdminView =
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ view?: string }>();
   const { user, isAuthenticated, loading } = useAuth();
-  const [view, setView] = useState<AdminView>("dashboard");
+  const [view, setView] = useState<AdminView>((params.view as AdminView) || "dashboard");
+
+  useEffect(() => {
+    if (params.view) {
+      setView(params.view as AdminView);
+    }
+  }, [params.view]);
   const [screenLoading, setScreenLoading] = useState(true);
 
   const [stats, setStats] = useState<any>(null);
@@ -221,7 +228,7 @@ export default function AdminDashboardScreen() {
             { id: "reports", label: "Báo cáo", icon: AlertTriangle },
             { id: "transactions", label: "Giao dịch", icon: CreditCard },
             { id: "vouchers", label: "Voucher", icon: Ticket },
-            { id: "settings", label: "Cài đặt", icon: Settings },
+            { id: "settings", label: "Hệ thống", icon: Settings },
           ].map((item) => (
             <TouchableOpacity
               key={item.id}
