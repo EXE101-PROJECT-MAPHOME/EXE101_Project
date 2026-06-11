@@ -97,6 +97,7 @@ app.use("/api/contacts", require("./routes/contactRoutes"));
 
 app.use("/api/map", require("./routes/mapRoutes"));
 app.use("/api/vouchers", require("./routes/voucherRoutes"));
+app.use("/api/locations", require("./routes/locationRoutes"));
 
 app.get("/", (req, res) => res.send("API is running..."));
 
