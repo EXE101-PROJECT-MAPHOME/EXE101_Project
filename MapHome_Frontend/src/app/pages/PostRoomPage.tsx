@@ -518,9 +518,10 @@ export function PostRoomPage() {
           } else {
             toast.error("Lỗi khi tải ảnh lên " + file.name);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Upload error:", err);
-          toast.error("Lỗi kết nối khi tải ảnh " + file.name);
+          const errorMsg = err.response?.data?.message || err.message || "Lỗi không xác định";
+          toast.error(`Lỗi tải ảnh ${file.name}: ${errorMsg}`);
         }
       }
 
@@ -542,7 +543,7 @@ export function PostRoomPage() {
       return;
     }
 
-    if (!user?.id) {
+    if (!user?.id && !(user as any)?._id) {
       toast.error("Lỗi: Vui lòng đăng nhập lại! 🔐");
       return;
     }
@@ -567,7 +568,7 @@ export function PostRoomPage() {
       // Note: landlordId will be set by backend from req.user
       pinInfo: {
         pinnedAt: new Date().toISOString(),
-        pinnedBy: user?.id || "unknown",
+        pinnedBy: user?.id || (user as any)?._id || "unknown",
         note: pinNote || undefined,
       },
     };
