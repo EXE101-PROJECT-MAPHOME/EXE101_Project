@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
+  Modal,
+  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -41,6 +43,7 @@ import {
   ArrowLeft,
   Upload,
   X,
+  ChevronDown,
 } from "lucide-react-native";
 import Animated, { FadeInDown, FadeInRight, FadeOutLeft } from "react-native-reanimated";
 import api from "@/utils/api";
@@ -84,6 +87,43 @@ export default function PostRoomScreen() {
   const [pinnedLocation, setPinnedLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+
+  // ── Location pickers (API-backed) ────────────────────────────────────────
+  type LocationItem = { code: number; name: string };
+  const [districts, setDistricts] = useState<LocationItem[]>([]);
+  const [wards, setWards] = useState<LocationItem[]>([]);
+  const [selectedDistrict, setSelectedDistrict] = useState<LocationItem | null>(null);
+  const [selectedWard, setSelectedWard] = useState<LocationItem | null>(null);
+  const [street, setStreet] = useState("");
+  const [pickerVisible, setPickerVisible] = useState<"district" | "ward" | null>(null);
+
+  // Fetch districts (TP.HCM code = 79) on mount
+  useEffect(() => {
+    api.get("/api/locations/districts/79")
+      .then(res => setDistricts(res.data))
+      .catch(() => {});
+  }, []);
+
+  // Fetch wards when district changes
+  useEffect(() => {
+    if (selectedDistrict) {
+      setSelectedWard(null);
+      setWards([]);
+      api.get(`/api/locations/wards/${selectedDistrict.code}`)
+        .then(res => setWards(res.data))
+        .catch(() => {});
+    }
+  }, [selectedDistrict]);
+
+  // Build full address string
+  const fullAddress = useMemo(() => {
+    const parts: string[] = [];
+    if (street) parts.push(street);
+    if (selectedWard) parts.push(selectedWard.name);
+    if (selectedDistrict) parts.push(selectedDistrict.name);
+    parts.push("TP. Hồ Chí Minh");
+    return parts.join(", ");
+  }, [street, selectedWard, selectedDistrict]);
   
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const p = 0.017453292519943295; // Math.PI / 180
@@ -129,8 +169,8 @@ export default function PostRoomScreen() {
 
   const handleNext = () => {
     if (step === "info") {
-      if (!formData.name || !formData.price || !formData.area || !formData.address || !formData.phone) {
-        Alert.alert("Thiếu thông tin", "Vui lòng điền đầy đủ các thông tin bắt buộc (*).");
+      if (!formData.name || !formData.price || !formData.area || !formData.phone || !selectedDistrict || !selectedWard) {
+        Alert.alert("Thiếu thông tin", "Vui lòng điền đầy đủ các thông tin bắt buộc (*), bao gồm Quận/Huyện và Phường/Xã.");
         return;
       }
     } else if (step === "pin-map") {
@@ -267,7 +307,7 @@ export default function PostRoomScreen() {
         name: formData.name,
         price: Number(formData.price),
         area: Number(formData.area),
-        address: formData.address,
+        address: fullAddress,
         description: formData.description,
         phone: formData.phone,
         amenities: amenities,
@@ -398,16 +438,100 @@ export default function PostRoomScreen() {
               </View>
 
               <View className="bg-white p-5 rounded-[24px] mb-6 shadow-sm border border-slate-100">
-                <Text className="text-sm font-bold text-slate-600 mb-2">Địa chỉ đầy đủ *</Text>
+                <Text className="text-sm font-bold text-slate-600 mb-4">Địa chỉ *</Text>
+
+                {/* District Picker */}
+                <Text className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Quận / Huyện *</Text>
+                <TouchableOpacity
+                  onPress={() => setPickerVisible("district")}
+                  className="flex-row items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 mb-3"
+                >
+                  <Text className={selectedDistrict ? "text-slate-800 font-medium text-base" : "text-slate-400 text-base"}>
+                    {selectedDistrict ? selectedDistrict.name : "Chọn quận / huyện"}
+                  </Text>
+                  <ChevronDown size={18} color="#94a3b8" />
+                </TouchableOpacity>
+
+                {/* Ward Picker */}
+                <Text className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Phường / Xã *</Text>
+                <TouchableOpacity
+                  onPress={() => selectedDistrict ? setPickerVisible("ward") : Alert.alert("Chưa chọn quận", "Vui lòng chọn Quận/Huyện trước.")}
+                  className={`flex-row items-center justify-between bg-slate-50 p-4 rounded-xl border mb-3 ${
+                    selectedDistrict ? "border-slate-200" : "border-slate-100 opacity-60"
+                  }`}
+                >
+                  <Text className={selectedWard ? "text-slate-800 font-medium text-base" : "text-slate-400 text-base"}>
+                    {selectedWard ? selectedWard.name : "Chọn phường / xã"}
+                  </Text>
+                  <ChevronDown size={18} color="#94a3b8" />
+                </TouchableOpacity>
+
+                {/* Street input */}
+                <Text className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Số nhà / Tên đường</Text>
                 <TextInput
-                  className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-base min-h-[100px]"
-                  placeholder="VD: Số 123, Phường Bến Nghé, Quận 1, TP.HCM"
-                  multiline
-                  textAlignVertical="top"
-                  value={formData.address}
-                  onChangeText={(text) => setFormData({ ...formData, address: text })}
+                  className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-base"
+                  placeholder="VD: 123 Nguyễn Trãi"
+                  value={street}
+                  onChangeText={setStreet}
                 />
+
+                {/* Full address preview */}
+                {(selectedDistrict || selectedWard || street) ? (
+                  <View className="mt-3 bg-indigo-50 px-4 py-3 rounded-xl border border-indigo-100">
+                    <Text className="text-xs font-bold text-indigo-500 uppercase tracking-wider mb-1">Địa chỉ đầy đủ</Text>
+                    <Text className="text-slate-700 font-medium text-sm">{fullAddress}</Text>
+                  </View>
+                ) : null}
               </View>
+
+              {/* Picker Modal */}
+              <Modal
+                visible={pickerVisible !== null}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setPickerVisible(null)}
+              >
+                <TouchableOpacity
+                  className="flex-1 bg-black/40"
+                  activeOpacity={1}
+                  onPress={() => setPickerVisible(null)}
+                />
+                <View className="bg-white rounded-t-[28px] max-h-[60%] pb-8">
+                  <View className="w-12 h-1.5 bg-slate-300 rounded-full self-center mt-4 mb-4" />
+                  <Text className="text-base font-black text-slate-800 px-5 mb-3">
+                    {pickerVisible === "district" ? "Chọn Quận / Huyện" : "Chọn Phường / Xã"}
+                  </Text>
+                  <FlatList
+                    data={pickerVisible === "district" ? districts : wards}
+                    keyExtractor={(item) => item.code.toString()}
+                    renderItem={({ item }) => {
+                      const isSelected = pickerVisible === "district"
+                        ? selectedDistrict?.code === item.code
+                        : selectedWard?.code === item.code;
+                      return (
+                        <TouchableOpacity
+                          onPress={() => {
+                            if (pickerVisible === "district") {
+                              setSelectedDistrict(item);
+                            } else {
+                              setSelectedWard(item);
+                            }
+                            setPickerVisible(null);
+                          }}
+                          className={`px-5 py-4 border-b border-slate-50 flex-row items-center justify-between ${
+                            isSelected ? "bg-indigo-50" : ""
+                          }`}
+                        >
+                          <Text className={`text-base ${
+                            isSelected ? "text-indigo-600 font-bold" : "text-slate-700 font-medium"
+                          }`}>{item.name}</Text>
+                          {isSelected && <CheckCircle2 size={18} color="#4f46e5" />}
+                        </TouchableOpacity>
+                      );
+                    }}
+                  />
+                </View>
+              </Modal>
 
               <View className="bg-white p-5 rounded-[24px] mb-6 shadow-sm border border-slate-100">
                 <Text className="text-sm font-bold text-slate-600 mb-4">Tiện nghi phòng</Text>
