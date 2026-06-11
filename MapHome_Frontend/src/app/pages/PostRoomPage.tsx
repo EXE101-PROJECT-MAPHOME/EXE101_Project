@@ -267,28 +267,31 @@ export function PostRoomPage() {
   ): T | undefined => {
     const normalized = normalizeName(searchName);
 
-    // Try exact match first
+    // 1. Try exact match first
     const exact = items.find((item) => normalizeName(item.name) === normalized);
     if (exact) return exact;
 
-    // Try partial match (contains)
-    const partial = items.find(
-      (item) =>
-        normalizeName(item.name).includes(normalized) ||
-        normalized.includes(normalizeName(item.name)),
-    );
+    // 2. Try word boundary match (prevents "3" matching inside "435")
+    const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    const partial = items.find((item) => {
+      const itemNorm = normalizeName(item.name);
+      if (!itemNorm) return false;
+      // Use word boundaries. E.g. \b3\b will match "Quận 3" but NOT "435"
+      const regexItem = new RegExp(`\\b${escapeRegExp(itemNorm)}\\b`);
+      const regexSearch = new RegExp(`\\b${escapeRegExp(normalized)}\\b`);
+      return regexItem.test(normalized) || regexSearch.test(itemNorm);
+    });
     if (partial) return partial;
 
-    // Try matching numbers (e.g., "Quận 1" → "1")
-    const numberMatch = normalized.match(/\d+/);
+    // 3. Try matching isolated numbers as a last resort
+    const numberMatch = normalized.match(/\b\d+\b/);
     if (numberMatch) {
       const num = numberMatch[0];
-      const byNumber = items.find(
-        (item) =>
-          normalizeName(item.name).includes(num) &&
-          /\d+/.test(normalizeName(item.name)),
-      );
-      if (byNumber) return byNumber;
+      return items.find((item) => {
+        const itemNumberMatch = item.name.match(/\b\d+\b/);
+        return itemNumberMatch && itemNumberMatch[0] === num;
+      });
     }
 
     return undefined;
