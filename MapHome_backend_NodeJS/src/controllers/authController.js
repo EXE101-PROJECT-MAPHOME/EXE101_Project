@@ -1,8 +1,9 @@
 const bcrypt = require("bcryptjs");
+const { initializeApp, getApps } = require("firebase-admin/app");
 const admin = require("firebase-admin");
 
-if (!admin.apps.length) {
-  admin.initializeApp({ projectId: "maphome-auth" });
+if (!getApps().length) {
+  initializeApp({ projectId: "maphome-auth" });
 }
 
 const jwt = require("jsonwebtoken");
