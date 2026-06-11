@@ -547,6 +547,8 @@ router.put("/verification/:id/approve", approveVerificationRules, validate, appr
  */
 router.put("/verification/:id/reject", rejectVerificationRules, validate, rejectVerification);
 
+const { upload } = require("../middleware/uploadMiddleware");
+
 /**
  * @swagger
  * /api/admin/verification/{id}/complete:
@@ -566,6 +568,6 @@ router.put("/verification/:id/reject", rejectVerificationRules, validate, reject
  *       200:
  *         description: Verification completed and property verified
  */
-router.put("/verification/:id/complete", completeVerificationRules, validate, completeVerification);
+router.put("/verification/:id/complete", upload.array("media", 5), completeVerificationRules, validate, completeVerification);
 
 module.exports = router;

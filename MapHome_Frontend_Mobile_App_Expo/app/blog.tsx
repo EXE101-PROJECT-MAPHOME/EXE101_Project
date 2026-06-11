@@ -39,15 +39,7 @@ type BlogPost = {
   tags?: string[];
 };
 
-const CATEGORIES = [
-  "Tất cả",
-  "Kinh nghiệm",
-  "Hướng dẫn",
-  "Thị trường",
-  "Pháp luật",
-  "Mẹo hay",
-  "Tính năng",
-];
+
 
 export default function BlogScreen() {
   const router = useRouter();
@@ -60,49 +52,72 @@ export default function BlogScreen() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Tất cả");
 
+  const [categories, setCategories] = useState<string[]>(["Tất cả"]);
+  const [popularTags, setPopularTags] = useState<string[]>([]);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
   useEffect(() => {
-    const fetchData = async () => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [query]);
+
+  // Initial fetch for categories and saved posts
+  useEffect(() => {
+    const fetchInitialData = async () => {
       try {
-        setLoading(true);
-        const [blogsRes, savedRes] = await Promise.all([
-          api.get("/api/blogs").catch(() => ({ data: [] })),
+        const [catRes, tagsRes, savedRes] = await Promise.all([
+          api.get("/api/blogs/categories").catch(() => ({ data: [] })),
+          api.get("/api/blogs/tags/popular").catch(() => ({ data: [] })),
           isAuthenticated
             ? api.get("/api/blogs/me/saved").catch(() => ({ data: [] }))
             : Promise.resolve({ data: [] }),
         ]);
 
-        const mapped = (blogsRes.data || []).map((item: any) => ({
-          ...item,
-          id: item._id || item.id,
-        }));
-
-        setPosts(mapped);
+        if (catRes.data && Array.isArray(catRes.data)) {
+           setCategories(["Tất cả", ...catRes.data]);
+        }
+        
+        if (tagsRes.data && Array.isArray(tagsRes.data)) {
+           setPopularTags(tagsRes.data);
+        }
 
         const savedIds = new Set<string>(
           (savedRes.data || []).map((item: any) => String(item._id || item.id)),
         );
         setBookmarked(savedIds);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchInitialData();
+  }, [isAuthenticated]);
+
+  // Fetch blogs based on filters
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (category !== "Tất cả") params.append("category", category);
+        if (debouncedQuery) params.append("search", debouncedQuery);
+
+        const res = await api.get(`/api/blogs?${params.toString()}`);
+        const mapped = (res.data || []).map((item: any) => ({
+          ...item,
+          id: item._id || item.id,
+        }));
+        setPosts(mapped);
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
-  }, [isAuthenticated]);
-
-  const filteredPosts = useMemo(() => {
-    return posts
-      .filter((p) => category === "Tất cả" || p.category === category)
-      .filter((p) => {
-        if (!query.trim()) return true;
-        const q = query.toLowerCase();
-        return (
-          p.title?.toLowerCase().includes(q) ||
-          p.excerpt?.toLowerCase().includes(q) ||
-          (p.tags || []).some((t) => t.toLowerCase().includes(q))
-        );
-      });
-  }, [posts, category, query]);
+    fetchBlogs();
+  }, [category, debouncedQuery]);
 
   const toggleSave = async (postId: string) => {
     if (!isAuthenticated) {
@@ -177,7 +192,7 @@ export default function BlogScreen() {
           showsHorizontalScrollIndicator={false}
           className="mb-4"
         >
-          {CATEGORIES.map((item) => (
+          {categories.map((item) => (
             <TouchableOpacity
               key={item}
               onPress={() => setCategory(item)}
@@ -192,23 +207,45 @@ export default function BlogScreen() {
           ))}
         </ScrollView>
 
+        {popularTags.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-[11px] font-black uppercase text-slate-400 mb-3 tracking-widest">
+              Thẻ phổ biến
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {popularTags.map((tag) => (
+                <TouchableOpacity
+                  key={tag}
+                  onPress={() => setQuery(tag)}
+                  className="bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100"
+                >
+                  <Text className="text-emerald-700 font-bold text-[10px]">
+                    #{tag}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         {loading ? (
           <View className="py-16 items-center justify-center">
             <ActivityIndicator size="large" color="#16a34a" />
           </View>
-        ) : filteredPosts.length === 0 ? (
+        ) : posts.length === 0 ? (
           <View className="py-16 items-center justify-center">
             <Text className="text-slate-500 font-bold">
               Không có bài viết phù hợp.
             </Text>
           </View>
         ) : (
-          filteredPosts.map((post) => {
+          posts.map((post) => {
             const pid = String(post.id || post._id || "");
             const isSaved = bookmarked.has(pid);
             return (
-              <View
+              <TouchableOpacity
                 key={pid}
+                onPress={() => router.push(`/blog/${pid}` as any)}
                 className="bg-white rounded-3xl border border-slate-100 overflow-hidden mb-4"
               >
                 {post.image ? (
@@ -273,7 +310,7 @@ export default function BlogScreen() {
                     </View>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })
         )}

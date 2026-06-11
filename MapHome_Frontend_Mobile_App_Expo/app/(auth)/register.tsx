@@ -10,9 +10,11 @@ import {
   ActivityIndicator,
   StatusBar,
   Modal,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import ROUTES, { navigateTo } from "@/constants/routes";
+import CustomAlert from "@/components/CustomAlert";
 import {
   User,
   Lock,
@@ -65,6 +67,14 @@ export default function RegisterScreen() {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    type: "success" as "success" | "error" | "info",
+    hideButtons: false,
+    onConfirm: () => {},
+  });
 
   const [errors, setErrors] = useState<FormErrors>({
     fullName: "",
@@ -204,11 +214,18 @@ export default function RegisterScreen() {
       });
       setLoading(false);
       if (res.success) {
-        if (role === "landlord") {
-          navigateTo(router, ROUTES.LANDLORD_DASHBOARD, true);
-        } else {
-          navigateTo(router, ROUTES.HOME, true);
-        }
+        setAlertConfig({
+          visible: true,
+          title: "Đăng ký thành công",
+          message: "Tài khoản của bạn đã được tạo thành công. Đang chuyển hướng...",
+          type: "success",
+          hideButtons: true,
+          onConfirm: () => {},
+        });
+        setTimeout(() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          navigateTo(router, ROUTES.LOGIN, true);
+        }, 1500);
       } else {
         setError(
           res.message || "Đăng ký tài khoản thất bại. Vui lòng thử lại.",
@@ -855,6 +872,7 @@ export default function RegisterScreen() {
           </View>
         </View>
       </ScrollView>
+      <CustomAlert {...alertConfig} />
     </KeyboardAvoidingView>
   );
 }

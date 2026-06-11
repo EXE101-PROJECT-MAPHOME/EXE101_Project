@@ -62,12 +62,6 @@ export function Footer() {
             <h4 className="font-semibold text-white mb-2.5 sm:mb-3 text-sm">Tài nguyên</h4>
             <ul className="space-y-1 sm:space-y-1.5 text-[11px] sm:text-xs">
               <li>
-                <Link to="/blog" className="hover:text-green-400 transition-colors flex items-center gap-1.5">
-                  <MessageCircle className="size-3" />
-                  Blog
-                </Link>
-              </li>
-              <li>
                 <Link to="/policy" className="hover:text-green-400 transition-colors flex items-center gap-1.5">
                   <FileText className="size-3" />
                   Chính sách
@@ -88,7 +82,7 @@ export function Footer() {
             <ul className="space-y-1 sm:space-y-1.5 text-[11px] sm:text-xs">
               <li className="flex items-start gap-1.5">
                 <Mail className="size-3 mt-0.5 flex-shrink-0" />
-                <span>support@maphome.vn</span>
+                <span>Maphome2026@gmail.com</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <Home className="size-3 mt-0.5 flex-shrink-0" />

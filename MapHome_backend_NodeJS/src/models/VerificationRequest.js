@@ -15,6 +15,13 @@ const VerificationRequestSchema = new mongoose.Schema({
   completedAt: { type: Date },
   badgeAwarded: { type: String, enum: ['none', 'verified'] },
   inspectorNotes: { type: String },
+  inspectionMedia: { type: [String], default: [] },
+  inspectionChecklist: {
+    isAccurate: { type: Boolean, default: false },
+    hasAmenities: { type: Boolean, default: false },
+    isSecure: { type: Boolean, default: false },
+    isLegal: { type: Boolean, default: false }
+  },
   requesterType: { type: String, enum: ['landlord', 'user'], required: true },
   requesterId: { type: String, required: true },
   requesterName: { type: String, required: true },

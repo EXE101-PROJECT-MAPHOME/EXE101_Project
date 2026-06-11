@@ -26,11 +26,13 @@ import {
   Eye,
   Clock,
   CheckCircle2,
+  Ticket,
 } from "lucide-react-native";
 import api from "@/utils/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import * as Clipboard from "expo-clipboard";
 
 type DashboardTab =
   | "overview"
@@ -67,17 +69,20 @@ export default function LandlordDashboardScreen() {
   const [leads, setLeads] = useState<any[]>([]);
   const [verifications, setVerifications] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [vouchers, setVouchers] = useState<any[]>([]);
 
   const fetchData = async (activeTab: DashboardTab) => {
     try {
       setScreenLoading(true);
       if (activeTab === "overview") {
-        const [aRes, pRes] = await Promise.all([
+        const [aRes, pRes, vRes] = await Promise.all([
           api.get("/api/landlord/analytics").catch(() => ({ data: null })),
           api.get("/api/landlord/properties").catch(() => ({ data: [] })),
+          api.get("/api/vouchers").catch(() => ({ data: [] })),
         ]);
         setAnalytics(aRes.data);
         setPosts(pRes.data || []);
+        setVouchers(vRes.data || []);
       }
       if (activeTab === "posts") {
         const res = await api
@@ -246,6 +251,11 @@ export default function LandlordDashboardScreen() {
     }
   };
 
+  const copyToClipboard = async (code: string) => {
+    await Clipboard.setStringAsync(code);
+    Alert.alert("Thành công", `Đã sao chép mã voucher: ${code}`);
+  };
+
   if (loading || screenLoading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
@@ -389,6 +399,65 @@ export default function LandlordDashboardScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+
+            {/* Voucher Section */}
+            {vouchers.length > 0 && (
+              <LinearGradient
+                colors={['#10b981', '#3b82f6', '#6366f1']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="rounded-3xl p-5 mb-4 shadow-sm"
+              >
+                <View className="flex-row items-center mb-3">
+                  <View className="w-10 h-10 items-center justify-center bg-white/20 rounded-2xl mr-3">
+                    <Ticket size={20} color="white" />
+                  </View>
+                  <View>
+                    <Text className="text-white font-black text-lg">
+                      Ưu Đãi Đặc Quyền Hôm Nay
+                    </Text>
+                    <Text className="text-emerald-50 text-xs font-semibold">
+                      Nhập mã khi thanh toán để nhận khuyến mãi
+                    </Text>
+                  </View>
+                </View>
+
+                {vouchers.map((voucher) => (
+                  <View
+                    key={voucher._id || voucher.id}
+                    className="bg-white rounded-2xl p-4 mb-3 flex-row items-center justify-between border border-slate-100"
+                  >
+                    <View className="flex-row items-center flex-1 mr-2">
+                      <View className="items-center justify-center bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl mr-3">
+                        <Text className="text-emerald-700 font-black text-lg">
+                          {voucher.discountPercentage}%
+                        </Text>
+                        <Text className="text-emerald-600 font-bold text-[9px] uppercase tracking-wider">
+                          GIẢM
+                        </Text>
+                      </View>
+                      <View className="flex-1">
+                        <Text className="font-black text-slate-800 text-sm" numberOfLines={1}>
+                          Giảm {voucher.discountPercentage}% hóa đơn
+                        </Text>
+                        <Text className="text-[10px] text-slate-500 mt-0.5" numberOfLines={1}>
+                          {voucher.description || "Áp dụng cho mọi dịch vụ tin đăng"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={() => copyToClipboard(voucher.code)}
+                      className="bg-emerald-600 px-3 py-2 rounded-xl active:opacity-80"
+                    >
+                      <Text className="text-white font-black text-xs uppercase">
+                        Lưu mã
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </LinearGradient>
+            )}
 
             {/* Recent Posts */}
             <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
@@ -585,27 +654,26 @@ export default function LandlordDashboardScreen() {
                             "Khách thuê"}
                         </Text>
                       </View>
-                      <View
-                        className={`px-2 py-1 rounded-full ${
-                          booking.status === "confirmed"
-                            ? "bg-emerald-50"
-                            : "bg-amber-50"
-                        }`}
-                      >
-                        <Text
-                          className={`text-[10px] font-bold ${
-                            booking.status === "confirmed"
-                              ? "text-emerald-700"
-                              : "text-amber-700"
-                          }`}
-                        >
-                          {booking.status === "confirmed"
-                            ? "✓ Duyệt"
-                            : booking.status === "pending"
-                              ? "⏳ Chờ"
-                              : "✕ Hủy"}
-                        </Text>
-                      </View>
+                      {(() => {
+                        const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+                          pending: { bg: "bg-amber-50 border-amber-200", text: "text-amber-700", label: "⏳ Chờ xác nhận" },
+                          confirmed: { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", label: "✓ Đã xác nhận" },
+                          cancelled: { bg: "bg-red-50 border-red-200", text: "text-red-700", label: "✕ Đã hủy" },
+                          completed: { bg: "bg-blue-50 border-blue-200", text: "text-blue-700", label: "✓ Đã hoàn thành" },
+                        };
+                        const config = statusConfig[booking.status] || {
+                          bg: "bg-slate-50 border-slate-200",
+                          text: "text-slate-700",
+                          label: booking.status,
+                        };
+                        return (
+                          <View className={`px-2.5 py-1 rounded-full border ${config.bg}`}>
+                            <Text className={`text-[10px] font-black uppercase ${config.text}`}>
+                              {config.label}
+                            </Text>
+                          </View>
+                        );
+                      })()}
                     </View>
 
                     <View className="flex-row items-center mt-2 mb-3">

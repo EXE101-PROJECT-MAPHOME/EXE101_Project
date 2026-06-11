@@ -26,6 +26,10 @@ export function AdminVoucherView() {
     endDate: "",
     maxUses: "",
     isActive: true,
+    title: "",
+    description: "",
+    bannerImage: "",
+    showOnHome: false,
   });
 
   const fetchVouchers = async () => {
@@ -57,6 +61,10 @@ export function AdminVoucherView() {
         endDate: new Date(newVoucher.endDate).toISOString(),
         maxUses: newVoucher.maxUses ? Number(newVoucher.maxUses) : null,
         isActive: newVoucher.isActive,
+        title: newVoucher.title,
+        description: newVoucher.description,
+        bannerImage: newVoucher.bannerImage,
+        showOnHome: newVoucher.showOnHome,
       });
       toast.success("Tạo voucher thành công!");
       setIsCreating(false);
@@ -67,6 +75,10 @@ export function AdminVoucherView() {
         endDate: "",
         maxUses: "",
         isActive: true,
+        title: "",
+        description: "",
+        bannerImage: "",
+        showOnHome: false,
       });
       fetchVouchers();
     } catch (error: any) {
@@ -190,7 +202,50 @@ export function AdminVoucherView() {
                 className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 focus:bg-white outline-none transition-all"
               />
             </div>
-            <div className="flex items-center justify-start pt-8">
+            
+            {/* Promotional Fields */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 border-t border-slate-100 pt-6 mt-2">
+              <h4 className="text-sm font-black text-indigo-900 mb-4 tracking-tight">Cấu hình Quảng cáo (Tùy chọn)</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2">
+                    Tiêu đề quảng cáo
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: Siêu Sale Mùa Tựu Trường"
+                    value={newVoucher.title}
+                    onChange={(e) => setNewVoucher({ ...newVoucher, title: e.target.value })}
+                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2">
+                    Mô tả quảng cáo
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: Giảm 50% gói VIP cho sinh viên"
+                    value={newVoucher.description}
+                    onChange={(e) => setNewVoucher({ ...newVoucher, description: e.target.value })}
+                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-2">
+                    Link ảnh Banner (URL)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: https://example.com/banner.jpg"
+                    value={newVoucher.bannerImage}
+                    onChange={(e) => setNewVoucher({ ...newVoucher, bannerImage: e.target.value })}
+                    className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 focus:bg-white outline-none transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-start pt-8 space-x-8">
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -199,6 +254,16 @@ export function AdminVoucherView() {
                   className="size-5 text-indigo-600 rounded-lg border-slate-300 focus:ring-indigo-500"
                 />
                 <span className="text-sm font-black text-slate-700">Kích hoạt ngay</span>
+              </label>
+              
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newVoucher.showOnHome}
+                  onChange={(e) => setNewVoucher({ ...newVoucher, showOnHome: e.target.checked })}
+                  className="size-5 text-emerald-600 rounded-lg border-slate-300 focus:ring-emerald-500"
+                />
+                <span className="text-sm font-black text-emerald-700">Hiển thị lên Trang chủ</span>
               </label>
             </div>
           </div>
@@ -248,7 +313,13 @@ export function AdminVoucherView() {
                     </span>
                     <h4 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">{voucher.code}</h4>
                   </div>
-                  <div className="bg-white size-16 rounded-[22px] shadow-lg shadow-indigo-100/50 flex items-center justify-center flex-col border border-indigo-50">
+                  <div className="bg-white size-16 rounded-[22px] shadow-lg shadow-indigo-100/50 flex items-center justify-center flex-col border border-indigo-50 relative">
+                    {voucher.showOnHome && (
+                      <span className="absolute -top-2 -right-2 flex h-4 w-4">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-white"></span>
+                      </span>
+                    )}
                     <span className="text-xl font-black text-indigo-600 bg-clip-text text-transparent bg-gradient-to-br from-emerald-500 to-indigo-600">-{voucher.discountPercentage}%</span>
                   </div>
                 </div>

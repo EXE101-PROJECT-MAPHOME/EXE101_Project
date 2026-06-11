@@ -30,6 +30,30 @@ const optionalAuthMiddleware = (req, res, next) => {
  */
 router.get("/", blogController.getBlogs);
 
+/**
+ * @swagger
+ * /api/blogs/categories:
+ *   get:
+ *     summary: Get all distinct blog categories
+ *     tags: [Blog]
+ *     responses:
+ *       200:
+ *         description: List of categories
+ */
+router.get("/categories", blogController.getCategories);
+
+/**
+ * @swagger
+ * /api/blogs/tags/popular:
+ *   get:
+ *     summary: Get popular tags from approved blog posts
+ *     tags: [Blog]
+ *     responses:
+ *       200:
+ *         description: List of popular tags
+ */
+router.get("/tags/popular", blogController.getPopularTags);
+
 // Protected routes for Admin and Landlord
 
 /**

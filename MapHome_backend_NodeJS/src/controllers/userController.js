@@ -48,6 +48,7 @@ const getMyProfile = async (req, res) => {
     }
 
     const userResponse = user.toObject();
+    userResponse.id = userResponse._id;
     userResponse.verificationLevel = verificationLevel;
     userResponse.verificationLevelLabel = verificationLevelLabel;
     userResponse.subscriptionTier = subscriptionTier; // planName thực tế từ DB

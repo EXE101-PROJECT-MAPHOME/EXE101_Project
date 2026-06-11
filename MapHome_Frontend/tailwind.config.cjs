@@ -46,6 +46,9 @@ module.exports = {
           "50%": { opacity: "0.7" },
           "100%": { opacity: "1" },
         },
+        "shimmer": {
+          "100%": { transform: "translateX(400%)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.6s ease-out",
@@ -55,6 +58,7 @@ module.exports = {
         "slide-in-right": "slide-in-right 0.6s ease-out",
         "scale-in": "scale-in 0.5s ease-out",
         "pulse-slow": "pulse-slow 3s ease-in-out infinite",
+        "shimmer": "shimmer 2s infinite",
       },
     },
   },

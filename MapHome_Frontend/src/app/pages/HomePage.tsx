@@ -26,8 +26,12 @@ import {
   ChevronRight,
   MapPin,
   Home,
+  Tag,
+  Copy,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useProperties } from "@/app/contexts/useProperties";
+import { useAuth } from "@/app/contexts/AuthContext";
 import { PropertyCard } from "@/app/components/PropertyCard";
 import { Footer } from "@/app/components/Footer";
 import { Navbar } from "@/app/components/Navbar";
@@ -159,16 +163,18 @@ export function HomePage() {
     totalDistricts: 12,
     satisfactionRate: 98,
   });
+  const [promotedVouchers, setPromotedVouchers] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [statsRes, districtsRes, reviewsRes, blogsRes] =
+        const [statsRes, districtsRes, reviewsRes, blogsRes, vouchersRes] =
           await Promise.allSettled([
             api.get("/api/properties/stats/public"),
             api.get("/api/properties/stats/districts"),
             api.get("/api/reviews/latest"),
             api.get("/api/blogs?limit=3"),
+            api.get("/api/vouchers/promoted"),
           ]);
 
         // Use HCM districts by default as requested by user
@@ -178,6 +184,7 @@ export function HomePage() {
         if (reviewsRes.status === "fulfilled")
           setTestimonials(reviewsRes.value.data);
         if (blogsRes.status === "fulfilled") setBlogPosts(blogsRes.value.data);
+        if (vouchersRes.status === "fulfilled") setPromotedVouchers(vouchersRes.value.data);
       } catch (error) {
         console.error("Error fetching homepage data:", error);
       }
@@ -186,6 +193,7 @@ export function HomePage() {
   }, []);
 
   const { properties } = useProperties();
+  const { user } = useAuth();
   const verifiedProperties = properties
     .filter((p) => p.verificationLevel === "verified")
     .slice(0, 8);
@@ -228,6 +236,109 @@ export function HomePage() {
       <HeroCarousel />
 
       <main className="flex-1 w-full">
+        {/* ━━━ Promoted Vouchers ━━━ */}
+        {user?.role === "landlord" && promotedVouchers.length > 0 && (
+          <section className="bg-slate-50 py-8 border-b border-slate-100">
+            <div className="max-w-7xl mx-auto px-4">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="bg-emerald-100 p-2 rounded-xl">
+                  <Tag className="size-5 text-emerald-600" />
+                </div>
+                <h2 className="text-xl md:text-2xl font-black text-emerald-950">Ưu Đãi Hôm Nay</h2>
+              </div>
+              <div className="flex overflow-x-auto pb-6 pt-2 gap-6 snap-x hide-scrollbar px-2">
+                {promotedVouchers.map((voucher) => {
+                  // Calculate progress for Flash Sale feel
+                  let progressPercent = 0;
+                  let progressText = "Còn lại rất ít";
+                  if (voucher.maxUses) {
+                    progressPercent = Math.min(100, (voucher.usedCount / voucher.maxUses) * 100);
+                    progressText = `Đã dùng ${Math.round(progressPercent)}%`;
+                  } else {
+                    progressPercent = 85; // Fake high urgency if unlimited
+                    progressText = "Sắp hết hạn";
+                  }
+
+                  return (
+                    <div 
+                      key={voucher._id} 
+                      className="flex-shrink-0 w-[320px] md:w-[420px] bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(249,115,22,0.15)] transition-all snap-center flex relative border border-orange-100/50 group"
+                    >
+                      {/* Left Side: Gradient/Image (The "Tear-off" part) */}
+                      <div className="w-[35%] relative bg-gradient-to-br from-orange-500 to-red-600 flex flex-col items-center justify-center p-3 text-center z-10 overflow-hidden">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 rounded-full blur-xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="absolute bottom-0 left-0 w-16 h-16 bg-yellow-400/20 rounded-full blur-lg translate-y-1/3 -translate-x-1/3" />
+                        
+                        <span className="text-white/90 text-[10px] font-black uppercase tracking-[0.2em] mb-1">
+                          VOUCHER
+                        </span>
+                        <div className="flex items-baseline justify-center">
+                          <span className="text-3xl md:text-4xl font-black text-white leading-none">
+                            {voucher.discountPercentage}
+                          </span>
+                          <span className="text-lg font-bold text-white ml-0.5">%</span>
+                        </div>
+                        <span className="text-white/80 text-[10px] font-bold mt-1 bg-white/20 px-2 py-0.5 rounded-full">
+                          GIẢM
+                        </span>
+                      </div>
+
+                      {/* Ticket Cutout Line */}
+                      <div className="absolute left-[35%] top-0 bottom-0 w-0 border-l-[3px] border-dashed border-white/80 z-20" />
+                      
+                      {/* Top and Bottom semi-circle cutouts */}
+                      <div className="absolute left-[35%] top-0 w-4 h-4 bg-slate-50 rounded-full -translate-x-1/2 -translate-y-1/2 shadow-inner z-30" />
+                      <div className="absolute left-[35%] bottom-0 w-4 h-4 bg-slate-50 rounded-full -translate-x-1/2 translate-y-1/2 shadow-inner z-30" />
+
+                      {/* Right Side: Details */}
+                      <div className="w-[65%] p-4 md:p-5 flex flex-col bg-white z-10">
+                        <div className="flex-1">
+                          <h3 className="font-black text-slate-800 text-sm md:text-base mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                            {voucher.title || "Siêu Sale Bất Ngờ"}
+                          </h3>
+                          <p className="text-slate-500 text-[11px] md:text-xs line-clamp-2 leading-snug h-[34px]">
+                            {voucher.description || `Sử dụng mã để được giảm ${voucher.discountPercentage}%`}
+                          </p>
+                        </div>
+                        
+                        <div className="mt-2 space-y-3">
+                          {/* Progress Bar (Flash sale feel) */}
+                          <div className="relative w-full h-3.5 bg-orange-100 rounded-full overflow-hidden flex items-center justify-center">
+                            <div 
+                              className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full"
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                            {/* Animated sheen effect on progress bar */}
+                            <div className="absolute top-0 left-0 h-full w-10 bg-white/30 -skew-x-12 animate-[shimmer_2s_infinite]" />
+                            <span className="relative z-10 text-[8px] font-black text-white uppercase tracking-widest drop-shadow-md">
+                              {progressText}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="bg-slate-50 px-2 py-1 rounded border border-dashed border-slate-200">
+                              <span className="font-black text-slate-700 tracking-wider text-xs">{voucher.code}</span>
+                            </div>
+                            <Button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(voucher.code);
+                                toast.success("Đã sao chép mã voucher!");
+                              }}
+                              className="bg-orange-500 hover:bg-orange-600 text-white rounded-full h-8 px-4 text-xs font-bold shadow-md shadow-orange-500/30 transition-transform active:scale-95"
+                            >
+                              Lưu mã
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}

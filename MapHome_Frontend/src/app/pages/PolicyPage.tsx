@@ -573,7 +573,7 @@ export function PolicyPage() {
                     style={{ color: "#15803d" }}
                   >
                     <Mail className="size-5 mr-3" />
-                    support@maphome.vn
+                    Maphome2026@gmail.com
                   </Button>
                 </motion.div>
                 <motion.div

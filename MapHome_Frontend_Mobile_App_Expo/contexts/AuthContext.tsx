@@ -150,14 +150,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (data: any) => {
     try {
       const res = await api.post("/api/auth/register", data);
-      const payload = res.data;
-      if (payload.token) {
-        await AsyncStorage.setItem("token", payload.token);
-      }
-      if (payload.user) {
-        setUser(payload.user);
-        await AsyncStorage.setItem("auth", JSON.stringify(payload.user));
-      }
       return { success: true };
     } catch (err: any) {
       return {

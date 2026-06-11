@@ -47,6 +47,7 @@ import {
   Loader2,
   Menu,
   X as XIcon,
+  Ticket,
 } from "lucide-react";
 import { toast } from "sonner";
 import { io } from "socket.io-client";
@@ -105,6 +106,7 @@ export function LandlordDashboardV2() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [landlordDistricts, setLandlordDistricts] = useState<string[]>([]);
+  const [promotedVouchers, setPromotedVouchers] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalPosts: 0,
     approvedPosts: 0,
@@ -226,11 +228,13 @@ export function LandlordDashboardV2() {
 
       try {
         if (activeTab === "overview") {
-          const [analyticsRes, propertiesRes] = await Promise.all([
+          const [analyticsRes, propertiesRes, vouchersRes] = await Promise.all([
             api.get("/api/landlord/analytics"),
             api.get("/api/landlord/properties"),
+            api.get("/api/vouchers/promoted"),
           ]);
           const data = analyticsRes.data;
+          setPromotedVouchers(vouchersRes.data || []);
           setStats({
             totalPosts: data.totalProperties || 0,
             approvedPosts: data.approvedProperties || 0,
@@ -1053,7 +1057,7 @@ export function LandlordDashboardV2() {
                       </div>
 
                       {req.notes && (
-                        <div className="p-4 bg-white/30 rounded-2xl border border-white/20">
+                        <div className="p-4 bg-white/30 rounded-2xl border border-white/20 mb-4">
                           <p className="text-xs text-gray-500 font-bold uppercase tracking-tighter mb-1">
                             Ghi chú từ MapHome
                           </p>
@@ -1061,6 +1065,16 @@ export function LandlordDashboardV2() {
                             "{req.notes}"
                           </p>
                         </div>
+                      )}
+
+                      {req.status === "completed" && req.propertyId && (
+                        <Button
+                          onClick={() => navigate(`/room/${req.propertyId}`)}
+                          className="w-full bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all shadow-sm rounded-xl py-6 font-bold flex items-center justify-center gap-2"
+                        >
+                          <Eye className="size-4" />
+                          Xem chi tiết Báo cáo xác thực
+                        </Button>
                       )}
                     </div>
                   ))}
@@ -1569,6 +1583,62 @@ export function LandlordDashboardV2() {
           >
             {/* Expiry Warning Banner */}
             <ExpiryWarningBanner />
+
+            {/* Promoted Vouchers Wallet / Banner */}
+            {activeTab === "overview" && promotedVouchers.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-[32px] bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-8 shadow-xl relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl -mr-20 -mt-20" />
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-400/30 rounded-full blur-2xl -ml-10 -mb-10" />
+                
+                <div className="relative z-10">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
+                      <Ticket className="size-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-white tracking-tight">Ưu Đãi Đặc Quyền Hôm Nay</h3>
+                      <p className="text-emerald-50 font-medium text-sm">Nhập mã khi thanh toán để nhận ngay khuyến mãi</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {promotedVouchers.map((voucher, idx) => (
+                      <div key={idx} className="bg-white rounded-3xl p-5 shadow-lg flex items-center justify-between group relative overflow-hidden">
+                        {voucher.bannerImage && (
+                          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: `url(${voucher.bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                        )}
+                        <div className="relative z-10">
+                          <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 to-blue-600">
+                            -{voucher.discountPercentage}%
+                          </div>
+                          <p className="text-xs font-black text-slate-800 uppercase tracking-tight mt-1">{voucher.title || "Khuyến mãi"}</p>
+                          <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">{voucher.description}</p>
+                        </div>
+                        <div className="relative z-10 flex flex-col items-end gap-2">
+                          <span className="px-3 py-1 bg-emerald-50 text-emerald-600 font-black text-[10px] rounded-full border border-emerald-100 uppercase tracking-widest border-dashed">
+                            {voucher.code}
+                          </span>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(voucher.code);
+                              toast.success(`Đã sao chép mã: ${voucher.code}`);
+                            }}
+                            className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:brightness-110 text-white rounded-xl text-[10px] h-8 px-4 font-black transition-all hover:scale-105 active:scale-95 border-none shadow-md shadow-blue-500/20"
+                          >
+                            Lưu mã
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* Page Header */}
             {activeTab === "overview" && (

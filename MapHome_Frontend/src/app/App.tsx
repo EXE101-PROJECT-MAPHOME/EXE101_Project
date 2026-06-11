@@ -8,6 +8,7 @@ import { MapPage } from "@/app/pages/MapPage";
 import { RegisterPage } from "@/app/pages/RegisterPage";
 import { PostRoomPage } from "@/app/pages/PostRoomPage";
 import { BlogPage } from "@/app/pages/BlogPage";
+import { BlogDetailPage } from "@/app/pages/BlogDetailPage";
 import { PolicyPage } from "@/app/pages/PolicyPage";
 import { ContactPage } from "@/app/pages/ContactPage";
 import { LoginPage } from "@/app/pages/LoginPage";
@@ -53,6 +54,7 @@ const router = createBrowserRouter([
       { path: "/register", Component: RegisterPage },
       { path: "/post-room", Component: PostRoomPage },
       { path: "/blog", Component: BlogPage },
+      { path: "/blog/:id", Component: BlogDetailPage },
       { path: "/policy", Component: PolicyPage },
       { path: "/contact", Component: ContactPage },
       { path: "/login", Component: LoginPage },

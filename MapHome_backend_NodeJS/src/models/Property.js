@@ -50,6 +50,13 @@ const PropertySchema = new mongoose.Schema(
       awardedAt: { type: Date },
       awardedBy: { type: String },
       inspectionNotes: { type: String },
+      inspectionMedia: { type: [String], default: [] },
+      inspectionChecklist: {
+        isAccurate: { type: Boolean, default: false },
+        hasAmenities: { type: Boolean, default: false },
+        isSecure: { type: Boolean, default: false },
+        isLegal: { type: Boolean, default: false }
+      }
     },
     views: { type: Number, default: 0 },
     favorites: { type: Number, default: 0 },

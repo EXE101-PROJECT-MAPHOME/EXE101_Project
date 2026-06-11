@@ -11,6 +11,7 @@ import {
   Modal,
   Animated as RNAnimated,
   PanResponder,
+  Alert,
 } from "react-native";
 import Animated, {
   FadeInDown,
@@ -40,8 +41,11 @@ import {
   X,
   CalendarDays,
   AlertTriangle,
+  Tag,
+  Copy,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import * as Clipboard from 'expo-clipboard';
 import ROUTES, { navigateTo } from "@/constants/routes";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useProperties } from "../../contexts/PropertiesContext";
@@ -230,16 +234,18 @@ export default function HomePage() {
     totalDistricts: 12,
     satisfactionRate: 98,
   });
+  const [promotedVouchers, setPromotedVouchers] = useState<any[]>([]);
 
 
 
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [statsRes, reviewsRes, blogsRes] = await Promise.allSettled([
+        const [statsRes, reviewsRes, blogsRes, vouchersRes] = await Promise.allSettled([
           api.get("/api/properties/stats/public"),
           api.get("/api/reviews/latest"),
           api.get("/api/blogs?limit=3"),
+          api.get("/api/vouchers/promoted"),
         ]);
 
         if (statsRes.status === "fulfilled" && statsRes.value?.data) {
@@ -258,8 +264,11 @@ export default function HomePage() {
         if (blogsRes.status === "fulfilled" && blogsRes.value?.data) {
           setBlogPosts(blogsRes.value.data);
         }
-      } catch (e) {
-        console.log("Failed to fetch home data", e);
+        if (vouchersRes.status === "fulfilled" && vouchersRes.value?.data) {
+          setPromotedVouchers(vouchersRes.value.data);
+        }
+      } catch (error) {
+        console.log("Failed to fetch home data", error);
       }
     };
     fetchHomeData();
@@ -306,6 +315,127 @@ export default function HomePage() {
         </Animated.View>
 
         <HeroCarousel />
+
+        {/* ━━━ Promoted Vouchers ━━━ */}
+        {user?.role === "landlord" && promotedVouchers.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(100).springify()} className="bg-slate-50 py-6 border-b border-slate-100">
+            <View className="px-4 flex-row items-center mb-4">
+              <View className="bg-emerald-100 p-2 rounded-xl mr-2">
+                <Tag size={20} color="#059669" />
+              </View>
+              <Text className="text-xl font-black text-emerald-950">Ưu Đãi Hôm Nay</Text>
+            </View>
+            
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingRight: 32 }}
+              snapToInterval={width * 0.85 + 16}
+              decelerationRate="fast"
+            >
+              {promotedVouchers.map((voucher) => {
+                // Flash sale logic
+                let progressPercent = 0;
+                let progressText = "Còn lại rất ít";
+                if (voucher.maxUses) {
+                  progressPercent = Math.min(100, (voucher.usedCount / voucher.maxUses) * 100);
+                  progressText = `Đã dùng ${Math.round(progressPercent)}%`;
+                } else {
+                  progressPercent = 85;
+                  progressText = "Sắp hết hạn";
+                }
+
+                return (
+                  <View 
+                    key={voucher._id} 
+                    className="w-[85vw] mr-4 bg-white rounded-2xl shadow-sm"
+                    style={{ 
+                      elevation: 3,
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 3,
+                    }}
+                  >
+                    <View className="flex-row relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                      {/* Left Side: Gradient Ticket stub */}
+                      <View className="w-[35%] overflow-hidden relative justify-center items-center py-4">
+                      <LinearGradient
+                        colors={['#f97316', '#dc2626']} // orange-500 to red-600
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        className="absolute inset-0"
+                      />
+                      <View className="absolute top-0 right-0 w-20 h-20 bg-white/20 rounded-full blur-xl -translate-y-1/2 translate-x-1/2" />
+                      
+                      <Text className="text-white/90 text-[10px] font-black uppercase tracking-widest mb-1">
+                        VOUCHER
+                      </Text>
+                      <View className="flex-row items-baseline justify-center">
+                        <Text className="text-3xl font-black text-white">{voucher.discountPercentage}</Text>
+                        <Text className="text-base font-bold text-white ml-0.5">%</Text>
+                      </View>
+                      <View className="bg-white/20 px-2 py-0.5 rounded-full mt-1">
+                        <Text className="text-white/90 text-[9px] font-bold">GIẢM</Text>
+                      </View>
+                    </View>
+
+                    {/* Dashed Line separator */}
+                    <View className="absolute left-[35%] top-0 bottom-0 w-[1px] border-l border-dashed border-slate-300 z-10" />
+
+                    {/* Cutouts (Top and Bottom) */}
+                    <View className="absolute left-[35%] top-0 w-4 h-4 bg-slate-50 rounded-full -translate-x-2 -translate-y-2 z-20 border-b border-slate-200" />
+                    <View className="absolute left-[35%] bottom-0 w-4 h-4 bg-slate-50 rounded-full -translate-x-2 translate-y-2 z-20 border-t border-slate-200" />
+
+                    {/* Right Side: Details */}
+                    <View className="w-[65%] p-3 flex-col justify-between bg-white z-10">
+                      <View>
+                        <Text className="font-black text-slate-800 text-[15px] mb-1" numberOfLines={1}>
+                          {voucher.title || "Siêu Sale Bất Ngờ"}
+                        </Text>
+                        <Text className="text-slate-500 text-[11px] h-8 leading-tight" numberOfLines={2}>
+                          {voucher.description || `Sử dụng mã ${voucher.code} để được giảm ${voucher.discountPercentage}%`}
+                        </Text>
+                      </View>
+                      
+                      <View className="mt-2">
+                        {/* Progress Bar */}
+                        <View className="w-full h-3.5 bg-orange-100 rounded-full overflow-hidden justify-center relative mb-2">
+                          <LinearGradient
+                            colors={['#fb923c', '#ef4444']} // orange-400 to red-500
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            className="absolute top-0 left-0 bottom-0 rounded-full"
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                          <Text className="absolute w-full text-center text-[8px] font-black text-white uppercase tracking-widest" style={{ textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1 }}>
+                            {progressText}
+                          </Text>
+                        </View>
+
+                        <View className="flex-row items-center justify-between">
+                          <View className="bg-slate-50 px-2 py-1 rounded border border-dashed border-slate-200 flex-1 mr-2">
+                            <Text className="font-black text-slate-700 tracking-widest text-[11px] text-center">{voucher.code}</Text>
+                          </View>
+                          <TouchableOpacity 
+                            onPress={async () => {
+                              await Clipboard.setStringAsync(voucher.code);
+                              Alert.alert("Thành công", "Đã sao chép mã voucher!");
+                            }}
+                            className="bg-orange-500 rounded-full px-3 py-1.5 flex-row items-center shadow-sm"
+                          >
+                            <Text className="text-white font-bold text-[11px]">Lưu mã</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </Animated.View>
+        )}
 
         {/* Stats Section with Gradient Aura feel */}
         <Animated.View entering={FadeInRight.delay(200).springify()} className="py-10 px-4 relative overflow-hidden">
@@ -708,7 +838,7 @@ export default function HomePage() {
             {blogPosts.map((post, index) => (
               <TouchableOpacity
                 key={post._id || post.id || index}
-                onPress={() => navigateTo(router, ROUTES.BLOG)}
+                onPress={() => router.push(`/blog/${post._id || post.id}` as any)}
                 className="bg-white rounded-[24px] overflow-hidden mb-6 shadow-lg shadow-slate-200/50 border border-slate-100"
               >
                 <View className="h-48 relative">

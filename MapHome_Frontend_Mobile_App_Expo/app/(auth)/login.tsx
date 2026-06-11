@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   StatusBar,
+  Alert,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useRouter } from "expo-router";
@@ -23,6 +24,7 @@ import {
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import ROUTES, { navigateTo } from "@/constants/routes";
+import CustomAlert from "@/components/CustomAlert";
 import { useAuth } from "../../contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
@@ -83,6 +85,14 @@ export default function LoginScreen() {
   const [errors, setErrors] = useState({ identifier: "", password: "" });
   const [identifierFocused, setIdentifierFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    type: "success" as "success" | "error" | "info",
+    hideButtons: false,
+    onConfirm: () => {},
+  });
 
   // Google.useAuthRequest handles redirect URI, PKCE, and discovery automatically
   // useProxy: true → use Expo Auth Proxy so Expo Go can handle the redirect
@@ -126,7 +136,18 @@ export default function LoginScreen() {
         idToken: idToken ?? undefined,
       });
       if (res.success) {
-        navigateByRole(res.role);
+        setAlertConfig({
+          visible: true,
+          title: "Đăng nhập thành công",
+          message: "Chào mừng bạn đến với MapHome!",
+          type: "success",
+          hideButtons: true,
+          onConfirm: () => {},
+        });
+        setTimeout(() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          navigateByRole(res.role);
+        }, 1500);
       } else {
         setError(res.message || "Đăng nhập Google thất bại.");
       }
@@ -172,7 +193,18 @@ export default function LoginScreen() {
       setLoading(true);
       const res = await login(identifier.trim(), password);
       if (res.success) {
-        navigateByRole(res.role);
+        setAlertConfig({
+          visible: true,
+          title: "Đăng nhập thành công",
+          message: "Chào mừng bạn đến với MapHome!",
+          type: "success",
+          hideButtons: true,
+          onConfirm: () => {},
+        });
+        setTimeout(() => {
+          setAlertConfig((prev) => ({ ...prev, visible: false }));
+          navigateByRole(res.role);
+        }, 1500);
       } else {
         setError(res.message || "Tài khoản hoặc mật khẩu không đúng");
       }
@@ -613,6 +645,7 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
+      <CustomAlert {...alertConfig} />
     </KeyboardAvoidingView>
   );
 }

@@ -49,7 +49,6 @@ import { getImageUrl } from "@/app/utils/avatarUtils";
 import { toast } from "sonner";
 import { RentalProperty, GreenBadgeLevel } from "@/app/components/types";
 import {
-  vietnamLocations,
   Province,
   District,
   Ward,
@@ -136,25 +135,39 @@ export function PostRoomPage() {
     address: "",
   });
 
-  const [selectedProvince, setSelectedProvince] = useState("HCM");
-  const [selectedDistrict, setSelectedDistrict] = useState("");
-  const [selectedWard, setSelectedWard] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState<number | "">(79);
+  const [selectedDistrict, setSelectedDistrict] = useState<number | "">("");
+  const [selectedWard, setSelectedWard] = useState<number | "">("");
 
-  const availableDistricts = useMemo(() => {
-    if (!selectedProvince) return [];
-    const province = vietnamLocations.find(
-      (p: Province) => p.code === selectedProvince,
-    );
-    return province?.districts || [];
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [availableDistricts, setAvailableDistricts] = useState<District[]>([]);
+  const [availableWards, setAvailableWards] = useState<Ward[]>([]);
+
+  useEffect(() => {
+    api.get("/api/locations/provinces")
+      .then(res => setProvinces(res.data))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (selectedProvince) {
+      api.get(`/api/locations/districts/${selectedProvince}`)
+        .then(res => setAvailableDistricts(res.data))
+        .catch(console.error);
+    } else {
+      setAvailableDistricts([]);
+    }
   }, [selectedProvince]);
 
-  const availableWards = useMemo(() => {
-    if (!selectedDistrict) return [];
-    const district = availableDistricts.find(
-      (d: District) => d.code === selectedDistrict,
-    );
-    return district?.wards || [];
-  }, [selectedDistrict, availableDistricts]);
+  useEffect(() => {
+    if (selectedDistrict) {
+      api.get(`/api/locations/wards/${selectedDistrict}`)
+        .then(res => setAvailableWards(res.data))
+        .catch(console.error);
+    } else {
+      setAvailableWards([]);
+    }
+  }, [selectedDistrict]);
 
   const fullAddress = useMemo(() => {
     const parts = [];
@@ -170,7 +183,7 @@ export function PostRoomPage() {
       if (district) parts.push(district.name);
     }
     if (selectedProvince) {
-      const province = vietnamLocations.find(
+      const province = provinces.find(
         (p: Province) => p.code === selectedProvince,
       );
       if (province) parts.push(province.name);
@@ -183,6 +196,7 @@ export function PostRoomPage() {
     selectedProvince,
     availableWards,
     availableDistricts,
+    provinces,
   ]);
 
   // Calculate GPS location mismatch distance
@@ -247,7 +261,7 @@ export function PostRoomPage() {
   };
 
   // Helper: Find best match for a name from a list
-  const findBestMatch = <T extends { name: string; code: string }>(
+  const findBestMatch = <T extends { name: string; code: string | number }>(
     searchName: string,
     items: T[],
   ): T | undefined => {
@@ -280,7 +294,7 @@ export function PostRoomPage() {
     return undefined;
   };
 
-  const autoPopulateLocation = (result: GeocodeResult) => {
+  const autoPopulateLocation = async (result: GeocodeResult) => {
     const components = Array.isArray(result.address_components)
       ? result.address_components.filter(
           (
@@ -304,35 +318,68 @@ export function PostRoomPage() {
         types.some((type) => hasType(component, type)),
       );
 
-    // Find Province (City)
-    const cityComp = findComponent("administrative_area_level_1");
+    const cityComp = findComponent(
+      "administrative_area_level_1",
+      "province"
+    );
+    
+    console.log("🏙️ AutoPopulate - City Component found:", cityComp);
+    
     if (cityComp) {
-      const province = findBestMatch(cityComp.long_name, vietnamLocations);
+      const province = findBestMatch(cityComp.long_name, provinces);
+      console.log("🏙️ AutoPopulate - Province Matched:", province);
+      
       if (province) {
         setSelectedProvince(province.code);
 
-        // Find District
+        // Find District — fetch from API then match by name
         const distComp = findComponent(
           "administrative_area_level_2",
           "locality",
+          "district"
         );
+        
+        console.log("🏙️ AutoPopulate - District Component found:", distComp);
+        
         if (distComp) {
-          const district = findBestMatch(
-            distComp.long_name,
-            province.districts,
-          );
-          if (district) {
-            setSelectedDistrict(district.code);
+          try {
+            const distRes = await api.get(`/api/locations/districts/${province.code}`);
+            const districtList: District[] = distRes.data;
+            const district = findBestMatch(distComp.long_name, districtList);
+            console.log("🏙️ AutoPopulate - District Matched:", district);
+            
+            if (district) {
+              setSelectedDistrict(district.code);
 
-            // Find Ward
-            const wardComp = findComponent("sublocality_level_1", "ward");
-            if (wardComp) {
-              const ward = findBestMatch(wardComp.long_name, district.wards);
-              if (ward) setSelectedWard(ward.code);
+              // Find Ward — fetch from API then match by name
+              const wardComp = findComponent(
+                "sublocality_level_1",
+                "ward",
+                "sublocality"
+              );
+              
+              console.log("🏙️ AutoPopulate - Ward Component found:", wardComp);
+              
+              if (wardComp) {
+                try {
+                  const wardRes = await api.get(`/api/locations/wards/${district.code}`);
+                  const wardList: Ward[] = wardRes.data;
+                  const ward = findBestMatch(wardComp.long_name, wardList);
+                  console.log("🏙️ AutoPopulate - Ward Matched:", ward);
+                  
+                  if (ward) setSelectedWard(ward.code);
+                } catch (e) {
+                  console.error("Failed to fetch wards", e);
+                }
+              }
             }
+          } catch (e) {
+            console.error("Failed to fetch districts", e);
           }
         }
       }
+    } else {
+      console.warn("⚠️ AutoPopulate - Could not find City/Province component in Goong result", components);
     }
   };
 
@@ -518,9 +565,10 @@ export function PostRoomPage() {
           } else {
             toast.error("Lỗi khi tải ảnh lên " + file.name);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Upload error:", err);
-          toast.error("Lỗi kết nối khi tải ảnh " + file.name);
+          const errorMsg = err.response?.data?.message || err.message || "Lỗi không xác định";
+          toast.error(`Lỗi tải ảnh ${file.name}: ${errorMsg}`);
         }
       }
 
@@ -542,7 +590,7 @@ export function PostRoomPage() {
       return;
     }
 
-    if (!user?.id) {
+    if (!user?.id && !(user as any)?._id) {
       toast.error("Lỗi: Vui lòng đăng nhập lại! 🔐");
       return;
     }
@@ -567,7 +615,7 @@ export function PostRoomPage() {
       // Note: landlordId will be set by backend from req.user
       pinInfo: {
         pinnedAt: new Date().toISOString(),
-        pinnedBy: user?.id || "unknown",
+        pinnedBy: user?.id || (user as any)?._id || "unknown",
         note: pinNote || undefined,
       },
     };
@@ -953,9 +1001,9 @@ export function PostRoomPage() {
                               Tỉnh / Thành phố
                             </Label>
                             <Select
-                              value={selectedProvince}
+                              value={selectedProvince.toString()}
                               onValueChange={(value) => {
-                                setSelectedProvince(value);
+                                setSelectedProvince(Number(value));
                                 setSelectedDistrict("");
                                 setSelectedWard("");
                               }}
@@ -964,10 +1012,10 @@ export function PostRoomPage() {
                                 <SelectValue placeholder="Chọn tỉnh/thành phố" />
                               </SelectTrigger>
                               <SelectContent className="rounded-lg border border-slate-200 shadow-lg">
-                                {vietnamLocations.map((province) => (
+                                {provinces.map((province) => (
                                   <SelectItem
                                     key={province.code}
-                                    value={province.code}
+                                    value={province.code.toString()}
                                     className="font-medium py-2"
                                   >
                                     {province.name}
@@ -982,9 +1030,9 @@ export function PostRoomPage() {
                               Quận/Huyện
                             </Label>
                             <Select
-                              value={selectedDistrict}
+                              value={selectedDistrict.toString()}
                               onValueChange={(value) => {
-                                setSelectedDistrict(value);
+                                setSelectedDistrict(Number(value));
                                 setSelectedWard("");
                               }}
                             >
@@ -995,7 +1043,7 @@ export function PostRoomPage() {
                                 {availableDistricts.map((district) => (
                                   <SelectItem
                                     key={district.code}
-                                    value={district.code}
+                                    value={district.code.toString()}
                                     className="font-medium py-2"
                                   >
                                     {district.name}
@@ -1010,8 +1058,8 @@ export function PostRoomPage() {
                               Phường/Xã
                             </Label>
                             <Select
-                              value={selectedWard}
-                              onValueChange={setSelectedWard}
+                              value={selectedWard.toString()}
+                              onValueChange={(v) => setSelectedWard(Number(v))}
                               disabled={!selectedDistrict}
                             >
                               <SelectTrigger className="h-11 rounded-lg border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-indigo-100">
@@ -1021,7 +1069,7 @@ export function PostRoomPage() {
                                 {availableWards.map((ward) => (
                                   <SelectItem
                                     key={ward.code}
-                                    value={ward.code}
+                                    value={ward.code.toString()}
                                     className="font-medium py-2"
                                   >
                                     {ward.name}

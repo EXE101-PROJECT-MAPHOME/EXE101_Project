@@ -7,6 +7,7 @@ const {
   updateVoucher,
   deleteVoucher,
   validateVoucher,
+  getPromotedVouchers,
 } = require("../controllers/voucherController");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 
@@ -17,6 +18,8 @@ const admin = requireRole("admin");
 router.route("/")
   .post(protect, admin, createVoucher)
   .get(protect, admin, getVouchers);
+
+router.get("/promoted", getPromotedVouchers);
 
 router.post("/validate", protect, validateVoucher);
 

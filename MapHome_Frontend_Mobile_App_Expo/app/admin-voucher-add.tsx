@@ -16,6 +16,10 @@ export default function AdminVoucherAddScreen() {
   const [code, setCode] = useState('');
   const [discountPercentage, setDiscountPercentage] = useState('');
   const [maxUses, setMaxUses] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [bannerImage, setBannerImage] = useState('');
+  const [showOnHome, setShowOnHome] = useState(false);
   
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date(Date.now() + 30 * 86400000));
@@ -63,6 +67,10 @@ export default function AdminVoucherAddScreen() {
         endDate: endDate.toISOString(),
         maxUses: maxUses ? Number(maxUses) : null,
         isActive,
+        title,
+        description,
+        bannerImage,
+        showOnHome,
       };
 
       await api.post("/api/vouchers", payload);
@@ -167,6 +175,53 @@ export default function AdminVoucherAddScreen() {
               >
                 {!isActive && <X size={16} color="#ef4444" />}
                 <Text className={`font-bold ml-2 ${!isActive ? 'text-red-700' : 'text-slate-500'}`}>Tạm dừng</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm mb-4">
+            <Text className="font-black text-emerald-700 text-base mb-4">Cấu hình Quảng cáo</Text>
+
+            <Text className="font-bold text-slate-700 mb-2">Tiêu đề quảng cáo</Text>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="VD: Siêu Sale Mùa Tựu Trường"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 font-bold text-slate-800 mb-4"
+            />
+
+            <Text className="font-bold text-slate-700 mb-2">Mô tả quảng cáo</Text>
+            <TextInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="VD: Giảm 50% gói VIP cho sinh viên"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 font-bold text-slate-800 mb-4"
+            />
+
+            <Text className="font-bold text-slate-700 mb-2">Link ảnh Banner (URL)</Text>
+            <TextInput
+              value={bannerImage}
+              onChangeText={setBannerImage}
+              placeholder="https://example.com/banner.jpg"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 h-12 font-bold text-slate-800 mb-4"
+            />
+
+            <Text className="font-bold text-slate-700 mb-3">Hiển thị lên Trang chủ</Text>
+            <View className="flex-row gap-3">
+              <TouchableOpacity 
+                onPress={() => setShowOnHome(true)}
+                className={`flex-1 h-12 rounded-xl flex-row items-center justify-center border ${showOnHome ? 'bg-emerald-50 border-emerald-500' : 'bg-slate-50 border-slate-200'}`}
+              >
+                {showOnHome && <Check size={16} color="#22c55e" />}
+                <Text className={`font-bold ml-2 ${showOnHome ? 'text-emerald-700' : 'text-slate-500'}`}>Hiển thị</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                onPress={() => setShowOnHome(false)}
+                className={`flex-1 h-12 rounded-xl flex-row items-center justify-center border ${!showOnHome ? 'bg-red-50 border-red-500' : 'bg-slate-50 border-slate-200'}`}
+              >
+                {!showOnHome && <X size={16} color="#ef4444" />}
+                <Text className={`font-bold ml-2 ${!showOnHome ? 'text-red-700' : 'text-slate-500'}`}>Ẩn</Text>
               </TouchableOpacity>
             </View>
           </View>

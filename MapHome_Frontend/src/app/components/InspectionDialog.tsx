@@ -6,7 +6,8 @@ import { VerificationRequest, GreenBadgeLevel } from "@/app/components/types";
 import { useVerification } from "@/app/contexts/VerificationContext";
 import { useProperties } from "@/app/contexts/useProperties";
 import { formatDateVietnamese } from "@/app/utils/dateUtils";
-import { X, ShieldCheck, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, ShieldCheck, CheckCircle2, AlertCircle, Upload } from "lucide-react";
+import api from "@/app/utils/api";
 
 interface InspectionDialogProps {
   isOpen: boolean;
@@ -23,48 +24,73 @@ export function InspectionDialog({
   const { updateProperty } = useProperties();
   const [notes, setNotes] = useState("");
   const [isApproved, setIsApproved] = useState(true);
+  const [checklist, setChecklist] = useState({
+    isAccurate: false,
+    hasAmenities: false,
+    isSecure: false,
+    isLegal: false,
+  });
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const requestId = (request as any)._id || request.id;
-    if (!isApproved) {
-      // Reject
-      completeInspection(
-        requestId,
-        "none",
-        notes || "Không đạt yêu cầu kiểm tra",
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("badgeAwarded", isApproved ? "verified" : "none");
+      formData.append("inspectorNotes", notes);
+      formData.append("inspectionChecklist", JSON.stringify(checklist));
+
+      mediaFiles.forEach((file) => {
+        formData.append("media", file);
+      });
+
+      const res = await api.put(
+        `/api/admin/verification/${requestId}/complete`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
-      toast.error("Đã từ chối yêu cầu! ❌");
-      onClose();
-      return;
+
+      if (res.status === 200 || res.status === 201) {
+        if (!isApproved) {
+          toast.error("Đã từ chối yêu cầu! ❌");
+        } else {
+          // Award verified badge in UI
+          const greenBadge = {
+            level: "verified" as GreenBadgeLevel,
+            awardedAt: new Date().toISOString(),
+            awardedBy: "admin-001",
+            inspectionNotes: notes,
+          };
+
+          const propId =
+            typeof request.propertyId === "object"
+              ? (request.propertyId as any)._id
+              : request.propertyId;
+          updateProperty(propId, { greenBadge });
+
+          toast.success(
+            <div className="flex flex-col gap-1">
+              <p className="font-bold">Đã hoàn tất kiểm tra! ✅</p>
+              <p className="text-xs">🏆 Cấp Tích Xanh: ĐÃ XÁC THỰC</p>
+              <p className="text-xs">📍 Căn trọ: {request.propertyName}</p>
+              <p className="text-xs text-gray-500 mt-1 italic">
+                Tích xanh đã được hiển thị trên tin đăng & bản đồ!
+              </p>
+            </div>,
+            { duration: 5000 }
+          );
+        }
+        onClose();
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Có lỗi xảy ra khi cập nhật kết quả.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Award verified badge
-    const greenBadge = {
-      level: "verified" as GreenBadgeLevel,
-      awardedAt: new Date().toISOString(),
-      awardedBy: "admin-001",
-      inspectionNotes: notes,
-    };
-
-    const propId =
-      typeof request.propertyId === "object"
-        ? (request.propertyId as any)._id
-        : request.propertyId;
-    updateProperty(propId, { greenBadge });
-    completeInspection(requestId, "verified", notes);
-
-    toast.success(
-      <div className="flex flex-col gap-1">
-        <p className="font-bold">Đã hoàn tất kiểm tra! ✅</p>
-        <p className="text-xs">🏆 Cấp Tích Xanh: ĐÃ XÁC THỰC</p>
-        <p className="text-xs">📍 Căn trọ: {request.propertyName}</p>
-        <p className="text-xs text-gray-500 mt-1 italic">
-          Tích xanh đã được hiển thị trên tin đăng & bản đồ!
-        </p>
-      </div>,
-      { duration: 5000 },
-    );
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -227,9 +253,93 @@ export function InspectionDialog({
                   ? "VD: Vị trí GPS chính xác, phòng đúng mô tả, điều kiện tốt..."
                   : "VD: Vị trí GPS không chính xác, điều kiện phòng không đúng mô tả..."
               }
-              className="w-full min-h-32 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
+              className="w-full min-h-32 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none mb-4"
               required={!isApproved}
             />
+
+            {isApproved && (
+              <div className="space-y-4 border-t pt-4">
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Tiêu chí thẩm định
+                  </Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checklist.isAccurate}
+                        onChange={(e) => setChecklist({ ...checklist, isAccurate: e.target.checked })}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      Hình ảnh & mô tả trung thực
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checklist.hasAmenities}
+                        onChange={(e) => setChecklist({ ...checklist, hasAmenities: e.target.checked })}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      Tiện nghi hoạt động tốt
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checklist.isSecure}
+                        onChange={(e) => setChecklist({ ...checklist, isSecure: e.target.checked })}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      An ninh & PCCC đảm bảo
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checklist.isLegal}
+                        onChange={(e) => setChecklist({ ...checklist, isLegal: e.target.checked })}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      Pháp lý/chủ nhà hợp lệ
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+                    Upload Minh chứng (Ảnh/Video, Tối đa 30MB)
+                  </Label>
+                  <label className="flex items-center justify-center w-full min-h-[100px] border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                      <p className="text-sm text-gray-500">
+                        <span className="font-semibold">Nhấn để tải lên</span> hoặc kéo thả file
+                      </p>
+                      <p className="text-xs text-gray-500">PNG, JPG, MP4 (Max. 30MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*,video/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setMediaFiles(Array.from(e.target.files));
+                        }
+                      }}
+                    />
+                  </label>
+                  {mediaFiles.length > 0 && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      Đã chọn {mediaFiles.length} file:
+                      <ul className="list-disc pl-5 mt-1">
+                        {mediaFiles.map((f, idx) => (
+                          <li key={idx} className="truncate">{f.name} ({(f.size / 1024 / 1024).toFixed(2)} MB)</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -239,6 +349,7 @@ export function InspectionDialog({
               variant="outline"
               onClick={onClose}
               className="flex-1"
+              disabled={isSubmitting}
             >
               Hủy
             </Button>
@@ -246,12 +357,14 @@ export function InspectionDialog({
               onClick={handleComplete}
               className={`flex-1 ${
                 isApproved
-                  ? "bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-                  : "bg-red-600 hover:bg-red-700"
+                  ? "bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white"
               }`}
-              disabled={!isApproved && !notes.trim()}
+              disabled={isSubmitting || (!isApproved && !notes.trim())}
             >
-              {isApproved ? (
+              {isSubmitting ? (
+                "Đang xử lý..."
+              ) : isApproved ? (
                 <>
                   <CheckCircle2 className="size-4 mr-2" />
                   Cấp Tích Xanh
