@@ -379,7 +379,8 @@ export function PostRoomPage() {
         }
       }
     } else {
-      console.warn("⚠️ AutoPopulate - Could not find City/Province component in Goong result", components);
+      console.warn("⚠️ AutoPopulate - Could not find City/Province component in Goong result.");
+      console.warn("Available components:", JSON.stringify(components, null, 2));
     }
   };
 
