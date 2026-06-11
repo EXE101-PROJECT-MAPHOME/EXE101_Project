@@ -318,10 +318,17 @@ export function PostRoomPage() {
         types.some((type) => hasType(component, type)),
       );
 
-    // Find Province (City)
-    const cityComp = findComponent("administrative_area_level_1");
+    const cityComp = findComponent(
+      "administrative_area_level_1",
+      "province"
+    );
+    
+    console.log("🏙️ AutoPopulate - City Component found:", cityComp);
+    
     if (cityComp) {
       const province = findBestMatch(cityComp.long_name, provinces);
+      console.log("🏙️ AutoPopulate - Province Matched:", province);
+      
       if (province) {
         setSelectedProvince(province.code);
 
@@ -329,29 +336,50 @@ export function PostRoomPage() {
         const distComp = findComponent(
           "administrative_area_level_2",
           "locality",
+          "district"
         );
+        
+        console.log("🏙️ AutoPopulate - District Component found:", distComp);
+        
         if (distComp) {
           try {
             const distRes = await api.get(`/api/locations/districts/${province.code}`);
             const districtList: District[] = distRes.data;
             const district = findBestMatch(distComp.long_name, districtList);
+            console.log("🏙️ AutoPopulate - District Matched:", district);
+            
             if (district) {
               setSelectedDistrict(district.code);
 
               // Find Ward — fetch from API then match by name
-              const wardComp = findComponent("sublocality_level_1", "ward");
+              const wardComp = findComponent(
+                "sublocality_level_1",
+                "ward",
+                "sublocality"
+              );
+              
+              console.log("🏙️ AutoPopulate - Ward Component found:", wardComp);
+              
               if (wardComp) {
                 try {
                   const wardRes = await api.get(`/api/locations/wards/${district.code}`);
                   const wardList: Ward[] = wardRes.data;
                   const ward = findBestMatch(wardComp.long_name, wardList);
+                  console.log("🏙️ AutoPopulate - Ward Matched:", ward);
+                  
                   if (ward) setSelectedWard(ward.code);
-                } catch { /* silently skip ward if API fails */ }
+                } catch (e) {
+                  console.error("Failed to fetch wards", e);
+                }
               }
             }
-          } catch { /* silently skip district if API fails */ }
+          } catch (e) {
+            console.error("Failed to fetch districts", e);
+          }
         }
       }
+    } else {
+      console.warn("⚠️ AutoPopulate - Could not find City/Province component in Goong result", components);
     }
   };
 
