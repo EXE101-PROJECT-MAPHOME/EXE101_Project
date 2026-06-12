@@ -10,6 +10,12 @@ const api = axios.create({
   },
 });
 
+let onUnauthorizedCallback: (() => void) | null = null;
+
+export const registerOnUnauthorized = (callback: () => void) => {
+  onUnauthorizedCallback = callback;
+};
+
 // Request Interceptor: Attach JWT Token from AsyncStorage
 api.interceptors.request.use(
   async (config) => {
@@ -38,6 +44,9 @@ api.interceptors.response.use(
       try {
         await AsyncStorage.removeItem('token');
         await AsyncStorage.removeItem('auth');
+        if (onUnauthorizedCallback) {
+          onUnauthorizedCallback();
+        }
       } catch (e) {
         console.error('Error clearing auth storage', e);
       }
