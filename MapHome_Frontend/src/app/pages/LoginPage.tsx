@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useGoogleLogin } from "@react-oauth/google";
 import { toast } from "sonner";
+import api from "@/app/utils/api";
 
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -33,7 +34,7 @@ import {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, register, googleLogin } = useAuth();
+  const { login, register, googleLogin, logout } = useAuth();
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
@@ -98,6 +99,21 @@ export function LoginPage() {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
 
+  const checkMaintenanceBeforeRedirect = async (role?: string): Promise<boolean> => {
+    if (role === "admin") return true;
+    try {
+      const settingsRes = await api.get("/api/settings/public").catch(() => null);
+      if (settingsRes?.data?.maintenanceMode === true) {
+        setError("Hệ thống đang nâng cấp, vui lòng thử lại trong vài ngày hoặc vài phút nữa.");
+        await logout();
+        return false;
+      }
+    } catch (e) {
+      console.error("Failed to check maintenance settings", e);
+    }
+    return true;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -118,6 +134,9 @@ export function LoginPage() {
     try {
       const result = await login(loginIdentifier.trim(), loginPassword);
       if (result.success) {
+        const allowed = await checkMaintenanceBeforeRedirect(result.role);
+        if (!allowed) return;
+
         toast.success("Đăng nhập thành công!");
         if (result.role === "admin") {
           navigate("/admin/dashboard");
@@ -211,14 +230,12 @@ export function LoginPage() {
 
   const handleGoogleSuccess = async (tokenResponse: any) => {
     try {
-      // For useGoogleLogin 'implicit' flow, we get access_token.
-      // But the backend expects idToken.
-      // Actually, if we use the GSI button, we get idToken.
-      // If we use useGoogleLogin, we usually get access_token.
-      // I'll use the idToken flow.
       setError("");
       const result = await googleLogin({ idToken: tokenResponse.credential });
       if (result.success) {
+        const allowed = await checkMaintenanceBeforeRedirect(result.role);
+        if (!allowed) return;
+
         if (result.role === "admin") navigate("/admin/dashboard");
         else if (result.role === "landlord") navigate("/landlord/dashboard");
         else navigate("/");
@@ -239,6 +256,9 @@ export function LoginPage() {
           role: mode === "register" ? registerData.role : undefined,
         });
         if (result.success) {
+          const allowed = await checkMaintenanceBeforeRedirect(result.role);
+          if (!allowed) return;
+
           toast.success("Đăng nhập bằng Google thành công!");
           if (result.role === "admin") navigate("/admin/dashboard");
           else if (result.role === "landlord") navigate("/landlord/dashboard");
