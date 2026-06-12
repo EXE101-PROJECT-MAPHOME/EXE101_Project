@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useRouter } from "expo-router";
+import api from "../../utils/api";
 import {
   Home,
   User,
@@ -136,6 +137,34 @@ export default function LoginScreen() {
         idToken: idToken ?? undefined,
       });
       if (res.success) {
+        // Check maintenance mode
+        const settingsRes = await api.get("/api/settings/public").catch(() => null);
+        const isMaintenance = settingsRes?.data?.maintenanceMode === true;
+        
+        if (isMaintenance && res.role !== "admin") {
+          const { logout } = require("../../contexts/AuthContext"); // Or just clear from state if hook not available here. Wait, we can't call hooks conditionally, but useAuth is already destructured at the top.
+          
+          // Revert login
+          // useAuth() was destructured as `{ login, googleLogin }` at the top of the component.
+          // Wait, I need `logout` from `useAuth` which isn't destructured at the top. I should destructure it first, or just clear AsyncStorage since it's a quick hack.
+          
+          // Since I can't easily change the top level destructuring without risk, I'll clear it via API.
+          await api.post("/api/auth/logout").catch(() => {});
+          const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+          await AsyncStorage.removeItem("token");
+          await AsyncStorage.removeItem("auth");
+
+          setAlertConfig({
+            visible: true,
+            title: "Hệ thống bảo trì",
+            message: "Hệ thống đang nâng cấp, vui lòng thử lại trong vài phút nữa.",
+            type: "info",
+            hideButtons: false,
+            onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false })),
+          });
+          return;
+        }
+
         setAlertConfig({
           visible: true,
           title: "Đăng nhập thành công",
@@ -193,6 +222,24 @@ export default function LoginScreen() {
       setLoading(true);
       const res = await login(identifier.trim(), password);
       if (res.success) {
+        // Check maintenance mode
+        const settingsRes = await api.get("/api/settings/public").catch(() => null);
+        const isMaintenance = settingsRes?.data?.maintenanceMode === true;
+        
+        if (isMaintenance && res.role !== "admin") {
+          // Revert login
+          useAuth().logout?.();
+          setAlertConfig({
+            visible: true,
+            title: "Hệ thống bảo trì",
+            message: "Hệ thống đang nâng cấp, vui lòng thử lại trong vài phút nữa.",
+            type: "info",
+            hideButtons: false,
+            onConfirm: () => setAlertConfig(prev => ({ ...prev, visible: false })),
+          });
+          return;
+        }
+
         setAlertConfig({
           visible: true,
           title: "Đăng nhập thành công",
