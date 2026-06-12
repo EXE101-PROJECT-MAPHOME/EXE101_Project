@@ -887,7 +887,7 @@ export function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {blogPosts.map((post) => (
+              {blogPosts.slice(0, 3).map((post) => (
                 <article
                   key={post.id}
                   className="bg-white rounded-[32px] overflow-hidden shadow-2xl shadow-slate-200/50 hover:shadow-green-900/10 cursor-pointer group border border-slate-100 flex flex-col will-change-transform"

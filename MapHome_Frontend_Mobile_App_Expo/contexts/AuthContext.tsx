@@ -6,7 +6,7 @@ import React, {
   ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../utils/api";
+import api, { registerOnUnauthorized } from "../utils/api";
 
 export interface User {
   id: string;
@@ -57,6 +57,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    registerOnUnauthorized(() => {
+      setUser(null);
+    });
+
     const initializeAuth = async () => {
       try {
         const storedAuth = await AsyncStorage.getItem("auth");

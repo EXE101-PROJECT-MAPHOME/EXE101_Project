@@ -267,28 +267,31 @@ export function PostRoomPage() {
   ): T | undefined => {
     const normalized = normalizeName(searchName);
 
-    // Try exact match first
+    // 1. Try exact match first
     const exact = items.find((item) => normalizeName(item.name) === normalized);
     if (exact) return exact;
 
-    // Try partial match (contains)
-    const partial = items.find(
-      (item) =>
-        normalizeName(item.name).includes(normalized) ||
-        normalized.includes(normalizeName(item.name)),
-    );
+    // 2. Try word boundary match (prevents "3" matching inside "435")
+    const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    const partial = items.find((item) => {
+      const itemNorm = normalizeName(item.name);
+      if (!itemNorm) return false;
+      // Use word boundaries. E.g. \b3\b will match "Quận 3" but NOT "435"
+      const regexItem = new RegExp(`\\b${escapeRegExp(itemNorm)}\\b`);
+      const regexSearch = new RegExp(`\\b${escapeRegExp(normalized)}\\b`);
+      return regexItem.test(normalized) || regexSearch.test(itemNorm);
+    });
     if (partial) return partial;
 
-    // Try matching numbers (e.g., "Quận 1" → "1")
-    const numberMatch = normalized.match(/\d+/);
+    // 3. Try matching isolated numbers as a last resort
+    const numberMatch = normalized.match(/\b\d+\b/);
     if (numberMatch) {
       const num = numberMatch[0];
-      const byNumber = items.find(
-        (item) =>
-          normalizeName(item.name).includes(num) &&
-          /\d+/.test(normalizeName(item.name)),
-      );
-      if (byNumber) return byNumber;
+      return items.find((item) => {
+        const itemNumberMatch = item.name.match(/\b\d+\b/);
+        return itemNumberMatch && itemNumberMatch[0] === num;
+      });
     }
 
     return undefined;
@@ -313,73 +316,66 @@ export function PostRoomPage() {
       type: string,
     ) => component.types.includes(type);
 
-    const findComponent = (...types: string[]) =>
-      components.find((component) =>
-        types.some((type) => hasType(component, type)),
-      );
+    // Goong AI often returns "locality" for BOTH Province and District!
+    // So relying purely on `types` like "administrative_area_level_1" will fail.
+    // Instead, we will try to match ANY component's name against our known databases.
+    
+    // 1. Find Province
+    let matchedProvince: Province | undefined;
+    for (const comp of components) {
+      matchedProvince = findBestMatch(comp.long_name, provinces);
+      if (matchedProvince) break;
+    }
 
-    const cityComp = findComponent(
-      "administrative_area_level_1",
-      "province"
-    );
-    
-    console.log("🏙️ AutoPopulate - City Component found:", cityComp);
-    
-    if (cityComp) {
-      const province = findBestMatch(cityComp.long_name, provinces);
-      console.log("🏙️ AutoPopulate - Province Matched:", province);
+    if (!matchedProvince) {
+      console.warn("⚠️ AutoPopulate - Could not find City/Province in Goong result.", components);
+      return;
+    }
+
+    console.log("🏙️ AutoPopulate - Province Matched:", matchedProvince);
+    setSelectedProvince(matchedProvince.code);
+
+    // 2. Find District
+    try {
+      const distRes = await api.get(`/api/locations/districts/${matchedProvince.code}`);
+      const districtList: District[] = distRes.data;
       
-      if (province) {
-        setSelectedProvince(province.code);
-
-        // Find District — fetch from API then match by name
-        const distComp = findComponent(
-          "administrative_area_level_2",
-          "locality",
-          "district"
-        );
-        
-        console.log("🏙️ AutoPopulate - District Component found:", distComp);
-        
-        if (distComp) {
-          try {
-            const distRes = await api.get(`/api/locations/districts/${province.code}`);
-            const districtList: District[] = distRes.data;
-            const district = findBestMatch(distComp.long_name, districtList);
-            console.log("🏙️ AutoPopulate - District Matched:", district);
-            
-            if (district) {
-              setSelectedDistrict(district.code);
-
-              // Find Ward — fetch from API then match by name
-              const wardComp = findComponent(
-                "sublocality_level_1",
-                "ward",
-                "sublocality"
-              );
-              
-              console.log("🏙️ AutoPopulate - Ward Component found:", wardComp);
-              
-              if (wardComp) {
-                try {
-                  const wardRes = await api.get(`/api/locations/wards/${district.code}`);
-                  const wardList: Ward[] = wardRes.data;
-                  const ward = findBestMatch(wardComp.long_name, wardList);
-                  console.log("🏙️ AutoPopulate - Ward Matched:", ward);
-                  
-                  if (ward) setSelectedWard(ward.code);
-                } catch (e) {
-                  console.error("Failed to fetch wards", e);
-                }
-              }
-            }
-          } catch (e) {
-            console.error("Failed to fetch districts", e);
-          }
-        }
+      let matchedDistrict: District | undefined;
+      for (const comp of components) {
+        matchedDistrict = findBestMatch(comp.long_name, districtList);
+        if (matchedDistrict) break;
       }
-    } else {
-      console.warn("⚠️ AutoPopulate - Could not find City/Province component in Goong result", components);
+
+      if (!matchedDistrict) {
+        console.warn("⚠️ AutoPopulate - Could not find District in Goong result.", components);
+        return;
+      }
+
+      console.log("🏙️ AutoPopulate - District Matched:", matchedDistrict);
+      setSelectedDistrict(matchedDistrict.code);
+
+      // 3. Find Ward
+      try {
+        const wardRes = await api.get(`/api/locations/wards/${matchedDistrict.code}`);
+        const wardList: Ward[] = wardRes.data;
+        
+        let matchedWard: Ward | undefined;
+        for (const comp of components) {
+          matchedWard = findBestMatch(comp.long_name, wardList);
+          if (matchedWard) break;
+        }
+
+        if (matchedWard) {
+          console.log("🏙️ AutoPopulate - Ward Matched:", matchedWard);
+          setSelectedWard(matchedWard.code);
+        } else {
+          console.warn("⚠️ AutoPopulate - Could not find Ward in Goong result.", components);
+        }
+      } catch (e) {
+        console.error("Failed to fetch wards for auto-populate", e);
+      }
+    } catch (e) {
+      console.error("Failed to fetch districts for auto-populate", e);
     }
   };
 

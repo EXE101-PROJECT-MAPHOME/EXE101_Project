@@ -88,21 +88,41 @@ export default function PostRoomScreen() {
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
+  // ── Goong AI Search State ───────────────────────────────────────────────
+  const [goongQuery, setGoongQuery] = useState("");
+  const [goongSuggestions, setGoongSuggestions] = useState<any[]>([]);
+  const [isSearchingGoong, setIsSearchingGoong] = useState(false);
+
   // ── Location pickers (API-backed) ────────────────────────────────────────
   type LocationItem = { code: number; name: string };
+  const [provinces, setProvinces] = useState<LocationItem[]>([]);
   const [districts, setDistricts] = useState<LocationItem[]>([]);
   const [wards, setWards] = useState<LocationItem[]>([]);
+  const [selectedProvince, setSelectedProvince] = useState<LocationItem | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<LocationItem | null>(null);
   const [selectedWard, setSelectedWard] = useState<LocationItem | null>(null);
   const [street, setStreet] = useState("");
-  const [pickerVisible, setPickerVisible] = useState<"district" | "ward" | null>(null);
+  const [pickerVisible, setPickerVisible] = useState<"province" | "district" | "ward" | null>(null);
 
-  // Fetch districts (TP.HCM code = 79) on mount
+  // Fetch provinces on mount
   useEffect(() => {
-    api.get("/api/locations/districts/79")
-      .then(res => setDistricts(res.data))
+    api.get("/api/locations/provinces")
+      .then(res => setProvinces(res.data))
       .catch(() => {});
   }, []);
+
+  // Fetch districts when province changes
+  useEffect(() => {
+    if (selectedProvince) {
+      setSelectedDistrict(null);
+      setSelectedWard(null);
+      setDistricts([]);
+      setWards([]);
+      api.get(`/api/locations/districts/${selectedProvince.code}`)
+        .then(res => setDistricts(res.data))
+        .catch(() => {});
+    }
+  }, [selectedProvince]);
 
   // Fetch wards when district changes
   useEffect(() => {
@@ -121,9 +141,9 @@ export default function PostRoomScreen() {
     if (street) parts.push(street);
     if (selectedWard) parts.push(selectedWard.name);
     if (selectedDistrict) parts.push(selectedDistrict.name);
-    parts.push("TP. Hồ Chí Minh");
+    if (selectedProvince) parts.push(selectedProvince.name);
     return parts.join(", ");
-  }, [street, selectedWard, selectedDistrict]);
+  }, [street, selectedWard, selectedDistrict, selectedProvince]);
   
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const p = 0.017453292519943295; // Math.PI / 180
@@ -169,8 +189,8 @@ export default function PostRoomScreen() {
 
   const handleNext = () => {
     if (step === "info") {
-      if (!formData.name || !formData.price || !formData.area || !formData.phone || !selectedDistrict || !selectedWard) {
-        Alert.alert("Thiếu thông tin", "Vui lòng điền đầy đủ các thông tin bắt buộc (*), bao gồm Quận/Huyện và Phường/Xã.");
+      if (!formData.name || !formData.price || !formData.area || !formData.phone || !selectedProvince || !selectedDistrict || !selectedWard) {
+        Alert.alert("Thiếu thông tin", "Vui lòng điền đầy đủ các thông tin bắt buộc (*), bao gồm Tỉnh/Thành, Quận/Huyện và Phường/Xã.");
         return;
       }
     } else if (step === "pin-map") {
@@ -252,6 +272,147 @@ export default function PostRoomScreen() {
     }
   };
 
+  // ── Goong AI Logic ────────────────────────────────────────────────────────
+  const normalizeName = (name: string) => {
+    if (!name) return "";
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/^(quận|huyện|phường|xã|thị trấn|tp\.|thành phố|t\.|q\.|h\.|p\.)[\s\.]*/, "")
+      .replace(/[\s\.]+/g, " ")
+      .trim();
+  };
+
+  const findBestMatch = <T extends { name: string; code: string | number }>(
+    searchName: string,
+    items: T[],
+  ): T | undefined => {
+    const normalized = normalizeName(searchName);
+    const exact = items.find((item) => normalizeName(item.name) === normalized);
+    if (exact) return exact;
+
+    const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const partial = items.find((item) => {
+      const itemNorm = normalizeName(item.name);
+      if (!itemNorm) return false;
+      const regexItem = new RegExp(`\\b${escapeRegExp(itemNorm)}\\b`);
+      const regexSearch = new RegExp(`\\b${escapeRegExp(normalized)}\\b`);
+      return regexItem.test(normalized) || regexSearch.test(itemNorm);
+    });
+    if (partial) return partial;
+
+    const numberMatch = normalized.match(/\b\d+\b/);
+    if (numberMatch) {
+      const num = numberMatch[0];
+      return items.find((item) => {
+        const itemNumberMatch = item.name.match(/\b\d+\b/);
+        return itemNumberMatch && itemNumberMatch[0] === num;
+      });
+    }
+
+    return undefined;
+  };
+
+  const handleGoongSearch = async (text: string) => {
+    setGoongQuery(text);
+    if (!text.trim()) {
+      setGoongSuggestions([]);
+      return;
+    }
+    setIsSearchingGoong(true);
+    try {
+      const res = await api.get(`/api/map/autocomplete?input=${encodeURIComponent(text)}`);
+      setGoongSuggestions(res.data.predictions || []);
+    } catch (e) {
+      console.error("Goong Search Error", e);
+    } finally {
+      setIsSearchingGoong(false);
+    }
+  };
+
+  const autoPopulateLocation = async (result: any) => {
+    const components = result.address_components || [];
+    if (!components.length) return;
+
+    try {
+      // Fetch provinces again to ensure we have the latest list for matching
+      const provRes = await api.get("/api/locations/provinces");
+      const provinceList = provRes.data;
+
+      let matchedProvince: LocationItem | undefined;
+      for (const comp of components) {
+        matchedProvince = findBestMatch(comp.long_name, provinceList);
+        if (matchedProvince) break;
+      }
+
+      if (!matchedProvince) return;
+      setSelectedProvince(matchedProvince);
+
+      const distRes = await api.get(`/api/locations/districts/${matchedProvince.code}`);
+      const districtList = distRes.data;
+      
+      let matchedDistrict: LocationItem | undefined;
+      for (const comp of components) {
+        matchedDistrict = findBestMatch(comp.long_name, districtList);
+        if (matchedDistrict) break;
+      }
+
+      if (matchedDistrict) {
+        setSelectedDistrict(matchedDistrict);
+        
+        try {
+          const wardRes = await api.get(`/api/locations/wards/${matchedDistrict.code}`);
+          const wardList = wardRes.data;
+          
+          let matchedWard: LocationItem | undefined;
+          for (const comp of components) {
+            matchedWard = findBestMatch(comp.long_name, wardList);
+            if (matchedWard) break;
+          }
+
+          if (matchedWard) {
+            setSelectedWard(matchedWard);
+          }
+        } catch (e) {
+          console.error("Ward fetch failed", e);
+        }
+      }
+    } catch (e) {
+      console.error("AutoPopulate fetch failed", e);
+    }
+  };
+
+  const handleSelectGoongAddress = async (prediction: any) => {
+    setGoongQuery(prediction.description);
+    setGoongSuggestions([]);
+    
+    try {
+      const res = await api.get(`/api/map/place-detail?place_id=${prediction.place_id}`);
+      const result = res.data;
+      
+      if (result.geometry?.location) {
+        setPinnedLocation({
+          latitude: result.geometry.location.lat,
+          longitude: result.geometry.location.lng,
+        });
+      }
+
+      if (prediction.structured_formatting?.main_text) {
+        setStreet(prediction.structured_formatting.main_text);
+      } else {
+        const streetPart = result.formatted_address?.split(",")[0];
+        if (streetPart) setStreet(streetPart);
+      }
+
+      autoPopulateLocation(result);
+      Alert.alert("Thành công", "Đã tự động xác định vị trí & địa chỉ! 📍");
+    } catch (e) {
+      console.error("Place Detail Error", e);
+      Alert.alert("Lỗi", "Không thể lấy chi tiết địa chỉ.");
+    }
+  };
+
+  // ── Image Picker ──────────────────────────────────────────────────────────
   const handlePickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -437,14 +598,65 @@ export default function PostRoomScreen() {
                 </View>
               </View>
 
-              <View className="bg-white p-5 rounded-[24px] mb-6 shadow-sm border border-slate-100">
+              <View className="bg-white p-5 rounded-[24px] mb-6 shadow-sm border border-slate-100 z-50">
                 <Text className="text-sm font-bold text-slate-600 mb-4">Địa chỉ *</Text>
+
+                {/* Goong AI Search */}
+                <Text className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">TÌM NHANH ĐỊA CHỈ (GOONG AI)</Text>
+                <View className="relative z-50 mb-4">
+                  <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                    <MapPin size={18} color="#6366f1" className="mr-3" />
+                    <TextInput
+                      className="flex-1 text-base text-slate-800"
+                      placeholder="VD: Landmark 81..."
+                      value={goongQuery}
+                      onChangeText={handleGoongSearch}
+                    />
+                    {isSearchingGoong && <ActivityIndicator size="small" color="#6366f1" />}
+                  </View>
+                  
+                  {goongSuggestions.length > 0 && (
+                    <View className="absolute top-[52px] left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-[250px] overflow-hidden">
+                      <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                        {goongSuggestions.map((item, idx) => (
+                          <TouchableOpacity
+                            key={item.place_id || idx}
+                            className={`px-4 py-3 flex-row items-center ${idx < goongSuggestions.length - 1 ? 'border-b border-slate-100' : ''}`}
+                            onPress={() => handleSelectGoongAddress(item)}
+                          >
+                            <MapPin size={16} color="#94a3b8" className="mr-3" />
+                            <View className="flex-1">
+                              <Text className="text-sm font-bold text-slate-800">{item.structured_formatting?.main_text || item.description}</Text>
+                              {item.structured_formatting?.secondary_text && (
+                                <Text className="text-xs text-slate-500 mt-0.5" numberOfLines={1}>{item.structured_formatting.secondary_text}</Text>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+
+                {/* Province Picker */}
+                <Text className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Tỉnh / Thành phố *</Text>
+                <TouchableOpacity
+                  onPress={() => setPickerVisible("province")}
+                  className="flex-row items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 mb-3"
+                >
+                  <Text className={selectedProvince ? "text-slate-800 font-medium text-base" : "text-slate-400 text-base"}>
+                    {selectedProvince ? selectedProvince.name : "Chọn tỉnh / thành phố"}
+                  </Text>
+                  <ChevronDown size={18} color="#94a3b8" />
+                </TouchableOpacity>
 
                 {/* District Picker */}
                 <Text className="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Quận / Huyện *</Text>
                 <TouchableOpacity
-                  onPress={() => setPickerVisible("district")}
-                  className="flex-row items-center justify-between bg-slate-50 p-4 rounded-xl border border-slate-200 mb-3"
+                  onPress={() => selectedProvince ? setPickerVisible("district") : Alert.alert("Chưa chọn Tỉnh", "Vui lòng chọn Tỉnh/Thành trước.")}
+                  className={`flex-row items-center justify-between bg-slate-50 p-4 rounded-xl border mb-3 ${
+                    selectedProvince ? "border-slate-200" : "border-slate-100 opacity-60"
+                  }`}
                 >
                   <Text className={selectedDistrict ? "text-slate-800 font-medium text-base" : "text-slate-400 text-base"}>
                     {selectedDistrict ? selectedDistrict.name : "Chọn quận / huyện"}
@@ -498,29 +710,31 @@ export default function PostRoomScreen() {
                 />
                 <View className="bg-white rounded-t-[28px] max-h-[60%] pb-8">
                   <View className="w-12 h-1.5 bg-slate-300 rounded-full self-center mt-4 mb-4" />
-                  <Text className="text-base font-black text-slate-800 px-5 mb-3">
-                    {pickerVisible === "district" ? "Chọn Quận / Huyện" : "Chọn Phường / Xã"}
+                  <Text className="text-center font-bold text-lg text-slate-800 mb-4">
+                    {pickerVisible === "province" ? "Chọn Tỉnh / Thành phố" : pickerVisible === "district" ? "Chọn Quận / Huyện" : "Chọn Phường / Xã"}
                   </Text>
+                  
                   <FlatList
-                    data={pickerVisible === "district" ? districts : wards}
+                    data={pickerVisible === "province" ? provinces : pickerVisible === "district" ? districts : wards}
                     keyExtractor={(item) => item.code.toString()}
+                    className="px-2"
                     renderItem={({ item }) => {
-                      const isSelected = pickerVisible === "district"
-                        ? selectedDistrict?.code === item.code
-                        : selectedWard?.code === item.code;
+                      const isSelected = 
+                        pickerVisible === "province" ? selectedProvince?.code === item.code :
+                        pickerVisible === "district" ? selectedDistrict?.code === item.code : 
+                        selectedWard?.code === item.code;
+                      
                       return (
                         <TouchableOpacity
-                          onPress={() => {
-                            if (pickerVisible === "district") {
-                              setSelectedDistrict(item);
-                            } else {
-                              setSelectedWard(item);
-                            }
-                            setPickerVisible(null);
-                          }}
                           className={`px-5 py-4 border-b border-slate-50 flex-row items-center justify-between ${
                             isSelected ? "bg-indigo-50" : ""
                           }`}
+                          onPress={() => {
+                            if (pickerVisible === "province") setSelectedProvince(item);
+                            else if (pickerVisible === "district") setSelectedDistrict(item);
+                            else setSelectedWard(item);
+                            setPickerVisible(null);
+                          }}
                         >
                           <Text className={`text-base ${
                             isSelected ? "text-indigo-600 font-bold" : "text-slate-700 font-medium"

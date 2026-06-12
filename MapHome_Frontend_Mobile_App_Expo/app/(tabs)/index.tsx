@@ -835,7 +835,7 @@ export default function HomePage() {
               </TouchableOpacity>
             </View>
 
-            {blogPosts.map((post, index) => (
+            {blogPosts.slice(0, 3).map((post, index) => (
               <TouchableOpacity
                 key={post._id || post.id || index}
                 onPress={() => router.push(`/blog/${post._id || post.id}` as any)}
