@@ -59,8 +59,8 @@ const registerRules = [
     .withMessage("Full name must be at least 2 characters long"),
 
   body("phone")
-    .optional()
-    .matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/)
+    .optional({ values: "falsy" })
+    .matches(/^(?:\+?84|0)(3|5|7|8|9)[0-9]{8}$/)
     .withMessage("Invalid Vietnamese phone number format"),
 
   body("role")

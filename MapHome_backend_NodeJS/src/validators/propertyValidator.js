@@ -50,7 +50,7 @@ const createPropertyRules = [
   body("phone")
     .notEmpty()
     .withMessage("Số điện thoại là bắt buộc")
-    .matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/)
+    .matches(/^(?:\+?84|0)(3|5|7|8|9)[0-9]{8}$/)
     .withMessage(
       "Số điện thoại không hợp lệ (VD: 0912345678 hoặc 84912345678)",
     ),
@@ -104,8 +104,8 @@ const updatePropertyRules = [
       return true;
     }),
   body("phone")
-    .optional()
-    .matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/)
+    .optional({ values: "falsy" })
+    .matches(/^(?:\+?84|0)(3|5|7|8|9)[0-9]{8}$/)
     .withMessage("Số điện thoại không hợp lệ"),
   body("status")
     .optional()
