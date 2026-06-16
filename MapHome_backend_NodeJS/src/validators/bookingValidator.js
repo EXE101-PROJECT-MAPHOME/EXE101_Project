@@ -12,7 +12,7 @@ const createBookingRules = [
     
   body("customerPhone")
     .notEmpty().withMessage("Customer phone is required").bail()
-    .matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/).withMessage("Invalid Vietnamese phone number format"),
+    .matches(/^(?:\+?84|0)(3|5|7|8|9)[0-9]{8}$/).withMessage("Invalid Vietnamese phone number format"),
     
   body("bookingDate")
     .notEmpty().withMessage("Booking date is required").bail()

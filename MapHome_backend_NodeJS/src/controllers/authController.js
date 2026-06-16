@@ -66,7 +66,7 @@ const setRefreshTokenCookie = (res, refreshToken) => {
 };
 
 // POST /api/auth/register
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
     const { username, email, password, fullName, phone, role } = req.body;
 
