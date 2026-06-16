@@ -32,13 +32,7 @@ export default function SavedScreen() {
     return (
       <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
         <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
-          <TouchableOpacity
-            onPress={() => navigateTo(router, ROUTES.USER_DASHBOARD)}
-            className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
-          >
-            <ArrowLeft size={18} color="#16a34a" />
-          </TouchableOpacity>
-          <Text className="text-2xl font-black text-emerald-700">
+          <Text className="text-2xl font-black text-emerald-700 ml-2">
             Phòng đã lưu
           </Text>
         </View>
@@ -89,17 +83,11 @@ export default function SavedScreen() {
       {/* Header */}
       <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center justify-between">
         <View className="flex-row items-center">
-          <TouchableOpacity
-            onPress={() => navigateTo(router, ROUTES.USER_DASHBOARD)}
-            className="w-10 h-10 rounded-xl bg-slate-100 items-center justify-center mr-3"
-          >
-            <ArrowLeft size={18} color="#16a34a" />
-          </TouchableOpacity>
-          <Text className="text-2xl font-black text-emerald-700">
+          <Text className="text-2xl font-black text-emerald-700 ml-2">
             Phòng đã lưu
           </Text>
         </View>
-        <View className="bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+        <View className="bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 mr-2">
           <Text className="text-emerald-700 font-bold text-xs">
             {savedProperties.length} phòng
           </Text>
