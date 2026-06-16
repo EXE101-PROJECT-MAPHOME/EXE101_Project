@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import api from "../../utils/api";
 import {
   Home,
@@ -69,6 +69,13 @@ function GoogleLogo() {
 export default function LoginScreen() {
   const router = useRouter();
   const { login, googleLogin } = useAuth();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setError("");
+      setErrors({ identifier: "", password: "" });
+    }, [])
+  );
 
   const tint = useThemeColor({}, "tint");
   const background = useThemeColor({}, "background");
