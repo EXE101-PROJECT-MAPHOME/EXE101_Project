@@ -6,6 +6,7 @@ import { RentalMapView } from "@/app/components/RentalMapView";
 import { PropertyList } from "@/app/components/PropertyList";
 import { PropertyCard } from "@/app/components/PropertyCard";
 import { useProperties } from "@/app/contexts/useProperties";
+import { useAuth } from "@/app/contexts/AuthContext";
 import {
   RentalProperty,
   RentalFilters,
@@ -23,6 +24,7 @@ import {
   Heart,
   Loader2,
   MapPin,
+  Lock,
 } from "lucide-react";
 import { FilterPanel } from "@/app/components/FilterPanel";
 import { defaultFilters } from "@/app/utils/filterConstants";
@@ -45,8 +47,73 @@ import {
 
 export function MapPage() {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const { properties, searchProperties, loading, searchSummary } =
     useProperties();
+
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="min-h-screen w-full flex flex-col bg-slate-50 overflow-hidden">
+        {/* Top Header */}
+        <header className="bg-white/80 backdrop-blur-xl border-b border-slate-100 py-4 px-6 flex items-center justify-between shadow-sm relative z-50">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="hover:bg-emerald-50 rounded-xl transition-colors duration-300 h-10 w-10 flex items-center justify-center"
+            >
+              <ArrowLeft className="size-5 text-slate-700" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="size-10 bg-gradient-to-br from-green-600 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-900/20">
+                <Home className="size-5 text-white" />
+              </div>
+              <span className="text-xl font-black bg-gradient-to-r from-emerald-950 to-emerald-700 bg-clip-text text-transparent tracking-tighter">
+                MapHome
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* Lock Screen Content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-tr from-emerald-50/20 via-slate-50 to-green-50/20">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="w-full max-w-md bg-white border border-slate-100 rounded-3xl p-8 shadow-[0_20px_50px_-12px_rgba(6,78,59,0.08)] flex flex-col items-center text-center"
+          >
+            <div className="w-20 h-20 bg-emerald-50 rounded-full mb-6 flex items-center justify-center border border-emerald-100 shadow-inner relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-tr from-emerald-100 to-green-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <Lock className="size-8 text-emerald-600 relative z-10 animate-pulse" />
+            </div>
+
+            <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-3">
+              Đăng nhập để xem bản đồ
+            </h2>
+            <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-xs mb-8">
+              Hãy đăng nhập tài khoản của bạn để khám phá hàng ngàn phòng trọ xung quanh trên bản đồ tương tác thông minh.
+            </p>
+
+            <button
+              onClick={() => navigate("/login")}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-base h-14 rounded-2xl shadow-lg shadow-emerald-600/20 hover:shadow-xl hover:shadow-emerald-600/30 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 mb-4"
+            >
+              Đăng nhập ngay
+            </button>
+
+            <button
+              onClick={() => navigate("/register")}
+              className="w-full bg-white hover:bg-slate-50 border border-emerald-600/30 text-emerald-700 font-black text-base h-14 rounded-2xl hover:border-emerald-600 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
+            >
+              Tạo tài khoản mới
+            </button>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   const [selectedProperty, setSelectedProperty] =
     useState<RentalProperty | null>(null);
@@ -386,7 +453,7 @@ export function MapPage() {
               <button
                 onClick={() => setViewMode("map")}
                 className={`
-                  flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 will-change-transform
+                  flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 will-change-transform
                   ${
                     viewMode === "map"
                       ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-[1.02]"
@@ -394,7 +461,7 @@ export function MapPage() {
                   }
                 `}
               >
-                <MapIcon className="size-4" />
+                <MapIcon className="size-3.5 sm:size-4" />
                 Bản đồ
               </button>
 
@@ -402,7 +469,7 @@ export function MapPage() {
               <button
                 onClick={() => setViewMode("list")}
                 className={`
-                  flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 will-change-transform
+                  flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all duration-300 will-change-transform
                   ${
                     viewMode === "list"
                       ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 scale-[1.02]"
@@ -410,7 +477,7 @@ export function MapPage() {
                   }
                 `}
               >
-                <List className="size-4" />
+                <List className="size-3.5 sm:size-4" />
                 Danh sách
               </button>
             </div>
