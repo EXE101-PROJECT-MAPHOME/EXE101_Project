@@ -1,7 +1,5 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Platform } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Home,
   Map as MapIcon,
@@ -12,27 +10,15 @@ import {
   Mail,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { HapticTab } from "@/components/haptic-tab";
 
 export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-  const isIOS = Platform.OS === "ios";
-  const isAndroid = Platform.OS === "android";
-  const isWeb = Platform.OS === "web";
-  
-  // Platform-specific bottom spacing
-  // iOS: Always respect safe area with minimum 10px
-  // Android: Respect safe area, minimum 8px (gesture nav area)
-  // Web: No safe area needed
-  const bottomSpacing = isIOS 
-    ? Math.max(insets.bottom, 10)
-    : isAndroid
-    ? Math.max(insets.bottom, 8)
-    : 8;
-  
   const tint = useThemeColor({}, "tint");
   const icon = useThemeColor({}, "icon");
   const background = useThemeColor({}, "background");
-  const borderTopColor = "#f1f5f9";
+  
+  const isLight = background === "#ffffff";
+  const borderColor = isLight ? "#f1f5f9" : "#3f3f46";
 
   return (
     <Tabs
@@ -40,28 +26,23 @@ export default function TabLayout() {
         tabBarActiveTintColor: tint,
         tabBarInactiveTintColor: icon,
         headerShown: false,
+        tabBarButton: HapticTab,
         tabBarStyle: {
           backgroundColor: background,
           borderTopWidth: 1,
-          borderTopColor,
-          height: 52 + bottomSpacing,
-          paddingBottom: bottomSpacing,
+          borderTopColor: borderColor,
+          // Let React Navigation handle height and bottom safe area padding automatically
           paddingTop: 8,
-          paddingLeft: insets.left,
-          paddingRight: insets.right,
-          ...(isAndroid && {
-            elevation: 8,
-          }),
-          ...(isIOS && {
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: -1 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-          }),
+          elevation: 8,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 3,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "600",
+          marginTop: 2,
         },
         tabBarItemStyle: {
           paddingVertical: 4,
@@ -85,6 +66,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="saved"
+        options={{
+          title: "Đã lưu",
+          tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="blog"
         options={{
           title: "Blog",
@@ -94,17 +82,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="saved"
-        options={{
-          title: "Đã lưu",
-          href: null,
-          tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="policy"
         options={{
           title: "Chính sách",
+          href: null,
           tabBarIcon: ({ color, size }) => (
             <FileText size={size} color={color} />
           ),
@@ -114,6 +95,7 @@ export default function TabLayout() {
         name="contact"
         options={{
           title: "Liên hệ",
+          href: null,
           tabBarIcon: ({ color, size }) => <Mail size={size} color={color} />,
         }}
       />

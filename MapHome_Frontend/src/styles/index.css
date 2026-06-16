@@ -281,7 +281,12 @@
 }
 
 /* Ensure body and html take full width on mobile */
-html, body {
+html {
+  width: 100%;
+  max-width: 100%;
+}
+
+body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
