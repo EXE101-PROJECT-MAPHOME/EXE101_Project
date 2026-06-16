@@ -199,6 +199,7 @@ export function LoginPage() {
         setTimeout(() => {
           setMode("login");
           setSuccess("");
+          setError(""); // Clear any registration validation error
           // Điền sẵn username vừa đăng ký
           setLoginIdentifier(registerData.username);
           // Reset form

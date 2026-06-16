@@ -12,7 +12,7 @@ import {
   Modal,
   Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import ROUTES, { navigateTo } from "@/constants/routes";
 import CustomAlert from "@/components/CustomAlert";
 import {
@@ -33,7 +33,7 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 import { useAuth } from "../../contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 
-type Role = "user" | "landlord";
+export type Role = "user" | "landlord" | "admin";
 
 interface FormErrors {
   fullName: string;
@@ -47,6 +47,20 @@ interface FormErrors {
 export default function RegisterScreen() {
   const router = useRouter();
   const { register } = useAuth();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setError("");
+      setErrors({
+        fullName: "",
+        phone: "",
+        email: "",
+        username: "",
+        password: "",
+        confirmPassword: "",
+      });
+    }, [])
+  );
 
   const tint = useThemeColor({}, "tint");
   const background = useThemeColor({}, "background");
@@ -160,8 +174,7 @@ export default function RegisterScreen() {
             msg = "Họ và tên phải có ít nhất 2 ký tự";
           break;
         case "phone":
-          if (!value.trim()) msg = "Vui lòng nhập số điện thoại";
-          else if (!/^(0|\+84)[0-9]{8,10}$/.test(value.replace(/\s/g, "")))
+          if (value.trim() && !/^(?:\+?84|0)(3|5|7|8|9)[0-9]{8}$/.test(value.replace(/\s/g, "")))
             msg = "Số điện thoại không hợp lệ";
           break;
         case "email":
@@ -212,7 +225,6 @@ export default function RegisterScreen() {
         phone,
         role,
       });
-      setLoading(false);
       if (res.success) {
         setAlertConfig({
           visible: true,
@@ -230,6 +242,7 @@ export default function RegisterScreen() {
         setError(
           res.message || "Đăng ký tài khoản thất bại. Vui lòng thử lại.",
         );
+        setLoading(false);
       }
     } catch {
       setLoading(false);
