@@ -116,12 +116,13 @@ export function SearchByWorkplace({ onSearch, currentLocations }: SearchByWorkpl
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
-          className="relative h-12 px-6 rounded-2xl border-emerald-900/10 bg-white/50 backdrop-blur-md hover:bg-emerald-50 hover:border-emerald-600/30 text-emerald-950 font-bold transition-all duration-300 group shadow-sm"
+          className="relative h-10 sm:h-12 px-4 sm:px-6 rounded-lg sm:rounded-2xl border-emerald-900/10 bg-white/50 backdrop-blur-md hover:bg-emerald-50 hover:border-emerald-600/30 text-emerald-950 font-bold transition-all duration-300 group shadow-sm text-sm sm:text-base"
         >
-          <Target className="size-4 mr-2 text-emerald-600 group-hover:scale-125 transition-transform duration-500" />
-          Tìm gần chỗ làm/trường
+          <Target className="size-3.5 sm:size-4 mr-1.5 sm:mr-2 text-emerald-600 group-hover:scale-125 transition-transform duration-500" />
+          <span className="hidden sm:inline">Tìm gần chỗ làm/trường</span>
+          <span className="sm:hidden">Trường / Chỗ làm</span>
           {currentLocations.length > 0 && (
-            <div className="ml-2 size-5 rounded-full bg-emerald-600 text-[10px] text-white flex items-center justify-center font-black animate-pulse">
+            <div className="ml-1.5 sm:ml-2 size-5 rounded-full bg-emerald-600 text-[9px] sm:text-[10px] text-white flex items-center justify-center font-black animate-pulse">
               {currentLocations.length}
             </div>
           )}
