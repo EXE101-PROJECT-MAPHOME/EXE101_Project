@@ -384,7 +384,7 @@ export function LoginPage() {
 
               <h2 className="text-3xl lg:text-4xl font-[900] bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent tracking-tight leading-tight">
                 {mode === "login"
-                  ? "Chào mừng trở lại!"
+                  ? "Chào mừng bạn đến với MapHome"
                   : "Khởi tạo hành trình"}
               </h2>
               <p className="text-slate-400 font-semibold text-lg leading-relaxed">
