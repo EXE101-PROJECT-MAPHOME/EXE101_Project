@@ -317,7 +317,7 @@ export default function LoginScreen() {
                 marginBottom: 8,
               }}
             >
-              Chào mừng trở lại!
+              Chào mừng bạn đến với MapHome
             </Text>
             <Text
               style={{

@@ -106,6 +106,29 @@ export function Navbar() {
                   <span className="hidden lg:inline">{label}</span>
                 </Button>
               ))}
+
+              {isAuthenticated && user?.role === "landlord" && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/post-room")}
+                    className="ml-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 bg-white"
+                  >
+                    <PenSquare className="size-3.5 lg:size-4 mr-1" />
+                    <span className="hidden lg:inline">Đăng tin trọ</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/pricing")}
+                    className="ml-1 border-blue-500 text-blue-600 hover:bg-blue-50 bg-white"
+                  >
+                    <UserPlus className="size-3.5 lg:size-4 mr-1" />
+                    <span className="hidden lg:inline">Nâng cấp gói</span>
+                  </Button>
+                </>
+              )}
             </nav>
 
             {/* Action Buttons */}
@@ -245,6 +268,31 @@ export function Navbar() {
                     <span>{label}</span>
                   </button>
                 ))}
+
+                {isAuthenticated && user?.role === "landlord" && (
+                  <>
+                    <button
+                      onClick={() => {
+                        navigate("/post-room");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all text-emerald-600 bg-emerald-50 hover:bg-emerald-100 mt-2"
+                    >
+                      <PenSquare className="size-5 flex-shrink-0" />
+                      <span>Đăng tin trọ</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate("/pricing");
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all text-blue-600 bg-blue-50 hover:bg-blue-100 mt-1"
+                    >
+                      <UserPlus className="size-5 flex-shrink-0" />
+                      <span>Nâng cấp gói</span>
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* User Actions */}
