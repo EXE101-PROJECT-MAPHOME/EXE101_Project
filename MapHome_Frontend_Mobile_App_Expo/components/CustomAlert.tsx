@@ -89,7 +89,7 @@ export default function CustomAlert({
           </View>
 
           {/* Texts */}
-          <Text className="text-xl font-black text-slate-800 text-center mb-2">
+          <Text className="text-xl font-bold text-slate-800 text-center mb-2">
             {title}
           </Text>
           <Text className="text-sm font-medium text-slate-500 text-center mb-8 px-2 leading-relaxed">

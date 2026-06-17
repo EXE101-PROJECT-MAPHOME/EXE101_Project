@@ -87,7 +87,7 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     setAlertConfig({
       visible: true,
-      title: "Đăng xuất",
+      title: "Đăng Xuất",
       message: "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?",
       type: "info",
       confirmText: "Xác nhận",
@@ -531,7 +531,7 @@ export default function ProfileScreen() {
                 className="bg-white border border-red-200 h-14 rounded-2xl flex-row items-center justify-center shadow-sm"
               >
                 <LogOut size={18} color="#ef4444" />
-                <Text className="text-red-500 font-black text-base ml-2 px-1">
+                <Text className="text-red-500 font-bold text-base ml-2 px-1">
                   Đăng xuất
                 </Text>
               </TouchableOpacity>
@@ -814,8 +814,8 @@ export default function ProfileScreen() {
               className="bg-white border border-red-200 h-14 rounded-2xl flex-row items-center justify-center shadow-sm"
             >
               <LogOut size={18} color="#ef4444" />
-              <Text className="text-red-500 font-black text-base ml-2 px-1">
-                Đăng xuất
+              <Text className="text-red-500 font-bold text-base ml-2 px-1">
+                Đăng Xuất
               </Text>
             </TouchableOpacity>
           </View>
