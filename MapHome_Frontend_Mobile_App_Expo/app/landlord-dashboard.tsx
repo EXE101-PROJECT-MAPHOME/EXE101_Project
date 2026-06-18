@@ -70,19 +70,24 @@ export default function LandlordDashboardScreen() {
   const [verifications, setVerifications] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [vouchers, setVouchers] = useState<any[]>([]);
+  const [savedVoucherIds, setSavedVoucherIds] = useState<string[]>([]);
 
   const fetchData = async (activeTab: DashboardTab) => {
     try {
       setScreenLoading(true);
       if (activeTab === "overview") {
-        const [aRes, pRes, vRes] = await Promise.all([
+        const [aRes, pRes, vRes, sRes] = await Promise.all([
           api.get("/api/landlord/analytics").catch(() => ({ data: null })),
           api.get("/api/landlord/properties").catch(() => ({ data: [] })),
           api.get("/api/vouchers").catch(() => ({ data: [] })),
+          api.get("/api/vouchers/me/saved").catch(() => ({ data: [] })),
         ]);
         setAnalytics(aRes.data);
         setPosts(pRes.data || []);
         setVouchers(vRes.data || []);
+        if (sRes && sRes.data) {
+          setSavedVoucherIds(sRes.data.map((v: any) => v._id || v.id));
+        }
       }
       if (activeTab === "posts") {
         const res = await api
@@ -251,9 +256,53 @@ export default function LandlordDashboardScreen() {
     }
   };
 
-  const copyToClipboard = async (code: string) => {
-    await Clipboard.setStringAsync(code);
-    Alert.alert("Thành công", `Đã sao chép mã voucher: ${code}`);
+  const handleToggleSaveVoucher = async (voucher: any) => {
+    const vId = voucher._id || voucher.id;
+    if (!vId) return;
+
+    if (!user) {
+      await Clipboard.setStringAsync(voucher.code);
+      Alert.alert(
+        "Đã sao chép mã",
+        "Đã sao chép mã voucher vào bộ nhớ tạm. Bạn hãy đăng nhập để lưu vào Ví Voucher nhé!"
+      );
+      return;
+    }
+
+    const isSaved = savedVoucherIds.includes(vId);
+    if (isSaved) {
+      Alert.alert(
+        "Bỏ lưu voucher",
+        `Bạn có chắc chắn muốn bỏ lưu mã "${voucher.code}" khỏi ví của mình không?`,
+        [
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Bỏ lưu",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await api.post(`/api/vouchers/${vId}/unsave`);
+                setSavedVoucherIds((prev) => prev.filter((id) => id !== vId));
+                Alert.alert("Thành công", "Đã gỡ voucher khỏi ví của bạn.");
+              } catch (error) {
+                Alert.alert("Lỗi", "Không thể gỡ voucher khỏi ví.");
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      try {
+        await api.post(`/api/vouchers/${vId}/save`);
+        setSavedVoucherIds((prev) => [...prev, vId]);
+        Alert.alert("Thành công", "Lưu voucher thành công! Bạn có thể sử dụng mã này trong trang thanh toán.");
+      } catch (error: any) {
+        Alert.alert(
+          "Lỗi",
+          error.response?.data?.message || "Không thể lưu voucher vào ví."
+        );
+      }
+    }
   };
 
   if (loading || screenLoading) {
@@ -403,7 +452,7 @@ export default function LandlordDashboardScreen() {
             {/* Voucher Section */}
             {vouchers.length > 0 && (
               <LinearGradient
-                colors={['#10b981', '#3b82f6', '#6366f1']}
+                colors={['#059669', '#1d4ed8']} // Emerald to Indigo gradient matching brand
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 className="rounded-3xl p-5 mb-4 shadow-sm"
@@ -422,40 +471,47 @@ export default function LandlordDashboardScreen() {
                   </View>
                 </View>
 
-                {vouchers.map((voucher) => (
-                  <View
-                    key={voucher._id || voucher.id}
-                    className="bg-white rounded-2xl p-4 mb-3 flex-row items-center justify-between border border-slate-100"
-                  >
-                    <View className="flex-row items-center flex-1 mr-2">
-                      <View className="items-center justify-center bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl mr-3">
-                        <Text className="text-emerald-700 font-black text-lg">
-                          {voucher.discountPercentage}%
-                        </Text>
-                        <Text className="text-emerald-600 font-bold text-[9px] uppercase tracking-wider">
-                          GIẢM
-                        </Text>
-                      </View>
-                      <View className="flex-1">
-                        <Text className="font-black text-slate-800 text-sm" numberOfLines={1}>
-                          Giảm {voucher.discountPercentage}% hóa đơn
-                        </Text>
-                        <Text className="text-[10px] text-slate-500 mt-0.5" numberOfLines={1}>
-                          {voucher.description || "Áp dụng cho mọi dịch vụ tin đăng"}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <TouchableOpacity
-                      onPress={() => copyToClipboard(voucher.code)}
-                      className="bg-emerald-600 px-3 py-2 rounded-xl active:opacity-80"
+                {vouchers.map((voucher) => {
+                  const isSaved = savedVoucherIds.includes(voucher._id || voucher.id);
+                  return (
+                    <View
+                      key={voucher._id || voucher.id}
+                      className="bg-white rounded-2xl p-4 mb-3 flex-row items-center justify-between border border-slate-100"
                     >
-                      <Text className="text-white font-black text-xs uppercase">
-                        Lưu mã
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                      <View className="flex-row items-center flex-1 mr-2">
+                        <View className="items-center justify-center bg-emerald-50 border border-emerald-100 px-3 py-2 rounded-xl mr-3">
+                          <Text className="text-emerald-700 font-black text-lg">
+                            {voucher.discountPercentage}%
+                          </Text>
+                          <Text className="text-emerald-600 font-bold text-[9px] uppercase tracking-wider">
+                            GIẢM
+                          </Text>
+                        </View>
+                        <View className="flex-1">
+                          <Text className="font-black text-slate-800 text-sm" numberOfLines={1}>
+                            Giảm {voucher.discountPercentage}% hóa đơn
+                          </Text>
+                          <Text className="text-[10px] text-slate-500 mt-0.5" numberOfLines={1}>
+                            {voucher.description || "Áp dụng cho mọi dịch vụ tin đăng"}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        onPress={() => handleToggleSaveVoucher(voucher)}
+                        className={`px-3 py-2 rounded-xl active:opacity-80 ${
+                          isSaved ? "bg-slate-100 border border-slate-200" : "bg-emerald-600"
+                        }`}
+                      >
+                        <Text className={`font-black text-xs uppercase ${
+                          isSaved ? "text-slate-500" : "text-white"
+                        }`}>
+                          {isSaved ? "Đã lưu" : "Lưu mã"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
               </LinearGradient>
             )}
 

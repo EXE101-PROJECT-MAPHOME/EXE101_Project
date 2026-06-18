@@ -280,13 +280,8 @@
   scrollbar-width: none;
 }
 
-/* Ensure body and html take full width on mobile */
-html {
-  width: 100%;
-  max-width: 100%;
-}
-
-body {
+/* Ensure body and html take full width on mobile and prevent double scrollbars */
+html, body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
