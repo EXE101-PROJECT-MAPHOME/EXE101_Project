@@ -31,6 +31,12 @@ import {
   Clock,
   Users,
   Tag,
+  QrCode,
+  Search,
+  Copy,
+  ChevronDown,
+  ChevronUp,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/app/utils/api";
@@ -66,6 +72,9 @@ export function CheckoutPage() {
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [savedVouchers, setSavedVouchers] = useState<any[]>([]);
   const [loadingVouchers, setLoadingVouchers] = useState(false);
+  const [voucherSearchQuery, setVoucherSearchQuery] = useState("");
+  const [voucherTab, setVoucherTab] = useState<"all" | "applicable">("all");
+  const [expandedVoucherId, setExpandedVoucherId] = useState<string | null>(null);
 
   // Đọc state từ location trước, fallback sessionStorage nếu bị mất (iframe/sandbox issue)
   const rawState =
@@ -852,34 +861,38 @@ export function CheckoutPage() {
                   <Button
                     onClick={handlePayment}
                     disabled={!agreedToTerms || isProcessing}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-xl rounded-full py-4 text-lg uppercase tracking-wider"
+                    className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:via-indigo-700 hover:to-blue-800 text-white font-black shadow-[0_8px_30px_rgba(79,70,229,0.25)] hover:shadow-[0_8px_30px_rgba(79,70,229,0.45)] rounded-2xl py-6 text-sm uppercase tracking-widest transition-all duration-300 transform active:scale-[0.99] border border-blue-500/20"
                     size="lg"
                   >
                     {isProcessing ? (
-                      <>
-                        <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Đang xử lý...
-                      </>
+                      <div className="flex items-center justify-center">
+                        <div className="size-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3" />
+                        <span>Đang xử lý giao dịch...</span>
+                      </div>
                     ) : (
-                      <>
-                        <Lock className="size-4 mr-2" />
-                        {totalAmount === 0
-                          ? "Kích hoạt gói dịch vụ (Miễn phí)"
-                          : "Thanh toán qua VietQR (PayOS)"}
-                      </>
+                      <div className="flex items-center justify-center gap-2">
+                        <QrCode className="size-5" />
+                        <span>
+                          {totalAmount === 0
+                            ? "Kích hoạt gói dịch vụ (Miễn phí)"
+                            : "Thanh toán qua VietQR (PayOS)"}
+                        </span>
+                      </div>
                     )}
                   </Button>
 
                   {totalAmount > 0 && (
                     <>
-                      <div className="flex items-center justify-center gap-2 py-3 bg-blue-50 rounded-lg border border-blue-100">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                            <span className="text-white font-bold text-xs">VN</span>
+                      <div className="flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100/50 shadow-inner">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center shadow-sm">
+                            <span className="text-white font-black text-[9px] uppercase">VN</span>
                           </div>
-                          <span className="font-bold text-green-700">PayOS</span>
+                          <span className="font-black text-slate-800 text-sm tracking-tight">pay<span className="text-emerald-600">OS</span></span>
                         </div>
-                        <Lock className="size-4 text-blue-600" />
+                        <div className="w-px h-4 bg-slate-300" />
+                        <span className="text-[11px] text-slate-500 font-semibold">Đối tác thanh toán chính thức</span>
+                        <ShieldCheck className="size-4 text-blue-600" />
                       </div>
 
                       <p className="text-xs text-center text-gray-500 leading-relaxed">
@@ -986,140 +999,338 @@ export function CheckoutPage() {
 
       {/* Shopee-style Voucher Selector Modal themed in MapHome Emerald/Indigo */}
       {showVoucherModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl border border-slate-100 animate-[fadeIn_0.2s_ease-out]">
-            {/* Header */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 px-6 py-5 border-b flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Tag className="size-5 text-emerald-600 animate-pulse" />
-                <h3 className="text-xl font-black text-emerald-950">Ví Voucher Của Bạn</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-white rounded-[32px] w-full max-w-xl overflow-hidden shadow-[0_25px_60px_-15px_rgba(0,0,0,0.2)] border border-slate-100 flex flex-col max-h-[90vh]">
+            
+            {/* Header with gradient and title */}
+            <div className="bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-600 px-6 py-5 text-white relative shadow-md shrink-0">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl pointer-events-none" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/15 shadow-inner">
+                    <Tag className="size-5 text-emerald-100 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
+                      Ví Voucher Của Bạn
+                      <span className="bg-white/20 text-white text-[11px] font-extrabold px-2 py-0.5 rounded-full">
+                        {savedVouchers.length} mã
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-emerald-100/80 font-medium mt-0.5">Sử dụng mã giảm giá để nhận thêm nhiều ưu đãi</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowVoucherModal(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all font-bold text-xs active:scale-95 border border-white/10"
+                >
+                  ✕
+                </button>
               </div>
-              <button
-                onClick={() => setShowVoucherModal(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-lg"
-              >
-                ✕
-              </button>
             </div>
 
-            {/* List */}
-            <div className="p-6 max-h-[400px] overflow-y-auto space-y-4">
+            {/* Sub-header / Inputs & Tabs Area */}
+            <div className="p-4 border-b border-slate-100 bg-white shrink-0 space-y-3.5">
+              {/* Manual Input Field */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Nhập mã voucher thủ công..."
+                    value={voucherCode}
+                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                    className="w-full pl-9 pr-3 py-2 text-sm font-bold uppercase border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50 transition-all placeholder:text-slate-400 placeholder:normal-case"
+                  />
+                </div>
+                <Button
+                  onClick={async () => {
+                    if (!voucherCode.trim()) return;
+                    setValidatingVoucher(true);
+                    try {
+                      const res = await api.post("/api/vouchers/validate", {
+                        code: voucherCode,
+                        planId: isInspection ? "inspection" : selectedTierId,
+                      });
+                      setAppliedVoucher({
+                        discountPercentage: res.data.discountPercentage,
+                        voucherId: res.data.voucherId,
+                        code: voucherCode.toUpperCase(),
+                      });
+                      toast.success(res.data.message || "Áp dụng mã giảm giá thành công!");
+                      setShowVoucherModal(false);
+                    } catch (error: any) {
+                      toast.error(error.response?.data?.message || "Mã giảm giá không hợp lệ");
+                      setAppliedVoucher(null);
+                    } finally {
+                      setValidatingVoucher(false);
+                    }
+                  }}
+                  disabled={!voucherCode.trim() || validatingVoucher}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-5 rounded-xl shadow-[0_4px_12px_rgba(16,185,129,0.15)] active:scale-95 transition-all"
+                >
+                  {validatingVoucher ? "..." : "Áp dụng"}
+                </Button>
+              </div>
+
+              {/* Search Vouchers Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm voucher theo tên hoặc mã..."
+                  value={voucherSearchQuery}
+                  onChange={(e) => setVoucherSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50 transition-all placeholder:text-slate-400"
+                />
+              </div>
+
+              {/* Tabs */}
+              <div className="flex bg-slate-100/85 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setVoucherTab("all")}
+                  className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+                    voucherTab === "all"
+                      ? "bg-white text-emerald-700 shadow-sm"
+                      : "text-slate-600 hover:text-slate-800"
+                  }`}
+                >
+                  Tất cả mã
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVoucherTab("applicable")}
+                  className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+                    voucherTab === "applicable"
+                      ? "bg-white text-emerald-700 shadow-sm"
+                      : "text-slate-600 hover:text-slate-800"
+                  }`}
+                >
+                  Khả dụng ({
+                    savedVouchers.filter(v => {
+                      const currentPlanId = isInspection ? "inspection" : selectedTierId;
+                      return !v.applicablePlans || v.applicablePlans.length === 0 || 
+                        v.applicablePlans.some((plan: any) => {
+                          const id = typeof plan === 'object' ? (plan.planId || plan._id || '') : plan;
+                          return String(id).toLowerCase() === String(currentPlanId).toLowerCase();
+                        });
+                    }).length
+                  })
+                </button>
+              </div>
+            </div>
+
+            {/* List area */}
+            <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50/70">
               {loadingVouchers ? (
-                <div className="flex flex-col items-center py-10 gap-3">
+                <div className="flex flex-col items-center py-16 gap-3">
                   <div className="size-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Đang tải ví voucher...</p>
                 </div>
-              ) : savedVouchers.length === 0 ? (
-                <div className="text-center py-10 space-y-3">
-                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-                    <Tag className="size-8 text-slate-300" />
-                  </div>
-                  <h4 className="font-bold text-slate-700 text-sm">Ví voucher trống</h4>
-                  <p className="text-xs text-slate-400 max-w-[240px] mx-auto">Hãy lưu thêm mã ưu đãi tại Trang chủ hoặc Dashboard để sử dụng khi thanh toán.</p>
-                </div>
               ) : (
-                savedVouchers.map((voucher) => {
+                (() => {
                   const currentPlanId = isInspection ? "inspection" : selectedTierId;
-                  const isApplicable = !voucher.applicablePlans || voucher.applicablePlans.length === 0 || 
-                    voucher.applicablePlans.some((plan: any) => {
-                      const id = typeof plan === 'object' ? (plan.planId || plan._id || '') : plan;
-                      return String(id).toLowerCase() === String(currentPlanId).toLowerCase();
-                    });
+                  const filtered = savedVouchers.filter((voucher) => {
+                    const isApplicable = !voucher.applicablePlans || voucher.applicablePlans.length === 0 || 
+                      voucher.applicablePlans.some((plan: any) => {
+                        const id = typeof plan === 'object' ? (plan.planId || plan._id || '') : plan;
+                        return String(id).toLowerCase() === String(currentPlanId).toLowerCase();
+                      });
+                    
+                    const matchesTab = voucherTab === "all" || isApplicable;
+                    const matchesSearch = !voucherSearchQuery.trim() || 
+                      voucher.code.toLowerCase().includes(voucherSearchQuery.toLowerCase()) ||
+                      (voucher.title || "").toLowerCase().includes(voucherSearchQuery.toLowerCase());
+                    
+                    return matchesTab && matchesSearch;
+                  });
 
-                  return (
-                    <div
-                      key={voucher._id || voucher.id}
-                      className={`flex rounded-2xl border overflow-hidden relative transition-all ${
-                        isApplicable
-                          ? "bg-white border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-200"
-                          : "bg-slate-50/70 border-slate-100 opacity-60"
-                      }`}
-                    >
-                      {/* Left: Tear-off */}
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="text-center py-16 space-y-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto shadow-inner border border-slate-100">
+                          <Tag className="size-7 text-slate-300" />
+                        </div>
+                        <h4 className="font-extrabold text-slate-700 text-sm">Không tìm thấy voucher phù hợp</h4>
+                        <p className="text-xs text-slate-400 max-w-[280px] mx-auto leading-relaxed">
+                          {voucherSearchQuery ? "Hãy thử nhập từ khóa tìm kiếm khác hoặc kiểm tra lại mã." : "Hãy lưu thêm mã ưu đãi tại Trang chủ hoặc Dashboard."}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return filtered.map((voucher) => {
+                    const isApplicable = !voucher.applicablePlans || voucher.applicablePlans.length === 0 || 
+                      voucher.applicablePlans.some((plan: any) => {
+                        const id = typeof plan === 'object' ? (plan.planId || plan._id || '') : plan;
+                        return String(id).toLowerCase() === String(currentPlanId).toLowerCase();
+                      });
+                    const isExpanded = expandedVoucherId === (voucher._id || voucher.id);
+
+                    return (
                       <div
-                        className={`w-[25%] flex flex-col items-center justify-center text-center p-2 text-white relative overflow-hidden ${
+                        key={voucher._id || voucher.id}
+                        className={`flex flex-col rounded-2xl border overflow-hidden relative transition-all duration-300 bg-white group ${
                           isApplicable
-                            ? "bg-gradient-to-br from-emerald-500 to-teal-600"
-                            : "bg-slate-400"
+                            ? "border-emerald-100 shadow-[0_4px_15px_rgba(16,185,129,0.04)] hover:shadow-[0_8px_25px_rgba(16,185,129,0.08)] hover:border-emerald-300"
+                            : "border-slate-200 opacity-70"
                         }`}
                       >
-                        <span className="text-[9px] font-black tracking-widest opacity-80">GIẢM</span>
-                        <div className="flex items-baseline justify-center">
-                          <span className="text-2xl font-black">{voucher.discountPercentage}</span>
-                          <span className="text-[10px] font-bold ml-0.5">%</span>
-                        </div>
-                      </div>
-
-                      {/* Cutout line */}
-                      <div className="absolute left-[25%] top-0 bottom-0 w-0 border-l border-dashed border-slate-200 z-10" />
-                      <div className="absolute left-[25%] top-0 w-3 h-3 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 border-b border-slate-100 z-20" />
-                      <div className="absolute left-[25%] bottom-0 w-3 h-3 bg-white rounded-full -translate-x-1/2 translate-y-1/2 border-t border-slate-100 z-20" />
-
-                      {/* Right: Info */}
-                      <div className="w-[75%] p-4 flex flex-col justify-between bg-white pl-5">
-                        <div>
-                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded border border-emerald-100 uppercase tracking-wider">
-                              {voucher.code}
-                            </span>
-                            {!isApplicable && (
-                              <span className="bg-red-50 text-red-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-red-100 uppercase">
-                                Không khả dụng
-                              </span>
-                            )}
-                          </div>
-                          <h4 className="font-bold text-slate-800 text-sm line-clamp-1">{voucher.title || "Ưu đãi thanh toán"}</h4>
-                          <p className="text-slate-400 text-[10px] mt-0.5 line-clamp-1">
-                            Hạn dùng: {new Date(voucher.endDate).toLocaleDateString("vi-VN")}
-                          </p>
-                        </div>
-
-                        {/* Bottom row */}
-                        <div className="mt-3 flex items-center justify-between">
-                          <div className="text-[10px] text-slate-500 max-w-[180px] line-clamp-1 font-medium">
-                            {isApplicable ? (
-                              voucher.description || "Áp dụng cho đơn hàng hiện tại"
-                            ) : (
-                              <span className="text-red-500 font-bold text-xs">
-                                Chỉ áp dụng cho gói: {voucher.applicablePlans.map((p: any) => typeof p === 'object' ? p.name : p).join(', ')}
-                              </span>
-                            )}
-                          </div>
-                          
-                          <Button
-                            size="sm"
-                            disabled={!isApplicable}
-                            onClick={() => {
-                              setVoucherCode(voucher.code);
-                              setAppliedVoucher({
-                                discountPercentage: voucher.discountPercentage,
-                                voucherId: voucher._id || voucher.id,
-                                code: voucher.code,
-                              });
-                              setShowVoucherModal(false);
-                              toast.success(`Đã áp dụng mã: ${voucher.code} (-${voucher.discountPercentage}%)`);
-                            }}
-                            className={`h-7 px-3 text-xs font-black rounded-lg transition-transform active:scale-95 ${
+                        {/* Ticket Body */}
+                        <div className="flex h-[115px] relative">
+                          {/* Left Stub: Gradient and discount */}
+                          <div
+                            className={`w-[30%] flex flex-col items-center justify-center text-center p-3 text-white relative overflow-hidden select-none shrink-0 ${
                               isApplicable
-                                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                                : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                                ? "bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600"
+                                : "bg-gradient-to-br from-slate-400 to-slate-500"
                             }`}
                           >
-                            Áp dụng
-                          </Button>
+                            {/* Curved decorative pattern overlay */}
+                            <div className="absolute top-0 right-0 w-12 h-12 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                            <div className="absolute bottom-0 left-0 w-10 h-10 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                            
+                            <span className="text-[9px] font-black tracking-widest text-emerald-100/80 mb-0.5">GIẢM</span>
+                            <div className="flex items-baseline justify-center">
+                              <span className="text-3xl font-black tracking-tight">{voucher.discountPercentage}</span>
+                              <span className="text-sm font-extrabold ml-0.5">%</span>
+                            </div>
+                            <span className="text-[8px] font-black uppercase tracking-wider bg-white/20 px-1.5 py-0.5 rounded-full mt-1.5">MapHome</span>
+                          </div>
+
+                          {/* Dashed line separator */}
+                          <div className="absolute left-[30%] top-0 bottom-0 w-0 border-l-2 border-dashed border-slate-200/80 z-10" />
+                          
+                          {/* Circle notches matching scroll area bg */}
+                          <div className="absolute left-[30%] top-0 w-3.5 h-3.5 bg-[#f8fafc] rounded-full -translate-x-1/2 -translate-y-1/2 border-b border-slate-200 z-20" />
+                          <div className="absolute left-[30%] bottom-0 w-3.5 h-3.5 bg-[#f8fafc] rounded-full -translate-x-1/2 translate-y-1/2 border-t border-slate-200 z-20" />
+
+                          {/* Right Info: Voucher details */}
+                          <div className="flex-1 p-3.5 pl-6 flex flex-col justify-between bg-white overflow-hidden">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-wider flex items-center gap-1 shrink-0 ${
+                                  isApplicable
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                    : "bg-slate-100 text-slate-500 border-slate-200"
+                                }`}>
+                                  {voucher.code}
+                                </span>
+                                
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(voucher.code);
+                                    toast.success(`Đã sao chép mã: ${voucher.code}`);
+                                  }}
+                                  title="Sao chép mã"
+                                  className="w-5 h-5 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200/60 flex items-center justify-center transition-colors active:scale-95 text-slate-400 hover:text-slate-600"
+                                >
+                                  <Copy className="size-3" />
+                                </button>
+
+                                {!isApplicable && (
+                                  <span className="bg-red-50 text-red-600 text-[9px] font-black px-2 py-0.5 rounded-lg border border-red-100 uppercase tracking-wider shrink-0">
+                                    Không khả dụng
+                                  </span>
+                                )}
+                              </div>
+                              <h4 className="font-extrabold text-slate-800 text-[13px] line-clamp-1 group-hover:text-emerald-700 transition-colors">
+                                {voucher.title || "Ưu đãi thành viên"}
+                              </h4>
+                              <p className="text-slate-400 text-[10px] flex items-center gap-1 font-semibold">
+                                <Clock className="size-3 text-slate-300" />
+                                Hạn dùng: {new Date(voucher.endDate).toLocaleDateString("vi-VN")}
+                              </p>
+                            </div>
+
+                            {/* Row for expander & action button */}
+                            <div className="flex items-center justify-between gap-2 border-t border-slate-50 pt-2 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedVoucherId(isExpanded ? null : (voucher._id || voucher.id))}
+                                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 flex items-center gap-0.5 transition-colors focus:outline-none"
+                              >
+                                {isExpanded ? (
+                                  <>Thu gọn <ChevronUp className="size-3" /></>
+                                ) : (
+                                  <>Chi tiết điều kiện <ChevronDown className="size-3" /></>
+                                )}
+                              </button>
+
+                              <Button
+                                size="sm"
+                                disabled={!isApplicable}
+                                onClick={() => {
+                                  setVoucherCode(voucher.code);
+                                  setAppliedVoucher({
+                                    discountPercentage: voucher.discountPercentage,
+                                    voucherId: voucher._id || voucher.id,
+                                    code: voucher.code,
+                                  });
+                                  setShowVoucherModal(false);
+                                  toast.success(`Đã áp dụng mã: ${voucher.code} (-${voucher.discountPercentage}%)`);
+                                }}
+                                className={`h-7 px-3 text-[11px] font-black rounded-lg transition-all duration-300 transform active:scale-95 shrink-0 ${
+                                  isApplicable
+                                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-[0_2px_8px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)]"
+                                    : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                                }`}
+                              >
+                                Áp dụng
+                              </Button>
+                            </div>
+                          </div>
                         </div>
+
+                        {/* Collapsible Terms / Conditions area */}
+                        {isExpanded && (
+                          <div className="bg-slate-50/75 p-4 border-t border-slate-100 text-[11px] text-slate-600 space-y-2 animate-[fadeIn_0.15s_ease-out]">
+                            <div className="space-y-1">
+                              <p className="font-bold text-slate-700">Mô tả chi tiết:</p>
+                              <p className="leading-relaxed">{voucher.description || "Ưu đãi giảm giá trực tiếp cho dịch vụ của MapHome."}</p>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <p className="font-bold text-slate-700">Điều kiện áp dụng:</p>
+                              {isApplicable ? (
+                                <p className="text-emerald-700 font-semibold flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                  Phù hợp với gói dịch vụ hiện tại.
+                                </p>
+                              ) : (
+                                <div className="text-red-600 font-semibold space-y-0.5">
+                                  <div className="flex items-start gap-1">
+                                    <Info className="size-3.5 text-red-500 shrink-0 mt-0.5" />
+                                    <span>
+                                      Chỉ áp dụng cho các gói dịch vụ:{" "}
+                                      <span className="font-extrabold">
+                                        {voucher.applicablePlans
+                                          .map((p: any) => typeof p === "object" ? p.name : p)
+                                          .join(", ")}
+                                      </span>
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  });
+                })()
               )}
             </div>
 
             {/* Footer */}
-            <div className="bg-slate-50 px-6 py-4 border-t flex justify-end">
+            <div className="bg-white px-6 py-4 border-t border-slate-100 flex justify-between items-center shrink-0">
+              <span className="text-[11px] text-slate-400 font-medium select-none">Nhấn 'Áp dụng' để sử dụng voucher</span>
               <Button
                 onClick={() => setShowVoucherModal(false)}
-                className="bg-slate-900 hover:bg-black text-white rounded-xl h-10 px-6 text-sm font-bold shadow-sm"
+                className="bg-slate-900 hover:bg-black text-white rounded-xl h-9 px-5 text-xs font-bold shadow-md hover:shadow-lg transition-all"
               >
                 Đóng
               </Button>
