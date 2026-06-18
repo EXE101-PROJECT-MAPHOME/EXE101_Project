@@ -111,29 +111,34 @@ export default function PostRoomScreen() {
       .catch(() => {});
   }, []);
 
-  // Fetch districts when province changes
-  useEffect(() => {
-    if (selectedProvince) {
-      setSelectedDistrict(null);
-      setSelectedWard(null);
-      setDistricts([]);
-      setWards([]);
-      api.get(`/api/locations/districts/${selectedProvince.code}`)
-        .then(res => setDistricts(res.data))
-        .catch(() => {});
-    }
-  }, [selectedProvince]);
+  const handleProvinceSelect = async (prov: LocationItem) => {
+    setSelectedProvince(prov);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
+    setDistricts([]);
+    setWards([]);
+    setPickerVisible(null);
+    try {
+      const res = await api.get(`/api/locations/districts/${prov.code}`);
+      setDistricts(res.data);
+    } catch {}
+  };
 
-  // Fetch wards when district changes
-  useEffect(() => {
-    if (selectedDistrict) {
-      setSelectedWard(null);
-      setWards([]);
-      api.get(`/api/locations/wards/${selectedDistrict.code}`)
-        .then(res => setWards(res.data))
-        .catch(() => {});
-    }
-  }, [selectedDistrict]);
+  const handleDistrictSelect = async (dist: LocationItem) => {
+    setSelectedDistrict(dist);
+    setSelectedWard(null);
+    setWards([]);
+    setPickerVisible(null);
+    try {
+      const res = await api.get(`/api/locations/wards/${dist.code}`);
+      setWards(res.data);
+    } catch {}
+  };
+
+  const handleWardSelect = (ward: LocationItem) => {
+    setSelectedWard(ward);
+    setPickerVisible(null);
+  };
 
   // Build full address string
   const fullAddress = useMemo(() => {
@@ -313,21 +318,31 @@ export default function PostRoomScreen() {
     return undefined;
   };
 
-  const handleGoongSearch = async (text: string) => {
+  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleGoongSearch = (text: string) => {
     setGoongQuery(text);
-    if (!text.trim()) {
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!text.trim() || text.trim().length < 2) {
       setGoongSuggestions([]);
       return;
     }
-    setIsSearchingGoong(true);
-    try {
-      const res = await api.get(`/api/map/autocomplete?input=${encodeURIComponent(text)}`);
-      setGoongSuggestions(res.data.predictions || []);
-    } catch (e) {
-      console.error("Goong Search Error", e);
-    } finally {
-      setIsSearchingGoong(false);
-    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsSearchingGoong(true);
+      try {
+        const res = await api.get(`/api/map/autocomplete?input=${encodeURIComponent(text)}`);
+        setGoongSuggestions(Array.isArray(res.data) ? res.data : (res.data.predictions || []));
+      } catch (e) {
+        console.error("Goong Search Error", e);
+      } finally {
+        setIsSearchingGoong(false);
+      }
+    }, 500);
   };
 
   const autoPopulateLocation = async (result: any) => {
@@ -350,6 +365,7 @@ export default function PostRoomScreen() {
 
       const distRes = await api.get(`/api/locations/districts/${matchedProvince.code}`);
       const districtList = distRes.data;
+      setDistricts(districtList);
       
       let matchedDistrict: LocationItem | undefined;
       for (const comp of components) {
@@ -363,6 +379,7 @@ export default function PostRoomScreen() {
         try {
           const wardRes = await api.get(`/api/locations/wards/${matchedDistrict.code}`);
           const wardList = wardRes.data;
+          setWards(wardList);
           
           let matchedWard: LocationItem | undefined;
           for (const comp of components) {
@@ -530,9 +547,12 @@ export default function PostRoomScreen() {
               const isCompleted = i < currentStepIndex;
               return (
                 <View key={s.key} className="items-center">
-                  <View className={`w-10 h-10 rounded-xl items-center justify-center mb-2 ${
-                    isCompleted ? "bg-emerald-500" : isActive ? "bg-indigo-600 shadow-lg" : "bg-white border-2 border-slate-200"
-                  }`}>
+                  <View 
+                    className={`w-10 h-10 rounded-xl items-center justify-center mb-2 ${
+                      isCompleted ? "bg-emerald-500" : isActive ? "bg-indigo-600" : "bg-white border-2 border-slate-200"
+                    }`}
+                    style={isActive ? { shadowColor: "#4f46e5", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 8 } : undefined}
+                  >
                     {isCompleted ? (
                       <CheckCircle2 size={20} color="white" />
                     ) : (
@@ -655,8 +675,9 @@ export default function PostRoomScreen() {
                 <TouchableOpacity
                   onPress={() => selectedProvince ? setPickerVisible("district") : Alert.alert("Chưa chọn Tỉnh", "Vui lòng chọn Tỉnh/Thành trước.")}
                   className={`flex-row items-center justify-between bg-slate-50 p-4 rounded-xl border mb-3 ${
-                    selectedProvince ? "border-slate-200" : "border-slate-100 opacity-60"
+                    selectedProvince ? "border-slate-200" : "border-slate-100"
                   }`}
+                  style={!selectedProvince ? { opacity: 0.6 } : undefined}
                 >
                   <Text className={selectedDistrict ? "text-slate-800 font-medium text-base" : "text-slate-400 text-base"}>
                     {selectedDistrict ? selectedDistrict.name : "Chọn quận / huyện"}
@@ -669,8 +690,9 @@ export default function PostRoomScreen() {
                 <TouchableOpacity
                   onPress={() => selectedDistrict ? setPickerVisible("ward") : Alert.alert("Chưa chọn quận", "Vui lòng chọn Quận/Huyện trước.")}
                   className={`flex-row items-center justify-between bg-slate-50 p-4 rounded-xl border mb-3 ${
-                    selectedDistrict ? "border-slate-200" : "border-slate-100 opacity-60"
+                    selectedDistrict ? "border-slate-200" : "border-slate-100"
                   }`}
+                  style={!selectedDistrict ? { opacity: 0.6 } : undefined}
                 >
                   <Text className={selectedWard ? "text-slate-800 font-medium text-base" : "text-slate-400 text-base"}>
                     {selectedWard ? selectedWard.name : "Chọn phường / xã"}
@@ -730,10 +752,9 @@ export default function PostRoomScreen() {
                             isSelected ? "bg-indigo-50" : ""
                           }`}
                           onPress={() => {
-                            if (pickerVisible === "province") setSelectedProvince(item);
-                            else if (pickerVisible === "district") setSelectedDistrict(item);
-                            else setSelectedWard(item);
-                            setPickerVisible(null);
+                            if (pickerVisible === "province") handleProvinceSelect(item);
+                            else if (pickerVisible === "district") handleDistrictSelect(item);
+                            else handleWardSelect(item);
                           }}
                         >
                           <Text className={`text-base ${
