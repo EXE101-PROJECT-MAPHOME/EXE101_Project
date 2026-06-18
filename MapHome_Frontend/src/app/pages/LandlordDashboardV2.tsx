@@ -107,6 +107,7 @@ export function LandlordDashboardV2() {
   const [leads, setLeads] = useState<any[]>([]);
   const [landlordDistricts, setLandlordDistricts] = useState<string[]>([]);
   const [promotedVouchers, setPromotedVouchers] = useState<any[]>([]);
+  const [savedVoucherIds, setSavedVoucherIds] = useState<string[]>([]);
   const [stats, setStats] = useState({
     totalPosts: 0,
     approvedPosts: 0,
@@ -205,6 +206,29 @@ export function LandlordDashboardV2() {
   // Get active tab from URL params, default to 'overview'
   const activeTab = (searchParams.get("tab") as DashboardTab) || "overview";
 
+  const handleToggleSaveVoucher = async (voucher: any) => {
+    const isSaved = savedVoucherIds.includes(voucher._id || voucher.id);
+    const voucherId = voucher._id || voucher.id;
+
+    try {
+      if (isSaved) {
+        const res = await api.post(`/api/vouchers/${voucherId}/unsave`);
+        if (res.status === 200) {
+          setSavedVoucherIds(prev => prev.filter(id => id !== voucherId));
+          toast.success(`Đã bỏ lưu voucher: ${voucher.code}`);
+        }
+      } else {
+        const res = await api.post(`/api/vouchers/${voucherId}/save`);
+        if (res.status === 200) {
+          setSavedVoucherIds(prev => [...prev, voucherId]);
+          toast.success(`Đã lưu voucher vào ví: ${voucher.code} 🎉`);
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Không thể thực hiện yêu cầu.");
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       refreshProfile();
@@ -227,6 +251,9 @@ export function LandlordDashboardV2() {
       setIsLoading(true);
 
       try {
+        const savedVouchersRes = await api.get("/api/vouchers/me/saved").catch(() => ({ data: [] }));
+        setSavedVoucherIds((savedVouchersRes.data || []).map((v: any) => v._id || v.id));
+
         if (activeTab === "overview") {
           const [analyticsRes, propertiesRes, vouchersRes] = await Promise.all([
             api.get("/api/landlord/analytics"),
@@ -1624,13 +1651,21 @@ export function LandlordDashboardV2() {
                           </span>
                           <Button
                             size="sm"
-                            onClick={() => {
-                              navigator.clipboard.writeText(voucher.code);
-                              toast.success(`Đã sao chép mã: ${voucher.code}`);
-                            }}
-                            className="bg-gradient-to-r from-emerald-500 to-blue-600 hover:brightness-110 text-white rounded-xl text-[10px] h-8 px-4 font-black transition-all hover:scale-105 active:scale-95 border-none shadow-md shadow-blue-500/20"
+                            onClick={() => handleToggleSaveVoucher(voucher)}
+                            className={`rounded-xl text-[10px] h-8 px-4 font-black transition-all hover:scale-105 active:scale-95 border-none shadow-md ${
+                              savedVoucherIds.includes(voucher._id || voucher.id)
+                                ? "bg-emerald-100 hover:bg-rose-50 hover:text-rose-600 text-emerald-700 border border-emerald-200 shadow-none hover:border-rose-200 group/btn"
+                                : "bg-gradient-to-r from-emerald-500 to-blue-600 hover:brightness-110 text-white shadow-blue-500/20"
+                            }`}
                           >
-                            Lưu mã
+                            {savedVoucherIds.includes(voucher._id || voucher.id) ? (
+                              <>
+                                <span className="group-hover/btn:hidden">Đã lưu</span>
+                                <span className="hidden group-hover/btn:inline">Bỏ lưu</span>
+                              </>
+                            ) : (
+                              "Lưu mã"
+                            )}
                           </Button>
                         </div>
                       </div>

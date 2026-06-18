@@ -23,6 +23,7 @@ const UserSchema = new mongoose.Schema(
     status: { type: String, enum: ["active", "blocked"], default: "active" },
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Property" }],
     savedBlogs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Blog" }],
+    savedVouchers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Voucher" }],
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
 

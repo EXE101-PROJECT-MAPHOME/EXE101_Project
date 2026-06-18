@@ -194,6 +194,55 @@ export function HomePage() {
 
   const { properties } = useProperties();
   const { user } = useAuth();
+  const [savedVoucherIds, setSavedVoucherIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchSavedVouchers = async () => {
+      if (user) {
+        try {
+          const res = await api.get("/api/vouchers/me/saved");
+          if (res.status === 200) {
+            setSavedVoucherIds(res.data.map((v: any) => v._id || v.id));
+          }
+        } catch (error) {
+          console.error("Failed to fetch saved vouchers:", error);
+        }
+      } else {
+        setSavedVoucherIds([]);
+      }
+    };
+    fetchSavedVouchers();
+  }, [user]);
+
+  const handleToggleSaveVoucher = async (voucher: any) => {
+    if (!user) {
+      navigator.clipboard.writeText(voucher.code);
+      toast.success(`Đã sao chép mã: ${voucher.code}. Đăng nhập để lưu vào ví!`);
+      return;
+    }
+
+    const isSaved = savedVoucherIds.includes(voucher._id || voucher.id);
+    const voucherId = voucher._id || voucher.id;
+
+    try {
+      if (isSaved) {
+        const res = await api.post(`/api/vouchers/${voucherId}/unsave`);
+        if (res.status === 200) {
+          setSavedVoucherIds(prev => prev.filter(id => id !== voucherId));
+          toast.success(`Đã bỏ lưu voucher: ${voucher.code}`);
+        }
+      } else {
+        const res = await api.post(`/api/vouchers/${voucherId}/save`);
+        if (res.status === 200) {
+          setSavedVoucherIds(prev => [...prev, voucherId]);
+          toast.success(`Đã lưu voucher vào ví: ${voucher.code} 🎉`);
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Không thể thực hiện yêu cầu.");
+    }
+  };
+
   const verifiedProperties = properties
     .filter((p) => p.verificationLevel === "verified")
     .slice(0, 8);
@@ -259,15 +308,17 @@ export function HomePage() {
                     progressText = "Sắp hết hạn";
                   }
 
+                  const isSaved = savedVoucherIds.includes(voucher._id || voucher.id);
+
                   return (
                     <div 
                       key={voucher._id} 
-                      className="flex-shrink-0 w-[320px] md:w-[420px] bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(249,115,22,0.15)] transition-all snap-center flex relative border border-orange-100/50 group"
+                      className="flex-shrink-0 w-[320px] md:w-[420px] bg-white rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:shadow-[0_8px_30px_rgba(16,185,129,0.15)] transition-all snap-center flex relative border border-emerald-100/50 group"
                     >
                       {/* Left Side: Gradient/Image (The "Tear-off" part) */}
-                      <div className="w-[35%] relative bg-gradient-to-br from-orange-500 to-red-600 flex flex-col items-center justify-center p-3 text-center z-10 overflow-hidden">
+                      <div className="w-[35%] relative bg-gradient-to-br from-emerald-600 to-teal-700 flex flex-col items-center justify-center p-3 text-center z-10 overflow-hidden">
                         <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 rounded-full blur-xl -translate-y-1/2 translate-x-1/2" />
-                        <div className="absolute bottom-0 left-0 w-16 h-16 bg-yellow-400/20 rounded-full blur-lg translate-y-1/3 -translate-x-1/3" />
+                        <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full blur-lg translate-y-1/3 -translate-x-1/3" />
                         
                         <span className="text-white/90 text-[10px] font-black uppercase tracking-[0.2em] mb-1">
                           VOUCHER
@@ -293,7 +344,7 @@ export function HomePage() {
                       {/* Right Side: Details */}
                       <div className="w-[65%] p-4 md:p-5 flex flex-col bg-white z-10">
                         <div className="flex-1">
-                          <h3 className="font-black text-slate-800 text-sm md:text-base mb-1 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                          <h3 className="font-black text-slate-800 text-sm md:text-base mb-1 line-clamp-1 group-hover:text-emerald-600 transition-colors">
                             {voucher.title || "Siêu Sale Bất Ngờ"}
                           </h3>
                           <p className="text-slate-500 text-[11px] md:text-xs line-clamp-2 leading-snug h-[34px]">
@@ -303,14 +354,14 @@ export function HomePage() {
                         
                         <div className="mt-2 space-y-3">
                           {/* Progress Bar (Flash sale feel) */}
-                          <div className="relative w-full h-3.5 bg-orange-100 rounded-full overflow-hidden flex items-center justify-center">
+                          <div className="relative w-full h-3.5 bg-emerald-50 rounded-full overflow-hidden flex items-center justify-center border border-emerald-100">
                             <div 
-                              className="absolute top-0 left-0 h-full bg-gradient-to-r from-orange-400 to-red-500 rounded-full"
+                              className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full"
                               style={{ width: `${progressPercent}%` }}
                             />
                             {/* Animated sheen effect on progress bar */}
                             <div className="absolute top-0 left-0 h-full w-10 bg-white/30 -skew-x-12 animate-[shimmer_2s_infinite]" />
-                            <span className="relative z-10 text-[8px] font-black text-white uppercase tracking-widest drop-shadow-md">
+                            <span className="relative z-10 text-[8px] font-black text-emerald-950 uppercase tracking-widest drop-shadow-md">
                               {progressText}
                             </span>
                           </div>
@@ -320,13 +371,21 @@ export function HomePage() {
                               <span className="font-black text-slate-700 tracking-wider text-xs">{voucher.code}</span>
                             </div>
                             <Button 
-                              onClick={() => {
-                                navigator.clipboard.writeText(voucher.code);
-                                toast.success("Đã sao chép mã voucher!");
-                              }}
-                              className="bg-orange-500 hover:bg-orange-600 text-white rounded-full h-8 px-4 text-xs font-bold shadow-md shadow-orange-500/30 transition-transform active:scale-95"
+                              onClick={() => handleToggleSaveVoucher(voucher)}
+                              className={`rounded-full h-8 px-4 text-xs font-bold transition-all duration-300 active:scale-95 shadow-md ${
+                                isSaved
+                                  ? "bg-emerald-50 hover:bg-rose-50 hover:text-rose-600 text-emerald-700 border border-emerald-200/60 shadow-none hover:border-rose-200 group/btn"
+                                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 border-none"
+                              }`}
                             >
-                              Lưu mã
+                              {isSaved ? (
+                                <>
+                                  <span className="group-hover/btn:hidden">Đã lưu</span>
+                                  <span className="hidden group-hover/btn:inline">Bỏ lưu</span>
+                                </>
+                              ) : (
+                                "Lưu mã"
+                              )}
                             </Button>
                           </div>
                         </div>

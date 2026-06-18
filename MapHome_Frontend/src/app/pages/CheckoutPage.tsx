@@ -53,7 +53,7 @@ const inspectionTypeLabels: Record<string, string> = {
 export function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, user } = useAuth();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
@@ -61,6 +61,11 @@ export function CheckoutPage() {
   const [voucherCode, setVoucherCode] = useState("");
   const [appliedVoucher, setAppliedVoucher] = useState<{ discountPercentage: number; voucherId: string; code: string } | null>(null);
   const [validatingVoucher, setValidatingVoucher] = useState(false);
+
+  // Voucher Wallet states
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [savedVouchers, setSavedVouchers] = useState<any[]>([]);
+  const [loadingVouchers, setLoadingVouchers] = useState(false);
 
   // Đọc state từ location trước, fallback sessionStorage nếu bị mất (iframe/sandbox issue)
   const rawState =
@@ -103,6 +108,24 @@ export function CheckoutPage() {
     };
     fetchPlans();
   }, []);
+
+  useEffect(() => {
+    const fetchSavedVouchers = async () => {
+      if (!user) return;
+      try {
+        setLoadingVouchers(true);
+        const res = await api.get("/api/vouchers/me/saved");
+        if (res.status === 200) {
+          setSavedVouchers(res.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch saved vouchers:", error);
+      } finally {
+        setLoadingVouchers(false);
+      }
+    };
+    fetchSavedVouchers();
+  }, [user]);
 
   useEffect(() => {
     // Chỉ redirect nếu KHÔNG có bất kỳ data nào (tránh redirect vô lý)
@@ -772,9 +795,20 @@ export function CheckoutPage() {
 
                   {/* Voucher Input */}
                   <div className="space-y-3">
-                    <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                      <Tag className="size-4 text-emerald-600" /> Mã giảm giá
-                    </p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                        <Tag className="size-4 text-emerald-600" /> Mã giảm giá
+                      </p>
+                      {user && (
+                        <button
+                          type="button"
+                          onClick={() => setShowVoucherModal(true)}
+                          className="text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors flex items-center gap-1 focus:outline-none"
+                        >
+                          Chọn từ ví voucher
+                        </button>
+                      )}
+                    </div>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -949,6 +983,150 @@ export function CheckoutPage() {
           </aside>
         </div>
       </main>
+
+      {/* Shopee-style Voucher Selector Modal themed in MapHome Emerald/Indigo */}
+      {showVoucherModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[32px] w-full max-w-lg overflow-hidden shadow-2xl border border-slate-100 animate-[fadeIn_0.2s_ease-out]">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 px-6 py-5 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tag className="size-5 text-emerald-600 animate-pulse" />
+                <h3 className="text-xl font-black text-emerald-950">Ví Voucher Của Bạn</h3>
+              </div>
+              <button
+                onClick={() => setShowVoucherModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="p-6 max-h-[400px] overflow-y-auto space-y-4">
+              {loadingVouchers ? (
+                <div className="flex flex-col items-center py-10 gap-3">
+                  <div className="size-8 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin" />
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Đang tải ví voucher...</p>
+                </div>
+              ) : savedVouchers.length === 0 ? (
+                <div className="text-center py-10 space-y-3">
+                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                    <Tag className="size-8 text-slate-300" />
+                  </div>
+                  <h4 className="font-bold text-slate-700 text-sm">Ví voucher trống</h4>
+                  <p className="text-xs text-slate-400 max-w-[240px] mx-auto">Hãy lưu thêm mã ưu đãi tại Trang chủ hoặc Dashboard để sử dụng khi thanh toán.</p>
+                </div>
+              ) : (
+                savedVouchers.map((voucher) => {
+                  const currentPlanId = isInspection ? "inspection" : selectedTierId;
+                  const isApplicable = !voucher.applicablePlans || voucher.applicablePlans.length === 0 || 
+                    voucher.applicablePlans.some((plan: any) => {
+                      const id = typeof plan === 'object' ? (plan.planId || plan._id || '') : plan;
+                      return String(id).toLowerCase() === String(currentPlanId).toLowerCase();
+                    });
+
+                  return (
+                    <div
+                      key={voucher._id || voucher.id}
+                      className={`flex rounded-2xl border overflow-hidden relative transition-all ${
+                        isApplicable
+                          ? "bg-white border-emerald-100 shadow-sm hover:shadow-md hover:border-emerald-200"
+                          : "bg-slate-50/70 border-slate-100 opacity-60"
+                      }`}
+                    >
+                      {/* Left: Tear-off */}
+                      <div
+                        className={`w-[25%] flex flex-col items-center justify-center text-center p-2 text-white relative overflow-hidden ${
+                          isApplicable
+                            ? "bg-gradient-to-br from-emerald-500 to-teal-600"
+                            : "bg-slate-400"
+                        }`}
+                      >
+                        <span className="text-[9px] font-black tracking-widest opacity-80">GIẢM</span>
+                        <div className="flex items-baseline justify-center">
+                          <span className="text-2xl font-black">{voucher.discountPercentage}</span>
+                          <span className="text-[10px] font-bold ml-0.5">%</span>
+                        </div>
+                      </div>
+
+                      {/* Cutout line */}
+                      <div className="absolute left-[25%] top-0 bottom-0 w-0 border-l border-dashed border-slate-200 z-10" />
+                      <div className="absolute left-[25%] top-0 w-3 h-3 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 border-b border-slate-100 z-20" />
+                      <div className="absolute left-[25%] bottom-0 w-3 h-3 bg-white rounded-full -translate-x-1/2 translate-y-1/2 border-t border-slate-100 z-20" />
+
+                      {/* Right: Info */}
+                      <div className="w-[75%] p-4 flex flex-col justify-between bg-white pl-5">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded border border-emerald-100 uppercase tracking-wider">
+                              {voucher.code}
+                            </span>
+                            {!isApplicable && (
+                              <span className="bg-red-50 text-red-600 text-[9px] font-black px-1.5 py-0.5 rounded border border-red-100 uppercase">
+                                Không khả dụng
+                              </span>
+                            )}
+                          </div>
+                          <h4 className="font-bold text-slate-800 text-sm line-clamp-1">{voucher.title || "Ưu đãi thanh toán"}</h4>
+                          <p className="text-slate-400 text-[10px] mt-0.5 line-clamp-1">
+                            Hạn dùng: {new Date(voucher.endDate).toLocaleDateString("vi-VN")}
+                          </p>
+                        </div>
+
+                        {/* Bottom row */}
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="text-[10px] text-slate-500 max-w-[180px] line-clamp-1 font-medium">
+                            {isApplicable ? (
+                              voucher.description || "Áp dụng cho đơn hàng hiện tại"
+                            ) : (
+                              <span className="text-red-500 font-bold text-xs">
+                                Chỉ áp dụng cho gói: {voucher.applicablePlans.map((p: any) => typeof p === 'object' ? p.name : p).join(', ')}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <Button
+                            size="sm"
+                            disabled={!isApplicable}
+                            onClick={() => {
+                              setVoucherCode(voucher.code);
+                              setAppliedVoucher({
+                                discountPercentage: voucher.discountPercentage,
+                                voucherId: voucher._id || voucher.id,
+                                code: voucher.code,
+                              });
+                              setShowVoucherModal(false);
+                              toast.success(`Đã áp dụng mã: ${voucher.code} (-${voucher.discountPercentage}%)`);
+                            }}
+                            className={`h-7 px-3 text-xs font-black rounded-lg transition-transform active:scale-95 ${
+                              isApplicable
+                                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                            }`}
+                          >
+                            Áp dụng
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-slate-50 px-6 py-4 border-t flex justify-end">
+              <Button
+                onClick={() => setShowVoucherModal(false)}
+                className="bg-slate-900 hover:bg-black text-white rounded-xl h-10 px-6 text-sm font-bold shadow-sm"
+              >
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

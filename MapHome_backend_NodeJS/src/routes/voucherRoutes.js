@@ -8,6 +8,9 @@ const {
   deleteVoucher,
   validateVoucher,
   getPromotedVouchers,
+  saveVoucher,
+  unsaveVoucher,
+  getSavedVouchers,
 } = require("../controllers/voucherController");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 
@@ -22,6 +25,11 @@ router.route("/")
 router.get("/promoted", getPromotedVouchers);
 
 router.post("/validate", protect, validateVoucher);
+
+// Wallet routes (placed before /:id to avoid param conflicts)
+router.get("/me/saved", protect, getSavedVouchers);
+router.post("/:id/save", protect, saveVoucher);
+router.post("/:id/unsave", protect, unsaveVoucher);
 
 router.route("/:id")
   .get(protect, admin, getVoucherById)
