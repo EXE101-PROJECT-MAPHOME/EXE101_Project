@@ -1,5 +1,7 @@
 const Voucher = require("../models/Voucher");
 const SubscriptionPlan = require("../models/SubscriptionPlan");
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 
 // @desc    Create a new voucher
 // @route   POST /api/vouchers
@@ -220,10 +222,142 @@ const getPromotedVouchers = async (req, res) => {
       v.maxUses === null || v.usedCount < v.maxUses
     );
     
-    res.json(availableVouchers);
+    // If authenticated, check which vouchers are saved by the user
+    let savedVoucherIds = [];
+    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+      try {
+        const token = req.headers.authorization.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret");
+        const user = await User.findById(decoded.id);
+        if (user) {
+          savedVoucherIds = (user.savedVouchers || []).map(id => id.toString());
+        }
+      } catch (err) {
+        // Ignore jwt decoding errors for public routes
+      }
+    }
+
+    const vouchersWithSavedState = availableVouchers.map(v => {
+      const vObj = v.toObject();
+      vObj.isSaved = savedVoucherIds.includes(vObj._id.toString());
+      return vObj;
+    });
+    
+    res.json(vouchersWithSavedState);
   } catch (error) {
     console.error("Get promoted vouchers error:", error);
     res.status(500).json({ message: "Lỗi máy chủ", error: error.message });
+  }
+};
+
+// @desc    Save/claim a voucher to user's wallet
+// @route   POST /api/vouchers/:id/save
+// @access  Private (User)
+const saveVoucher = async (req, res) => {
+  try {
+    const voucherId = req.params.id;
+    const userId = req.user._id;
+
+    // 1. Check if voucher exists and is active/not expired
+    const voucher = await Voucher.findById(voucherId);
+    if (!voucher) {
+      return res.status(404).json({ message: "Voucher không tồn tại." });
+    }
+
+    if (!voucher.isActive) {
+      return res.status(400).json({ message: "Voucher này đã bị vô hiệu hóa." });
+    }
+
+    const now = new Date();
+    if (now > voucher.endDate) {
+      return res.status(400).json({ message: "Voucher này đã hết hạn." });
+    }
+
+    if (voucher.maxUses !== null && voucher.usedCount >= voucher.maxUses) {
+      return res.status(400).json({ message: "Voucher này đã hết lượt sử dụng." });
+    }
+
+    // 2. Find user and update
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại." });
+    }
+
+    // Check if already saved
+    const isAlreadySaved = user.savedVouchers.some(id => id.toString() === voucherId.toString());
+    if (isAlreadySaved) {
+      return res.status(400).json({ message: "Voucher này đã có trong ví của bạn." });
+    }
+
+    user.savedVouchers.push(voucherId);
+    await user.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Lưu voucher vào ví thành công!",
+      savedVouchers: user.savedVouchers 
+    });
+  } catch (error) {
+    console.error("Save voucher error:", error);
+    res.status(500).json({ message: "Lỗi máy chủ khi lưu voucher", error: error.message });
+  }
+};
+
+// @desc    Remove a voucher from user's wallet
+// @route   POST /api/vouchers/:id/unsave
+// @access  Private (User)
+const unsaveVoucher = async (req, res) => {
+  try {
+    const voucherId = req.params.id;
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại." });
+    }
+
+    // Check if not saved
+    const isSaved = user.savedVouchers.some(id => id.toString() === voucherId.toString());
+    if (!isSaved) {
+      return res.status(400).json({ message: "Voucher chưa được lưu vào ví." });
+    }
+
+    user.savedVouchers = user.savedVouchers.filter(id => id.toString() !== voucherId.toString());
+    await user.save();
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Đã xóa voucher khỏi ví thành công!",
+      savedVouchers: user.savedVouchers 
+    });
+  } catch (error) {
+    console.error("Unsave voucher error:", error);
+    res.status(500).json({ message: "Lỗi máy chủ khi bỏ lưu voucher", error: error.message });
+  }
+};
+
+// @desc    Get user's saved vouchers
+// @route   GET /api/vouchers/me/saved
+// @access  Private (User)
+const getSavedVouchers = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).populate({
+      path: "savedVouchers",
+      populate: { path: "applicablePlans", select: "name planId" }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Người dùng không tồn tại." });
+    }
+
+    // Filter out null values in case a voucher was deleted from DB
+    const savedVouchers = (user.savedVouchers || []).filter(Boolean);
+
+    res.status(200).json(savedVouchers);
+  } catch (error) {
+    console.error("Get saved vouchers error:", error);
+    res.status(500).json({ message: "Lỗi máy chủ khi lấy danh sách ví voucher", error: error.message });
   }
 };
 
@@ -235,4 +369,7 @@ module.exports = {
   deleteVoucher,
   validateVoucher,
   getPromotedVouchers,
+  saveVoucher,
+  unsaveVoucher,
+  getSavedVouchers,
 };
