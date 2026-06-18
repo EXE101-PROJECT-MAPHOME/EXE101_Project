@@ -235,6 +235,74 @@ export default function HomePage() {
     satisfactionRate: 98,
   });
   const [promotedVouchers, setPromotedVouchers] = useState<any[]>([]);
+  const [savedVoucherIds, setSavedVoucherIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchSavedVouchers = async () => {
+      if (user) {
+        try {
+          const res = await api.get("/api/vouchers/me/saved");
+          if (res.data) {
+            setSavedVoucherIds(res.data.map((v: any) => v._id || v.id));
+          }
+        } catch (error) {
+          console.log("Failed to fetch saved vouchers", error);
+        }
+      } else {
+        setSavedVoucherIds([]);
+      }
+    };
+    fetchSavedVouchers();
+  }, [user]);
+
+  const handleToggleSaveVoucher = async (voucher: any) => {
+    const vId = voucher._id || voucher.id;
+    if (!vId) return;
+
+    if (!user) {
+      await Clipboard.setStringAsync(voucher.code);
+      Alert.alert(
+        "Đã sao chép mã",
+        "Đã sao chép mã voucher vào bộ nhớ tạm. Bạn hãy đăng nhập để lưu vào Ví Voucher nhé!"
+      );
+      return;
+    }
+
+    const isSaved = savedVoucherIds.includes(vId);
+    if (isSaved) {
+      Alert.alert(
+        "Bỏ lưu voucher",
+        `Bạn có chắc chắn muốn bỏ lưu mã "${voucher.code}" khỏi ví của mình không?`,
+        [
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Bỏ lưu",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await api.post(`/api/vouchers/${vId}/unsave`);
+                setSavedVoucherIds((prev) => prev.filter((id) => id !== vId));
+                Alert.alert("Thành công", "Đã gỡ voucher khỏi ví của bạn.");
+              } catch (error) {
+                Alert.alert("Lỗi", "Không thể gỡ voucher khỏi ví.");
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      try {
+        await api.post(`/api/vouchers/${vId}/save`);
+        setSavedVoucherIds((prev) => [...prev, vId]);
+        Alert.alert("Thành công", "Lưu voucher thành công! Bạn có thể sử dụng mã này trong trang thanh toán.");
+      } catch (error: any) {
+        Alert.alert(
+          "Lỗi",
+          error.response?.data?.message || "Không thể lưu voucher vào ví."
+        );
+      }
+    }
+  };
 
 
 
@@ -345,9 +413,10 @@ export default function HomePage() {
                   progressText = "Sắp hết hạn";
                 }
 
+                const isSaved = savedVoucherIds.includes(voucher._id || voucher.id);
                 return (
                   <View 
-                    key={voucher._id} 
+                    key={voucher._id || voucher.id} 
                     className="w-[85vw] mr-4 bg-white rounded-2xl shadow-sm"
                     style={{ 
                       elevation: 3,
@@ -361,7 +430,7 @@ export default function HomePage() {
                       {/* Left Side: Gradient Ticket stub */}
                       <View className="w-[35%] overflow-hidden relative justify-center items-center py-4">
                       <LinearGradient
-                        colors={['#f97316', '#dc2626']} // orange-500 to red-600
+                        colors={['#059669', '#0ea5e9']} // Emerald Green to Teal gradient
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         className="absolute inset-0"
@@ -400,9 +469,9 @@ export default function HomePage() {
                       
                       <View className="mt-2">
                         {/* Progress Bar */}
-                        <View className="w-full h-3.5 bg-orange-100 rounded-full overflow-hidden justify-center relative mb-2">
+                        <View className="w-full h-3.5 bg-emerald-100 rounded-full overflow-hidden justify-center relative mb-2">
                           <LinearGradient
-                            colors={['#fb923c', '#ef4444']} // orange-400 to red-500
+                            colors={['#10b981', '#0ea5e9']} // Emerald to Teal/Blue
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             className="absolute top-0 left-0 bottom-0 rounded-full"
@@ -418,13 +487,16 @@ export default function HomePage() {
                             <Text className="font-black text-slate-700 tracking-widest text-[11px] text-center">{voucher.code}</Text>
                           </View>
                           <TouchableOpacity 
-                            onPress={async () => {
-                              await Clipboard.setStringAsync(voucher.code);
-                              Alert.alert("Thành công", "Đã sao chép mã voucher!");
-                            }}
-                            className="bg-orange-500 rounded-full px-3 py-1.5 flex-row items-center shadow-sm"
+                            onPress={() => handleToggleSaveVoucher(voucher)}
+                            className={`rounded-full px-3 py-1.5 flex-row items-center shadow-sm ${
+                              isSaved ? "bg-slate-100 border border-slate-200" : "bg-emerald-600"
+                            }`}
                           >
-                            <Text className="text-white font-bold text-[11px]">Lưu mã</Text>
+                            <Text className={`font-bold text-[11px] ${
+                              isSaved ? "text-slate-500" : "text-white"
+                            }`}>
+                              {isSaved ? "Đã lưu" : "Lưu mã"}
+                            </Text>
                           </TouchableOpacity>
                         </View>
                       </View>

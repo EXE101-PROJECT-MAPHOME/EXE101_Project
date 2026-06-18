@@ -22,6 +22,7 @@ import {
   Mail,
   Phone,
   Settings,
+  CreditCard,
 } from "lucide-react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import api from "../../utils/api";
@@ -760,6 +761,12 @@ export default function ProfileScreen() {
             {/* Landlord Actions Menu */}
             <View className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
               {[
+                {
+                  title: "Đăng ký gói hội viên",
+                  desc: "Nâng cấp dịch vụ, đẩy tin, ưu đãi đặc quyền",
+                  icon: CreditCard,
+                  path: ROUTES.PRICING,
+                },
                 {
                   title: "Quản lý danh sách trọ",
                   desc: `Đang có ${landlordProperties.length} tin đăng phòng trọ`,

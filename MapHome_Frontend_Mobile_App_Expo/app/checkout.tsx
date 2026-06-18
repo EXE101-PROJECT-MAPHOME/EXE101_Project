@@ -10,6 +10,7 @@ import {
   Linking,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -22,7 +23,10 @@ import {
   Lock,
   Shield,
   Tag,
+  X,
+  Ticket,
 } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import api from "../utils/api";
@@ -51,6 +55,27 @@ export default function CheckoutScreen() {
     voucherId: string;
     code: string;
   } | null>(null);
+
+  const [savedVouchers, setSavedVouchers] = useState<any[]>([]);
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+  const [fetchingSavedVouchers, setFetchingSavedVouchers] = useState(false);
+
+  useEffect(() => {
+    const fetchSavedVouchers = async () => {
+      if (isAuthenticated) {
+        setFetchingSavedVouchers(true);
+        try {
+          const res = await api.get("/api/vouchers/me/saved");
+          setSavedVouchers(res.data || []);
+        } catch (error) {
+          console.log("Failed to fetch saved vouchers", error);
+        } finally {
+          setFetchingSavedVouchers(false);
+        }
+      }
+    };
+    fetchSavedVouchers();
+  }, [isAuthenticated, isVoucherModalOpen]);
 
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(!isInspection);
@@ -99,18 +124,18 @@ export default function CheckoutScreen() {
       ? "1 tháng"
       : "12 tháng";
 
-  const handleApplyVoucher = async () => {
-    if (!voucherCode.trim()) return;
+  const handleApplyVoucherWithCode = async (codeToApply: string) => {
+    if (!codeToApply.trim()) return;
     setValidatingVoucher(true);
     try {
       const res = await api.post("/api/vouchers/validate", {
-        code: voucherCode,
+        code: codeToApply,
         planId: isInspection ? "inspection" : planId,
       });
       setAppliedVoucher({
         discountPercentage: res.data.discountPercentage,
         voucherId: res.data.voucherId,
-        code: voucherCode.toUpperCase(),
+        code: codeToApply.toUpperCase(),
       });
       Alert.alert(
         "Thành công",
@@ -125,6 +150,10 @@ export default function CheckoutScreen() {
     } finally {
       setValidatingVoucher(false);
     }
+  };
+
+  const handleApplyVoucher = async () => {
+    await handleApplyVoucherWithCode(voucherCode);
   };
 
   const handlePayment = async () => {
@@ -302,6 +331,16 @@ export default function CheckoutScreen() {
                 </TouchableOpacity>
               )}
             </View>
+
+            {!appliedVoucher && isAuthenticated && (
+              <TouchableOpacity
+                onPress={() => setIsVoucherModalOpen(true)}
+                className="mt-3 flex-row items-center justify-center py-2.5 bg-emerald-50 rounded-xl border border-dashed border-emerald-300 active:opacity-80"
+              >
+                <Tag size={16} color="#059669" className="mr-2" />
+                <Text className="text-emerald-700 font-black text-sm">Chọn từ ví voucher</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Terms */}
@@ -350,6 +389,143 @@ export default function CheckoutScreen() {
           )}
         </TouchableOpacity>
       </SafeAreaView>
+
+      <Modal
+        visible={isVoucherModalOpen}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsVoucherModalOpen(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-white rounded-t-[32px] h-[70vh] flex-col overflow-hidden">
+            {/* Modal Header */}
+            <View className="px-6 py-5 border-b border-slate-100 flex-row justify-between items-center bg-white">
+              <View className="flex-row items-center">
+                <Ticket size={20} color="#059669" className="mr-2" />
+                <Text className="text-lg font-black text-emerald-950">Chọn Voucher từ ví</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsVoucherModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center"
+              >
+                <X size={16} color="#475569" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Scrollable list of vouchers */}
+            <ScrollView
+              contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+              className="flex-1 bg-slate-50"
+            >
+              {fetchingSavedVouchers ? (
+                <View className="py-20 items-center justify-center">
+                  <ActivityIndicator size="large" color="#059669" />
+                  <Text className="text-slate-500 font-bold mt-2">Đang tải ví voucher...</Text>
+                </View>
+              ) : savedVouchers.length === 0 ? (
+                <View className="py-20 items-center justify-center">
+                  <Ticket size={48} color="#94a3b8" className="mb-3" />
+                  <Text className="text-slate-500 font-bold text-center">Ví voucher của bạn trống.</Text>
+                  <Text className="text-slate-400 text-xs text-center mt-1">Lưu voucher ở trang chủ để sử dụng.</Text>
+                </View>
+              ) : (
+                savedVouchers.map((voucher) => {
+                  const currentTierId = isInspection ? "inspection" : planId;
+                  
+                  // Check applicability
+                  const isApplicable =
+                    !voucher.applicableTiers ||
+                    voucher.applicableTiers.length === 0 ||
+                    voucher.applicableTiers.includes(currentTierId);
+
+                  return (
+                    <View
+                      key={voucher._id || voucher.id}
+                      className="mb-4 bg-white rounded-2xl overflow-hidden border border-slate-200"
+                      style={{
+                        opacity: isApplicable ? 1 : 0.6,
+                        elevation: 2,
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                      }}
+                    >
+                      <View className="flex-row relative">
+                        {/* Left Side: Ticket Stub */}
+                        <View className="w-[30%] py-4 items-center justify-center overflow-hidden relative">
+                          <LinearGradient
+                            colors={isApplicable ? ['#059669', '#0ea5e9'] : ['#94a3b8', '#cbd5e1']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            className="absolute inset-0"
+                          />
+                          <Text className="text-white/85 text-[8px] font-black uppercase tracking-wider mb-1">
+                            VOUCHER
+                          </Text>
+                          <Text className="text-white text-2xl font-black">{voucher.discountPercentage}%</Text>
+                          <Text className="text-white/95 text-[9px] font-bold mt-1">OFF</Text>
+                        </View>
+
+                        {/* Dashed Separator */}
+                        <View className="absolute left-[30%] top-0 bottom-0 w-[1px] border-l border-dashed border-slate-300 z-10" />
+
+                        {/* Cutouts */}
+                        <View className="absolute left-[30%] top-0 w-3 h-3 bg-slate-50 rounded-full -translate-x-1.5 -translate-y-1.5 z-20 border-b border-slate-200" />
+                        <View className="absolute left-[30%] bottom-0 w-3 h-3 bg-slate-50 rounded-full -translate-x-1.5 translate-y-1.5 z-20 border-t border-slate-200" />
+
+                        {/* Right Side: Info & Actions */}
+                        <View className="w-[70%] p-3 justify-between">
+                          <View>
+                            <Text className="font-black text-slate-800 text-sm mb-0.5" numberOfLines={1}>
+                              {voucher.title || `Mã giảm giá ${voucher.discountPercentage}%`}
+                            </Text>
+                            <Text className="text-slate-500 text-[10px] leading-tight" numberOfLines={2}>
+                              {voucher.description || "Áp dụng giảm giá hóa đơn nâng cấp dịch vụ."}
+                            </Text>
+                            
+                            {!isApplicable && voucher.applicableTiers && voucher.applicableTiers.length > 0 && (
+                              <Text className="text-red-500 font-bold text-[9px] mt-1">
+                                ✕ Chỉ áp dụng cho gói: {voucher.applicableTiers.join(", ").toUpperCase()}
+                              </Text>
+                            )}
+                          </View>
+
+                          <View className="flex-row items-center justify-between mt-2">
+                            <View className="bg-slate-50 px-2 py-0.5 rounded border border-dashed border-slate-200">
+                              <Text className="font-black text-slate-600 text-[10px] uppercase tracking-wider">
+                                {voucher.code}
+                              </Text>
+                            </View>
+
+                            <TouchableOpacity
+                              disabled={!isApplicable}
+                              onPress={() => {
+                                setVoucherCode(voucher.code);
+                                setIsVoucherModalOpen(false);
+                                setTimeout(() => {
+                                  handleApplyVoucherWithCode(voucher.code);
+                                }, 150);
+                              }}
+                              className={`px-3 py-1 rounded-lg ${
+                                isApplicable ? "bg-emerald-600 active:opacity-80" : "bg-slate-200"
+                              }`}
+                            >
+                              <Text className={`font-black text-xs ${isApplicable ? "text-white" : "text-slate-400"}`}>
+                                Áp dụng
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
