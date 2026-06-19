@@ -110,7 +110,7 @@ export default function CheckoutScreen() {
   const baseAmount = isInspection
     ? 199000
     : selectedTier
-      ? selectedTier.price
+      ? (billingCycle === "yearly" && selectedTier.yearlyPrice ? selectedTier.yearlyPrice : selectedTier.price)
       : paramPrice;
   const serviceFee = 0;
   const discountAmount = appliedVoucher
@@ -321,7 +321,8 @@ export default function CheckoutScreen() {
                 <TouchableOpacity
                   onPress={handleApplyVoucher}
                   disabled={!voucherCode || validatingVoucher}
-                  className={`${voucherCode ? "bg-emerald-600" : "bg-slate-300"} px-4 rounded-xl items-center justify-center h-12`}
+                  className="px-4 rounded-xl items-center justify-center h-12"
+                  style={{ backgroundColor: voucherCode ? "#059669" : "#cbd5e1" }}
                 >
                   {validatingVoucher ? (
                     <ActivityIndicator size="small" color="white" />
@@ -349,7 +350,11 @@ export default function CheckoutScreen() {
             className="flex-row items-start p-4 bg-white rounded-2xl border border-slate-100 mb-6"
           >
             <View
-              className={`w-6 h-6 rounded border items-center justify-center mr-3 mt-0.5 ${agreedToTerms ? "bg-emerald-600 border-emerald-600" : "border-slate-300"}`}
+              className="w-6 h-6 rounded border items-center justify-center mr-3 mt-0.5"
+              style={{
+                backgroundColor: agreedToTerms ? "#059669" : "transparent",
+                borderColor: agreedToTerms ? "#059669" : "#cbd5e1",
+              }}
             >
               {agreedToTerms && <CheckCircle2 size={16} color="white" />}
             </View>
@@ -375,7 +380,8 @@ export default function CheckoutScreen() {
         <TouchableOpacity
           onPress={handlePayment}
           disabled={!agreedToTerms || isProcessing}
-          className={`${!agreedToTerms || isProcessing ? "bg-emerald-800/50" : "bg-emerald-600"} h-14 rounded-2xl flex-row items-center justify-center`}
+          className="h-14 rounded-2xl flex-row items-center justify-center"
+          style={{ backgroundColor: !agreedToTerms || isProcessing ? "rgba(6, 78, 59, 0.5)" : "#059669" }}
         >
           {isProcessing ? (
             <ActivityIndicator size="small" color="white" />
@@ -507,11 +513,14 @@ export default function CheckoutScreen() {
                                   handleApplyVoucherWithCode(voucher.code);
                                 }, 150);
                               }}
-                              className={`px-3 py-1 rounded-lg ${
-                                isApplicable ? "bg-emerald-600 active:opacity-80" : "bg-slate-200"
-                              }`}
+                              activeOpacity={0.8}
+                              className="px-3 py-1 rounded-lg"
+                              style={{ backgroundColor: isApplicable ? "#059669" : "#e2e8f0" }}
                             >
-                              <Text className={`font-black text-xs ${isApplicable ? "text-white" : "text-slate-400"}`}>
+                              <Text 
+                                className="font-black text-xs"
+                                style={{ color: isApplicable ? "#ffffff" : "#94a3b8" }}
+                              >
                                 Áp dụng
                               </Text>
                             </TouchableOpacity>

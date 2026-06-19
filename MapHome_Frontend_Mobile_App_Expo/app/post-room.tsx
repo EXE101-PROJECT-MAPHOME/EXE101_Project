@@ -318,7 +318,7 @@ export default function PostRoomScreen() {
     return undefined;
   };
 
-  const searchTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = React.useRef<any>(null);
 
   const handleGoongSearch = (text: string) => {
     setGoongQuery(text);
@@ -533,7 +533,7 @@ export default function PostRoomScreen() {
         </View>
 
         {/* Progress Bar */}
-        <View className="bg-white px-4 py-6 border-b border-slate-100 relative">
+        <View className="bg-white px-2 py-6 border-b border-slate-100 relative">
           <View className="absolute top-[42px] left-8 right-8 h-1 bg-slate-100 rounded-full" />
           <View 
             className="absolute top-[42px] left-8 h-1 bg-indigo-600 rounded-full" 
@@ -546,7 +546,7 @@ export default function PostRoomScreen() {
               const isActive = i === currentStepIndex;
               const isCompleted = i < currentStepIndex;
               return (
-                <View key={s.key} className="items-center">
+                <View key={s.key} className="items-center flex-1" style={{ maxWidth: `${100 / stepsInfo.length}%` }}>
                   <View 
                     className={`w-10 h-10 rounded-xl items-center justify-center mb-2 ${
                       isCompleted ? "bg-emerald-500" : isActive ? "bg-indigo-600" : "bg-white border-2 border-slate-200"
@@ -559,9 +559,12 @@ export default function PostRoomScreen() {
                       <StepIcon size={18} color={isActive ? "white" : "#94a3b8"} />
                     )}
                   </View>
-                  <Text className={`text-[9px] font-bold uppercase tracking-widest ${
-                    isActive ? "text-indigo-600" : isCompleted ? "text-emerald-600" : "text-slate-400"
-                  }`}>
+                  <Text 
+                    numberOfLines={2}
+                    className={`text-[8.5px] font-bold text-center mt-1 px-0.5 leading-tight ${
+                      isActive ? "text-indigo-600" : isCompleted ? "text-emerald-600" : "text-slate-400"
+                    }`}
+                  >
                     {s.label}
                   </Text>
                 </View>

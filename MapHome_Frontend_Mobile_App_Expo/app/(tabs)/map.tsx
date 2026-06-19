@@ -222,55 +222,7 @@ export default function MapScreen() {
   const text = useThemeColor({}, "text");
   const icon = useThemeColor({}, "icon");
 
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#16a34a" />
-      </SafeAreaView>
-    );
-  }
 
-  if (!isAuthenticated || !user) {
-    return (
-      <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
-        <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
-          <Text className="text-2xl font-black text-emerald-700 ml-2">
-            Bản đồ trọ
-          </Text>
-        </View>
-
-        <View className="flex-1 items-center justify-center px-6 py-12">
-          <View className="w-24 h-24 bg-emerald-50 rounded-full mb-6 items-center justify-center border border-emerald-100 shadow-sm">
-            <MapIcon size={40} color="#16a34a" />
-          </View>
-          <Text className="text-2xl font-black text-emerald-700 text-center mb-2">
-            Đăng nhập để xem bản đồ
-          </Text>
-          <Text className="text-slate-500 text-center text-sm font-semibold max-w-xs mb-8">
-            Hãy đăng nhập tài khoản của bạn để khám phá hàng ngàn phòng trọ xung quanh trên bản đồ tương tác thông minh.
-          </Text>
-
-          <TouchableOpacity
-            onPress={() => navigateTo(router, ROUTES.LOGIN)}
-            className="w-full bg-emerald-600 h-14 rounded-2xl items-center justify-center shadow-md mb-4"
-          >
-            <Text className="text-white font-black text-base">
-              Đăng nhập ngay
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => navigateTo(router, ROUTES.REGISTER)}
-            className="w-full bg-white border border-emerald-600 h-14 rounded-2xl items-center justify-center"
-          >
-            <Text className="text-emerald-700 font-black text-base">
-              Tạo tài khoản mới
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   const handleUseMyLocation = async () => {
     try {
@@ -474,6 +426,56 @@ export default function MapScreen() {
     count += Object.values(amenities).filter(Boolean).length;
     return count;
   }, [priceFilter, areaFilter, verifyFilter, amenities]);
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
+        <ActivityIndicator size="large" color="#16a34a" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50" edges={["top"]}>
+        <View className="px-4 py-4 bg-white border-b border-slate-100 flex-row items-center">
+          <Text className="text-2xl font-black text-emerald-700 ml-2">
+            Bản đồ trọ
+          </Text>
+        </View>
+
+        <View className="flex-1 items-center justify-center px-6 py-12">
+          <View className="w-24 h-24 bg-emerald-50 rounded-full mb-6 items-center justify-center border border-emerald-100 shadow-sm">
+            <MapIcon size={40} color="#16a34a" />
+          </View>
+          <Text className="text-2xl font-black text-emerald-700 text-center mb-2">
+            Đăng nhập để xem bản đồ
+          </Text>
+          <Text className="text-slate-500 text-center text-sm font-semibold max-w-xs mb-8">
+            Hãy đăng nhập tài khoản của bạn để khám phá hàng ngàn phòng trọ xung quanh trên bản đồ tương tác thông minh.
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => navigateTo(router, ROUTES.LOGIN)}
+            className="w-full bg-emerald-600 h-14 rounded-2xl items-center justify-center shadow-md mb-4"
+          >
+            <Text className="text-white font-black text-base">
+              Đăng nhập ngay
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigateTo(router, ROUTES.REGISTER)}
+            className="w-full bg-white border border-emerald-600 h-14 rounded-2xl items-center justify-center"
+          >
+            <Text className="text-emerald-700 font-black text-base">
+              Tạo tài khoản mới
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">

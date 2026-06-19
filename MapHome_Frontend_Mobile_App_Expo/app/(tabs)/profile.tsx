@@ -292,12 +292,51 @@ export default function ProfileScreen() {
 
             <TouchableOpacity
               onPress={() => navigateTo(router, ROUTES.REGISTER)}
-              className="w-full bg-white border border-emerald-600 h-14 rounded-2xl items-center justify-center"
+              className="w-full bg-white border border-emerald-600 h-14 rounded-2xl items-center justify-center mb-6"
             >
               <Text className="text-emerald-700 font-black text-base">
                 Đăng ký tài khoản
               </Text>
             </TouchableOpacity>
+
+            {/* Support and policy for guest */}
+            <View className="w-full bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
+              {[
+                {
+                  title: "Liên hệ hỗ trợ",
+                  desc: "Góp ý, báo lỗi, trợ giúp",
+                  icon: Mail,
+                  path: "/contact",
+                },
+                {
+                  title: "Trợ giúp & Chính sách",
+                  desc: "Điều khoản sử dụng và chính sách bảo mật",
+                  icon: ShieldCheck,
+                  path: "/policy",
+                },
+              ].map((item, i) => (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => navigateTo(router, item.path)}
+                  className="w-full flex-row items-center justify-between p-4 border-b border-slate-50"
+                >
+                  <View className="flex-row items-center flex-1 mr-4">
+                    <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3 border border-emerald-100">
+                      <item.icon size={18} color="#16a34a" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm font-black text-emerald-700 text-left">
+                        {item.title}
+                      </Text>
+                      <Text className="text-xs text-slate-400 font-medium text-left">
+                        {item.desc}
+                      </Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={16} color="#94a3b8" />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         )}
 
@@ -489,6 +528,12 @@ export default function ProfileScreen() {
                     desc: "Góp ý, báo lỗi, trợ giúp",
                     icon: Mail,
                     path: "/contact",
+                  },
+                  {
+                    title: "Trợ giúp & Chính sách",
+                    desc: "Điều khoản sử dụng và chính sách bảo mật",
+                    icon: ShieldCheck,
+                    path: "/policy",
                   },
                   {
                     title: "Cài đặt tài khoản",
@@ -784,6 +829,18 @@ export default function ProfileScreen() {
                   desc: "Họ tên, SĐT, Căn cước công dân",
                   icon: UserIcon,
                   path: "/personal-info",
+                },
+                {
+                  title: "Liên hệ hỗ trợ",
+                  desc: "Góp ý, báo lỗi, trợ giúp",
+                  icon: Mail,
+                  path: "/contact",
+                },
+                {
+                  title: "Trợ giúp & Chính sách",
+                  desc: "Điều khoản sử dụng và chính sách bảo mật",
+                  icon: ShieldCheck,
+                  path: "/policy",
                 },
                 {
                   title: "Cài đặt tài khoản",

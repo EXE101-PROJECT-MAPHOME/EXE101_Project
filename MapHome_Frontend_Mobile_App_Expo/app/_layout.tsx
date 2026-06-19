@@ -18,12 +18,27 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider } from "../contexts/AuthContext";
 import { PropertiesProvider } from "../contexts/PropertiesContext";
 import { CompareProvider } from "../contexts/CompareContext";
-import { LogBox } from "react-native";
+import { LogBox, Text, TextInput } from "react-native";
 
 LogBox.ignoreLogs([
   "[Reanimated] Reduced motion setting is enabled on this device.",
   "ImagePicker.MediaTypeOptions have been deprecated", // Just in case any old dependency still triggers it
 ]);
+
+// Prevent system accessibility font scaling from breaking layout designs across different devices
+if ((Text as any).defaultProps) {
+  (Text as any).defaultProps.allowFontScaling = false;
+} else {
+  (Text as any).defaultProps = {};
+  (Text as any).defaultProps.allowFontScaling = false;
+}
+
+if ((TextInput as any).defaultProps) {
+  (TextInput as any).defaultProps.allowFontScaling = false;
+} else {
+  (TextInput as any).defaultProps = {};
+  (TextInput as any).defaultProps.allowFontScaling = false;
+}
 
 export const unstable_settings = {
   anchor: "(tabs)",

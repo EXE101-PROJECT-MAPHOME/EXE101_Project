@@ -539,6 +539,7 @@ export default function LandlordDashboardScreen() {
                 posts.slice(0, 3).map((item, idx) => (
                   <TouchableOpacity
                     key={item._id || idx}
+                    onPress={() => navigateTo(router, ROUTES.ROOM(item._id || item.id))}
                     className="py-3 border-b border-slate-100 flex-row items-center active:bg-slate-50 px-2 rounded-lg"
                   >
                     {item.images && item.images.length > 0 && (
@@ -620,6 +621,7 @@ export default function LandlordDashboardScreen() {
                 posts.map((post, idx) => (
                   <TouchableOpacity
                     key={post._id || idx}
+                    onPress={() => navigateTo(router, ROUTES.ROOM(post._id || post.id))}
                     className="bg-slate-50 rounded-2xl p-4 mb-3 border border-slate-100 active:bg-slate-100"
                   >
                     {post.images && post.images.length > 0 && (
