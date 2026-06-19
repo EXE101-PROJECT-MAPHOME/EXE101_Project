@@ -1,5 +1,7 @@
 import { Tabs } from "expo-router";
 import React from "react";
+import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Home,
   Map as MapIcon,
@@ -16,9 +18,10 @@ export default function TabLayout() {
   const tint = useThemeColor({}, "tint");
   const icon = useThemeColor({}, "icon");
   const background = useThemeColor({}, "background");
+  const insets = useSafeAreaInsets();
   
   const isLight = background === "#ffffff";
-  const borderColor = isLight ? "#f1f5f9" : "#3f3f46";
+  const borderColor = isLight ? "#f1f5f9" : "#27272a";
 
   return (
     <Tabs
@@ -27,25 +30,33 @@ export default function TabLayout() {
         tabBarInactiveTintColor: icon,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarAllowFontScaling: false,
         tabBarStyle: {
           backgroundColor: background,
           borderTopWidth: 1,
           borderTopColor: borderColor,
-          // Let React Navigation handle height and bottom safe area padding automatically
+          // Handle dynamic heights and paddings for iOS notches and Android navigation bars
+          height: Platform.OS === "ios"
+            ? (insets.bottom > 0 ? 60 + insets.bottom : 68)
+            : (insets.bottom > 0 ? 64 + insets.bottom : 68),
+          paddingBottom: Platform.OS === "ios"
+            ? (insets.bottom > 0 ? insets.bottom - 4 : 10)
+            : (insets.bottom > 0 ? insets.bottom : 10),
           paddingTop: 8,
-          elevation: 8,
+          elevation: 12,
           shadowColor: "#000",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 3,
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: isLight ? 0.04 : 0.15,
+          shadowRadius: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
+          fontSize: 10,
+          fontFamily: Platform.OS === "ios" ? "System" : "sans-serif-medium",
+          fontWeight: "700",
           marginTop: 2,
         },
         tabBarItemStyle: {
-          paddingVertical: 4,
+          paddingVertical: 2,
         },
       }}
     >
@@ -53,15 +64,27 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Trang chủ",
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Home
+              size={focused ? size + 1 : size}
+              color={color}
+              fill={focused ? color : "transparent"}
+              strokeWidth={focused ? 2.2 : 2}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="map"
         options={{
           title: "Bản đồ",
-          tabBarIcon: ({ color, size }) => (
-            <MapIcon size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <MapIcon
+              size={focused ? size + 1 : size}
+              color={color}
+              fill={focused ? `${color}25` : "transparent"}
+              strokeWidth={focused ? 2.2 : 2}
+            />
           ),
         }}
       />
@@ -69,15 +92,28 @@ export default function TabLayout() {
         name="saved"
         options={{
           title: "Đã lưu",
-          tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
+          href: null,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Heart
+              size={focused ? size + 1 : size}
+              color={color}
+              fill={focused ? color : "transparent"}
+              strokeWidth={focused ? 2.2 : 2}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="blog"
         options={{
           title: "Blog",
-          tabBarIcon: ({ color, size }) => (
-            <MessageCircle size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <MessageCircle
+              size={focused ? size + 1 : size}
+              color={color}
+              fill={focused ? color : "transparent"}
+              strokeWidth={focused ? 2.2 : 2}
+            />
           ),
         }}
       />
@@ -85,9 +121,13 @@ export default function TabLayout() {
         name="policy"
         options={{
           title: "Chính sách",
-          href: null,
-          tabBarIcon: ({ color, size }) => (
-            <FileText size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <FileText
+              size={focused ? size + 1 : size}
+              color={color}
+              fill={focused ? color : "transparent"}
+              strokeWidth={focused ? 2.2 : 2}
+            />
           ),
         }}
       />
@@ -95,15 +135,28 @@ export default function TabLayout() {
         name="contact"
         options={{
           title: "Liên hệ",
-          href: null,
-          tabBarIcon: ({ color, size }) => <Mail size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Mail
+              size={focused ? size + 1 : size}
+              color={color}
+              fill={focused ? color : "transparent"}
+              strokeWidth={focused ? 2.2 : 2}
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Tài khoản",
-          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <User
+              size={focused ? size + 1 : size}
+              color={color}
+              fill={focused ? color : "transparent"}
+              strokeWidth={focused ? 2.2 : 2}
+            />
+          ),
         }}
       />
     </Tabs>

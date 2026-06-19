@@ -92,23 +92,16 @@ export default function RoomDetailScreen() {
     const fetchDetail = async () => {
       try {
         setLoading(true);
-        // 1. Fetch details
+        // 1. Fetch details (essential)
         const detailRes = await api.get(`/api/properties/${id}`);
-        // 2. Fetch reviews
-        const reviewsRes = await api.get(`/api/reviews/property/${id}`);
-        
-        // 3. Fetch user's favorites if authenticated
-        if (isAuthenticated) {
-          try {
-            const favRes = await api.get("/api/user/me/favorites");
-            const favoritesList = favRes.data || [];
-            const favIds = favoritesList.map((f: any) => f._id || f);
-            setIsFavorite(favIds.includes(id as string));
-          } catch (e) {}
+        const prop = detailRes.data;
+        if (!prop) {
+          setProperty(null);
+          setLoading(false);
+          return;
         }
 
         // Map property
-        const prop = detailRes.data;
         const mappedProperty = {
           id: prop._id || prop.id,
           _id: prop._id || prop.id,
@@ -162,24 +155,41 @@ export default function RoomDetailScreen() {
 
         setProperty(mappedProperty);
 
-        // Map reviews
-        const mappedReviews = (reviewsRes.data || []).map((r: any) => ({
-          id: r._id || r.id,
-          userName:
-            r.userId?.fullName || r.userId?.username || "Người dùng MapHome",
-          userAvatar:
-            r.userId?.avatar ||
-            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
-          rating: r.rating || 5,
-          content: r.comment || "",
-          createdAt: r.createdAt || new Date().toISOString(),
-        }));
-        setReviewsList(mappedReviews);
+        // 2. Fetch reviews (non-essential)
+        try {
+          const reviewsRes = await api.get(`/api/reviews/property/${id}`);
+          const mappedReviews = (reviewsRes.data || []).map((r: any) => ({
+            id: r._id || r.id,
+            userName:
+              r.userId?.fullName || r.userId?.username || "Người dùng MapHome",
+            userAvatar:
+              r.userId?.avatar ||
+              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+            rating: r.rating || 5,
+            content: r.comment || "",
+            createdAt: r.createdAt || new Date().toISOString(),
+          }));
+          setReviewsList(mappedReviews);
+        } catch (reviewsErr) {
+          console.log("Failed to fetch reviews for property:", reviewsErr);
+          setReviewsList([]);
+        }
+        
+        // 3. Fetch user's favorites if authenticated
+        if (isAuthenticated) {
+          try {
+            const favRes = await api.get("/api/user/me/favorites");
+            const favoritesList = favRes.data || [];
+            const favIds = favoritesList.map((f: any) => f._id || f);
+            setIsFavorite(favIds.includes(id as string));
+          } catch (e) {}
+        }
 
         // 4. Increment views
         api.post(`/api/properties/${id}/view`).catch(() => {});
       } catch (e) {
         console.error("Error fetching room detail", e);
+        setProperty(null);
       } finally {
         setLoading(false);
       }
