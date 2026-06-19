@@ -4,6 +4,28 @@
 
 ---
 
+## 🚀 TRẢI NGHIỆM NHANH BẢN DEMO TRỰC TUYẾN (Không Cần Cài Đặt)
+
+Nếu bạn không thuộc ngành lập trình hoặc muốn xem nhanh cách hoạt động của hệ thống, hãy truy cập và trải nghiệm trực tiếp các đường link đã triển khai (deploy) dưới đây:
+
+* **🔗 Website MapHome (Dành cho Máy tính & Điện thoại):** [https://exe201-maphome-app.vercel.app](https://exe201-maphome-app.vercel.app)
+* **🔗 Cổng kết nối dữ liệu (Backend API Server):** [https://exe101project-maphome-api.up.railway.app](https://exe101project-maphome-api.up.railway.app)
+* **📖 Tài liệu kỹ thuật tự động (Swagger UI):** [https://exe101project-maphome-api.up.railway.app/api-docs](https://exe101project-maphome-api.up.railway.app/api-docs)
+
+### 💡 Hướng dẫn trải nghiệm nhanh các tính năng trong 2 phút:
+
+* **Bước 1: Tìm phòng trên bản đồ:** Mở đường link Website. Bạn sẽ nhìn thấy ngay bản đồ tương tác hiển thị vị trí các phòng trọ thực tế. Hãy thử click vào các ghim (marker) trên bản đồ để xem nhanh ảnh phòng, giá thuê và địa chỉ.
+* **Bước 2: Tìm phòng quanh trường học/công sở:** Trên bản đồ, chọn nút bộ lọc tìm quanh địa điểm (Ví dụ: Đại học Quốc Gia TP.HCM). Bản đồ sẽ vẽ một vùng tròn bán kính (1km - 5km) và lọc ra chính xác những phòng trọ nằm gần khu vực đó.
+* **Bước 3: Đăng nhập/Đăng ký:** Click nút **Đăng nhập** ở góc trên cùng bên phải.
+  - Bạn có thể chọn **Đăng nhập nhanh bằng tài khoản Google** của bạn.
+  - Hoặc chọn **Đăng ký** tài khoản mới trong 30 giây (chọn vai trò "Khách thuê" hoặc "Chủ nhà").
+* **Bước 4: Đăng tin phòng trọ mới (Dành cho Chủ nhà):** 
+  - Nếu bạn đăng ký tài khoản với vai trò **Chủ nhà (Landlord)**, nút **Đăng tin** sẽ xuất hiện trên menu đầu trang.
+  - Nhập thông tin phòng trọ của bạn, kéo thả ghim đỏ trên bản đồ tới địa chỉ bất kỳ để lấy tọa độ, chọn tải ảnh lên và bấm đăng bài. Tin đăng mới sẽ xuất hiện trực tiếp ngay lập tức trên bản đồ chung!
+* **Bước 5: Trò chuyện với Trợ lý AI (Chatbot):** Nhấn vào biểu tượng bong bóng chat màu xanh ở góc dưới bên phải màn hình. Gõ thử câu hỏi: *"Tìm phòng trọ Thủ Đức dưới 3 triệu"* hoặc *"Làm hợp đồng thuê nhà cần chú ý gì?"* để xem AI trả lời tư vấn cho bạn.
+
+---
+
 ## 📝 MÔ TẢ CHI TIẾT VỀ DỰ ÁN (Detailed Project Description)
 
 ### 1. Bối cảnh & Sự cấp thiết của dự án
