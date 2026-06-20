@@ -144,24 +144,28 @@ export default function LandlordDashboardScreen() {
         value: analytics?.totalProperties || posts.length,
         icon: FileText,
         color: "bg-blue-500",
+        onPress: () => setActiveTab("posts"),
       },
       {
-        label: "Đã duyệt",
-        value: analytics?.approvedProperties || 0,
+        label: "Hẹn đã duyệt",
+        value: bookings.filter((b) => b.status === "confirmed" || b.status === "completed").length,
         icon: CheckCircle2,
         color: "bg-emerald-500",
+        onPress: () => setActiveTab("bookings"),
+      },
+      {
+        label: "Hẹn chờ duyệt",
+        value: bookings.filter((b) => b.status === "pending").length,
+        icon: Clock,
+        color: "bg-orange-500",
+        onPress: () => setActiveTab("bookings"),
       },
       {
         label: "Lượt xem",
         value: analytics?.totalViews || 0,
         icon: Eye,
         color: "bg-purple-500",
-      },
-      {
-        label: "Lịch hẹn",
-        value: bookings.length,
-        icon: CalendarDays,
-        color: "bg-orange-500",
+        onPress: () => setActiveTab("overview"),
       },
     ],
     [analytics, posts.length, bookings.length],
@@ -432,6 +436,7 @@ export default function LandlordDashboardScreen() {
               {stats.map((item, idx) => (
                 <TouchableOpacity
                   key={idx}
+                  onPress={item.onPress}
                   className="w-[48%] bg-white rounded-2xl p-4 border border-slate-100 mb-3 shadow-sm active:opacity-80"
                 >
                   <View
