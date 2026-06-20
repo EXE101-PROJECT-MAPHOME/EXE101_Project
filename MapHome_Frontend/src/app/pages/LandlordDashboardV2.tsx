@@ -1728,22 +1728,25 @@ export function LandlordDashboardV2() {
                     bg: "bg-blue-50",
                     iconBg: "from-blue-500 to-indigo-600",
                     text: "text-blue-600",
+                    onClick: () => setActiveTab("posts"),
                   },
                   {
-                    label: "Đã duyệt",
-                    value: stats.approvedPosts,
+                    label: "Hẹn đã duyệt",
+                    value: bookings.filter((b) => b.status === "confirmed" || b.status === "completed").length,
                     icon: CheckCircle,
                     bg: "bg-emerald-50",
                     iconBg: "from-emerald-500 to-teal-600",
                     text: "text-emerald-600",
+                    onClick: () => setActiveTab("bookings"),
                   },
                   {
-                    label: "Chờ duyệt",
-                    value: stats.pendingPosts,
+                    label: "Hẹn chờ duyệt",
+                    value: bookings.filter((b) => b.status === "pending").length,
                     icon: Clock,
                     bg: "bg-orange-50",
                     iconBg: "from-orange-500 to-amber-600",
                     text: "text-orange-600",
+                    onClick: () => setActiveTab("bookings"),
                   },
                   {
                     label: "Lượt xem",
@@ -1752,18 +1755,12 @@ export function LandlordDashboardV2() {
                     bg: "bg-purple-50",
                     iconBg: "from-purple-500 to-indigo-700",
                     text: "text-purple-600",
-                  },
-                  {
-                    label: "Yêu thích",
-                    value: stats.totalFavorites,
-                    icon: Star,
-                    bg: "bg-amber-50",
-                    iconBg: "from-amber-400 to-rose-500",
-                    text: "text-amber-600",
+                    onClick: () => setActiveTab("overview"),
                   },
                 ].map((stat) => (
                   <motion.div
                     key={stat.label}
+                    onClick={stat.onClick}
                     variants={{
                       hidden: { opacity: 0, y: 20, scale: 0.96 },
                       visible: {
@@ -1775,7 +1772,7 @@ export function LandlordDashboardV2() {
                     }}
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`relative overflow-hidden rounded-2xl p-3 shadow-sm border border-white/80 ${stat.bg} min-h-[100px]`}
+                    className={`relative overflow-hidden rounded-2xl p-3 shadow-sm border border-white/80 ${stat.bg} min-h-[100px] cursor-pointer`}
                     style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}
                   >
                     {/* Top: Icon only */}

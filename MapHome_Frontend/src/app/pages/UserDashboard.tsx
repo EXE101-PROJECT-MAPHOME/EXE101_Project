@@ -303,6 +303,7 @@ export function UserDashboard() {
               icon: Heart,
               color: "text-red-500",
               bg: "bg-red-50",
+              onClick: () => setActiveView("favorites"),
             },
             {
               label: "Lịch hẹn",
@@ -310,6 +311,7 @@ export function UserDashboard() {
               icon: Calendar,
               color: "text-blue-500",
               bg: "bg-blue-50",
+              onClick: () => setActiveView("appointments"),
             },
             {
               label: "Chờ xác nhận",
@@ -317,6 +319,7 @@ export function UserDashboard() {
               icon: Clock,
               color: "text-orange-500",
               bg: "bg-orange-50",
+              onClick: () => setActiveView("appointments"),
             },
             {
               label: "Đã hoàn thành",
@@ -325,12 +328,14 @@ export function UserDashboard() {
               icon: CheckCircle,
               color: "text-green-500",
               bg: "bg-green-50",
+              onClick: () => setActiveView("appointments"),
             },
           ].map((stat, i) => (
             <motion.div
               key={i}
+              onClick={stat.onClick}
               whileHover={{ y: -5 }}
-              className="bg-white/60 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.05)]"
+              className="bg-white/60 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.05)] cursor-pointer"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-2 rounded-xl ${stat.bg} ${stat.color}`}>

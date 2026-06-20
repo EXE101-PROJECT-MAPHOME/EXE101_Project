@@ -126,6 +126,7 @@ export default function UserDashboardScreen() {
         icon: Heart,
         color: "bg-red-500",
         iconColor: "#ef4444",
+        onPress: () => navigateTo(router, ROUTES.SAVED),
       },
       {
         label: "Lịch hẹn",
@@ -133,6 +134,7 @@ export default function UserDashboardScreen() {
         icon: Calendar,
         color: "bg-blue-500",
         iconColor: "#3b82f6",
+        onPress: () => setActiveTab("bookings"),
       },
       {
         label: "Chờ duyệt",
@@ -140,6 +142,7 @@ export default function UserDashboardScreen() {
         icon: Clock3,
         color: "bg-amber-500",
         iconColor: "#f59e0b",
+        onPress: () => setActiveTab("bookings"),
       },
       {
         label: "Hoàn tất",
@@ -148,6 +151,7 @@ export default function UserDashboardScreen() {
         icon: CheckCircle2,
         color: "bg-emerald-500",
         iconColor: "#22c55e",
+        onPress: () => setActiveTab("bookings"),
       },
     ],
     [favorites, appointments],
@@ -308,6 +312,7 @@ export default function UserDashboardScreen() {
                 <TouchableOpacity
                   key={index}
                   className="w-[48%] active:opacity-80 mb-3 shadow-sm"
+                  onPress={item.onPress}
                 >
                   <LinearGradient
                     colors={["#ffffff", "#f8fafc"]}
