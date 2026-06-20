@@ -7,9 +7,10 @@ import {
   FlatList,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Image,
 } from "react-native";
 import { router } from "expo-router";
-import { Map, MessageCircle, Home, ArrowRight, Check } from "lucide-react-native";
+import { ArrowRight, Check } from "lucide-react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -27,19 +28,19 @@ const SLIDES = [
     id: "1",
     title: "Khám phá dễ dàng",
     description: "Tìm kiếm phòng trọ, căn hộ qua bản đồ trực quan với thông tin chính xác nhất.",
-    icon: Map,
+    image: require("../assets/images/onboarding_map.png"),
   },
   {
     id: "2",
     title: "Kết nối trực tiếp",
     description: "Liên hệ nhanh chóng với chủ nhà hoặc người thuê mà không qua trung gian.",
-    icon: MessageCircle,
+    image: require("../assets/images/onboarding_connect.png"),
   },
   {
     id: "3",
     title: "Bắt đầu hành trình",
     description: "Tìm tổ ấm mơ ước của bạn ngay hôm nay cùng MapHome.",
-    icon: Home,
+    image: require("../assets/images/onboarding_journey.png"),
   },
 ];
 
@@ -122,18 +123,22 @@ export default function OnboardingScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         renderItem={({ item }) => {
-          const IconComponent = item.icon;
           return (
-            <View style={{ width }} className="items-center justify-center px-8">
-              <View className="w-64 h-64 bg-maphome-50 rounded-full items-center justify-center mb-10">
-                <IconComponent size={120} color="#22c55e" strokeWidth={1.5} />
+            <View style={{ width }} className="items-center justify-start pt-4">
+              <Image 
+                source={item.image} 
+                style={{ width: width, height: width * 1.1 }}
+                resizeMode="cover" 
+                className="mb-10"
+              />
+              <View className="px-8 items-center w-full">
+                <Text className="text-[32px] leading-tight font-black text-gray-900 mb-4 text-center">
+                  {item.title}
+                </Text>
+                <Text className="text-[17px] font-medium text-gray-500 text-center leading-relaxed px-4">
+                  {item.description}
+                </Text>
               </View>
-              <Text className="text-3xl font-bold text-gray-900 mb-4 text-center">
-                {item.title}
-              </Text>
-              <Text className="text-base text-gray-500 text-center leading-relaxed">
-                {item.description}
-              </Text>
             </View>
           );
         }}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, type Href } from "expo-router";
+import { useRouter, useFocusEffect, type Href } from "expo-router";
 import ROUTES, { navigateTo } from "@/constants/routes";
 import { WebView } from "react-native-webview";
 import * as Location from "expo-location";
@@ -269,6 +269,19 @@ export default function MapScreen() {
       setIsLocating(false);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      // Automatically get location when tab is focused
+      // Add a slight delay to ensure WebView is ready
+      const timer = setTimeout(() => {
+        if (viewMode === "map" && webViewRef.current) {
+          handleUseMyLocation();
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }, [viewMode]) // Intentionally omitting handleUseMyLocation
+  );
 
   const performSearch = (
     term: string,

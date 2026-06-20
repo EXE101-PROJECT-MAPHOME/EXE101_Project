@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useNavigation, type Href } from "expo-router";
 import ROUTES, { navigateTo } from "@/constants/routes";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   User as UserIcon,
   LogOut,
@@ -272,9 +273,12 @@ export default function ProfileScreen() {
         {/* ================= GUEST VIEW ================= */}
         {(!isAuthenticated || !user) && (
           <View className="px-6 py-12 justify-center items-center">
-            <View className="w-24 h-24 bg-emerald-50 rounded-full mb-6 items-center justify-center border border-emerald-100 shadow-sm">
+            <LinearGradient
+              colors={["#f0fdf4", "#dcfce7"]}
+              className="w-24 h-24 rounded-full mb-6 items-center justify-center border border-emerald-100 shadow-sm"
+            >
               <UserIcon size={40} color="#16a34a" />
-            </View>
+            </LinearGradient>
             <Text className="text-2xl font-black text-emerald-700 text-center mb-2">
               Quản lý không gian sống
             </Text>
@@ -346,7 +350,12 @@ export default function ProfileScreen() {
           (user.role === "user" || user.role === "admin") && (
             <View className="px-4 py-6 space-y-6">
               {/* Profile Header */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex-row items-center">
+              <LinearGradient
+                colors={["#ffffff", "#f0fdf4"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="rounded-[2rem] p-5 border border-emerald-100 shadow-sm flex-row items-center"
+              >
                 <Image
                   source={{
                     uri:
@@ -377,7 +386,7 @@ export default function ProfileScreen() {
                     </View>
                   )}
                 </View>
-              </View>
+              </LinearGradient>
 
               {user.role === "user" && (
                 <TouchableOpacity
@@ -429,28 +438,39 @@ export default function ProfileScreen() {
                     color: "bg-blue-500",
                   },
                 ].map((stat, i) => (
-                  <View
+                  <LinearGradient
                     key={i}
-                    className="flex-1 bg-white rounded-2xl p-3 border border-slate-100 shadow-sm items-center"
+                    colors={["#ffffff", "#f8fafc"]}
+                    className="flex-1 rounded-[2rem] p-3 border border-slate-100 shadow-sm items-center"
                   >
-                    <View
-                      className={`w-8 h-8 rounded-xl items-center justify-center mb-2 ${stat.color}`}
+                    <LinearGradient
+                      colors={
+                        stat.color === "bg-emerald-500"
+                          ? ["#34d399", "#10b981"]
+                          : stat.color === "bg-blue-500"
+                          ? ["#60a5fa", "#3b82f6"]
+                          : ["#fbbf24", "#f59e0b"]
+                      }
+                      className="w-10 h-10 rounded-2xl items-center justify-center mb-2 shadow-sm"
                     >
-                      <stat.icon size={16} color="white" />
-                    </View>
-                    <Text className="text-base font-black text-emerald-700">
+                      <stat.icon size={18} color="white" />
+                    </LinearGradient>
+                    <Text className="text-lg font-black text-emerald-700">
                       {stat.value}
                     </Text>
-                    <Text className="text-[9px] text-slate-400 font-bold text-center mt-1 leading-tight">
+                    <Text className="text-[10px] text-slate-500 font-bold text-center mt-1 leading-tight">
                       {stat.label}
                     </Text>
-                  </View>
+                  </LinearGradient>
                 ))}
               </View>
 
               {/* Bookings Info */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <Text className="text-base font-black text-emerald-700 mb-3">
+              <LinearGradient
+                colors={["#ffffff", "#f8fafc"]}
+                className="rounded-[2rem] p-5 border border-slate-100 shadow-sm"
+              >
+                <Text className="text-lg font-black text-emerald-700 mb-3">
                   Lịch hẹn xem phòng
                 </Text>
 
@@ -512,7 +532,7 @@ export default function ProfileScreen() {
                     ))}
                   </View>
                 )}
-              </View>
+              </LinearGradient>
 
               {/* Account Options Menu */}
               <View className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
@@ -588,7 +608,12 @@ export default function ProfileScreen() {
         {isAuthenticated && user && user.role === "landlord" && (
           <View className="px-4 py-6 space-y-6">
             {/* Landlord Header */}
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex-row items-center">
+            <LinearGradient
+              colors={["#ffffff", "#f0fdf4", "#e0e7ff"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="rounded-[2rem] p-5 border border-emerald-200/50 shadow-md flex-row items-center"
+            >
               <Image
                 source={{
                   uri:
@@ -626,26 +651,38 @@ export default function ProfileScreen() {
                   </View>
                 )}
               </View>
-            </View>
+            </LinearGradient>
 
             {/* Quick Actions */}
             <TouchableOpacity
               onPress={() => navigateTo(router, ROUTES.LANDLORD_DASHBOARD)}
-              className="bg-slate-900 h-12 rounded-2xl flex-row items-center justify-center"
+              className="h-12 rounded-2xl shadow-sm overflow-hidden mb-3"
             >
-              <Text className="text-white font-black text-base">
-                Mở Landlord Dashboard
-              </Text>
+              <LinearGradient
+                colors={["#1e293b", "#0f172a"]}
+                className="flex-1 flex-row items-center justify-center"
+              >
+                <Text className="text-white font-black text-base">
+                  Mở Landlord Dashboard
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={handlePostRoom}
-              className="bg-emerald-600 h-14 rounded-2xl flex-row items-center justify-center shadow-md"
+              className="h-14 rounded-2xl shadow-md overflow-hidden"
             >
-              <PlusCircle size={20} color="white" />
-              <Text className="text-white font-black text-base ml-2">
-                Đăng tin phòng trọ mới
-              </Text>
+              <LinearGradient
+                colors={["#10b981", "#3b82f6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="flex-1 flex-row items-center justify-center"
+              >
+                <PlusCircle size={20} color="white" />
+                <Text className="text-white font-black text-base ml-2">
+                  Đăng tin phòng trọ mới
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
 
             {/* Stats Grid */}
@@ -674,28 +711,39 @@ export default function ProfileScreen() {
                   color: "bg-amber-500",
                 },
               ].map((stat, i) => (
-                <View
+                <LinearGradient
                   key={i}
-                  className="flex-1 bg-white rounded-2xl p-3 border border-slate-100 shadow-sm items-center"
+                  colors={["#ffffff", "#f8fafc"]}
+                  className="flex-1 rounded-[2rem] p-3 border border-slate-100 shadow-sm items-center"
                 >
-                  <View
-                    className={`w-8 h-8 rounded-xl items-center justify-center mb-2 ${stat.color}`}
+                  <LinearGradient
+                    colors={
+                      stat.color === "bg-emerald-500"
+                        ? ["#34d399", "#10b981"]
+                        : stat.color === "bg-blue-500"
+                        ? ["#60a5fa", "#3b82f6"]
+                        : ["#fbbf24", "#f59e0b"]
+                    }
+                    className="w-10 h-10 rounded-2xl items-center justify-center mb-2 shadow-sm"
                   >
-                    <stat.icon size={16} color="white" />
-                  </View>
-                  <Text className="text-base font-black text-emerald-700">
+                    <stat.icon size={18} color="white" />
+                  </LinearGradient>
+                  <Text className="text-lg font-black text-emerald-700">
                     {stat.value}
                   </Text>
-                  <Text className="text-[9px] text-slate-400 font-bold text-center mt-1 leading-tight">
+                  <Text className="text-[10px] text-slate-500 font-bold text-center mt-1 leading-tight">
                     {stat.label}
                   </Text>
-                </View>
+                </LinearGradient>
               ))}
             </View>
 
             {/* Landlord Bookings (Lịch hẹn của khách) */}
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-              <Text className="text-base font-black text-emerald-700 mb-3">
+            <LinearGradient
+              colors={["#ffffff", "#f8fafc"]}
+              className="rounded-[2rem] p-5 border border-slate-100 shadow-sm"
+            >
+              <Text className="text-lg font-black text-emerald-700 mb-3">
                 Lịch hẹn của khách
               </Text>
 
@@ -801,7 +849,7 @@ export default function ProfileScreen() {
                   ))}
                 </View>
               )}
-            </View>
+            </LinearGradient>
 
             {/* Landlord Actions Menu */}
             <View className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
