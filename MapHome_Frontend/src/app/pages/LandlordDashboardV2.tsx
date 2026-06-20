@@ -48,6 +48,7 @@ import {
   Menu,
   X as XIcon,
   Ticket,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { io } from "socket.io-client";
@@ -2087,6 +2088,18 @@ export function LandlordDashboardV2() {
           </div>
           <h1 className="font-black text-lg text-slate-900">MapHome</h1>
         </div>
+        
+        {activeTab !== "overview" && (
+          <div className="ml-auto">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors shadow-sm active:scale-95"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Tổng quan</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Mobile Overlay */}
