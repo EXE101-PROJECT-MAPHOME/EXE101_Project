@@ -107,6 +107,7 @@ export default function TabLayout() {
         name="blog"
         options={{
           title: "Blog",
+          href: null,
           tabBarIcon: ({ color, size, focused }) => (
             <MessageCircle
               size={focused ? size + 1 : size}
@@ -121,6 +122,7 @@ export default function TabLayout() {
         name="policy"
         options={{
           title: "Chính sách",
+          href: null,
           tabBarIcon: ({ color, size, focused }) => (
             <FileText
               size={focused ? size + 1 : size}
@@ -135,6 +137,7 @@ export default function TabLayout() {
         name="contact"
         options={{
           title: "Liên hệ",
+          href: null,
           tabBarIcon: ({ color, size, focused }) => (
             <Mail
               size={focused ? size + 1 : size}
