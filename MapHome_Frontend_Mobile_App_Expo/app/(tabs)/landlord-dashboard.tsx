@@ -10,7 +10,7 @@ import {
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import {
   ArrowLeft,
@@ -124,13 +124,15 @@ export default function LandlordDashboardScreen() {
     }
   };
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      setScreenLoading(false);
-      return;
-    }
-    fetchData(activeTab);
-  }, [isAuthenticated, user, activeTab]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!isAuthenticated || !user) {
+        setScreenLoading(false);
+        return;
+      }
+      fetchData(activeTab);
+    }, [isAuthenticated, user, activeTab])
+  );
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -216,7 +218,7 @@ export default function LandlordDashboardScreen() {
           </View>
         </View>
         <TouchableOpacity
-          onPress={() => setActiveTab("posts")}
+          onPress={() => navigateTo(router, ROUTES.PRICING)}
           className="bg-amber-600 h-12 rounded-2xl flex-row items-center justify-center shadow-sm active:opacity-80"
         >
           <Zap size={16} color="white" />

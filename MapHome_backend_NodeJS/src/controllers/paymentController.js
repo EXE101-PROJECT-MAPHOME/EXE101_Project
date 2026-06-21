@@ -175,6 +175,18 @@ const activateSubscription = async (planSlug, userId, transaction = null) => {
     verificationLevel,
   });
 
+  // Tìm Landlord profile của User và gia hạn toàn bộ bài đăng
+  const Landlord = require("../models/Landlord");
+  const Property = require("../models/Property");
+  const landlord = await Landlord.findOne({ userId });
+  if (landlord) {
+    await Property.updateMany(
+      { landlordId: landlord._id },
+      { $set: { expiryDate: expiryDate, status: "approved" } }
+    );
+    console.log(`[activateSubscription] Extended expiry date for properties of landlord ${landlord._id}`);
+  }
+
   console.log(
     `[activateSubscription] User ${userId} upgraded to plan "${planDoc.name}" (expires ${expiryDate.toISOString()})`
   );

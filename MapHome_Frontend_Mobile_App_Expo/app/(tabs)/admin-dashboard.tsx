@@ -39,8 +39,8 @@ import {
   LockOpen,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import api from "../utils/api";
-import { useAuth } from "../contexts/AuthContext";
+import api from "@/utils/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 type AdminView =
   | "dashboard"
