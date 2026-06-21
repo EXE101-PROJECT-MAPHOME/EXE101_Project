@@ -304,7 +304,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
 
             {/* Support and policy for guest */}
-            <View className="w-full bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
+            <View className="flex-row flex-wrap justify-between w-full">
               {[
                 {
                   title: "Liên hệ hỗ trợ",
@@ -314,7 +314,7 @@ export default function ProfileScreen() {
                 },
                 {
                   title: "Trợ giúp & Chính sách",
-                  desc: "Điều khoản sử dụng và chính sách bảo mật",
+                  desc: "Điều khoản sử dụng và chính sách",
                   icon: ShieldCheck,
                   path: "/policy",
                 },
@@ -322,22 +322,18 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                   key={i}
                   onPress={() => navigateTo(router, item.path)}
-                  className="w-full flex-row items-center justify-between p-4 border-b border-slate-50"
+                  className="bg-white rounded-[24px] p-4 mb-3 border border-slate-100 shadow-sm"
+                  style={{ width: "48%" }}
                 >
-                  <View className="flex-row items-center flex-1 mr-4">
-                    <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3 border border-emerald-100">
-                      <item.icon size={18} color="#16a34a" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-sm font-black text-emerald-700 text-left">
-                        {item.title}
-                      </Text>
-                      <Text className="text-xs text-slate-400 font-medium text-left">
-                        {item.desc}
-                      </Text>
-                    </View>
+                  <View className="w-10 h-10 bg-emerald-50 rounded-2xl items-center justify-center mb-3 border border-emerald-100">
+                    <item.icon size={20} color="#16a34a" />
                   </View>
-                  <ChevronRight size={16} color="#94a3b8" />
+                  <Text className="text-[13px] font-black text-emerald-800 mb-1 leading-tight" numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                  <Text className="text-[11px] text-slate-500 font-medium leading-tight" numberOfLines={2}>
+                    {item.desc}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -535,13 +531,25 @@ export default function ProfileScreen() {
               </LinearGradient>
 
               {/* Account Options Menu */}
-              <View className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
+              <View className="flex-row flex-wrap justify-between w-full">
                 {[
                   {
                     title: "Thông tin cá nhân",
-                    desc: "Họ tên, SĐT, Căn cước công dân",
+                    desc: "Họ tên, SĐT, CCCD",
                     icon: UserIcon,
                     path: "/personal-info",
+                  },
+                  {
+                    title: "Cài đặt tài khoản",
+                    desc: "Bảo mật, thông báo",
+                    icon: Settings,
+                    path: "/settings",
+                  },
+                  {
+                    title: "Blog & Kiến thức",
+                    desc: "Kinh nghiệm và tin tức",
+                    icon: Building2,
+                    path: "/blog",
                   },
                   {
                     title: "Liên hệ hỗ trợ",
@@ -551,42 +559,26 @@ export default function ProfileScreen() {
                   },
                   {
                     title: "Trợ giúp & Chính sách",
-                    desc: "Điều khoản sử dụng và chính sách bảo mật",
+                    desc: "Điều khoản sử dụng",
                     icon: ShieldCheck,
                     path: "/policy",
-                  },
-                  {
-                    title: "Cài đặt tài khoản",
-                    desc: "Bảo mật, thông báo ứng dụng",
-                    icon: Settings,
-                    path: "/settings",
-                  },
-                  {
-                    title: "Blog & Kiến thức",
-                    desc: "Kinh nghiệm thuê trọ và tin tức",
-                    icon: Building2,
-                    path: "/blog",
                   },
                 ].map((item, i) => (
                   <TouchableOpacity
                     key={i}
                     onPress={() => navigateTo(router, item.path)}
-                    className="flex-row items-center justify-between p-4 border-b border-slate-50"
+                    className="bg-white rounded-[24px] p-4 mb-3 border border-slate-100 shadow-sm"
+                    style={{ width: "48%" }}
                   >
-                    <View className="flex-row items-center flex-1 mr-4">
-                      <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3 border border-emerald-100">
-                        <item.icon size={18} color="#16a34a" />
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-sm font-black text-emerald-700">
-                          {item.title}
-                        </Text>
-                        <Text className="text-xs text-slate-400 font-medium">
-                          {item.desc}
-                        </Text>
-                      </View>
+                    <View className="w-10 h-10 bg-emerald-50 rounded-2xl items-center justify-center mb-3 border border-emerald-100">
+                      <item.icon size={20} color="#16a34a" />
                     </View>
-                    <ChevronRight size={16} color="#94a3b8" />
+                    <Text className="text-[13px] font-black text-emerald-800 mb-1 leading-tight" numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <Text className="text-[11px] text-slate-500 font-medium leading-tight" numberOfLines={2}>
+                      {item.desc}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -852,31 +844,37 @@ export default function ProfileScreen() {
             </LinearGradient>
 
             {/* Landlord Actions Menu */}
-            <View className="bg-white rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
+            <View className="flex-row flex-wrap justify-between w-full">
               {[
                 {
-                  title: "Đăng ký gói hội viên",
-                  desc: "Nâng cấp dịch vụ, đẩy tin, ưu đãi đặc quyền",
+                  title: "Gói hội viên",
+                  desc: "Nâng cấp, đẩy tin, ưu đãi",
                   icon: CreditCard,
                   path: ROUTES.PRICING,
                 },
                 {
-                  title: "Quản lý danh sách trọ",
-                  desc: `Đang có ${landlordProperties.length} tin đăng phòng trọ`,
+                  title: "Danh sách trọ",
+                  desc: `Đang có ${landlordProperties.length} tin đăng`,
                   icon: Building2,
                   path: ROUTES.LANDLORD_PROPERTIES(),
                 },
                 {
-                  title: "Yêu cầu xác thực phòng",
-                  desc: "Quản lý huy hiệu xanh Trust is King",
+                  title: "Xác thực phòng",
+                  desc: "Huy hiệu xanh Trust is King",
                   icon: ShieldCheck,
                   path: ROUTES.LANDLORD_VERIFICATION,
                 },
                 {
                   title: "Thông tin cá nhân",
-                  desc: "Họ tên, SĐT, Căn cước công dân",
+                  desc: "Họ tên, SĐT, CCCD",
                   icon: UserIcon,
                   path: "/personal-info",
+                },
+                {
+                  title: "Cài đặt tài khoản",
+                  desc: "Bảo mật, đăng nhập",
+                  icon: Settings,
+                  path: ROUTES.LANDLORD_SETTINGS,
                 },
                 {
                   title: "Liên hệ hỗ trợ",
@@ -885,37 +883,27 @@ export default function ProfileScreen() {
                   path: "/contact",
                 },
                 {
-                  title: "Trợ giúp & Chính sách",
-                  desc: "Điều khoản sử dụng và chính sách bảo mật",
+                  title: "Chính sách",
+                  desc: "Điều khoản sử dụng",
                   icon: ShieldCheck,
                   path: "/policy",
-                },
-                {
-                  title: "Cài đặt tài khoản",
-                  desc: "Bảo mật, đăng nhập",
-                  icon: Settings,
-                  path: ROUTES.LANDLORD_SETTINGS,
                 },
               ].map((item, i) => (
                 <TouchableOpacity
                   key={i}
                   onPress={() => navigateTo(router, item.path)}
-                  className="flex-row items-center justify-between p-4 border-b border-slate-50"
+                  className="bg-white rounded-[24px] p-4 mb-3 border border-slate-100 shadow-sm"
+                  style={{ width: "48%" }}
                 >
-                  <View className="flex-row items-center flex-1 mr-4">
-                    <View className="w-10 h-10 bg-emerald-50 rounded-xl items-center justify-center mr-3 border border-emerald-100">
-                      <item.icon size={18} color="#16a34a" />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-sm font-black text-emerald-700">
-                        {item.title}
-                      </Text>
-                      <Text className="text-xs text-slate-400 font-medium">
-                        {item.desc}
-                      </Text>
-                    </View>
+                  <View className="w-10 h-10 bg-emerald-50 rounded-2xl items-center justify-center mb-3 border border-emerald-100">
+                    <item.icon size={20} color="#16a34a" />
                   </View>
-                  <ChevronRight size={16} color="#94a3b8" />
+                  <Text className="text-[13px] font-black text-emerald-800 mb-1 leading-tight" numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                  <Text className="text-[11px] text-slate-500 font-medium leading-tight" numberOfLines={2}>
+                    {item.desc}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>

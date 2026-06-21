@@ -103,6 +103,7 @@ export function HeroCarousel() {
   const settings = {
     dots: true,
     infinite: true,
+    arrows: false,
     speed: 800,
     slidesToShow: 1,
     slidesToScroll: 1,
@@ -111,8 +112,6 @@ export function HeroCarousel() {
     pauseOnHover: true,
     swipeToSlide: true,
     beforeChange: (_current: number, next: number) => setCurrentSlide(next),
-    nextArrow: <NextArrow />,
-    prevArrow: <PrevArrow />,
     appendDots: (dots: any) => (
       <div className="bottom-6 md:bottom-8">
         <ul className="flex justify-center gap-2"> {dots} </ul>
