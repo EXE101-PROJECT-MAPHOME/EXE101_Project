@@ -115,19 +115,7 @@ export default function ProfileScreen() {
   };
 
   const handlePostRoom = () => {
-    Alert.alert(
-      "Đăng tin phòng trọ mới",
-      "Bạn sẽ được chuyển tới màn đăng tin. Muốn tiếp tục?",
-      [
-        { text: "Hủy", style: "cancel" },
-        {
-          text: "Tiếp tục",
-          onPress: () => {
-            navigateTo(router, ROUTES.POST_ROOM);
-          },
-        },
-      ],
-    );
+    navigateTo(router, ROUTES.POST_ROOM);
   };
 
   const handleCancelBooking = async (bookingId: string) => {

@@ -162,6 +162,27 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="landlord-dashboard"
+        options={{
+          title: "Chủ trọ",
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="user-dashboard"
+        options={{
+          title: "Cá nhân",
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="admin-dashboard"
+        options={{
+          title: "Quản trị",
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
