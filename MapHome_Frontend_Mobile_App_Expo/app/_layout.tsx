@@ -74,18 +74,7 @@ export default function RootLayout() {
                 <Stack.Screen name="blog" options={{ headerShown: false }} />
                 <Stack.Screen name="contact" options={{ headerShown: false }} />
                 <Stack.Screen name="policy" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="user-dashboard"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="landlord-dashboard"
-                  options={{ headerShown: false }}
-                />
-                <Stack.Screen
-                  name="admin-dashboard"
-                  options={{ headerShown: false }}
-                />
+
                 <Stack.Screen
                   name="modal"
                   options={{ presentation: "modal", title: "Modal", headerShown: true }}

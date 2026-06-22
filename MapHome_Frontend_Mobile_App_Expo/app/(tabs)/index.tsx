@@ -986,6 +986,7 @@ export default function HomePage() {
               trên MapHome.
             </Text>
 
+            {/* 
             <TouchableOpacity
               onPress={() => navigateTo(router, ROUTES.POST_ROOM)}
               className="w-full z-10"
@@ -1000,6 +1001,7 @@ export default function HomePage() {
                 <Text className="text-white font-black text-lg">Đăng tin miễn phí ngay</Text>
               </LinearGradient>
             </TouchableOpacity>
+            */}
           </ImageBackground>
         </View>
 

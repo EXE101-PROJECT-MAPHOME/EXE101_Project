@@ -16,7 +16,7 @@ export function RoomMapPreview({
 }: RoomMapPreviewProps) {
   return (
     <MapView
-      className="w-full h-full"
+      style={{ width: "100%", height: "100%" }}
       initialRegion={{
         latitude,
         longitude,

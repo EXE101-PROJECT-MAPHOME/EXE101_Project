@@ -48,6 +48,7 @@ import {
   Menu,
   X as XIcon,
   Ticket,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { io } from "socket.io-client";
@@ -171,29 +172,28 @@ export function LandlordDashboardV2() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-10 rounded-[32px] bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-100 p-6 shadow-sm overflow-hidden relative"
+        className="mb-8 md:mb-10 rounded-[24px] md:rounded-[32px] bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-100 p-4 md:p-6 shadow-sm overflow-hidden relative"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 rounded-full blur-3xl -mr-16 -mt-16" />
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-200 animate-pulse">
-              <AlertTriangle className="size-7" />
+        <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-amber-200/20 rounded-full blur-3xl -mr-12 -mt-12 md:-mr-16 md:-mt-16" />
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 relative z-10">
+          <div className="flex items-center gap-3 md:gap-5 w-full">
+            <div className="w-10 h-10 md:w-14 md:h-14 shrink-0 rounded-xl md:rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-200 animate-pulse">
+              <AlertTriangle className="size-5 md:size-7" />
             </div>
-            <div>
-              <h4 className="text-xl font-black text-amber-900 leading-tight">
+            <div className="flex-1">
+              <h4 className="text-base md:text-xl font-black text-amber-900 leading-tight">
                 {expiredCount > 0
                   ? `Bạn có ${expiredCount} tin đăng đã hết hạn!`
                   : `Bạn có ${soonToExpireCount} tin đăng sắp hết hạn!`}
               </h4>
-              <p className="text-amber-700 font-bold text-sm mt-1">
-                Gia hạn ngay để tiếp tục tiếp cận khách hàng và không bị gỡ khỏi
-                bản đồ.
+              <p className="text-amber-700 font-bold text-xs md:text-sm mt-0.5 md:mt-1">
+                Gia hạn ngay để tiếp tục tiếp cận khách hàng.
               </p>
             </div>
           </div>
           <Button
             onClick={() => setActiveTab("posts")}
-            className="whitespace-nowrap px-8 py-6 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-2xl shadow-xl shadow-amber-200/50 transition-all hover:scale-105 active:scale-95 border-none"
+            className="w-full md:w-auto whitespace-nowrap px-4 py-4 md:px-8 md:py-6 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl md:rounded-2xl shadow-xl shadow-amber-200/50 transition-all hover:scale-105 active:scale-95 border-none"
           >
             <Zap className="size-4 mr-2" />
             Gia hạn ngay
@@ -1616,43 +1616,45 @@ export function LandlordDashboardV2() {
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-[32px] bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-8 shadow-xl relative overflow-hidden"
+                className="rounded-[24px] md:rounded-[32px] bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-5 md:p-8 shadow-xl relative overflow-hidden"
               >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full blur-3xl -mr-20 -mt-20" />
-                <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-400/30 rounded-full blur-2xl -ml-10 -mb-10" />
+                <div className="absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 bg-white/20 rounded-full blur-3xl -mr-20 -mt-20" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 md:w-40 md:h-40 bg-emerald-400/30 rounded-full blur-2xl -ml-10 -mb-10" />
                 
                 <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
-                      <Ticket className="size-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black text-white tracking-tight">Ưu Đãi Đặc Quyền Hôm Nay</h3>
-                      <p className="text-emerald-50 font-medium text-sm">Nhập mã khi thanh toán để nhận ngay khuyến mãi</p>
+                  <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4 md:mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 md:p-2.5 bg-white/20 backdrop-blur-md rounded-xl md:rounded-2xl w-fit">
+                        <Ticket className="size-5 md:size-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">Ưu Đãi Đặc Quyền</h3>
+                        <p className="text-emerald-50 font-medium text-xs md:text-sm">Nhập mã khi thanh toán để nhận ngay khuyến mãi</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {promotedVouchers.map((voucher, idx) => (
-                      <div key={idx} className="bg-white rounded-3xl p-5 shadow-lg flex items-center justify-between group relative overflow-hidden">
+                      <div key={idx} className="bg-white/95 backdrop-blur-md rounded-2xl md:rounded-3xl p-4 md:p-5 shadow-lg flex items-center justify-between group relative overflow-hidden">
                         {voucher.bannerImage && (
                           <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: `url(${voucher.bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
                         )}
-                        <div className="relative z-10">
-                          <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 to-blue-600">
+                        <div className="relative z-10 flex-1 min-w-0 mr-3">
+                          <div className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 to-blue-600">
                             -{voucher.discountPercentage}%
                           </div>
-                          <p className="text-xs font-black text-slate-800 uppercase tracking-tight mt-1">{voucher.title || "Khuyến mãi"}</p>
-                          <p className="text-[10px] text-slate-500 mt-1 line-clamp-1">{voucher.description}</p>
+                          <p className="text-[11px] md:text-xs font-black text-slate-800 uppercase tracking-tight mt-1 truncate">{voucher.title || "Khuyến mãi"}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{voucher.description}</p>
                         </div>
-                        <div className="relative z-10 flex flex-col items-end gap-2">
-                          <span className="px-3 py-1 bg-emerald-50 text-emerald-600 font-black text-[10px] rounded-full border border-emerald-100 uppercase tracking-widest border-dashed">
+                        <div className="relative z-10 flex flex-col items-end gap-2 shrink-0">
+                          <span className="px-2 py-1 md:px-3 md:py-1 bg-emerald-50 text-emerald-600 font-black text-[9px] md:text-[10px] rounded-lg md:rounded-full border border-emerald-100 uppercase tracking-widest border-dashed">
                             {voucher.code}
                           </span>
                           <Button
                             size="sm"
                             onClick={() => handleToggleSaveVoucher(voucher)}
-                            className={`rounded-xl text-[10px] h-8 px-4 font-black transition-all hover:scale-105 active:scale-95 border-none shadow-md ${
+                            className={`rounded-lg md:rounded-xl text-[10px] h-7 px-3 md:h-8 md:px-4 font-black transition-all hover:scale-105 active:scale-95 border-none shadow-md ${
                               savedVoucherIds.includes(voucher._id || voucher.id)
                                 ? "bg-emerald-100 hover:bg-rose-50 hover:text-rose-600 text-emerald-700 border border-emerald-200 shadow-none hover:border-rose-200 group/btn"
                                 : "bg-gradient-to-r from-emerald-500 to-blue-600 hover:brightness-110 text-white shadow-blue-500/20"
@@ -1728,22 +1730,25 @@ export function LandlordDashboardV2() {
                     bg: "bg-blue-50",
                     iconBg: "from-blue-500 to-indigo-600",
                     text: "text-blue-600",
+                    onClick: () => setActiveTab("posts"),
                   },
                   {
-                    label: "Đã duyệt",
-                    value: stats.approvedPosts,
+                    label: "Hẹn đã duyệt",
+                    value: bookings.filter((b) => b.status === "confirmed" || b.status === "completed").length,
                     icon: CheckCircle,
                     bg: "bg-emerald-50",
                     iconBg: "from-emerald-500 to-teal-600",
                     text: "text-emerald-600",
+                    onClick: () => setActiveTab("bookings"),
                   },
                   {
-                    label: "Chờ duyệt",
-                    value: stats.pendingPosts,
+                    label: "Hẹn chờ duyệt",
+                    value: bookings.filter((b) => b.status === "pending").length,
                     icon: Clock,
                     bg: "bg-orange-50",
                     iconBg: "from-orange-500 to-amber-600",
                     text: "text-orange-600",
+                    onClick: () => setActiveTab("bookings"),
                   },
                   {
                     label: "Lượt xem",
@@ -1752,18 +1757,12 @@ export function LandlordDashboardV2() {
                     bg: "bg-purple-50",
                     iconBg: "from-purple-500 to-indigo-700",
                     text: "text-purple-600",
-                  },
-                  {
-                    label: "Yêu thích",
-                    value: stats.totalFavorites,
-                    icon: Star,
-                    bg: "bg-amber-50",
-                    iconBg: "from-amber-400 to-rose-500",
-                    text: "text-amber-600",
+                    onClick: () => setActiveTab("overview"),
                   },
                 ].map((stat) => (
                   <motion.div
                     key={stat.label}
+                    onClick={stat.onClick}
                     variants={{
                       hidden: { opacity: 0, y: 20, scale: 0.96 },
                       visible: {
@@ -1775,7 +1774,7 @@ export function LandlordDashboardV2() {
                     }}
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
-                    className={`relative overflow-hidden rounded-2xl p-3 shadow-sm border border-white/80 ${stat.bg} min-h-[100px]`}
+                    className={`relative overflow-hidden rounded-2xl p-3 shadow-sm border border-white/80 ${stat.bg} min-h-[100px] cursor-pointer`}
                     style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}
                   >
                     {/* Top: Icon only */}
@@ -2083,12 +2082,27 @@ export function LandlordDashboardV2() {
             <Menu className="size-6 text-slate-900" />
           )}
         </button>
-        <div className="ml-4 flex items-center gap-2">
+        <div 
+          onClick={() => navigate("/")}
+          className="ml-4 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-lg">
             <Home className="size-4 text-white" />
           </div>
           <h1 className="font-black text-lg text-slate-900">MapHome</h1>
         </div>
+        
+        {activeTab !== "overview" && (
+          <div className="ml-auto">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors shadow-sm active:scale-95"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Tổng quan</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Mobile Overlay */}
@@ -2105,7 +2119,10 @@ export function LandlordDashboardV2() {
       }`}>
         {/* Logo Section */}
         <div className="p-10">
-          <div className="flex items-center gap-4 px-2 hover:scale-105 transition-transform">
+          <div 
+            onClick={() => navigate("/")}
+            className="flex items-center gap-4 px-2 hover:scale-105 transition-transform cursor-pointer"
+          >
             <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-3 rounded-[20px] shadow-2xl shadow-blue-100">
               <Home className="size-8 text-white" />
             </div>

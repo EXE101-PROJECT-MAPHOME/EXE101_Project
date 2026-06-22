@@ -539,7 +539,10 @@ export function AdminPage() {
             <Menu className="size-6 text-slate-900" />
           )}
         </button>
-        <div className="ml-4 flex items-center gap-2">
+        <div 
+          onClick={() => navigate("/")}
+          className="ml-4 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+        >
           <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-lg">
             <Home className="size-4 text-white" />
           </div>

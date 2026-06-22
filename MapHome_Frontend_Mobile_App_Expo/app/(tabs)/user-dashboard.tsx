@@ -126,6 +126,7 @@ export default function UserDashboardScreen() {
         icon: Heart,
         color: "bg-red-500",
         iconColor: "#ef4444",
+        onPress: () => navigateTo(router, ROUTES.SAVED),
       },
       {
         label: "Lịch hẹn",
@@ -133,6 +134,7 @@ export default function UserDashboardScreen() {
         icon: Calendar,
         color: "bg-blue-500",
         iconColor: "#3b82f6",
+        onPress: () => setActiveTab("bookings"),
       },
       {
         label: "Chờ duyệt",
@@ -140,6 +142,7 @@ export default function UserDashboardScreen() {
         icon: Clock3,
         color: "bg-amber-500",
         iconColor: "#f59e0b",
+        onPress: () => setActiveTab("bookings"),
       },
       {
         label: "Hoàn tất",
@@ -148,6 +151,7 @@ export default function UserDashboardScreen() {
         icon: CheckCircle2,
         color: "bg-emerald-500",
         iconColor: "#22c55e",
+        onPress: () => setActiveTab("bookings"),
       },
     ],
     [favorites, appointments],
@@ -289,16 +293,16 @@ export default function UserDashboardScreen() {
           <View>
             {/* Welcome Card */}
             <LinearGradient
-              colors={['#16a34a', '#15803d']}
+              colors={['#16a34a', '#0ea5e9']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              className="rounded-3xl p-5 mb-4 shadow-sm"
+              className="rounded-[2rem] p-6 mb-4 shadow-md"
             >
-              <Text className="text-white font-black text-xl mb-1">
+              <Text className="text-white font-black text-2xl mb-1">
                 Xin chào, {user.fullName || user.username}! 👋
               </Text>
-              <Text className="text-emerald-100 text-sm font-medium">
-                Theo dõi phòng yêu thích, lịch hẹn và bài viết của bạn.
+              <Text className="text-emerald-50 text-sm font-bold">
+                Nơi quản lý hành trình tìm kiếm ngôi nhà mơ ước của bạn
               </Text>
             </LinearGradient>
 
@@ -307,25 +311,53 @@ export default function UserDashboardScreen() {
               {stats.map((item, index) => (
                 <TouchableOpacity
                   key={index}
-                  className="w-[48%] bg-white rounded-2xl p-4 border border-slate-100 mb-3 shadow-sm active:opacity-80"
+                  className="w-[48%] active:opacity-80 mb-3 shadow-sm"
+                  onPress={item.onPress}
                 >
-                  <View
-                    className={`w-9 h-9 rounded-xl ${item.color} items-center justify-center mb-2`}
+                  <LinearGradient
+                    colors={["#ffffff", "#f8fafc"]}
+                    className="flex-1 rounded-[1.5rem] p-4 border border-slate-100"
                   >
-                    <item.icon size={16} color="white" />
-                  </View>
-                  <Text className="text-2xl font-black text-emerald-700">
-                    {item.value}
-                  </Text>
-                  <Text className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                    {item.label}
-                  </Text>
+                    <View
+                      className={`w-10 h-10 rounded-2xl ${
+                        item.color === "bg-red-500"
+                          ? "bg-red-50 border border-red-100"
+                          : item.color === "bg-blue-500"
+                          ? "bg-blue-50 border border-blue-100"
+                          : item.color === "bg-amber-500"
+                          ? "bg-orange-50 border border-orange-100"
+                          : "bg-green-50 border border-green-100"
+                      } items-center justify-center mb-2`}
+                    >
+                      <item.icon
+                        size={18}
+                        color={
+                          item.color === "bg-red-500"
+                            ? "#ef4444"
+                            : item.color === "bg-blue-500"
+                            ? "#3b82f6"
+                            : item.color === "bg-amber-500"
+                            ? "#f97316"
+                            : "#22c55e"
+                        }
+                      />
+                    </View>
+                    <Text className="text-3xl font-black text-indigo-600 mb-1">
+                      {item.value}
+                    </Text>
+                    <Text className="text-[10px] font-black text-indigo-500/60 uppercase tracking-widest leading-none">
+                      {item.label}
+                    </Text>
+                  </LinearGradient>
                 </TouchableOpacity>
               ))}
             </View>
 
             {/* Recent Bookings */}
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+            <LinearGradient
+              colors={["#ffffff", "#f8fafc"]}
+              className="rounded-[2rem] p-5 border border-slate-100 mb-4 shadow-sm"
+            >
               <View className="flex-row items-center justify-between mb-3">
                 <Text className="text-base font-black text-emerald-700">
                   Lịch hẹn gần đây
@@ -411,11 +443,14 @@ export default function UserDashboardScreen() {
                   </Text>
                 </TouchableOpacity>
               )}
-            </View>
+            </LinearGradient>
 
             {/* Content Stats */}
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
-              <Text className="text-base font-black text-emerald-700 mb-4">
+            <LinearGradient
+              colors={["#ffffff", "#f8fafc"]}
+              className="rounded-[2rem] p-5 border border-slate-100 mb-4 shadow-sm"
+            >
+              <Text className="text-lg font-black text-emerald-700 mb-4">
                 Nội dung của bạn
               </Text>
               <View className="flex-row justify-between">
@@ -465,20 +500,27 @@ export default function UserDashboardScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </LinearGradient>
 
             {/* Quick Actions */}
             <View className="flex-row mb-4 gap-2">
               <TouchableOpacity
                 onPress={() => navigateTo(router, ROUTES.SAVED)}
-                className="flex-1 bg-emerald-600 h-12 rounded-2xl items-center justify-center shadow-sm active:opacity-80 flex-row"
+                className="flex-1 h-12 rounded-2xl shadow-sm active:opacity-80 overflow-hidden"
               >
-                <Heart size={16} color="white" />
-                <Text className="text-white font-black ml-2">Yêu thích</Text>
+                <LinearGradient
+                  colors={["#16a34a", "#0ea5e9"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  className="flex-1 flex-row items-center justify-center"
+                >
+                  <Heart size={16} color="white" />
+                  <Text className="text-white font-black ml-2">Yêu thích</Text>
+                </LinearGradient>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => navigateTo(router, ROUTES.COMPARE)}
-                className="flex-1 bg-white border border-slate-200 h-12 rounded-2xl items-center justify-center active:opacity-80 flex-row relative"
+                className="flex-1 bg-white border border-slate-200 h-12 rounded-2xl items-center justify-center active:opacity-80 flex-row relative shadow-sm"
               >
                 {compareList?.length > 0 && (
                   <View className="absolute -top-2 -right-2 bg-red-500 w-5 h-5 rounded-full items-center justify-center z-10">
@@ -497,7 +539,10 @@ export default function UserDashboardScreen() {
         {/* Bookings Tab */}
         {activeTab === "bookings" && (
           <View>
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+            <LinearGradient
+              colors={["#ffffff", "#f8fafc"]}
+              className="rounded-[2rem] p-5 border border-slate-100 mb-4 shadow-sm"
+            >
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-lg font-black text-emerald-700">
                   Lịch hẹn của bạn
@@ -611,7 +656,7 @@ export default function UserDashboardScreen() {
                   </TouchableOpacity>
                 ))
               )}
-            </View>
+            </LinearGradient>
           </View>
         )}
 
@@ -619,7 +664,10 @@ export default function UserDashboardScreen() {
         {activeTab === "blogs" && (
           <View>
             {/* Saved Blogs */}
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+            <LinearGradient
+              colors={["#ffffff", "#f8fafc"]}
+              className="rounded-[2rem] p-5 border border-slate-100 mb-4 shadow-sm"
+            >
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-base font-black text-emerald-700">
                   Bài viết đã lưu
@@ -653,10 +701,13 @@ export default function UserDashboardScreen() {
                   </TouchableOpacity>
                 ))
               )}
-            </View>
+            </LinearGradient>
 
             {/* My Blogs */}
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
+            <LinearGradient
+              colors={["#ffffff", "#f8fafc"]}
+              className="rounded-[2rem] p-5 border border-slate-100 mb-4 shadow-sm"
+            >
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-base font-black text-emerald-700">
                   Bài viết của tôi
@@ -698,7 +749,7 @@ export default function UserDashboardScreen() {
                   </TouchableOpacity>
                 ))
               )}
-            </View>
+            </LinearGradient>
           </View>
         )}
 
@@ -706,7 +757,10 @@ export default function UserDashboardScreen() {
         {activeTab === "notifications" && (
           <View>
             {/* Notifications Section */}
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+            <LinearGradient
+              colors={["#ffffff", "#f8fafc"]}
+              className="rounded-[2rem] p-5 border border-slate-100 shadow-sm"
+            >
               <View className="flex-row items-center justify-between mb-4">
                 <Text className="text-base font-black text-emerald-700">
                   Thông báo của bạn
@@ -739,7 +793,7 @@ export default function UserDashboardScreen() {
                   </View>
                 ))
               )}
-            </View>
+            </LinearGradient>
           </View>
         )}
       </ScrollView>

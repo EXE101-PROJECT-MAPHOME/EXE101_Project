@@ -203,13 +203,7 @@ export default function LoginScreen() {
   };
 
   const navigateByRole = (role?: string) => {
-    if (role === "admin") {
-      navigateTo(router, ROUTES.ADMIN_DASHBOARD, true);
-    } else if (role === "landlord") {
-      navigateTo(router, ROUTES.LANDLORD_DASHBOARD, true);
-    } else {
-      navigateTo(router, ROUTES.HOME, true);
-    }
+    navigateTo(router, ROUTES.PROFILE, true);
   };
 
   const validate = () => {

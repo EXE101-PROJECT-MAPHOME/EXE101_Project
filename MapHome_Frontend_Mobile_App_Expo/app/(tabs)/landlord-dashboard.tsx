@@ -10,7 +10,7 @@ import {
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import {
   ArrowLeft,
@@ -124,13 +124,15 @@ export default function LandlordDashboardScreen() {
     }
   };
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      setScreenLoading(false);
-      return;
-    }
-    fetchData(activeTab);
-  }, [isAuthenticated, user, activeTab]);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!isAuthenticated || !user) {
+        setScreenLoading(false);
+        return;
+      }
+      fetchData(activeTab);
+    }, [isAuthenticated, user, activeTab])
+  );
 
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
@@ -144,24 +146,28 @@ export default function LandlordDashboardScreen() {
         value: analytics?.totalProperties || posts.length,
         icon: FileText,
         color: "bg-blue-500",
+        onPress: () => setActiveTab("posts"),
       },
       {
-        label: "Đã duyệt",
-        value: analytics?.approvedProperties || 0,
+        label: "Hẹn đã duyệt",
+        value: bookings.filter((b) => b.status === "confirmed" || b.status === "completed").length,
         icon: CheckCircle2,
         color: "bg-emerald-500",
+        onPress: () => setActiveTab("bookings"),
+      },
+      {
+        label: "Hẹn chờ duyệt",
+        value: bookings.filter((b) => b.status === "pending").length,
+        icon: Clock,
+        color: "bg-orange-500",
+        onPress: () => setActiveTab("bookings"),
       },
       {
         label: "Lượt xem",
         value: analytics?.totalViews || 0,
         icon: Eye,
         color: "bg-purple-500",
-      },
-      {
-        label: "Lịch hẹn",
-        value: bookings.length,
-        icon: CalendarDays,
-        color: "bg-orange-500",
+        onPress: () => setActiveTab("overview"),
       },
     ],
     [analytics, posts.length, bookings.length],
@@ -212,7 +218,7 @@ export default function LandlordDashboardScreen() {
           </View>
         </View>
         <TouchableOpacity
-          onPress={() => setActiveTab("posts")}
+          onPress={() => navigateTo(router, ROUTES.PRICING)}
           className="bg-amber-600 h-12 rounded-2xl flex-row items-center justify-center shadow-sm active:opacity-80"
         >
           <Zap size={16} color="white" />
@@ -432,6 +438,7 @@ export default function LandlordDashboardScreen() {
               {stats.map((item, idx) => (
                 <TouchableOpacity
                   key={idx}
+                  onPress={item.onPress}
                   className="w-[48%] bg-white rounded-2xl p-4 border border-slate-100 mb-3 shadow-sm active:opacity-80"
                 >
                   <View
@@ -542,9 +549,9 @@ export default function LandlordDashboardScreen() {
                     onPress={() => navigateTo(router, ROUTES.ROOM(item._id || item.id))}
                     className="py-3 border-b border-slate-100 flex-row items-center active:bg-slate-50 px-2 rounded-lg"
                   >
-                    {item.images && item.images.length > 0 && (
+                    {(item.image || (item.images && item.images.length > 0)) && (
                       <Image
-                        source={{ uri: item.images[0] }}
+                        source={{ uri: item.image || item.images[0] }}
                         className="w-12 h-12 rounded-lg mr-3"
                       />
                     )}
@@ -598,77 +605,104 @@ export default function LandlordDashboardScreen() {
         {/* Posts Tab */}
         {activeTab === "posts" && (
           <View>
-            <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-lg font-black text-emerald-700">
-                  Danh sách tin đăng
+            <View className="flex-row items-center justify-between mb-5 px-1">
+              <Text className="text-xl font-black text-emerald-800">
+                Quản lý tin đăng
+              </Text>
+              <View className="bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
+                <Text className="text-emerald-700 font-bold text-sm">
+                  {posts.length} tin
                 </Text>
-                <View className="bg-emerald-50 px-3 py-1 rounded-full">
-                  <Text className="text-emerald-700 font-bold text-sm">
-                    {posts.length}
-                  </Text>
-                </View>
               </View>
+            </View>
 
-              {posts.length === 0 ? (
-                <View className="items-center py-8">
-                  <FileText size={40} color={icon} opacity={0.5} />
-                  <Text className="text-slate-500 mt-3 text-center font-semibold">
-                    Chưa có tin đăng
-                  </Text>
-                </View>
-              ) : (
-                posts.map((post, idx) => (
+            {posts.length === 0 ? (
+              <View className="bg-white rounded-3xl items-center py-12 border border-slate-100 shadow-sm">
+                <FileText size={48} color={icon} opacity={0.3} />
+                <Text className="text-slate-400 mt-4 text-center font-bold text-base">
+                  Bạn chưa có tin đăng nào
+                </Text>
+              </View>
+            ) : (
+              posts.map((post, idx) => {
+                const isExpired = post.status === "expired" || (post.expiryDate && new Date(post.expiryDate) < new Date());
+                return (
                   <TouchableOpacity
                     key={post._id || idx}
                     onPress={() => navigateTo(router, ROUTES.ROOM(post._id || post.id))}
-                    className="bg-slate-50 rounded-2xl p-4 mb-3 border border-slate-100 active:bg-slate-100"
+                    className="bg-white rounded-3xl mb-5 shadow-sm border border-slate-100 overflow-hidden active:opacity-95"
                   >
-                    {post.images && post.images.length > 0 && (
-                      <Image
-                        source={{ uri: post.images[0] }}
-                        className="w-full h-40 rounded-xl mb-3"
-                      />
-                    )}
-                    <Text className="font-black text-emerald-700 text-base mb-1">
-                      {post.name || "Phòng trọ"}
-                    </Text>
-                    <Text className="text-sm text-slate-600 mb-2">
-                      {(post.price || 0).toLocaleString("vi-VN")}đ/tháng
-                    </Text>
-
-                    {post.status === "expired" ||
-                    (post.expiryDate &&
-                      new Date(post.expiryDate) < new Date()) ? (
-                      <View className="mt-3 bg-red-50 p-3 rounded-xl flex-row items-center justify-between border border-red-100">
-                        <Text className="text-xs text-red-600 font-bold">
-                          ⏰ Đã hết hạn
+                    {/* Image Section */}
+                    <View className="w-full h-48 bg-slate-100 relative">
+                      {post.image || (post.images && post.images.length > 0) ? (
+                        <Image
+                          source={{ uri: post.image || post.images[0] }}
+                          className="w-full h-full"
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View className="w-full h-full items-center justify-center bg-emerald-50">
+                          <FileText size={48} color="#10b981" opacity={0.5} />
+                        </View>
+                      )}
+                      
+                      {/* Status Badge */}
+                      <View className="absolute top-3 left-3 bg-black/60 px-3 py-1.5 rounded-full">
+                        <Text className="text-white text-[11px] font-bold">
+                          {post.available ? "🟢 Còn phòng" : "🔴 Hết phòng"}
                         </Text>
-                        <TouchableOpacity
-                          onPress={() => navigateTo(router, ROUTES.PROFILE)}
-                          className="bg-red-600 px-3 py-1.5 rounded-lg"
-                        >
-                          <Text className="text-white text-xs font-bold">
-                            Gia hạn
-                          </Text>
-                        </TouchableOpacity>
                       </View>
-                    ) : (
-                      <View className="flex-row mt-3">
-                        <TouchableOpacity
-                          onPress={() => handleToggleAvailability(post)}
-                          className="flex-1 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200"
-                        >
-                          <Text className="text-xs font-bold text-emerald-700 text-center">
-                            {post.available ? "🔒 Hết phòng" : "✓ Còn phòng"}
+
+                      {/* Expiration Badge */}
+                      {isExpired && (
+                        <View className="absolute top-3 right-3 bg-red-500 px-3 py-1.5 rounded-full shadow-sm">
+                          <Text className="text-white text-[10px] font-black uppercase tracking-wider">
+                            Đã hết hạn
                           </Text>
-                        </TouchableOpacity>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Content Section */}
+                    <View className="p-4">
+                      <View className="mb-2">
+                        <Text className="font-black text-emerald-900 text-lg leading-tight" numberOfLines={2}>
+                          {post.name || "Phòng trọ chưa cập nhật tên"}
+                        </Text>
                       </View>
-                    )}
+
+                      <Text className="text-emerald-600 font-bold text-base mb-1">
+                        {(post.price || 0).toLocaleString("vi-VN")} <Text className="text-slate-500 font-medium text-xs">VNĐ/tháng</Text>
+                      </Text>
+
+                      {/* Action Buttons */}
+                      <View className="mt-4 pt-4 border-t border-slate-100 flex-row gap-2">
+                        {isExpired ? (
+                          <TouchableOpacity
+                            onPress={() => navigateTo(router, ROUTES.PROFILE)}
+                            className="flex-1 bg-red-50 border border-red-200 h-12 rounded-xl items-center justify-center flex-row"
+                          >
+                            <Zap size={16} color="#dc2626" />
+                            <Text className="text-red-600 font-bold ml-2 text-sm">
+                              Gia hạn tin
+                            </Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            onPress={() => handleToggleAvailability(post)}
+                            className={`flex-1 h-12 rounded-xl items-center justify-center flex-row border ${post.available ? "bg-white border-slate-200" : "bg-emerald-50 border-emerald-200"}`}
+                          >
+                            <Text className={`font-bold text-sm ${post.available ? "text-slate-700" : "text-emerald-700"}`}>
+                              {post.available ? "Đánh dấu Hết phòng" : "Đánh dấu Còn phòng"}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
                   </TouchableOpacity>
-                ))
-              )}
-            </View>
+                );
+              })
+            )}
           </View>
         )}
 
