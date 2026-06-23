@@ -74,7 +74,7 @@ export function LoginPage() {
     confirmPassword: "",
     fullName: "",
     phone: "",
-    role: "landlord" as "landlord" | "user" | "admin",
+    role: "landlord" as "landlord" | "user" | "admin" | "broker",
   });
 
   const [registerErrors, setRegisterErrors] = useState({
@@ -137,11 +137,12 @@ export function LoginPage() {
         const allowed = await checkMaintenanceBeforeRedirect(result.role);
         if (!allowed) return;
 
-        toast.success("Đăng nhập thành công!");
         if (result.role === "admin") {
           navigate("/admin/dashboard");
         } else if (result.role === "landlord") {
           navigate("/landlord/dashboard");
+        } else if (result.role === "broker") {
+          navigate("/broker/dashboard");
         } else {
           navigate("/");
         }
@@ -239,6 +240,7 @@ export function LoginPage() {
 
         if (result.role === "admin") navigate("/admin/dashboard");
         else if (result.role === "landlord") navigate("/landlord/dashboard");
+        else if (result.role === "broker") navigate("/broker/dashboard");
         else navigate("/");
       } else {
         setError(result.message || "Đăng nhập Google thất bại");
@@ -263,6 +265,7 @@ export function LoginPage() {
           toast.success("Đăng nhập bằng Google thành công!");
           if (result.role === "admin") navigate("/admin/dashboard");
           else if (result.role === "landlord") navigate("/landlord/dashboard");
+          else if (result.role === "broker") navigate("/broker/dashboard");
           else navigate("/");
         } else {
           setError(result.message || "Đăng nhập Google thất bại");
@@ -929,10 +932,11 @@ export function LoginPage() {
                       <div className="relative">
                         <select
                           value={registerData.role}
-                          onChange={(e) => setRegisterData({ ...registerData, role: e.target.value as "landlord" | "user" })}
+                          onChange={(e) => setRegisterData({ ...registerData, role: e.target.value as "landlord" | "user" | "admin" | "broker" })}
                           className="w-full h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-bold text-slate-700 border border-slate-200 transition-colors px-4 appearance-none outline-none cursor-pointer hover:border-emerald-300"
                         >
                           <option value="landlord">Chủ trọ (Đăng tin cho thuê)</option>
+                          <option value="broker">Người môi giới (Môi giới trọ)</option>
                           <option value="user">Khách thuê (Tìm thuê phòng)</option>
                         </select>
                         <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">

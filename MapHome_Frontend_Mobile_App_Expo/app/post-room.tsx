@@ -44,6 +44,7 @@ import {
   Upload,
   X,
   ChevronDown,
+  User,
 } from "lucide-react-native";
 import Animated, { FadeInDown, FadeInRight, FadeOutLeft } from "react-native-reanimated";
 import api from "@/utils/api";
@@ -70,6 +71,7 @@ export default function PostRoomScreen() {
     address: "",
     description: "",
     phone: "",
+    ownerName: "",
   });
 
   const [amenities, setAmenities] = useState({
@@ -194,8 +196,14 @@ export default function PostRoomScreen() {
 
   const handleNext = () => {
     if (step === "info") {
-      if (!formData.name || !formData.price || !formData.area || !formData.phone || !selectedProvince || !selectedDistrict || !selectedWard) {
-        Alert.alert("Thiếu thông tin", "Vui lòng điền đầy đủ các thông tin bắt buộc (*), bao gồm Tỉnh/Thành, Quận/Huyện và Phường/Xã.");
+      const isBroker = user?.role === "broker";
+      if (!formData.name || !formData.price || !formData.area || !formData.phone || !selectedProvince || !selectedDistrict || !selectedWard || (isBroker && !formData.ownerName.trim())) {
+        Alert.alert(
+          "Thiếu thông tin",
+          isBroker 
+            ? "Vui lòng điền đầy đủ các thông tin bắt buộc (*), bao gồm cả Tỉnh/Thành, Quận/Huyện, Phường/Xã và Tên chủ nhà sở hữu."
+            : "Vui lòng điền đầy đủ các thông tin bắt buộc (*), bao gồm Tỉnh/Thành, Quận/Huyện và Phường/Xã."
+        );
         return;
       }
     } else if (step === "pin-map") {
@@ -493,7 +501,7 @@ export default function PostRoomScreen() {
         images: uploadedImages.length > 0 ? uploadedImages : ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800"],
         image: uploadedImages[0] || "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800",
         available: true,
-        ownerName: user?.fullName || user?.username || "Chủ trọ",
+        ownerName: user?.role === "broker" ? formData.ownerName : (user?.fullName || user?.username || "Chủ trọ"),
         verificationLevel: verificationLevel,
       };
 
@@ -586,7 +594,21 @@ export default function PostRoomScreen() {
                   onChangeText={(text) => setFormData({ ...formData, name: text })}
                 />
 
-                <Text className="text-sm font-bold text-slate-600 mb-2">Số điện thoại liên hệ *</Text>
+                {user?.role === "broker" && (
+                  <>
+                    <Text className="text-sm font-bold text-slate-600 mb-2">Tên chủ nhà sở hữu *</Text>
+                    <TextInput
+                      className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 text-base"
+                      placeholder="VD: Nguyễn Văn A"
+                      value={formData.ownerName}
+                      onChangeText={(text) => setFormData({ ...formData, ownerName: text })}
+                    />
+                  </>
+                )}
+
+                <Text className="text-sm font-bold text-slate-600 mb-2">
+                  {user?.role === "broker" ? "Số điện thoại liên hệ chủ nhà *" : "Số điện thoại liên hệ *"}
+                </Text>
                 <TextInput
                   className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 text-base"
                   placeholder="VD: 0901234567"
@@ -969,10 +991,19 @@ export default function PostRoomScreen() {
                     <MapPin size={16} color="#64748b" className="mr-2" />
                     <Text className="text-slate-600 flex-1">{formData.address}</Text>
                   </View>
+
+                  {user?.role === "broker" && (
+                    <View className="flex-row items-center mb-2">
+                      <User size={16} color="#64748b" className="mr-2" />
+                      <Text className="text-slate-600">Chủ sở hữu: {formData.ownerName}</Text>
+                    </View>
+                  )}
                   
                   <View className="flex-row items-center mb-6">
                     <Phone size={16} color="#64748b" className="mr-2" />
-                    <Text className="text-slate-600">{formData.phone}</Text>
+                    <Text className="text-slate-600">
+                      {user?.role === "broker" ? `SĐT chủ nhà: ${formData.phone}` : formData.phone}
+                    </Text>
                   </View>
 
                   <Text className="font-bold text-slate-800 text-lg mb-3">Tiện nghi</Text>

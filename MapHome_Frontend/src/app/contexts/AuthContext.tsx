@@ -5,14 +5,14 @@ import {
   ReactNode,
   useEffect,
 } from "react";
-import api from "@/app/utils/api";
+import api, { registerLogoutCallback } from "@/app/utils/api";
 import { toast } from "sonner";
 
 export interface User {
   id: string;
   username: string;
   email: string;
-  role: "admin" | "landlord" | "user";
+  role: "admin" | "landlord" | "user" | "broker";
   phone?: string;
   fullName?: string;
   avatar?: string; // user profile picture URL
@@ -72,7 +72,7 @@ interface RegisterData {
   confirmPassword?: string;
   fullName: string;
   phone: string;
-  role: "landlord" | "user" | "admin";
+  role: "landlord" | "user" | "admin" | "broker";
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -85,11 +85,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : null;
   });
 
+  // Register API logout callback to sync React state with token expiration
+  useEffect(() => {
+    registerLogoutCallback(() => {
+      setUser(null);
+    });
+    return () => {
+      registerLogoutCallback(() => {});
+    };
+  }, []);
+
   // Check for token on mount and fetch profile
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem("token");
-      if (token && !user) {
+      if (token) {
         try {
           const res = await api.get("/api/user/me");
           if (res.status === 200) {
@@ -103,15 +113,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (err) {
           console.error("Auth check failed:", err);
-          // If 401, interceptor already handles it, but we should clear local state too
           localStorage.removeItem("token");
           localStorage.removeItem("auth");
           setUser(null);
         }
+      } else {
+        localStorage.removeItem("auth");
+        setUser(null);
       }
     };
     checkAuth();
-  }, [user]);
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {

@@ -310,21 +310,40 @@ const createProperty = async (req, res) => {
     const Landlord = require("../models/Landlord");
 
     if (req.user) {
-      const landlord = await Landlord.findOne({ userId: req.user._id });
-      if (landlord) {
-        payload.landlordId = landlord._id;
-        payload.ownerName = landlord.name;
+      if (req.user.role === "broker") {
+        const Broker = require("../models/Broker");
+        const broker = await Broker.findOne({ userId: req.user._id });
+        if (broker) {
+          payload.brokerId = broker._id;
+          payload.ownerName = payload.ownerName || broker.name;
+          payload.phone = payload.phone || broker.phone;
 
-        // Increment listing count
-        landlord.totalListings += 1;
-        await landlord.save();
+          // Increment listing count
+          broker.totalListings += 1;
+          await broker.save();
+        } else {
+          return res.status(400).json({
+            message: "Broker profile not found.",
+            error: "BROKER_NOT_FOUND",
+          });
+        }
       } else {
-        // Landlord not found - return error
-        return res.status(400).json({
-          message:
-            "Landlord profile not found. Please complete your landlord profile first.",
-          error: "LANDLORD_NOT_FOUND",
-        });
+        const landlord = await Landlord.findOne({ userId: req.user._id });
+        if (landlord) {
+          payload.landlordId = landlord._id;
+          payload.ownerName = landlord.name;
+
+          // Increment listing count
+          landlord.totalListings += 1;
+          await landlord.save();
+        } else {
+          // Landlord not found - return error
+          return res.status(400).json({
+            message:
+              "Landlord profile not found. Please complete your landlord profile first.",
+            error: "LANDLORD_NOT_FOUND",
+          });
+        }
       }
     } else {
       // Not authenticated
@@ -446,7 +465,22 @@ const updateProperty = async (req, res) => {
       const landlord = await Landlord.findOne({ userId: req.user._id });
       if (
         !landlord ||
+        !property.landlordId ||
         property.landlordId.toString() !== landlord._id.toString()
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to update this property" });
+      }
+    }
+
+    if (req.user && req.user.role === "broker") {
+      const Broker = require("../models/Broker");
+      const broker = await Broker.findOne({ userId: req.user._id });
+      if (
+        !broker ||
+        !property.brokerId ||
+        property.brokerId.toString() !== broker._id.toString()
       ) {
         return res
           .status(403)
@@ -501,11 +535,27 @@ const deleteProperty = async (req, res) => {
     }
 
     const Landlord = require("../models/Landlord");
+    const Broker = require("../models/Broker");
+
     if (req.user && req.user.role === "landlord") {
       const landlord = await Landlord.findOne({ userId: req.user._id });
       if (
         !landlord ||
+        !property.landlordId ||
         property.landlordId.toString() !== landlord._id.toString()
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this property" });
+      }
+    }
+
+    if (req.user && req.user.role === "broker") {
+      const broker = await Broker.findOne({ userId: req.user._id });
+      if (
+        !broker ||
+        !property.brokerId ||
+        property.brokerId.toString() !== broker._id.toString()
       ) {
         return res
           .status(403)
@@ -515,6 +565,12 @@ const deleteProperty = async (req, res) => {
 
     if (property.landlordId) {
       await Landlord.findByIdAndUpdate(property.landlordId, {
+        $inc: { totalListings: -1 },
+      });
+    }
+
+    if (property.brokerId) {
+      await Broker.findByIdAndUpdate(property.brokerId, {
         $inc: { totalListings: -1 },
       });
     }

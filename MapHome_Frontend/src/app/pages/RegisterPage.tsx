@@ -23,7 +23,7 @@ export function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<"user" | "landlord" | "admin">("user");
+  const [role, setRole] = useState<"user" | "landlord" | "admin" | "broker">("user");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -421,6 +421,15 @@ export function RegisterPage() {
                   onChange={() => setRole("landlord")}
                 />
                 Chủ trọ
+              </label>
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="role"
+                  checked={role === "broker"}
+                  onChange={() => setRole("broker")}
+                />
+                Người môi giới
               </label>
               <label className="inline-flex items-center gap-2 cursor-pointer">
                 <input

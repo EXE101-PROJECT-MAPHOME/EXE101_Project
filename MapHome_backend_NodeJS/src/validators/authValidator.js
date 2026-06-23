@@ -65,8 +65,8 @@ const registerRules = [
 
   body("role")
     .optional()
-    .isIn(["user", "landlord", "admin"])
-    .withMessage("Invalid role. Must be 'user', 'landlord', or 'admin'"),
+    .isIn(["user", "landlord", "admin", "broker"])
+    .withMessage("Invalid role. Must be 'user', 'landlord', 'admin', or 'broker'"),
 ];
 
 const loginRules = [

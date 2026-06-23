@@ -9,6 +9,7 @@ const BookingSchema = new mongoose.Schema(
     },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     landlordId: { type: mongoose.Schema.Types.ObjectId, ref: "Landlord" },
+    brokerId: { type: mongoose.Schema.Types.ObjectId, ref: "Broker" },
     customerName: { type: String, required: true },
     customerPhone: { type: String, required: true },
     note: { type: String },

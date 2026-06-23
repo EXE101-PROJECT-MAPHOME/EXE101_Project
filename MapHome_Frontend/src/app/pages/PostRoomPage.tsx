@@ -116,6 +116,7 @@ export function PostRoomPage() {
     street: "",
     description: "",
     phone: "",
+    ownerName: "",
   });
 
   // ─── Goong Search State ─────────────────────────────────────────────────────
@@ -447,6 +448,9 @@ export function PostRoomPage() {
           : "",
         description: validateDescription(formData.description).error || "",
         phone: validatePhone(formData.phone).error || "",
+        ownerName: user?.role === "broker" && !formData.ownerName.trim()
+          ? "Vui lòng nhập tên chủ nhà sở hữu"
+          : "",
         address:
           !selectedProvince ||
           !selectedDistrict ||
@@ -604,7 +608,7 @@ export function PostRoomPage() {
       description: formData.description,
       available: true,
       phone: formData.phone,
-      ownerName: user?.fullName || user?.username || "Chủ trọ",
+      ownerName: user?.role === "broker" ? formData.ownerName : (user?.fullName || user?.username || "Chủ trọ"),
       verificationLevel: verificationLevel,
       verifiedAt: locationData ? new Date().toISOString() : undefined,
       locationAccuracy: locationData?.accuracy,
@@ -620,7 +624,7 @@ export function PostRoomPage() {
       const success = await addProperty(newProperty);
       if (success) {
         toast.success("Đăng tin thành công! ✨");
-        navigate("/landlord/dashboard");
+        navigate(user?.role === "broker" ? "/broker/dashboard" : "/landlord/dashboard");
       } else {
         toast.error("Không thể đăng tin. Vui lòng kiểm tra lại thông tin!");
       }
@@ -672,7 +676,7 @@ export function PostRoomPage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/landlord/dashboard")}
+              onClick={() => navigate(user?.role === "broker" ? "/broker/dashboard" : "/landlord/dashboard")}
               className="rounded-lg hover:bg-slate-100 transition-colors"
             >
               <ArrowLeft className="size-5 text-slate-600" />
@@ -1187,9 +1191,41 @@ export function PostRoomPage() {
                           </motion.div>
                         )}
 
+                        {user?.role === "broker" && (
+                          <div className="space-y-2 pt-4 border-t border-slate-300">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                              Tên chủ nhà sở hữu *
+                            </Label>
+                            <Input
+                              type="text"
+                              placeholder="Nguyễn Văn A"
+                              value={formData.ownerName}
+                              onChange={(e) => {
+                                setFormData({
+                                  ...formData,
+                                  ownerName: e.target.value,
+                                });
+                                if (fieldErrors.ownerName)
+                                  setFieldErrors({ ...fieldErrors, ownerName: "" });
+                              }}
+                              className={`h-12 rounded-lg border focus:ring-2 text-base font-medium bg-white transition-all ${
+                                fieldErrors.ownerName
+                                  ? "border-red-500 focus:ring-red-100"
+                                  : "border-slate-300 focus:border-indigo-500 focus:ring-indigo-100"
+                              }`}
+                            />
+                            {fieldErrors.ownerName && (
+                              <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
+                                <AlertCircle className="size-3" />{" "}
+                                {fieldErrors.ownerName}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
                         <div className="space-y-2 pt-4 border-t border-slate-300">
                           <Label className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                            Số điện thoại liên hệ *
+                            {user?.role === "broker" ? "Số điện thoại liên hệ chủ nhà *" : "Số điện thoại liên hệ *"}
                           </Label>
                           <Input
                             type="tel"

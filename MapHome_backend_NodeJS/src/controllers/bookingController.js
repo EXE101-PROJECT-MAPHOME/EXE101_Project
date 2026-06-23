@@ -61,14 +61,17 @@ const createBooking = async (req, res) => {
       payload.userId = req.user._id;
     }
 
-    // Auto-resolve landlordId from Property if not provided in payload
+    // Auto-resolve landlordId and brokerId from Property if not provided in payload
     let property = null;
     if (payload.propertyId) {
       property = await Property.findById(payload.propertyId);
       if (!property) return res.status(404).json({ message: "Property not found" });
       
-      if (!payload.landlordId) {
+      if (!payload.landlordId && property.landlordId) {
         payload.landlordId = property.landlordId;
+      }
+      if (!payload.brokerId && property.brokerId) {
+        payload.brokerId = property.brokerId;
       }
 
       // ── Check for Overlapping Confirmed Bookings ──
@@ -88,22 +91,41 @@ const createBooking = async (req, res) => {
 
     const booking = await Booking.create(payload);
 
-    // ── Notify the Landlord ──
-    if (property && payload.landlordId) {
-      try {
-        const landlord = await Landlord.findById(payload.landlordId);
-        if (landlord && landlord.userId) {
-          await notifyLandlordNewBooking({
-            landlordUserId: landlord.userId,
-            propertyName: property.name,
-            customerName: payload.customerName || "Guest",
-            bookingDate: formatDate(payload.bookingDate),
-            bookingTime: payload.bookingTime || "",
-            propertyId: property._id,
-          });
+    // ── Notify the Landlord or Broker ──
+    if (property) {
+      if (payload.brokerId) {
+        try {
+          const Broker = require("../models/Broker");
+          const broker = await Broker.findById(payload.brokerId);
+          if (broker && broker.userId) {
+            await notifyLandlordNewBooking({
+              landlordUserId: broker.userId,
+              propertyName: property.name,
+              customerName: payload.customerName || "Guest",
+              bookingDate: formatDate(payload.bookingDate),
+              bookingTime: payload.bookingTime || "",
+              propertyId: property._id,
+            });
+          }
+        } catch (notifErr) {
+          console.error("[createBooking] Failed to send notification to broker:", notifErr.message);
         }
-      } catch (notifErr) {
-        console.error("[createBooking] Failed to send notification:", notifErr.message);
+      } else if (payload.landlordId) {
+        try {
+          const landlord = await Landlord.findById(payload.landlordId);
+          if (landlord && landlord.userId) {
+            await notifyLandlordNewBooking({
+              landlordUserId: landlord.userId,
+              propertyName: property.name,
+              customerName: payload.customerName || "Guest",
+              bookingDate: formatDate(payload.bookingDate),
+              bookingTime: payload.bookingTime || "",
+              propertyId: property._id,
+            });
+          }
+        } catch (notifErr) {
+          console.error("[createBooking] Failed to send notification to landlord:", notifErr.message);
+        }
       }
     }
 
@@ -118,10 +140,16 @@ const updateBooking = async (req, res) => {
     let booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: "Booking not found" });
 
-    // Ownership check for landlord
+    // Ownership check for landlord or broker
     if (req.user.role === "landlord") {
       const landlord = await Landlord.findOne({ userId: req.user._id });
       if (!landlord || String(booking.landlordId) !== String(landlord._id)) {
+        return res.status(403).json({ message: "Not authorized to update this booking" });
+      }
+    } else if (req.user.role === "broker") {
+      const Broker = require("../models/Broker");
+      const broker = await Broker.findOne({ userId: req.user._id });
+      if (!broker || !booking.brokerId || String(booking.brokerId) !== String(broker._id)) {
         return res.status(403).json({ message: "Not authorized to update this booking" });
       }
     }
@@ -141,10 +169,16 @@ const deleteBooking = async (req, res) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ message: "Booking not found" });
 
-    // Ownership check for landlord
+    // Ownership check for landlord or broker
     if (req.user.role === "landlord") {
       const landlord = await Landlord.findOne({ userId: req.user._id });
       if (!landlord || String(booking.landlordId) !== String(landlord._id)) {
+        return res.status(403).json({ message: "Not authorized to delete this booking" });
+      }
+    } else if (req.user.role === "broker") {
+      const Broker = require("../models/Broker");
+      const broker = await Broker.findOne({ userId: req.user._id });
+      if (!broker || !booking.brokerId || String(booking.brokerId) !== String(broker._id)) {
         return res.status(403).json({ message: "Not authorized to delete this booking" });
       }
     }
@@ -170,19 +204,33 @@ const cancelBooking = async (req, res) => {
     booking.status = "cancelled";
     await booking.save();
 
-    // ── Notify the Landlord ──
+    // ── Notify the Landlord or Broker ──
     try {
       const property = await Property.findById(booking.propertyId);
-      if (property && booking.landlordId) {
-        const landlord = await Landlord.findById(booking.landlordId);
-        if (landlord && landlord.userId) {
-          await notifyLandlordBookingCancelledByTenant({
-            landlordUserId: landlord.userId,
-            propertyName: property.name,
-            customerName: booking.customerName || "Guest",
-            bookingDate: formatDate(booking.bookingDate),
-            bookingTime: booking.bookingTime || "",
-          });
+      if (property) {
+        if (booking.brokerId) {
+          const Broker = require("../models/Broker");
+          const broker = await Broker.findById(booking.brokerId);
+          if (broker && broker.userId) {
+            await notifyLandlordBookingCancelledByTenant({
+              landlordUserId: broker.userId,
+              propertyName: property.name,
+              customerName: booking.customerName || "Guest",
+              bookingDate: formatDate(booking.bookingDate),
+              bookingTime: booking.bookingTime || "",
+            });
+          }
+        } else if (booking.landlordId) {
+          const landlord = await Landlord.findById(booking.landlordId);
+          if (landlord && landlord.userId) {
+            await notifyLandlordBookingCancelledByTenant({
+              landlordUserId: landlord.userId,
+              propertyName: property.name,
+              customerName: booking.customerName || "Guest",
+              bookingDate: formatDate(booking.bookingDate),
+              bookingTime: booking.bookingTime || "",
+            });
+          }
         }
       }
     } catch (notifErr) {
@@ -212,6 +260,13 @@ const updateBookingStatus = async (req, res) => {
         return res.status(403).json({ message: "Landlord profile not found" });
       }
       query.landlordId = landlord._id;
+    } else if (req.user.role === "broker") {
+      const Broker = require("../models/Broker");
+      const broker = await Broker.findOne({ userId: req.user._id });
+      if (!broker) {
+        return res.status(403).json({ message: "Broker profile not found" });
+      }
+      query.brokerId = broker._id;
     }
 
     const booking = await Booking.findOne(query);

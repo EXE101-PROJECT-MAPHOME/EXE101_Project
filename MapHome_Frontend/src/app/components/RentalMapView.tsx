@@ -6,7 +6,7 @@ import "@goongmaps/goong-js/dist/goong-js.css";
 import { RentalProperty, LandlordProfile } from "./types";
 import { SearchLocation } from "./SearchByWorkplace";
 import { Button } from "@/app/components/ui/button";
-import { Layers, Navigation, Globe } from "lucide-react";
+import { Layers, Navigation, Globe, Info } from "lucide-react";
 import {
   getGoongStyleUrl,
   getGoongAttribution,
@@ -123,9 +123,17 @@ export function RentalMapView({
   const [showLegend, setShowLegend] = useState(true);
   const [mapStyle, setMapStyle] = useState<GoongMapStyle>("light");
   const [showStyleSwitcher, setShowStyleSwitcher] = useState(false);
+  const parentRef = useRef<HTMLDivElement>(null);
 
-  const legendX = useMotionValue(16);
-  const legendY = useMotionValue(16);
+  // Sync Legend show state on window resize (Web vs Mobile mode transition)
+  useEffect(() => {
+    const handleResize = () => {
+      setShowLegend(window.innerWidth >= 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const defaultCenter: [number, number] = [10.7769, 106.7009];
   const effectiveCenter = searchCenter || defaultCenter;
@@ -358,63 +366,75 @@ export function RentalMapView({
   const regularCount = properties.length - pinnedCount;
 
   return (
-    <div className="relative h-full w-full">
+    <div ref={parentRef} className="relative h-full w-full">
       <div ref={mapContainerRef} className="h-full w-full rounded-lg" />
 
-      {/* Legend */}
-      <motion.div
-        drag
-        dragMomentum={false}
-        dragConstraints={mapContainerRef}
-        style={{
-          x: legendX,
-          y: legendY,
-          position: "absolute",
-          top: 0,
-          left: 0,
-        }}
-        animate={{ opacity: showLegend ? 1 : 0, scale: showLegend ? 1 : 0.9 }}
-        className="z-20 w-[220px] rounded-2xl overflow-hidden shadow-2xl bg-emerald-950/90 text-white backdrop-blur-md border border-emerald-800/30"
-      >
-        <div className="p-4 flex items-center justify-between border-b border-emerald-800/30">
-          <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-            Chú thích
-          </span>
-          <button
-            onClick={() => setShowLegend(false)}
-            className="text-white/40 hover:text-white"
+      {/* Legend Toggle Button / Legend Box */}
+      <AnimatePresence mode="wait">
+        {!showLegend ? (
+          <motion.button
+            key="legend-trigger"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={() => setShowLegend(true)}
+            className="absolute top-4 left-4 md:top-8 md:left-8 z-20 size-10 md:size-14 bg-emerald-950/90 text-emerald-400 border border-emerald-800/30 rounded-xl md:rounded-2xl shadow-xl flex items-center justify-center hover:bg-emerald-900 transition-colors backdrop-blur-md"
+            title="Xem chú thích"
           >
-            ✕
-          </button>
-        </div>
-        <div className="p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-800" />
-            <div className="text-xs font-bold">
-              Đã ghim vị trí ({pinnedCount})
+            <Info className="size-5 md:size-6" />
+          </motion.button>
+        ) : (
+          <motion.div
+            key="legend-panel"
+            drag
+            dragMomentum={false}
+            dragConstraints={parentRef}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="absolute top-4 left-4 md:top-8 md:left-8 z-20 w-[220px] rounded-2xl overflow-hidden shadow-2xl bg-emerald-950/90 text-white backdrop-blur-md border border-emerald-800/30"
+          >
+            <div className="p-4 flex items-center justify-between border-b border-emerald-800/30">
+              <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+                Chú thích
+              </span>
+              <button
+                onClick={() => setShowLegend(false)}
+                className="text-white/40 hover:text-white hover:bg-white/10 p-1 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-900 border border-emerald-700/50 flex items-center justify-center">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+            <div className="p-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-800" />
+                <div className="text-xs font-bold">
+                  Đã ghim vị trí ({pinnedCount})
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-900 border border-emerald-700/50 flex items-center justify-center">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+                </div>
+                <div className="text-xs font-bold">
+                  Chưa ghim vị trí ({regularCount})
+                </div>
+              </div>
             </div>
-            <div className="text-xs font-bold">
-              Chưa ghim vị trí ({regularCount})
-            </div>
-          </div>
-        </div>
-      </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* My Location FAB */}
       <button
         onClick={handleCenterOnUser}
-        className="absolute top-8 right-8 z-10 size-14 bg-emerald-600 text-white rounded-2xl shadow-lg flex items-center justify-center hover:bg-emerald-500 transition-colors"
+        className="absolute top-4 right-4 md:top-8 md:right-8 z-10 size-10 md:size-14 bg-emerald-600 text-white rounded-xl md:rounded-2xl shadow-lg flex items-center justify-center hover:bg-emerald-500 transition-colors"
       >
-        <Navigation className="size-6" />
+        <Navigation className="size-5 md:size-6" />
       </button>
 
       {/* Style Switcher FAB */}
-      <div className="absolute top-28 right-8 z-10 flex flex-col items-end gap-2">
+      <div className="absolute top-16 right-4 md:top-28 md:right-8 z-10 flex flex-col items-end gap-2">
         <AnimatePresence>
           {showStyleSwitcher && (
             <motion.div
@@ -442,9 +462,9 @@ export function RentalMapView({
         </AnimatePresence>
         <button
           onClick={() => setShowStyleSwitcher(!showStyleSwitcher)}
-          className="size-14 bg-emerald-950/90 text-emerald-400 rounded-2xl shadow-lg flex items-center justify-center border border-emerald-800/50"
+          className="size-10 md:size-14 bg-emerald-950/90 text-emerald-400 rounded-xl md:rounded-2xl shadow-lg flex items-center justify-center border border-emerald-800/50"
         >
-          <Layers className="size-6" />
+          <Layers className="size-5 md:size-6" />
         </button>
       </div>
     </div>

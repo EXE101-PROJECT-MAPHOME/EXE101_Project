@@ -11,7 +11,7 @@ const UserSchema = new mongoose.Schema(
     phone: { type: String },
     role: {
       type: String,
-      enum: ["admin", "landlord", "user"],
+      enum: ["admin", "landlord", "user", "broker"],
       default: "user",
     },
     avatar: { type: String, default: "" }, // user profile picture URL

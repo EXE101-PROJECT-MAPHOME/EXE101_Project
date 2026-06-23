@@ -1375,7 +1375,7 @@ function AppointmentsView({
     <div className="space-y-6">
       {/* Filter Tabs */}
       <div className="bg-white rounded-xl shadow p-4">
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2">
           <FilterButton
             active={filter === "all"}
             onClick={() => setFilter("all")}
@@ -1543,7 +1543,7 @@ function AppointmentsView({
 
                   {/* Nút thanh toán xác minh khi booking được confirm */}
                   {appointment.status === "confirmed" && (
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-100">
                       {hasVerificationRequest(appointment._id) ? (
                         <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-200">
                           <CheckCheck className="size-4 text-green-600" />
@@ -1783,7 +1783,7 @@ function FilterButton({
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.96 }}
       onClick={onClick}
-      className={`relative px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all z-10 flex items-center justify-center min-w-[100px] ${
+      className={`relative px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap shrink-0 transition-all z-10 flex items-center justify-center min-w-[100px] ${
         active
           ? "text-white"
           : "bg-gray-50/50 text-gray-400 hover:text-gray-600 border border-gray-100 hover:border-gray-200"
@@ -1948,7 +1948,7 @@ function InspectionsView({
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow p-4">
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2">
           <FilterButton
             active={filter === "all"}
             onClick={() => setFilter("all")}

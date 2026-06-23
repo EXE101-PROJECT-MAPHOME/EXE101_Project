@@ -81,6 +81,12 @@ const register = async (req, res, next) => {
         r.includes("owner")
       ) {
         normalizedRole = "landlord";
+      } else if (
+        r.includes("broker") ||
+        r.includes("môi giới") ||
+        r.includes("moigioi")
+      ) {
+        normalizedRole = "broker";
       } else if (r.includes("admin")) {
         normalizedRole = "admin";
       } else {
@@ -103,6 +109,17 @@ const register = async (req, res, next) => {
     // Auto-create Landlord profile if role is landlord
     if (normalizedRole === "landlord") {
       await Landlord.create({
+        name: fullName || username,
+        phone: phone || "0000000000",
+        email,
+        userId: user._id,
+      });
+    }
+
+    // Auto-create Broker profile if role is broker
+    if (normalizedRole === "broker") {
+      const Broker = require("../models/Broker");
+      await Broker.create({
         name: fullName || username,
         phone: phone || "0000000000",
         email,
@@ -431,6 +448,12 @@ const googleLogin = async (req, res) => {
           r.includes("owner")
         ) {
           normalizedRole = "landlord";
+        } else if (
+          r.includes("broker") ||
+          r.includes("môi giới") ||
+          r.includes("moigioi")
+        ) {
+          normalizedRole = "broker";
         } else if (r.includes("admin")) {
           normalizedRole = "admin";
         } else {
@@ -454,6 +477,16 @@ const googleLogin = async (req, res) => {
       // Auto-create Landlord profile if role is landlord
       if (normalizedRole === "landlord") {
         await Landlord.create({
+          name: name || username,
+          email,
+          userId: user._id,
+        });
+      }
+
+      // Auto-create Broker profile if role is broker
+      if (normalizedRole === "broker") {
+        const Broker = require("../models/Broker");
+        await Broker.create({
           name: name || username,
           email,
           userId: user._id,

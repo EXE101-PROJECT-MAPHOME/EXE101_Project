@@ -15,6 +15,7 @@ import { LoginPage } from "@/app/pages/LoginPage";
 import { ForgotPasswordPage } from "@/app/pages/ForgotPasswordPage";
 import { AdminPage } from "@/app/pages/AdminPage";
 import { LandlordDashboardV2 } from "@/app/pages/LandlordDashboardV2";
+import { BrokerDashboard } from "@/app/pages/BrokerDashboard";
 import { UserDashboard } from "@/app/pages/UserDashboard";
 import { RoomDetailPage } from "@/app/pages/RoomDetailPage";
 import { ComparePage } from "@/app/pages/ComparePage";
@@ -120,6 +121,7 @@ const router = createBrowserRouter([
       { path: "/admin/login", Component: LoginPage },
       { path: "/admin/dashboard", Component: AdminPage },
       { path: "/landlord/dashboard", Component: LandlordDashboardV2 },
+      { path: "/broker/dashboard", Component: BrokerDashboard },
       { path: "/user/dashboard", Component: UserDashboard },
       { path: "/maintenance", Component: MaintenancePage },
     ]

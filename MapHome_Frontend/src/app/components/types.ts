@@ -102,6 +102,7 @@ export interface RentalProperty {
   verifiedAt?: string;
   locationAccuracy?: number | string; // Can be string for display like "±5m"
   landlordId?: string | LandlordProfile;
+  brokerId?: string;
   pinInfo?: PinInfo;
   greenBadge?: GreenBadge;
   views?: number;

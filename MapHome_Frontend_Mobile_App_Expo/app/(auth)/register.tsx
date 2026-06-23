@@ -33,7 +33,7 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 import { useAuth } from "../../contexts/AuthContext";
 import { LinearGradient } from "expo-linear-gradient";
 
-export type Role = "user" | "landlord" | "admin";
+export type Role = "user" | "landlord" | "admin" | "broker";
 
 interface FormErrors {
   fullName: string;
@@ -395,6 +395,8 @@ export default function RegisterScreen() {
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     {role === "user" ? (
                       <UserCheck size={18} color={tint} />
+                    ) : role === "broker" ? (
+                      <Building2 size={18} color="#f59e0b" />
                     ) : (
                       <Building2 size={18} color={info} />
                     )}
@@ -403,10 +405,10 @@ export default function RegisterScreen() {
                         marginLeft: 8,
                         fontWeight: "700",
                         fontSize: 14,
-                        color: role === "user" ? tint : info,
+                        color: role === "user" ? tint : role === "broker" ? "#d97706" : info,
                       }}
                     >
-                      {role === "user" ? "Người thuê" : "Chủ nhà"}
+                      {role === "user" ? "Người thuê" : role === "broker" ? "Môi giới" : "Chủ nhà"}
                     </Text>
                   </View>
                   <ChevronDown size={18} color={icon} />
@@ -462,6 +464,26 @@ export default function RegisterScreen() {
                         <View style={{ marginLeft: 12 }}>
                           <Text style={{ fontWeight: "800", color: tint, fontSize: 15 }}>Người thuê</Text>
                           <Text style={{ fontSize: 12, color: icon, marginTop: 2 }}>Tìm phòng trọ, căn hộ cho thuê</Text>
+                        </View>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          padding: 16,
+                          borderRadius: 14,
+                          backgroundColor: role === "broker" ? "#f59e0b15" : "white",
+                          marginBottom: 8,
+                        }}
+                        onPress={() => {
+                          setRole("broker");
+                          setShowRoleDropdown(false);
+                        }}
+                      >
+                        <Building2 size={22} color="#f59e0b" />
+                        <View style={{ marginLeft: 12 }}>
+                          <Text style={{ fontWeight: "800", color: "#d97706", fontSize: 15 }}>Người môi giới</Text>
+                          <Text style={{ fontSize: 12, color: icon, marginTop: 2 }}>Môi giới trọ & Quản lý nhiều chủ trọ</Text>
                         </View>
                       </TouchableOpacity>
                       <TouchableOpacity
