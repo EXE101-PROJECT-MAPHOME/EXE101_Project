@@ -15,8 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import { ArrowLeft, User, Phone, Save, Lock, Key, Shield, Clock } from "lucide-react-native";
-import { useAuth } from "../contexts/AuthContext";
-import api from "../utils/api";
+import { useAuth } from "@/contexts/AuthContext";
+import api from "@/utils/api";
 
 export default function SettingsScreen() {
   const router = useRouter();

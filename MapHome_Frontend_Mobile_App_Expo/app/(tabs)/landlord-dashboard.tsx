@@ -76,15 +76,17 @@ export default function LandlordDashboardScreen() {
     try {
       setScreenLoading(true);
       if (activeTab === "overview") {
-        const [aRes, pRes, vRes, sRes] = await Promise.all([
+        const [aRes, pRes, vRes, sRes, bRes] = await Promise.all([
           api.get("/api/landlord/analytics").catch(() => ({ data: null })),
           api.get("/api/landlord/properties").catch(() => ({ data: [] })),
           api.get("/api/vouchers").catch(() => ({ data: [] })),
           api.get("/api/vouchers/me/saved").catch(() => ({ data: [] })),
+          api.get("/api/landlord/bookings").catch(() => ({ data: [] })),
         ]);
         setAnalytics(aRes.data);
         setPosts(pRes.data || []);
         setVouchers(vRes.data || []);
+        setBookings(bRes.data || []);
         if (sRes && sRes.data) {
           setSavedVoucherIds(sRes.data.map((v: any) => v._id || v.id));
         }

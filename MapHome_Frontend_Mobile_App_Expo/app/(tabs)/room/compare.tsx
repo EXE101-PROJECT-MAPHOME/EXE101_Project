@@ -24,7 +24,7 @@ import {
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
-import { useCompare } from "../../contexts/CompareContext";
+import { useCompare } from "@/contexts/CompareContext";
 
 const { width } = Dimensions.get("window");
 

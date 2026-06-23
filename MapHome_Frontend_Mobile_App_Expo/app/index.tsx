@@ -75,10 +75,10 @@ export default function IntroScreen() {
           }
 
           // Check onboarding
-          // TEMPORARY: Reset onboarding state to test. Comment out or remove this line once done!
-          await AsyncStorage.removeItem("hasViewedOnboarding");
           const hasViewed = await AsyncStorage.getItem("hasViewedOnboarding");
-          if (hasViewed === "true") {
+          
+          // Skip onboarding if user is already logged in OR has viewed it before
+          if (user || hasViewed === "true") {
             router.replace("/(tabs)");
           } else {
             router.replace("/onboarding" as any);
