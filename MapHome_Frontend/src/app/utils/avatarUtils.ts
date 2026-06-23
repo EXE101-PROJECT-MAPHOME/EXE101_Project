@@ -1,3 +1,5 @@
+import { API_BASE } from "@/app/utils/api";
+
 /**
  * Utility to get the full image URL.
  * Handles relative paths from the backend and provides a default if no image is present.
@@ -9,7 +11,6 @@ export const getImageUrl = (imagePath: string | undefined): string | null => {
     return imagePath;
   }
   
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE || "http://localhost:5000";
   
   // Ensure we don't have double slashes if the path already starts with /
   const normalizedPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;

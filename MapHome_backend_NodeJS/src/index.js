@@ -12,6 +12,16 @@ const errorHandler = require("./middleware/errorMiddleware");
 
 // Load env vars
 dotenv.config();
+
+// Override configuration if USE_LOCAL_BACKEND is set to true
+if (process.env.USE_LOCAL_BACKEND === "true") {
+  process.env.BACKEND_URL = `http://localhost:${process.env.PORT || 5000}`;
+  process.env.FRONTEND_URL = "http://localhost:5173";
+  process.env.VNP_RETURN_URL = `http://localhost:${process.env.PORT || 5000}/api/payments/callback`;
+  console.log("⚠️ Running Backend in LOCAL override mode:");
+  console.log(`- BACKEND_URL: ${process.env.BACKEND_URL}`);
+  console.log(`- FRONTEND_URL: ${process.env.FRONTEND_URL}`);
+}
 // Connect to database and then start server
 const app = express();
 

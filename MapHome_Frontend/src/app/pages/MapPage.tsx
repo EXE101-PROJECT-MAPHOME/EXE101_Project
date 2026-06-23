@@ -399,7 +399,7 @@ export function MapPage() {
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="fixed top-0 inset-x-0 bg-white/80 backdrop-blur-xl border-b border-white/20 z-[100] shadow-2xl shadow-emerald-900/5 will-change-transform w-full overflow-hidden"
+        className="fixed top-0 inset-x-0 bg-white/80 backdrop-blur-xl border-b border-white/20 z-[100] shadow-2xl shadow-emerald-900/5 will-change-transform w-full"
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 w-full">
           <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
@@ -462,7 +462,7 @@ export function MapPage() {
                 `}
               >
                 <MapIcon className="size-3.5 sm:size-4" />
-                Bản đồ
+                <span className="hidden sm:inline">Bản đồ</span>
               </button>
 
               {/* Danh sách */}
@@ -478,13 +478,13 @@ export function MapPage() {
                 `}
               >
                 <List className="size-3.5 sm:size-4" />
-                Danh sách
+                <span className="hidden sm:inline">Danh sách</span>
               </button>
             </div>
           </div>
 
-          <div className="flex gap-3 items-center flex-wrap">
-            <div className="relative flex-1 min-w-[300px] group">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center w-full">
+            <div className="relative w-full sm:flex-1 group">
               <div className="absolute inset-0 bg-emerald-100/50 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 size-5 text-emerald-950/40" />
               <Input
@@ -613,15 +613,21 @@ export function MapPage() {
               </AnimatePresence>
             </div>
 
-            <FilterPanel
-              filters={filters}
-              onFiltersChange={setFilters}
-              activeFiltersCount={activeFiltersCount}
-            />
-            <SearchByWorkplace
-              onSearch={setSearchLocations}
-              currentLocations={searchLocations}
-            />
+            <div className="flex gap-2 sm:gap-3 items-center w-full sm:w-auto">
+              <div className="flex-1 sm:flex-initial">
+                <FilterPanel
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  activeFiltersCount={activeFiltersCount}
+                />
+              </div>
+              <div className="flex-1 sm:flex-initial">
+                <SearchByWorkplace
+                  onSearch={setSearchLocations}
+                  currentLocations={searchLocations}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Search Location Tags */}
@@ -642,7 +648,7 @@ export function MapPage() {
       </motion.header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden relative pt-32 sm:pt-40 w-full">
+      <div className="flex-1 overflow-hidden relative pt-[185px] sm:pt-40 w-full">
         {viewMode === "map" ? (
           <div className="h-full w-full relative">
             {/* Map */}

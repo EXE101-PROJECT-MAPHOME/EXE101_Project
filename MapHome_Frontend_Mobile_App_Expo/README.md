@@ -88,19 +88,36 @@ npm install
 ### 2. Cấu hình biến môi trường
 Tạo file `.env` tại thư mục gốc của mobile app:
 ```dotenv
-# Cần trỏ tới IP máy tính cục bộ nếu bạn test trên thiết bị thật (không dùng localhost)
-EXPO_PUBLIC_API_URL=http://your-local-ip:5000 
+# Cấu hình chuyển đổi chạy Local/Deploy (Mới)
+# - Set thành true để sử dụng Backend Local (tự động điều chỉnh theo thiết bị/giả lập)
+# - Set thành false hoặc comment để kết nối tới server deploy (Railway)
+EXPO_PUBLIC_USE_LOCAL_BACKEND=true
+
+# Địa chỉ API khi kết nối tới deploy server
+EXPO_PUBLIC_API_URL=https://exe101project-maphome-api.up.railway.app
+
+# Địa chỉ IP máy tính cá nhân khi kiểm thử trên điện thoại thật (Mạng LAN)
+# Ví dụ: EXPO_PUBLIC_LOCAL_API_URL=http://192.168.1.15:5000
+EXPO_PUBLIC_LOCAL_API_URL=
+
+# Cấu hình Google Auth & Maps
 EXPO_PUBLIC_GOOGLE_CLIENT_ID=817734182215-ijh0r2a1fbcsm5u5nams9e92obh5cmck.apps.googleusercontent.com
 EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=817734182215-0bmgjcggm7k7h0qice3lff1dr7s3q638.apps.googleusercontent.com
 EXPO_PUBLIC_GOONG_MAPTILES_KEY=zkJufOSOzrjhp0HuujejyHhJ2S3G2O6SkK56wiSF
 ```
 
-### 3. Chạy dự án
+### 3. Cơ chế tự động định tuyến API khi chạy Local (`EXPO_PUBLIC_USE_LOCAL_BACKEND=true`)
+Mã nguồn Mobile App được thiết lập tại [utils/api.ts](file:///e:/EXE101_Projects/EXE101_Project/MapHome_Frontend_Mobile_App_Expo/utils/api.ts) để tự động nhận dạng môi trường chạy giả lập:
+- **Giả lập Android (Android Emulator):** Tự động ánh xạ `localhost` của máy tính thành địa chỉ IP đặc biệt `http://10.0.2.2:5000`.
+- **Giả lập iOS (iOS Simulator):** Kết nối trực tiếp tới `http://localhost:5000`.
+- **Thiết bị thật (Expo Go):** Hãy thiết lập biến `EXPO_PUBLIC_LOCAL_API_URL` trỏ tới địa chỉ IP mạng LAN của máy tính chạy backend (ví dụ: `http://192.168.1.15:5000`) để điện thoại có thể giao tiếp với máy tính của bạn.
+
+### 4. Chạy dự án
 ```bash
 # Khởi động Expo Server
 npm start
 
-# Hoặc chạy và làm sạch cache (khuyên dùng khi cập nhật thư viện)
+# Hoặc chạy và làm sạch cache (khuyên dùng khi cập nhật thư viện hoặc biến môi trường)
 npx expo start -c
 ```
 *Sau khi chạy, quét mã QR hiển thị bằng ứng dụng **Expo Go** trên điện thoại Android hoặc ứng dụng Camera mặc định trên iOS để trải nghiệm.*

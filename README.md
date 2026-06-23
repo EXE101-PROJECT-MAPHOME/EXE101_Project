@@ -166,7 +166,9 @@ EXE101_Project/ (Thư mục gốc)
    ```
 3. Tạo file cấu hình môi trường `.env` từ file mẫu:
    ```dotenv
-   VITE_API_BASE=http://localhost:5000
+   # Chuyển đổi chạy Local/Deploy: true để dùng localhost:5000, false để dùng VITE_API_BASE
+   VITE_USE_LOCAL_BACKEND=true
+   VITE_API_BASE=https://exe101project-maphome-api.up.railway.app
    VITE_GOOGLE_CLIENT_ID=817734182215-ijh0r2a1fbcsm5u5nams9e92obh5cmck.apps.googleusercontent.com
    VITE_GOONG_MAPTILES_KEY=zkJufOSOzrjhp0HuujejyHhJ2S3G2O6SkK56wiSF
    ```
@@ -189,9 +191,13 @@ EXE101_Project/ (Thư mục gốc)
    ```
 3. Tạo file `.env` tại thư mục gốc của mobile app:
    ```dotenv
-   # Lưu ý: Thay "your-local-ip" thành địa chỉ IP mạng Wifi của máy tính bạn (Ví dụ: 192.168.1.15)
-   # Không được dùng "localhost" để thiết bị thật có thể kết nối được backend.
-   EXPO_PUBLIC_API_URL=http://your-local-ip:5000
+   # Chuyển đổi chạy Local/Deploy: true để kết nối localhost backend (tự nhận diện giả lập iOS/Android), false để dùng EXPO_PUBLIC_API_URL
+   EXPO_PUBLIC_USE_LOCAL_BACKEND=true
+   EXPO_PUBLIC_API_URL=https://exe101project-maphome-api.up.railway.app
+   
+   # Sử dụng IP máy tính (Ví dụ: 192.168.1.15) khi chạy thử trên điện thoại thật bằng Expo Go
+   EXPO_PUBLIC_LOCAL_API_URL=
+   
    EXPO_PUBLIC_GOOGLE_CLIENT_ID=817734182215-ijh0r2a1fbcsm5u5nams9e92obh5cmck.apps.googleusercontent.com
    EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=817734182215-0bmgjcggm7k7h0qice3lff1dr7s3q638.apps.googleusercontent.com
    EXPO_PUBLIC_GOONG_MAPTILES_KEY=zkJufOSOzrjhp0HuujejyHhJ2S3G2O6SkK56wiSF

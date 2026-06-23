@@ -1,7 +1,16 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://exe101project-maphome-api.up.railway.app';
+const useLocalBackend = process.env.EXPO_PUBLIC_USE_LOCAL_BACKEND === 'true';
+
+// Default local URL based on platform emulator loopback defaults
+const defaultLocalUrl = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
+const localUrl = process.env.EXPO_PUBLIC_LOCAL_API_URL || defaultLocalUrl;
+
+const deployedUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://exe101project-maphome-api.up.railway.app';
+
+const API_BASE = useLocalBackend ? localUrl : deployedUrl;
 
 const api = axios.create({
   baseURL: API_BASE,
