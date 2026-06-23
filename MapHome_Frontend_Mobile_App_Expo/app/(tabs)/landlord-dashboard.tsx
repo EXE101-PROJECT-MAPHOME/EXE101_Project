@@ -75,10 +75,12 @@ export default function LandlordDashboardScreen() {
   const fetchData = async (activeTab: DashboardTab) => {
     try {
       setScreenLoading(true);
+      const endpointPrefix = user?.role === "broker" ? "/api/broker" : "/api/landlord";
+      
       if (activeTab === "overview") {
         const [aRes, pRes, vRes, sRes] = await Promise.all([
-          api.get("/api/landlord/analytics").catch(() => ({ data: null })),
-          api.get("/api/landlord/properties").catch(() => ({ data: [] })),
+          api.get(`${endpointPrefix}/analytics`).catch(() => ({ data: null })),
+          api.get(`${endpointPrefix}/properties`).catch(() => ({ data: [] })),
           api.get("/api/vouchers").catch(() => ({ data: [] })),
           api.get("/api/vouchers/me/saved").catch(() => ({ data: [] })),
         ]);
@@ -91,25 +93,25 @@ export default function LandlordDashboardScreen() {
       }
       if (activeTab === "posts") {
         const res = await api
-          .get("/api/landlord/properties")
+          .get(`${endpointPrefix}/properties`)
           .catch(() => ({ data: [] }));
         setPosts(res.data || []);
       }
       if (activeTab === "bookings") {
         const res = await api
-          .get("/api/landlord/bookings")
+          .get(`${endpointPrefix}/bookings`)
           .catch(() => ({ data: [] }));
         setBookings(res.data || []);
       }
       if (activeTab === "leads") {
         const res = await api
-          .get("/api/landlord/leads")
+          .get(`${endpointPrefix}/leads`)
           .catch(() => ({ data: { leads: [] } }));
         setLeads(res.data?.leads || []);
       }
       if (activeTab === "verification") {
         const res = await api
-          .get("/api/landlord/verification-requests")
+          .get(`${endpointPrefix}/verification-requests`)
           .catch(() => ({ data: [] }));
         setVerifications(res.data || []);
       }
@@ -319,7 +321,7 @@ export default function LandlordDashboardScreen() {
     );
   }
 
-  if (!isAuthenticated || !user || user.role !== "landlord") {
+  if (!isAuthenticated || !user || (user.role !== "landlord" && user.role !== "broker")) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center p-6">
         <Text className="text-emerald-700 font-black text-xl text-center mb-3">
@@ -427,7 +429,9 @@ export default function LandlordDashboardScreen() {
                 Xin chào, {user.fullName || user.username}! 👋
               </Text>
               <Text className="text-emerald-100 text-sm font-medium">
-                Quản lý tin đăng và lịch hẹn khách thuê
+                {user.role === "broker"
+                  ? "Quản lý và môi giới phòng trọ cho các chủ trọ"
+                  : "Quản lý tin đăng và lịch hẹn khách thuê"}
               </Text>
             </LinearGradient>
 
@@ -670,6 +674,11 @@ export default function LandlordDashboardScreen() {
                           {post.name || "Phòng trọ chưa cập nhật tên"}
                         </Text>
                       </View>
+                      {user.role === "broker" && post.ownerName && (
+                        <Text className="text-[11px] font-bold text-slate-500 mb-2">
+                          👤 Chủ nhà: {post.ownerName} {post.phone ? `(${post.phone})` : ""}
+                        </Text>
+                      )}
 
                       <Text className="text-emerald-600 font-bold text-base mb-1">
                         {(post.price || 0).toLocaleString("vi-VN")} <Text className="text-slate-500 font-medium text-xs">VNĐ/tháng</Text>

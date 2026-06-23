@@ -39,6 +39,7 @@ const PropertySchema = new mongoose.Schema(
     verifiedAt: { type: Date },
     locationAccuracy: { type: Number },
     landlordId: { type: mongoose.Schema.Types.ObjectId, ref: "Landlord" },
+    brokerId: { type: mongoose.Schema.Types.ObjectId, ref: "Broker" },
     pinInfo: {
       pinnedAt: { type: Date },
       pinnedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Landlord" },

@@ -280,17 +280,16 @@
   scrollbar-width: none;
 }
 
-/* Ensure body and html take full width on mobile and prevent double scrollbars */
+/* Ensure body and html take full width on mobile */
 html, body {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  /* overflow-x: hidden removed to fix double scrollbar */
 }
 
 /* Fix main content area */
 main, [role="main"] {
   width: 100%;
-  overflow-x: hidden;
 }
 
 /* Responsive Typography */

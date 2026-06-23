@@ -19,10 +19,106 @@ Nếu bạn không thuộc ngành lập trình hoặc muốn xem nhanh cách ho�
 * **Bước 3: Đăng nhập/Đăng ký:** Click nút **Đăng nhập** ở góc trên cùng bên phải.
   - Bạn có thể chọn **Đăng nhập nhanh bằng tài khoản Google** của bạn.
   - Hoặc chọn **Đăng ký** tài khoản mới trong 30 giây (chọn vai trò "Khách thuê" hoặc "Chủ nhà").
-* **Bước 4: Đăng tin phòng trọ mới (Dành cho Chủ nhà):** 
+* **Bước 4: Đăng tin phòng trọ mới (Dành cho Chủ nhà):**
   - Nếu bạn đăng ký tài khoản với vai trò **Chủ nhà (Landlord)**, nút **Đăng tin** sẽ xuất hiện trên menu đầu trang.
   - Nhập thông tin phòng trọ của bạn, kéo thả ghim đỏ trên bản đồ tới địa chỉ bất kỳ để lấy tọa độ, chọn tải ảnh lên và bấm đăng bài. Tin đăng mới sẽ xuất hiện trực tiếp ngay lập tức trên bản đồ chung!
 * **Bước 5: Trò chuyện với Trợ lý AI (Chatbot):** Nhấn vào biểu tượng bong bóng chat màu xanh ở góc dưới bên phải màn hình. Gõ thử câu hỏi: *"Tìm phòng trọ Thủ Đức dưới 3 triệu"* hoặc *"Làm hợp đồng thuê nhà cần chú ý gì?"* để xem AI trả lời tư vấn cho bạn.
+
+---
+
+## 📊 TIẾN ĐỘ PHÁT TRIỂN (Development Progress)
+
+> Cập nhật lần cuối: **23/06/2026**
+
+### ✅ Đã hoàn thành
+
+#### 🔑 Xác thực & Phân quyền
+- [x] Đăng ký tài khoản (User / Landlord / Broker)
+- [x] Đăng nhập bằng Email + Mật khẩu
+- [x] Đăng nhập nhanh bằng Google OAuth 2.0
+- [x] Khôi phục mật khẩu qua Email (Nodemailer SMTP Gmail)
+- [x] Phân quyền theo vai trò: `user`, `landlord`, `broker`, `admin`
+- [x] JWT Access Token + Refresh Token tự động gia hạn phiên
+
+#### 🏠 Quản lý Phòng trọ
+- [x] Đăng tin phòng trọ với ảnh (Cloudinary) và ghim bản đồ
+- [x] Chỉnh sửa và xóa tin đăng
+- [x] Tìm kiếm nâng cao (lọc giá, diện tích, tiện ích, loại phòng)
+- [x] Tìm phòng theo vị trí GPS (bán kính 1-5km, toán tử `$nearSphere` MongoDB)
+- [x] Xem chi tiết phòng trọ (ảnh, bản đồ, tiện ích xung quanh)
+- [x] So sánh tối đa 3 phòng trọ song song
+- [x] Lưu phòng yêu thích
+- [x] Thống kê phòng trọ công khai (số phòng, người dùng, quận/huyện)
+
+#### 📅 Đặt lịch hẹn xem phòng
+- [x] Khách thuê đặt lịch hẹn với thông tin ngày giờ và lời nhắn
+- [x] Chủ nhà nhận thông báo và duyệt / từ chối lịch hẹn
+- [x] Quản lý lịch hẹn bằng Calendar (FullCalendar - Web)
+- [x] Dashboard quản lý đặt lịch cho User
+
+#### 🛡️ Xác thực thực địa & Huy hiệu tích xanh
+- [x] Chủ nhà gửi yêu cầu xác minh thực địa
+- [x] Admin duyệt và phân công kiểm định
+- [x] Tính khoảng cách GPS bằng công thức Haversine
+- [x] Tự động cấp Green Badge khi sai số GPS < 50m
+- [x] Trang dịch vụ xác thực cho người dùng
+
+#### 💳 Thanh toán & Gói dịch vụ
+- [x] Thanh toán qua VNPay Sandbox
+- [x] Thanh toán qua PayOS
+- [x] Áp dụng mã giảm giá Voucher
+- [x] Quản lý gói đăng tin (Subscription Plans)
+- [x] Lịch sử giao dịch (Transactions)
+- [x] Cảnh báo tin sắp hết hạn
+
+#### 🤖 Trợ lý AI
+- [x] Chatbot tư vấn phòng trọ và pháp lý (Groq LLM)
+- [x] Giao diện chat nổi trên mọi trang Web
+
+#### 📰 Blog & Nội dung
+- [x] Trang Blog cẩm nang thuê trọ
+- [x] Xem chi tiết bài viết
+- [x] Admin quản lý bài viết
+
+#### 🎟️ Voucher & Khuyến mãi
+- [x] Admin tạo/chỉnh sửa/xóa mã giảm giá
+- [x] Hiển thị voucher được quảng bá trên Trang chủ
+- [x] Người dùng lưu và áp dụng voucher
+
+#### 📊 Dashboard & Thống kê
+- [x] **Admin Dashboard:** Thống kê tổng quan (người dùng, phòng, giao dịch, doanh thu)
+- [x] **Landlord Dashboard:** Quản lý phòng, lịch hẹn, doanh thu, xác minh
+- [x] **User Dashboard:** Lịch hẹn, phòng yêu thích, lịch sử giao dịch
+- [x] **Broker Dashboard:** Quản lý leads, danh sách phòng trọ theo khu vực
+
+#### 📱 Mobile App (React Native + Expo)
+- [x] Màn hình Home (danh sách phòng nổi bật)
+- [x] Bản đồ tìm kiếm phòng với GPS thời gian thực
+- [x] Chi tiết phòng trọ
+- [x] Đăng nhập / Đăng ký / Google OAuth
+- [x] Đăng bài phòng trọ + chụp ảnh Camera
+- [x] Đặt lịch hẹn xem phòng
+- [x] Thanh toán qua WebView (VNPay/PayOS)
+- [x] Profile & Hồ sơ cá nhân
+- [x] User Dashboard (lịch hẹn, phòng lưu)
+- [x] Landlord Dashboard (quản lý phòng)
+- [x] Broker Dashboard
+- [x] Admin Dashboard
+- [x] Trang Blog, Liên hệ, Chính sách
+- [x] Onboarding cho người dùng mới
+- [x] Thông báo trong app
+
+#### 🌐 Deploy & Vận hành
+- [x] Backend deploy lên **Railway** (tự động từ GitHub Actions)
+- [x] Web Frontend deploy lên **Vercel** (tự động từ GitHub)
+- [x] Biến môi trường phân tách rõ ràng (Local / Deploy) qua `VITE_USE_LOCAL_BACKEND` và `EXPO_PUBLIC_USE_LOCAL_BACKEND`
+- [x] Swagger UI tự động tại `/api-docs`
+- [x] Dữ liệu thống kê trang chủ cập nhật theo thời gian thực từ API Railway
+
+### 🔄 Đang phát triển / Cải thiện
+- [ ] Tối ưu hiệu năng bản đồ khi có nhiều marker
+- [ ] Push notification thời gian thực (Firebase Cloud Messaging)
+- [ ] Tính năng chat trực tiếp giữa chủ nhà và khách thuê
 
 ---
 
@@ -54,7 +150,7 @@ Trái tim của dự án MapHome là **Quy trình Xác thực Định vị Hiệ
 
 ### ❓ Vấn đề thực tế & Giải pháp của MapHome
 
-Trong thị trường thuê phòng trọ hiện nay, người đi thuê thường gặp rất nhiều khó khăn như: **tin đăng ảo**, **địa chỉ sai lệch**, **hình ảnh không đúng thực tế**, hoặc **lừa đảo tiền đặt cọc**. 
+Trong thị trường thuê phòng trọ hiện nay, người đi thuê thường gặp rất nhiều khó khăn như: **tin đăng ảo**, **địa chỉ sai lệch**, **hình ảnh không đúng thực tế**, hoặc **lừa đảo tiền đặt cọc**.
 
 **MapHome** ra đời để giải quyết triệt để các vấn đề này bằng bộ giải pháp công nghệ thông minh:
 
@@ -70,7 +166,7 @@ Trong thị trường thuê phòng trọ hiện nay, người đi thuê thườn
 
 ### 👥 Trải nghiệm người dùng trên MapHome hoạt động như thế nào?
 
-MapHome phục vụ 3 nhóm đối tượng chính với quy trình đơn giản, khép kín:
+MapHome phục vụ 4 nhóm đối tượng chính với quy trình đơn giản, khép kín:
 
 #### 1. Đối với Người đi thuê trọ (Khách hàng)
 1. **Tìm kiếm:** Mở Bản đồ lên, chọn tìm phòng xung quanh trường đại học hoặc nơi làm việc của mình trong bán kính từ 1km đến 5km.
@@ -83,7 +179,11 @@ MapHome phục vụ 3 nhóm đối tượng chính với quy trình đơn giản
 2. **Yêu cầu xác thực phòng:** Để phòng của mình hiển thị ở vị trí ưu tiên và có **tích xanh xác minh (Green Badge)**, chủ nhà gửi yêu cầu hẹn lịch với đội ngũ kiểm định của MapHome.
 3. **Quản lý lịch hẹn:** Mở Dashboard của chủ nhà để xem lịch hẹn gặp khách thuê đến xem phòng, tránh việc trùng lặp thời gian.
 
-#### 3. Đối với Đội ngũ kiểm định & Quản trị hệ thống (Admin)
+#### 3. Đối với Môi giới (Broker)
+1. **Quản lý danh sách phòng:** Broker theo dõi và quản lý danh sách phòng trọ thuộc khu vực phụ trách.
+2. **Theo dõi Leads:** Quản lý danh sách khách hàng tiềm năng quan tâm đến phòng trọ.
+
+#### 4. Đối với Đội ngũ kiểm định & Quản trị hệ thống (Admin)
 1. **Kiểm tra hiện trường:** Nhận yêu cầu từ chủ nhà, nhân viên kiểm định của MapHome sẽ đến tận địa chỉ phòng trọ để đo đạc và chụp ảnh thực tế.
 2. **Xác thực tự động bằng GPS:** Khi nhân viên chụp ảnh và bấm xác nhận tại phòng trọ, hệ thống sẽ tự động đo khoảng cách GPS giữa điện thoại của nhân viên và tọa độ chủ nhà ghim trên bản đồ. Nếu sai số dưới 50m, phòng trọ đó lập tức được cấp **Huy hiệu tích xanh (Green Badge)** chứng thực an toàn.
 
@@ -110,9 +210,9 @@ EXE101_Project/ (Thư mục gốc)
 ```
 
 ### 🛠️ Công nghệ sử dụng
-- **Backend:** Node.js, Express, MongoDB Atlas & Mongoose, Swagger API Docs, SMTP Gmail (Nodemailer), Groq AI SDK.
-- **Web Frontend:** React 18, Vite, TypeScript, TailwindCSS v4, Goong Maps JS SDK.
-- **Mobile App:** React Native, Expo SDK 54, NativeWind (Tailwind v3), React Native Maps, Expo Image Picker.
+- **Backend:** Node.js, Express, MongoDB Atlas & Mongoose, Swagger API Docs, SMTP Gmail (Nodemailer), Groq AI SDK, Cloudinary, VNPay, PayOS.
+- **Web Frontend:** React 18, Vite, TypeScript, TailwindCSS v4, Goong Maps JS SDK, Framer Motion, FullCalendar, Material UI v7.
+- **Mobile App:** React Native, Expo SDK 54, NativeWind (Tailwind v3), React Native Maps, Expo Image Picker, Expo Location, Firebase Auth.
 
 ---
 
@@ -166,12 +266,13 @@ EXE101_Project/ (Thư mục gốc)
    ```
 3. Tạo file cấu hình môi trường `.env` từ file mẫu:
    ```dotenv
-   # Chuyển đổi chạy Local/Deploy: true để dùng localhost:5000, false để dùng VITE_API_BASE
+   # true = dùng localhost:5000 | false = dùng VITE_API_BASE (Railway deploy)
    VITE_USE_LOCAL_BACKEND=true
    VITE_API_BASE=https://exe101project-maphome-api.up.railway.app
    VITE_GOOGLE_CLIENT_ID=817734182215-ijh0r2a1fbcsm5u5nams9e92obh5cmck.apps.googleusercontent.com
    VITE_GOONG_MAPTILES_KEY=zkJufOSOzrjhp0HuujejyHhJ2S3G2O6SkK56wiSF
    ```
+   > ⚠️ **Khi deploy lên Vercel:** Set tất cả biến môi trường trong Vercel Dashboard và đặt `VITE_USE_LOCAL_BACKEND=false`.
 4. Chạy ứng dụng web:
    ```bash
    npm run dev
@@ -191,13 +292,10 @@ EXE101_Project/ (Thư mục gốc)
    ```
 3. Tạo file `.env` tại thư mục gốc của mobile app:
    ```dotenv
-   # Chuyển đổi chạy Local/Deploy: true để kết nối localhost backend (tự nhận diện giả lập iOS/Android), false để dùng EXPO_PUBLIC_API_URL
-   EXPO_PUBLIC_USE_LOCAL_BACKEND=true
+   # true = kết nối localhost backend | false = kết nối Railway deploy
+   EXPO_PUBLIC_USE_LOCAL_BACKEND=false
    EXPO_PUBLIC_API_URL=https://exe101project-maphome-api.up.railway.app
-   
-   # Sử dụng IP máy tính (Ví dụ: 192.168.1.15) khi chạy thử trên điện thoại thật bằng Expo Go
    EXPO_PUBLIC_LOCAL_API_URL=
-   
    EXPO_PUBLIC_GOOGLE_CLIENT_ID=817734182215-ijh0r2a1fbcsm5u5nams9e92obh5cmck.apps.googleusercontent.com
    EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=817734182215-0bmgjcggm7k7h0qice3lff1dr7s3q638.apps.googleusercontent.com
    EXPO_PUBLIC_GOONG_MAPTILES_KEY=zkJufOSOzrjhp0HuujejyHhJ2S3G2O6SkK56wiSF
@@ -215,7 +313,6 @@ EXE101_Project/ (Thư mục gốc)
 ## 📖 Hướng Dẫn Kỹ Thuật Chuyên Sâu Từng Phần
 
 Để tìm hiểu sâu hơn về kiến trúc mã nguồn của từng dự án thành phần, vui lòng đọc các hướng dẫn chuyên biệt dưới đây:
-- 💻 **Backend Developer Guide:** Xem [MapHome_backend_NodeJS/README.md](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/README.md) để tìm hiểu cấu trúc Schemas, logic tính toán Haversine và phân quyền endpoint.
-- 🌐 **Web Frontend Developer Guide:** Xem [MapHome_Frontend/README.md](file:///e:/EXE101_Projects/EXE101_Project/MapHome_Frontend/README.md) để biết cơ chế chia sẻ State của Context API và tích hợp Goong Maps.
-- 📱 **Mobile App Developer Guide:** Xem [MapHome_Frontend_Mobile_App_Expo/README.md](file:///e:/EXE101_Projects/EXE101_Project/MapHome_Frontend_Mobile_App_Expo/README.md) để biết cách Expo Router hoạt động, tích hợp WebView thanh toán và lưu trữ local storage.
-- 🔬 **Hướng dẫn Kiểm thử:** Xem file [TESTING_GUIDE.md](file:///e:/EXE101_Projects/EXE101_Project/TESTING_GUIDE.md) để tiến hành kiểm thử các ca sử dụng mẫu (đăng tin, tìm kiếm, kiểm duyệt GPS).
+- 💻 **Backend Developer Guide:** Xem [MapHome_backend_NodeJS/README.md](./MapHome_backend_NodeJS/README.md) để tìm hiểu cấu trúc Schemas, logic tính toán Haversine và phân quyền endpoint.
+- 🌐 **Web Frontend Developer Guide:** Xem [MapHome_Frontend/README.md](./MapHome_Frontend/README.md) để biết cơ chế chia sẻ State của Context API và tích hợp Goong Maps.
+- 📱 **Mobile App Developer Guide:** Xem [MapHome_Frontend_Mobile_App_Expo/README.md](./MapHome_Frontend_Mobile_App_Expo/README.md) để biết cách Expo Router hoạt động, tích hợp WebView thanh toán và lưu trữ local storage.

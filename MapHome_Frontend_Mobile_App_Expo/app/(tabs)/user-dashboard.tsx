@@ -8,7 +8,9 @@ import {
   Image,
   RefreshControl,
   Alert,
+  Share,
 } from "react-native";
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, type Href } from "expo-router";
 import {
@@ -30,6 +32,9 @@ import {
   Phone,
   MessageSquare,
   Bell,
+  Tag,
+  Copy,
+  Trash2,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
@@ -40,7 +45,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
 import * as ExpoLinking from "expo-linking";
 
-type DashboardTab = "overview" | "bookings" | "blogs" | "notifications";
+type DashboardTab = "overview" | "bookings" | "blogs" | "notifications" | "vouchers";
 
 export default function UserDashboardScreen() {
   const router = useRouter();
@@ -63,6 +68,7 @@ export default function UserDashboardScreen() {
   const [myBlogs, setMyBlogs] = useState<any[]>([]);
   const [savedBlogs, setSavedBlogs] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [savedVouchers, setSavedVouchers] = useState<any[]>([]);
 
   const { compareList } = useCompare();
   const tint = useThemeColor({}, "tint");
@@ -87,6 +93,7 @@ export default function UserDashboardScreen() {
         myBlogsRes,
         savedBlogsRes,
         notifRes,
+        voucherRes,
       ] = await Promise.all([
         api.get("/api/user/me/favorites").catch(() => ({ data: [] })),
         api.get("/api/user/bookings").catch(() => ({ data: [] })),
@@ -94,6 +101,7 @@ export default function UserDashboardScreen() {
         api.get("/api/blogs/my-blogs").catch(() => ({ data: [] })),
         api.get("/api/blogs/me/saved").catch(() => ({ data: [] })),
         api.get("/api/notifications").catch(() => ({ data: [] })),
+        api.get("/api/vouchers/me/saved").catch(() => ({ data: [] })),
       ]);
 
       setFavorites(favRes.data || []);
@@ -102,6 +110,7 @@ export default function UserDashboardScreen() {
       setMyBlogs(myBlogsRes.data || []);
       setSavedBlogs(savedBlogsRes.data || []);
       setNotifications(notifRes.data || []);
+      setSavedVouchers(voucherRes.data || []);
     } catch (e) {
       console.error("Error fetching user data", e);
     } finally {
@@ -161,8 +170,37 @@ export default function UserDashboardScreen() {
     { id: "overview", label: "Tổng quan", icon: Eye },
     { id: "bookings", label: "Lịch hẹn", icon: Calendar },
     { id: "blogs", label: "Bài viết", icon: BookOpen },
+    { id: "vouchers", label: "Ví Voucher", icon: Tag },
     { id: "notifications", label: "Thông báo", icon: Bell },
   ];
+
+  const handleUnsaveVoucher = async (voucherId: string, code: string) => {
+    Alert.alert(
+      "Bỏ lưu voucher",
+      `Bạn có chắc muốn xóa mã "${code}" khỏi ví?`,
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.post(`/api/vouchers/${voucherId}/unsave`);
+              setSavedVouchers((prev) => prev.filter((v) => (v._id || v.id) !== voucherId));
+              Alert.alert("Thành công", "Đã xóa voucher khỏi ví.");
+            } catch {
+              Alert.alert("Lỗi", "Không thể xóa voucher.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCopyCode = async (code: string) => {
+    await Clipboard.setStringAsync(code);
+    Alert.alert("Đã sao chép", `Mã "${code}" đã được sao chép vào bộ nhớ tạm.`);
+  };
 
   const handleInspectionPayment = async (booking: any) => {
     try {
@@ -747,6 +785,104 @@ export default function UserDashboardScreen() {
                       </Text>
                     </View>
                   </TouchableOpacity>
+                ))
+              )}
+            </LinearGradient>
+          </View>
+        )}
+
+        {/* Vouchers Tab */}
+        {activeTab === "vouchers" && (
+          <View>
+            <LinearGradient
+              colors={["#ffffff", "#f8fafc"]}
+              className="rounded-[2rem] p-5 border border-slate-100 shadow-sm"
+            >
+              <View className="flex-row items-center justify-between mb-4">
+                <View className="flex-row items-center">
+                  <Tag size={18} color="#059669" />
+                  <Text className="text-base font-black text-emerald-700 ml-2">
+                    Ví Voucher của bạn
+                  </Text>
+                </View>
+                {savedVouchers.length > 0 && (
+                  <View className="bg-emerald-50 px-3 py-1 rounded-full">
+                    <Text className="text-emerald-700 font-bold text-sm">
+                      {savedVouchers.length} mã
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {savedVouchers.length === 0 ? (
+                <View className="items-center py-8">
+                  <Tag size={40} color={icon} opacity={0.3} />
+                  <Text className="text-slate-500 mt-3 text-center font-semibold">
+                    Bạn chưa lưu voucher nào.
+                  </Text>
+                  <Text className="text-slate-400 text-xs text-center mt-1">
+                    Khám phá trang chủ để tìm voucher ưu đãi!
+                  </Text>
+                </View>
+              ) : (
+                savedVouchers.map((voucher, idx) => (
+                  <View
+                    key={voucher._id || voucher.id || idx}
+                    className="mb-3 rounded-2xl overflow-hidden border border-slate-200"
+                  >
+                    <View className="flex-row">
+                      {/* Left: Gradient Discount */}
+                      <LinearGradient
+                        colors={["#059669", "#0ea5e9"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        className="w-[30%] items-center justify-center py-4"
+                      >
+                        <Text className="text-white/80 text-[9px] font-black uppercase tracking-widest">GIẢM</Text>
+                        <Text className="text-3xl font-black text-white">
+                          {voucher.discountPercentage}%
+                        </Text>
+                      </LinearGradient>
+
+                      {/* Right: Details */}
+                      <View className="flex-1 p-3 bg-white">
+                        <Text className="font-black text-slate-800 text-sm mb-0.5" numberOfLines={1}>
+                          {voucher.title || "Voucher ưu đãi"}
+                        </Text>
+                        <Text className="text-slate-500 text-xs mb-2" numberOfLines={2}>
+                          {voucher.description || `Giảm ${voucher.discountPercentage}% cho lần thanh toán tiếp theo`}
+                        </Text>
+
+                        <View className="flex-row items-center justify-between">
+                          <View className="bg-slate-50 px-2 py-1 rounded border border-dashed border-slate-200 flex-1 mr-2">
+                            <Text className="font-black text-slate-700 tracking-widest text-xs text-center">
+                              {voucher.code}
+                            </Text>
+                          </View>
+                          <View className="flex-row gap-1.5">
+                            <TouchableOpacity
+                              onPress={() => handleCopyCode(voucher.code)}
+                              className="w-8 h-8 rounded-xl bg-emerald-50 items-center justify-center"
+                            >
+                              <Copy size={14} color="#059669" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => handleUnsaveVoucher(voucher._id || voucher.id, voucher.code)}
+                              className="w-8 h-8 rounded-xl bg-red-50 items-center justify-center"
+                            >
+                              <Trash2 size={14} color="#ef4444" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        {voucher.expiryDate && (
+                          <Text className="text-[10px] text-slate-400 mt-1.5">
+                            HSD: {new Date(voucher.expiryDate).toLocaleDateString("vi-VN")}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
                 ))
               )}
             </LinearGradient>

@@ -7,8 +7,8 @@ export default defineConfig(({ mode }) => {
   // Load environment variables based on the active mode
   const env = loadEnv(mode, process.cwd(), '');
   const useLocalBackend = env.VITE_USE_LOCAL_BACKEND === 'true';
-  const backendTarget = useLocalBackend 
-    ? 'http://localhost:5000' 
+  const backendTarget = useLocalBackend
+    ? 'http://localhost:5000'
     : (env.VITE_API_BASE || 'https://exe101project-maphome-api.up.railway.app');
 
   return {

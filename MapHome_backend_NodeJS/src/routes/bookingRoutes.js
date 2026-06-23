@@ -46,7 +46,7 @@ const {
  */
 router
   .route("/")
-  .get(authMiddleware, requireAnyRole(["admin", "landlord"]), getBookings)
+  .get(authMiddleware, requireAnyRole(["admin", "landlord", "broker"]), getBookings)
   .post(authMiddleware, createBookingRules, validate, createBooking);
 
 /**
@@ -95,8 +95,8 @@ router
 router
   .route("/:id")
   .get(authMiddleware, getBookingById)
-  .put(authMiddleware, requireAnyRole(["admin", "landlord"]), updateBooking)
-  .delete(authMiddleware, requireAnyRole(["admin", "landlord"]), deleteBooking);
+  .put(authMiddleware, requireAnyRole(["admin", "landlord", "broker"]), updateBooking)
+  .delete(authMiddleware, requireAnyRole(["admin", "landlord", "broker"]), deleteBooking);
 
 /**
  * @swagger
@@ -145,7 +145,7 @@ router.put("/:id/cancel", authMiddleware, requireAnyRole(["user"]), cancelBookin
  *       200:
  *         description: Status updated
  */
-router.put("/:id/status", authMiddleware, requireAnyRole(["admin", "landlord"]), updateBookingStatusRules, validate, updateBookingStatus);
+router.put("/:id/status", authMiddleware, requireAnyRole(["admin", "landlord", "broker"]), updateBookingStatusRules, validate, updateBookingStatus);
 
 
 module.exports = router;

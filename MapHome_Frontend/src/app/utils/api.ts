@@ -53,6 +53,9 @@ api.interceptors.response.use(
         console.error("Session expired. Please login again.");
         localStorage.removeItem("token");
         localStorage.removeItem("auth");
+        if (logoutCallback) {
+          logoutCallback();
+        }
         // Redirect logic can be added here or handled by AuthContext
         return Promise.reject(refreshError);
       }
@@ -61,5 +64,10 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+let logoutCallback: (() => void) | null = null;
+export const registerLogoutCallback = (callback: () => void) => {
+  logoutCallback = callback;
+};
 
 export default api;

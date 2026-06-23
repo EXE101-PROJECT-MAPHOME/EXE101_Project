@@ -183,6 +183,13 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="broker-dashboard"
+        options={{
+          title: "Môi giới",
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

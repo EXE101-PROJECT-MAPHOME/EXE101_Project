@@ -44,6 +44,8 @@ export function Navbar() {
         navigate("/admin/dashboard");
       } else if (user.role === "landlord") {
         navigate("/landlord/dashboard");
+      } else if (user.role === "broker") {
+        navigate("/broker/dashboard");
       } else {
         // For regular users, go to user dashboard
         navigate("/user/dashboard");
@@ -107,7 +109,7 @@ export function Navbar() {
                 </Button>
               ))}
 
-              {isAuthenticated && user?.role === "landlord" && (
+              {isAuthenticated && (user?.role === "landlord" || user?.role === "broker") && (
                 <>
                   <Button
                     variant="outline"
@@ -269,7 +271,7 @@ export function Navbar() {
                   </button>
                 ))}
 
-                {isAuthenticated && user?.role === "landlord" && (
+                {isAuthenticated && (user?.role === "landlord" || user?.role === "broker") && (
                   <>
                     <button
                       onClick={() => {

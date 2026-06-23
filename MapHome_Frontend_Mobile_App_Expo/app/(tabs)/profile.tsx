@@ -59,11 +59,12 @@ export default function ProfileScreen() {
       if (user.role === "user") {
         const res = await api.get("/api/user/bookings");
         setTenantBookings(res.data || []);
-      } else if (user.role === "landlord") {
+      } else if (user.role === "landlord" || user.role === "broker") {
+        const endpointPrefix = user.role === "broker" ? "/api/broker" : "/api/landlord";
         const [statsRes, bookingsRes, propertiesRes] = await Promise.all([
-          api.get("/api/landlord/analytics").catch(() => ({ data: null })),
-          api.get("/api/landlord/bookings").catch(() => ({ data: [] })),
-          api.get("/api/landlord/properties").catch(() => ({ data: [] })),
+          api.get(`${endpointPrefix}/analytics`).catch(() => ({ data: null })),
+          api.get(`${endpointPrefix}/bookings`).catch(() => ({ data: [] })),
+          api.get(`${endpointPrefix}/properties`).catch(() => ({ data: [] })),
         ]);
 
         setLandlordStats(statsRes.data);
@@ -249,9 +250,11 @@ export default function ProfileScreen() {
             <Text className="text-emerald-700 font-bold text-xs">
               {user.role === "landlord"
                 ? "Chủ trọ"
-                : user.role === "admin"
-                  ? "Quản trị"
-                  : "Khách thuê"}
+                : user.role === "broker"
+                  ? "Môi giới"
+                  : user.role === "admin"
+                    ? "Quản trị"
+                    : "Khách thuê"}
             </Text>
           </View>
         )}
@@ -584,10 +587,10 @@ export default function ProfileScreen() {
             </View>
           )}
 
-        {/* ================= LANDLORD VIEW ================= */}
-        {isAuthenticated && user && user.role === "landlord" && (
+        {/* ================= LANDLORD & BROKER VIEW ================= */}
+        {isAuthenticated && user && (user.role === "landlord" || user.role === "broker") && (
           <View className="px-4 py-6 space-y-6">
-            {/* Landlord Header */}
+            {/* Landlord/Broker Header */}
             <LinearGradient
               colors={["#ffffff", "#f0fdf4", "#e0e7ff"]}
               start={{ x: 0, y: 0 }}
@@ -609,12 +612,12 @@ export default function ProfileScreen() {
                   </Text>
                   <View className="ml-2 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
                     <Text className="text-[8px] text-emerald-700 font-bold">
-                      Chính chủ
+                      {user.role === "broker" ? "Môi giới" : "Chính chủ"}
                     </Text>
                   </View>
                 </View>
                 <Text className="text-xs text-slate-400 font-bold uppercase tracking-wider">
-                  Chủ trọ nhà đầu tư
+                  {user.role === "broker" ? "Người môi giới chuyên nghiệp" : "Chủ trọ nhà đầu tư"}
                 </Text>
                 <View className="flex-row items-center mt-1">
                   <Mail size={12} color="#94a3b8" />
@@ -635,15 +638,19 @@ export default function ProfileScreen() {
 
             {/* Quick Actions */}
             <TouchableOpacity
-              onPress={() => navigateTo(router, ROUTES.LANDLORD_DASHBOARD)}
+              onPress={() =>
+                user.role === "broker"
+                  ? navigateTo(router, ROUTES.BROKER_DASHBOARD)
+                  : navigateTo(router, ROUTES.LANDLORD_DASHBOARD)
+              }
               className="h-12 rounded-2xl shadow-sm overflow-hidden mb-3"
             >
               <LinearGradient
-                colors={["#1e293b", "#0f172a"]}
+                colors={user.role === "broker" ? ["#7c3aed", "#4f46e5"] : ["#1e293b", "#0f172a"]}
                 className="flex-1 flex-row items-center justify-center"
               >
                 <Text className="text-white font-black text-base">
-                  Mở Landlord Dashboard
+                  {user.role === "broker" ? "🤝 Mở Broker Dashboard" : "Mở Landlord Dashboard"}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>

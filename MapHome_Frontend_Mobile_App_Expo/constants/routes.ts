@@ -25,9 +25,10 @@ export const ROUTES = {
   PAYMENT_FAILURE: "/payment-failure",
 
   // Dashboards
-  USER_DASHBOARD: "/user-dashboard",
-  LANDLORD_DASHBOARD: "/landlord-dashboard",
-  ADMIN_DASHBOARD: "/admin-dashboard",
+  USER_DASHBOARD: "/(tabs)/user-dashboard",
+  LANDLORD_DASHBOARD: "/(tabs)/landlord-dashboard",
+  BROKER_DASHBOARD: "/(tabs)/broker-dashboard",
+  ADMIN_DASHBOARD: "/(tabs)/admin-dashboard",
 
   // Landlord specific
   LANDLORD_PROPERTIES: (tab?: string) => `/landlord-dashboard?tab=posts`,

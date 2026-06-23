@@ -87,6 +87,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/properties", require("./routes/propertyRoutes"));
 app.use("/api/landlords", require("./routes/landlordRoutes"));
 app.use("/api/landlord", require("./routes/landlordDashboardRoutes"));
+app.use("/api/broker", require("./routes/brokerDashboardRoutes"));
 app.use("/api/verifications", require("./routes/verificationRoutes"));
 app.use("/api/reviews", require("./routes/reviewRoutes"));
 app.use("/api/auth", require("./routes/authRoutes"));

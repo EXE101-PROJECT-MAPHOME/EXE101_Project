@@ -2,6 +2,88 @@
 
 Tài liệu hướng dẫn phát triển và cấu trúc hệ thống backend dành cho lập trình viên (Developer). Hệ thống được xây dựng trên nền tảng **Node.js, Express, và MongoDB (Mongoose)**.
 
+> 🔗 **API Deploy:** [https://exe101project-maphome-api.up.railway.app](https://exe101project-maphome-api.up.railway.app)
+> 📖 **Swagger Docs:** [https://exe101project-maphome-api.up.railway.app/api-docs](https://exe101project-maphome-api.up.railway.app/api-docs)
+
+---
+
+## 📊 TIẾN ĐỘ BACKEND (Backend Progress)
+
+> Cập nhật lần cuối: **23/06/2026**
+
+### ✅ Đã hoàn thành
+
+#### 🗄️ Models (18 schemas)
+| Model | Mô tả |
+|:------|:------|
+| `User.js` | Tài khoản người dùng, mật khẩu bcrypt, vai trò, danh sách yêu thích |
+| `Property.js` | Phòng trọ với GeoJSON Point, ảnh Cloudinary, tiện ích, trạng thái duyệt |
+| `Booking.js` | Lịch hẹn xem phòng (pending/confirmed/cancelled/completed) |
+| `VerificationRequest.js` | Yêu cầu xác minh thực địa, ảnh GPS, kết quả Haversine |
+| `Landlord.js` | Hồ sơ chủ nhà, đánh giá sao, tỷ lệ phản hồi |
+| `Broker.js` | Hồ sơ môi giới phòng trọ |
+| `Voucher.js` | Mã giảm giá đăng tin, phần trăm, ngày hết hạn |
+| `Subscription.js` | Gói đăng tin đang hoạt động của chủ nhà |
+| `SubscriptionPlan.js` | Danh sách gói dịch vụ (Basic, VIP, Premium) |
+| `Transaction.js` | Lịch sử giao dịch thanh toán VNPay/PayOS |
+| `Blog.js` | Bài viết tin tức cẩm nang thuê trọ |
+| `Notification.js` | Thông báo hệ thống trong app |
+| `Review.js` | Đánh giá phòng trọ của khách thuê |
+| `Report.js` | Báo cáo vi phạm tin đăng |
+| `Lead.js` | Khách hàng tiềm năng cho broker |
+| `Location.js` | Dữ liệu địa điểm (trường học, bệnh viện...) |
+| `Contact.js` | Tin nhắn liên hệ từ form website |
+| `SystemSetting.js` | Cấu hình hệ thống (bảo trì, thông số...) |
+
+#### 🛣️ API Routes (23 nhóm endpoints)
+| Route file | Chức năng |
+|:-----------|:----------|
+| `authRoutes.js` | Đăng ký, đăng nhập, Google OAuth, refresh token, đổi mật khẩu |
+| `propertyRoutes.js` | CRUD phòng trọ, tìm kiếm nâng cao, tìm theo GPS (`$nearSphere`) |
+| `bookingRoutes.js` | Đặt lịch hẹn, duyệt/từ chối, xem lịch |
+| `verificationRoutes.js` | Gửi yêu cầu xác minh, tải ảnh GPS, tính khoảng cách Haversine |
+| `adminRoutes.js` | Thống kê tổng quan, quản lý người dùng, duyệt xác minh |
+| `landlordDashboardRoutes.js` | Dashboard chủ nhà: phòng, lịch hẹn, doanh thu |
+| `brokerDashboardRoutes.js` | Dashboard broker: leads, phòng trọ |
+| `paymentRoutes.js` | Tạo link VNPay, PayOS, xử lý callback |
+| `voucherRoutes.js` | CRUD voucher, áp dụng mã giảm giá, lưu voucher |
+| `subscriptionRoutes.js` | Quản lý gói đăng tin |
+| `blogRoutes.js` | CRUD bài viết Blog |
+| `reviewRoutes.js` | Đánh giá phòng trọ, lấy reviews mới nhất |
+| `notificationRoutes.js` | Lấy thông báo, đánh dấu đã đọc |
+| `uploadRoutes.js` | Upload ảnh đơn/nhiều ảnh lên Cloudinary |
+| `ai.routes.js` | Chatbot Groq LLM |
+| `userRoutes.js` | Cập nhật hồ sơ, đổi avatar |
+| `reportRoutes.js` | Báo cáo vi phạm |
+| `contactRoutes.js` | Form liên hệ |
+| `mapRoutes.js` | Tích hợp Goong Maps (địa điểm lân cận) |
+| `locationRoutes.js` | Dữ liệu địa điểm tham chiếu |
+| `landlordRoutes.js` | Hồ sơ chủ nhà công khai |
+| `transactionRoutes.js` | Lịch sử giao dịch |
+| `settingRoutes.js` | Cấu hình hệ thống |
+
+#### 🔑 Bảo mật & Middleware
+- [x] JWT Access Token (ngắn hạn) + Refresh Token (30 ngày)
+- [x] Middleware phân quyền theo role (`user`, `landlord`, `broker`, `admin`)
+- [x] Multer upload ảnh (giới hạn dung lượng, lọc mime-type)
+- [x] Validation input (express-validator)
+- [x] CORS cấu hình cho Vercel + localhost
+
+#### 🌐 Tích hợp bên ngoài
+- [x] **MongoDB Atlas** với Geospatial Index `2dsphere`
+- [x] **Cloudinary** lưu trữ ảnh đám mây
+- [x] **Nodemailer** SMTP Gmail gửi mail khôi phục mật khẩu
+- [x] **Groq SDK** (LLaMA model) cho AI Chatbot
+- [x] **VNPay Sandbox** thanh toán nội địa
+- [x] **PayOS** thanh toán QR Code
+- [x] **Goong Maps API** tìm địa điểm xung quanh
+
+#### 🚀 Deploy & Vận hành
+- [x] Deploy tự động lên **Railway** từ GitHub
+- [x] Swagger UI tại `/api-docs`
+- [x] Biến môi trường phân tách Local/Deploy (`USE_LOCAL_BACKEND`)
+- [x] API stats công khai `/api/properties/stats/public` cung cấp dữ liệu thực cho trang chủ
+
 ---
 
 ## 🛠️ Technology Stack & Quy Chuẩn Code
@@ -9,7 +91,7 @@ Tài liệu hướng dẫn phát triển và cấu trúc hệ thống backend d�
 - **Framework:** Express.js
 - **Database:** MongoDB Atlas (Mongoose ORM)
 - **Authentication:** Stateless JWT (Access Token & Refresh Token)
-- **Image Upload:** Multer (xử lý file đệm) kết hợp lưu trữ Cloudinary/Local Disk
+- **Image Upload:** Multer (xử lý file đệm) kết hợp lưu trữ Cloudinary
 - **API Documentation:** Swagger UI (OpenAPI v3)
 - **Email Service:** Nodemailer (SMTP Gmail)
 - **AI Engine:** Groq SDK (LLM Chatbot)
@@ -36,8 +118,6 @@ MapHome_backend_NodeJS/
 ---
 
 ## 💼 Chi Tiết Các Nghiệp Vụ Cốt Lõi (Detailed Business Workflows)
-
-Dưới đây là mô tả chi tiết quy trình xử lý (logic nghiệp vụ) của các chức năng cốt lõi trong hệ thống backend:
 
 ### 🔑 1. Luồng Đăng Ký, Đăng Nhập & Quản Lý Phiên (Auth Lifecycle)
 - **Bước 1 (Đăng ký):** Người dùng gửi form gồm username, email, password, fullName, phone, role (`user`/`landlord`). Mật khẩu được băm một chiều bằng `bcryptjs` với độ muối 10 trước khi lưu vào MongoDB.
@@ -98,7 +178,6 @@ sequenceDiagram
         System->>Landlord: Từ chối xác minh (rejected) & yêu cầu ghim lại vị trí
     end
 ```
-- **Hàm tính khoảng cách Haversine:** Chuyển đổi tọa độ GPS (Vĩ độ/Kinh độ) của hai điểm thành Radian để tính khoảng cách đường chim bay chính xác trên mặt cầu Trái Đất. Tránh trường hợp chủ nhà ghim một nơi nhưng nhà thực tế ở nơi khác.
 
 ### 💳 5. Luồng Áp Dụng Mã Giảm Giá & Thanh Toán (Pricing, Voucher & VNPay/PayOS)
 - **Bước 1 (Tạo hóa đơn):** Chủ nhà chọn gói tin cần mua. Backend nhận yêu cầu gồm `packageId` và `voucherCode` (nếu có).
@@ -112,54 +191,24 @@ sequenceDiagram
 
 ---
 
-## 📂 Chi Tiết Từng File Code Cốt Lõi (Codebase Details)
-
-### 🗄️ 1. Thư mục Models (`src/models/`)
-Quản lý các Schema dữ liệu MongoDB thông qua Mongoose:
-* [User.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/User.js): Lưu thông tin tài khoản, mật khẩu (được mã hóa), email, điện thoại, vai trò (`role`: user, landlord, admin), và danh sách phòng trọ yêu thích (`favorites`).
-* [Property.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/Property.js): Lưu thông tin phòng trọ, giá thuê, diện tích, tiện ích (`amenities`), danh sách ảnh, thông tin chủ trọ, số lượt xem, trạng thái duyệt, thời gian hết hạn tin, và cấu trúc vị trí GeoJSON `Point` để thực hiện các truy vấn không gian.
-* [Booking.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/Booking.js): Lưu lịch hẹn xem phòng của khách hàng với chủ nhà (ngày, giờ, trạng thái cuộc hẹn).
-* [VerificationRequest.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/VerificationRequest.js): Theo dõi các yêu cầu xác minh thực địa từ chủ nhà hoặc người thuê trọ, lưu ảnh thực địa, tọa độ GPS thực địa khi cán bộ đến đo đạc, và các ghi chú của thanh tra viên.
-* [Landlord.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/Landlord.js): Hồ sơ chi tiết của chủ nhà (đánh giá sao, tỷ lệ phản hồi, trạng thái xác minh danh tính).
-* [Voucher.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/Voucher.js): Lưu thông tin các mã giảm giá cho dịch vụ đăng tin (phần trăm giảm giá, ngày hết hạn, trạng thái kích hoạt).
-* [Subscription.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/Subscription.js) & [SubscriptionPlan.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/SubscriptionPlan.js): Lưu gói dịch vụ đăng tin nổi bật, thời hạn và phân loại gói (Ví dụ: Gói VIP tháng, năm).
-* [Transaction.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/Transaction.js): Ghi nhận lịch sử giao dịch thanh toán của chủ trọ.
-* [Blog.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/Blog.js): Quản lý các bài viết tin tức phòng trọ.
-* [Notification.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/models/Notification.js): Quản lý thông báo trong hệ thống.
-
-### 🎮 2. Thư mục Controllers & Routes (`src/controllers/` & `src/routes/`)
-Nơi xử lý logic nghiệp vụ và định tuyến API:
-* **Xác thực:** [authController.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/controllers/authController.js) & [authRoutes.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/routes/authRoutes.js) thực hiện đăng ký, đăng nhập JWT, lấy thông tin cá nhân và gửi mail khôi phục mật khẩu.
-* **Phòng trọ:** [propertyController.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/controllers/propertyController.js) & [propertyRoutes.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/routes/propertyRoutes.js) xử lý thêm/sửa/xóa phòng, tìm kiếm nâng cao, và truy vấn vị trí địa lý `$nearSphere` trong MongoDB Atlas.
-* **Xác minh thực địa:** [verificationController.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/controllers/verificationController.js) & [verificationRoutes.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/routes/verificationRoutes.js) xử lý quy trình tải ảnh kiểm tra lên và tính khoảng cách GPS giữa tọa độ thực tế đo được và tọa độ đã đăng ký để tự động gắn green badge.
-* **Quản trị viên:** [adminController.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/controllers/adminController.js) & [adminRoutes.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/routes/adminRoutes.js) cung cấp các API thống kê tổng quan, quản lý người dùng, duyệt/từ chối yêu cầu xác minh.
-* **Thanh toán:** [paymentController.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/controllers/paymentController.js) & [paymentRoutes.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/routes/paymentRoutes.js) tích hợp tạo liên kết thanh toán VNPay Sandbox và PayOS, nhận phản hồi callback từ cổng thanh toán.
-* **Trợ lý AI:** [ai.controller.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/controllers/ai.controller.js) & [ai.routes.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/routes/ai.routes.js) tích hợp mô hình ngôn ngữ lớn qua Groq API để phản hồi hội thoại cho chatbot hỗ trợ khách hàng trên Frontend.
-* **Voucher:** [voucherController.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/controllers/voucherController.js) & [voucherRoutes.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/routes/voucherRoutes.js) quản lý việc áp dụng mã giảm giá và lưu trữ mã cho chủ nhà.
-* **Upload ảnh:** [uploadController.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/controllers/uploadController.js) & [uploadRoutes.js](file:///e:/EXE101_Projects/EXE101_Project/MapHome_backend_NodeJS/src/routes/uploadRoutes.js) xử lý tải tệp hình ảnh đơn lẻ hoặc nhiều tệp lên máy chủ hoặc lưu trữ đám mây.
-
-### 🛡️ 3. Thư mục Middlewares (`src/middleware/`)
-* **Xác thực JWT:** `auth.js` giải mã và kiểm tra tính hợp lệ của Access Token đính kèm trong Header `Authorization: Bearer <token>`.
-* **Phân quyền:** `roles.js` kiểm tra vai trò người dùng có khớp với yêu cầu của endpoint hay không (ví dụ: chỉ cho phép `landlord` hoặc `admin` đăng tin).
-* **Tải ảnh:** Thiết lập middleware `multer` để lọc và giới hạn dung lượng hình ảnh tải lên hệ thống.
-
----
-
 ## ⚡ API Endpoint Cheat-sheet (Dành cho Tích hợp Frontend)
 
 | Chức năng | Endpoint | Phương thức | Cần Auth | Ghi chú |
 | :--- | :--- | :---: | :---: | :--- |
 | **Auth** | `/api/auth/register` | `POST` | Không | Đăng ký tài khoản mới |
 | **Auth** | `/api/auth/login` | `POST` | Không | Trả về User info & Token |
-| **Phòng trọ**| `/api/properties` | `GET` | Không | Lấy toàn bộ danh sách phòng |
-| **Phòng trọ**| `/api/properties/search` | `GET` | Không | Tìm nâng cao (phân trang, giá, diện tích) |
-| **Phòng trọ**| `/api/properties/nearby` | `GET` | Không | Tìm theo GPS (`lat`, `lng`, `radiusKm`) |
-| **Phòng trọ**| `/api/properties` | `POST` | **Landlord**| Đăng phòng mới |
+| **Auth** | `/api/auth/refresh` | `GET` | Không | Làm mới Access Token |
+| **Phòng trọ** | `/api/properties` | `GET` | Không | Lấy toàn bộ danh sách phòng |
+| **Phòng trọ** | `/api/properties/search` | `GET` | Không | Tìm nâng cao (phân trang, giá, diện tích) |
+| **Phòng trọ** | `/api/properties/nearby` | `GET` | Không | Tìm theo GPS (`lat`, `lng`, `radiusKm`) |
+| **Phòng trọ** | `/api/properties/stats/public` | `GET` | Không | Số liệu thống kê trang chủ |
+| **Phòng trọ** | `/api/properties` | `POST` | **Landlord** | Đăng phòng mới |
 | **Đặt lịch** | `/api/bookings` | `POST` | **User** | Đặt lịch hẹn xem phòng |
-| **Xác minh** | `/api/verifications` | `POST` | **Landlord**| Gửi yêu cầu hẹn lịch kiểm tra |
-| **Xác minh** | `/api/verifications/:id/photos`| `POST` | **Landlord**| Tải ảnh kiểm nghiệm lên |
+| **Xác minh** | `/api/verifications` | `POST` | **Landlord** | Gửi yêu cầu hẹn lịch kiểm tra |
+| **Voucher** | `/api/vouchers/promoted` | `GET` | Không | Danh sách voucher quảng bá |
+| **Blog** | `/api/blogs` | `GET` | Không | Danh sách bài viết |
 | **Admin** | `/api/admin/stats` | `GET` | **Admin** | Lấy dữ liệu thống kê tổng quan |
-| **Admin** | `/api/admin/verification/:id/complete`| `PUT` | **Admin** | Hoàn thành và tự động cấp Badge |
+| **Admin** | `/api/admin/verification/:id/complete` | `PUT` | **Admin** | Hoàn thành và tự động cấp Badge |
 
 ---
 
@@ -193,8 +242,7 @@ npm start
 ```
 *Tài liệu API tương tác trực tiếp chạy tại địa chỉ: `http://localhost:5000/api-docs`*
 
-### 4. Cấu hình chuyển đổi chạy Local hoặc Deploy (Mới)
-Bạn có thể dễ dàng chuyển đổi cấu hình chạy dưới máy cá nhân (Local) hoặc chạy bản Deploy (Railway) bằng cách thay đổi biến môi trường trong tệp `.env`:
-- **Chạy Local (`USE_LOCAL_BACKEND=true`)**: Server sẽ tự động ghi đè địa chỉ URL (`BACKEND_URL`, `FRONTEND_URL`, và callback VNPay) trỏ về `localhost` trên cổng bạn đang mở.
-- **Chạy Deploy (`USE_LOCAL_BACKEND=false` hoặc comment/xóa)**: Server chạy chế độ mặc định, sử dụng link deploy chính thức của Railway.
-
+### 4. Cấu hình chuyển đổi chạy Local hoặc Deploy
+Thay đổi biến môi trường trong tệp `.env`:
+- **Chạy Local (`USE_LOCAL_BACKEND=true`)**: Server sẽ tự động ghi đè địa chỉ URL trỏ về `localhost`.
+- **Chạy Deploy (`USE_LOCAL_BACKEND=false`)**: Server chạy chế độ mặc định, sử dụng link deploy chính thức của Railway.

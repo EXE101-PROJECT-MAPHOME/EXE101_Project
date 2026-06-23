@@ -855,8 +855,8 @@ export function HomePage() {
                   ref={testimonialSliderRef}
                   {...testimonialSliderSettings}
                 >
-                  {testimonials.map((t) => (
-                    <div key={t.id} className="px-3 pb-10">
+                  {testimonials.map((t, index) => (
+                    <div key={t._id || t.id || index} className="px-3 pb-10">
                       <motion.div
                         whileHover={{ y: -8, scale: 1.01 }}
                         transition={{
@@ -946,9 +946,9 @@ export function HomePage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {blogPosts.slice(0, 3).map((post) => (
+              {blogPosts.slice(0, 3).map((post, index) => (
                 <article
-                  key={post.id}
+                  key={post._id || post.id || index}
                   className="bg-white rounded-[32px] overflow-hidden shadow-2xl shadow-slate-200/50 hover:shadow-green-900/10 cursor-pointer group border border-slate-100 flex flex-col will-change-transform"
                   onClick={() => navigate("/blog")}
                 >

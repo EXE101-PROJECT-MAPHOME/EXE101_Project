@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { User, ShieldCheck, Home } from "lucide-react";
 
 interface RoleBadgeProps {
-  role: "admin" | "landlord" | "user";
+  role: "admin" | "landlord" | "user" | "broker";
   className?: string;
   showIcon?: boolean;
 }
@@ -35,6 +35,15 @@ export function RoleBadge({ role, className = "", showIcon = true }: RoleBadgePr
       text: "text-blue-700",
       icon: <User className="size-3" />,
       shadow: "shadow-blue-100",
+    },
+    broker: {
+      label: "Môi giới",
+      gradient: "from-amber-600 to-orange-600",
+      bg: "bg-amber-50/50",
+      border: "border-amber-100",
+      text: "text-amber-700",
+      icon: <User className="size-3" />,
+      shadow: "shadow-amber-100",
     },
   };
 
