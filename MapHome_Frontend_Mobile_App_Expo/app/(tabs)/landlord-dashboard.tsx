@@ -78,15 +78,17 @@ export default function LandlordDashboardScreen() {
       const endpointPrefix = user?.role === "broker" ? "/api/broker" : "/api/landlord";
       
       if (activeTab === "overview") {
-        const [aRes, pRes, vRes, sRes] = await Promise.all([
+        const [aRes, pRes, vRes, sRes, bRes] = await Promise.all([
           api.get(`${endpointPrefix}/analytics`).catch(() => ({ data: null })),
           api.get(`${endpointPrefix}/properties`).catch(() => ({ data: [] })),
           api.get("/api/vouchers").catch(() => ({ data: [] })),
           api.get("/api/vouchers/me/saved").catch(() => ({ data: [] })),
+          api.get(`${endpointPrefix}/bookings`).catch(() => ({ data: [] })),
         ]);
         setAnalytics(aRes.data);
         setPosts(pRes.data || []);
         setVouchers(vRes.data || []);
+        setBookings(bRes.data || []);
         if (sRes && sRes.data) {
           setSavedVoucherIds(sRes.data.map((v: any) => v._id || v.id));
         }

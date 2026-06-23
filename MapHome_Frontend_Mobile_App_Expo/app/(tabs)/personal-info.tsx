@@ -16,8 +16,8 @@ import { useRouter } from "expo-router";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import { ArrowLeft, User, Phone, Save, Camera, Check, ShieldCheck } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
-import { useAuth } from "../contexts/AuthContext";
-import api from "../utils/api";
+import { useAuth } from "@/contexts/AuthContext";
+import api from "@/utils/api";
 
 export default function PersonalInfoScreen() {
   const router = useRouter();

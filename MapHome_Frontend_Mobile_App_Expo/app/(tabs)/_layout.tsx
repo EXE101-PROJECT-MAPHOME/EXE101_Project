@@ -190,6 +190,42 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="room/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="room/compare"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="pricing"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="verification-service"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="personal-info"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

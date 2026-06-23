@@ -1040,21 +1040,6 @@ export function HomePage() {
               <motion.button
                 whileHover={{
                   scale: 1.05,
-                  boxShadow: "0 20px 40px -10px rgba(16, 185, 129, 0.4)",
-                }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                onClick={() => navigate("/post-room")}
-                className="group relative overflow-hidden px-10 py-5 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-[24px] text-lg font-black shadow-2xl flex items-center justify-center gap-3 will-change-transform"
-              >
-                <div className="absolute inset-0 w-1/4 h-full bg-white/20 -skew-x-[30deg] -translate-x-[150%] group-hover:translate-x-[400%] transition-transform duration-700 ease-in-out will-change-transform" />
-                <FileText className="size-5" />
-                Đăng tin miễn phí ngay
-              </motion.button>
-
-              <motion.button
-                whileHover={{
-                  scale: 1.05,
                   backgroundColor: "rgba(255, 255, 255, 0.15)",
                 }}
                 whileTap={{ scale: 0.95 }}
