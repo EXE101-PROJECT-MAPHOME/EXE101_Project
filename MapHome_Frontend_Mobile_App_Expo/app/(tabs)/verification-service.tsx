@@ -23,9 +23,9 @@ import {
   FileText,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import api from "../utils/api";
-import { useAuth } from "../contexts/AuthContext";
-import { useProperties } from "../contexts/PropertiesContext";
+import api from "@/utils/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProperties } from "@/contexts/PropertiesContext";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { LinearGradient } from "expo-linear-gradient";
 

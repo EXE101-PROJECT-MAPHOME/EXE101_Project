@@ -22,7 +22,7 @@ import {
   Sparkles,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import api from "../utils/api";
+import api from "@/utils/api";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import { useThemeColor } from "@/hooks/use-theme-color";
 

@@ -42,8 +42,8 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 import api from "@/utils/api";
 import { useCompare } from "@/contexts/CompareContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { RoomMapPreview } from "../../components/RoomMapPreview";
-import { BookingModal } from "../../components/BookingModal";
+import { RoomMapPreview } from "@/components/RoomMapPreview";
+import { BookingModal } from "@/components/BookingModal";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 
 const { width } = Dimensions.get("window");
