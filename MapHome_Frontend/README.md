@@ -84,7 +84,15 @@ npm install
 ### 2. Thiết lập biến môi trường
 Tạo file `.env` ở thư mục gốc của frontend:
 ```dotenv
-VITE_API_BASE=http://localhost:5000
+# Cấu hình chuyển đổi chạy Local/Deploy (Mới)
+# - Set thành true để luôn sử dụng Backend tại localhost:5000
+# - Set thành false hoặc comment để sử dụng VITE_API_BASE (Railway deploy)
+VITE_USE_LOCAL_BACKEND=true
+
+# Địa chỉ API mặc định khi tắt chế độ chạy Local
+VITE_API_BASE=https://exe101project-maphome-api.up.railway.app
+
+# Cấu hình khác
 VITE_GOOGLE_CLIENT_ID=817734182215-ijh0r2a1fbcsm5u5nams9e92obh5cmck.apps.googleusercontent.com
 VITE_GOONG_MAPTILES_KEY=zkJufOSOzrjhp0HuujejyHhJ2S3G2O6SkK56wiSF
 ```
@@ -95,7 +103,15 @@ npm run dev
 ```
 *Trang web sẽ tự chạy trên địa chỉ: `http://localhost:5173`*
 
-### 4. Build sản phẩm sẵn sàng Deploy
+> [!NOTE]
+> Để thử nghiệm trên các thiết bị di động trong cùng mạng LAN, file `vite.config.ts` đã được cấu hình `server: { host: true }`. Khi chạy `npm run dev`, Vite sẽ hiển thị cả địa chỉ IP mạng nội bộ của bạn (ví dụ: `http://192.168.1.15:5173`), cho phép truy cập trực tiếp từ điện thoại.
+
+### 4. Cơ chế tự động giải quyết URL API
+Toàn bộ mã nguồn Frontend gọi API được cấu hình tập trung qua [api.ts](file:///e:/EXE101_Projects/EXE101_Project/MapHome_Frontend/src/app/utils/api.ts) để tránh việc phải sửa tay chuỗi URL ở từng file:
+- Nếu `VITE_USE_LOCAL_BACKEND=true`, URL kết nối sẽ tự động trỏ về `http://localhost:5000`.
+- Nếu `VITE_USE_LOCAL_BACKEND=false`, URL kết nối sẽ trỏ về `VITE_API_BASE` (Railway).
+
+### 5. Build sản phẩm sẵn sàng Deploy
 ```bash
 npm run build
 ```

@@ -192,3 +192,9 @@ npm run dev
 npm start
 ```
 *Tài liệu API tương tác trực tiếp chạy tại địa chỉ: `http://localhost:5000/api-docs`*
+
+### 4. Cấu hình chuyển đổi chạy Local hoặc Deploy (Mới)
+Bạn có thể dễ dàng chuyển đổi cấu hình chạy dưới máy cá nhân (Local) hoặc chạy bản Deploy (Railway) bằng cách thay đổi biến môi trường trong tệp `.env`:
+- **Chạy Local (`USE_LOCAL_BACKEND=true`)**: Server sẽ tự động ghi đè địa chỉ URL (`BACKEND_URL`, `FRONTEND_URL`, và callback VNPay) trỏ về `localhost` trên cổng bạn đang mở.
+- **Chạy Deploy (`USE_LOCAL_BACKEND=false` hoặc comment/xóa)**: Server chạy chế độ mặc định, sử dụng link deploy chính thức của Railway.
+

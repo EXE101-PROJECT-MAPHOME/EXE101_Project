@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/contexts/AuthContext";
-import api from "@/app/utils/api";
+import api, { API_BASE } from "@/app/utils/api";
 import { getAvatarUrl, getInitials } from "@/app/utils/avatarUtils";
 import { formatDateVietnamese } from "@/app/utils/dateUtils";
 import { RentalProperty, VerificationRequest } from "@/app/components/types";
@@ -311,7 +311,7 @@ export function LandlordDashboardV2() {
     if (!isAuthenticated || user?.role !== "landlord") return;
 
     const token = localStorage.getItem("token");
-    const socketUrl = import.meta.env.VITE_API_BASE || "http://localhost:5000";
+    const socketUrl = API_BASE;
     const socket = io(socketUrl, {
       auth: { token },
       transports: ["websocket"],

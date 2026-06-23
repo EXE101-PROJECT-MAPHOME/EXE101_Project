@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useGoogleLogin } from "@react-oauth/google";
 import { toast } from "sonner";
-import api from "@/app/utils/api";
+import api, { API_BASE } from "@/app/utils/api";
 
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -43,7 +43,7 @@ export function LoginPage() {
 
   // Check on mount if an admin already exists to conditionally lock the role option
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_BASE || "http://localhost:5000"}/api/auth/admin-exists`)
+    fetch(`${API_BASE}/api/auth/admin-exists`)
       .then((r) => r.json())
       .then((data) => setAdminExists(data.exists))
       .catch(() => { }); // silently fail - default stays unlocked

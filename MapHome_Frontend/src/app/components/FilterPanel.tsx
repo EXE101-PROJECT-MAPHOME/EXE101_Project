@@ -102,7 +102,7 @@ export function FilterPanel({
       <SheetTrigger asChild>
         <Button
           variant="outline"
-          className="relative h-10 sm:h-12 px-4 sm:px-6 rounded-lg sm:rounded-2xl border-emerald-900/10 bg-white/50 backdrop-blur-md hover:bg-emerald-50 hover:border-emerald-600/30 text-emerald-950 font-bold transition-all duration-300 group text-sm sm:text-base"
+          className="relative w-full sm:w-auto h-10 sm:h-12 px-4 sm:px-6 rounded-lg sm:rounded-2xl border-emerald-900/10 bg-white/50 backdrop-blur-md hover:bg-emerald-50 hover:border-emerald-600/30 text-emerald-950 font-bold transition-all duration-300 group text-sm sm:text-base"
         >
           <SlidersHorizontal className="size-3.5 sm:size-4 mr-1.5 sm:mr-2 text-emerald-600 transition-transform duration-500 group-hover:rotate-180" />
           <span className="hidden sm:inline">Lọc & Sắp xếp</span>
