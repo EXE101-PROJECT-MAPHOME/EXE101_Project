@@ -1152,7 +1152,7 @@ export function LandlordDashboardV2() {
                 </p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
                   <div className="size-3 rounded-full bg-amber-500 shadow-sm" />
                   <span className="text-[10px] font-black uppercase text-slate-500">
@@ -1165,6 +1165,18 @@ export function LandlordDashboardV2() {
                     Đã xác nhận
                   </span>
                 </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                  <div className="size-3 rounded-full bg-purple-500 shadow-sm" />
+                  <span className="text-[10px] font-black uppercase text-slate-500">
+                    Đã đề xuất
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                  <div className="size-3 rounded-full bg-rose-500 shadow-sm" />
+                  <span className="text-[10px] font-black uppercase text-slate-500">
+                    Khách từ chối
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1172,6 +1184,25 @@ export function LandlordDashboardV2() {
               <CalendarView
                 bookings={bookings}
                 onUpdateStatus={handleUpdateBookingStatus}
+                onReschedule={async (bookingId, date, time, note) => {
+                  try {
+                    const res = await api.put(`/api/bookings/${bookingId}/reschedule`, {
+                      bookingDate: date,
+                      bookingTime: time,
+                      note: note,
+                    });
+                    if (res.status === 200) {
+                      toast.success("Đã gửi đề xuất lịch hẹn mới cho khách! ✨");
+                      setBookings((prev) =>
+                        prev.map((b) =>
+                          (b._id || b.id) === bookingId ? { ...b, status: "landlord_proposed", bookingDate: date, bookingTime: time, note: note } : b,
+                        ),
+                      );
+                    }
+                  } catch (err) {
+                    toast.error("Không thể đề xuất lịch hẹn mới. ❌");
+                  }
+                }}
               />
             ) : (
               <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm p-20 text-center mx-auto">

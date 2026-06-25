@@ -150,12 +150,18 @@ export default function NotificationCenter({
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 6, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 6, scale: 0.98 }}
-            className="absolute right-0 mt-3 w-96 bg-white rounded-2xl shadow-lg border border-slate-100 z-50 overflow-hidden"
-          >
+          <>
+            {/* Backdrop for mobile to click outside and close */}
+            <div
+              className="fixed inset-0 bg-black/10 md:hidden z-40"
+              onClick={handleClose}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.98 }}
+              className="fixed md:absolute top-20 md:top-auto md:mt-3 left-4 md:left-auto right-4 md:right-0 w-auto md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-100 z-50 overflow-hidden"
+            >
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <div className="text-sm font-black">Thông báo</div>
               <div className="flex items-center gap-2">
@@ -232,6 +238,7 @@ export default function NotificationCenter({
               </button>
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

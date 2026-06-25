@@ -114,9 +114,8 @@ function StatCard({
             initial={{ opacity: 0, x: 8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: delay + 0.3 }}
-            className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full ${
-              trend >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
-            }`}
+            className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full ${trend >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
+              }`}
           >
             <TrendingUp className={`size-3 ${trend < 0 ? "rotate-180" : ""}`} />
             {Math.abs(trend)}%
@@ -181,9 +180,9 @@ export function BrokerDashboard() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== "broker") { 
-      navigate("/login"); 
-      return; 
+    if (!isAuthenticated || user?.role !== "broker") {
+      navigate("/login");
+      return;
     }
     fetchData();
   }, [isAuthenticated, user?.role, navigate]);
@@ -239,7 +238,7 @@ export function BrokerDashboard() {
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
           className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] relative z-10"
         >
-          Đang tải Môi giới Console...
+          Đang tải dashboard môi giới
         </motion.p>
       </div>
     );
@@ -283,11 +282,10 @@ export function BrokerDashboard() {
               whileHover={{ x: active ? 0 : 4 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => { setActiveTab(item.id); if (mobile) setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 relative overflow-hidden ${
-                active
+              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 relative overflow-hidden ${active
                   ? "text-white shadow-lg shadow-violet-500/25"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
+                }`}
             >
               {active && (
                 <motion.div
@@ -328,7 +326,15 @@ export function BrokerDashboard() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-black text-slate-900 truncate">{user?.fullName || user?.username}</p>
-            <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider">✦ Môi giới Pro</span>
+            {(() => {
+              const tier = user?.subscriptionTier || "Free";
+              const isFree = tier.toLowerCase() === "free";
+              return (
+                <span className={`text-[9px] font-black uppercase tracking-wider ${isFree ? "text-slate-500" : "text-amber-600"}`}>
+                  ✦ Môi giới {isFree ? "Thường" : tier}
+                </span>
+              );
+            })()}
           </div>
         </div>
 
@@ -568,9 +574,8 @@ export function BrokerDashboard() {
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-[10px] text-slate-500">{b.bookingDate ? new Date(b.bookingDate).toLocaleDateString("vi-VN") : ""}</p>
-                            <span className={`inline-block text-[9px] px-2 py-0.5 rounded-full font-black uppercase mt-1 ${
-                              b.status === "confirmed" ? "bg-emerald-100 text-emerald-700" : b.status === "pending" ? "bg-amber-100 text-amber-700" : b.status === "completed" ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"
-                            }`}>
+                            <span className={`inline-block text-[9px] px-2 py-0.5 rounded-full font-black uppercase mt-1 ${b.status === "confirmed" ? "bg-emerald-100 text-emerald-700" : b.status === "pending" ? "bg-amber-100 text-amber-700" : b.status === "completed" ? "bg-blue-100 text-blue-700" : "bg-red-100 text-red-700"
+                              }`}>
                               {b.status === "confirmed" ? "Đã duyệt" : b.status === "pending" ? "Chờ duyệt" : b.status === "completed" ? "Hoàn tất" : "Đã hủy"}
                             </span>
                           </div>
@@ -697,68 +702,67 @@ export function BrokerDashboard() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                  {brokerPosts.map((post, idx) => (
-                    <motion.div
-                      key={post._id || post.id}
-                      initial={{ opacity: 0, y: 24, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ delay: idx * 0.06, ease: [0.23, 1, 0.32, 1] }}
-                      whileHover={{ y: -4 }}
-                      className="bg-white/90 rounded-3xl border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-400 group flex flex-col sm:flex-row"
-                    >
-                      <div className="relative h-44 sm:h-auto sm:w-40 shrink-0 bg-slate-100 overflow-hidden">
-                        {post.image ? (
-                          <img src={post.image} alt={post.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-violet-50">
-                            <FileText className="size-10 text-slate-300" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className={`absolute top-3 left-3 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                          post.status === "approved" ? "bg-emerald-600/90" : post.status === "expired" ? "bg-red-500/90" : "bg-amber-500/90"
-                        }`}>
-                          {post.status === "approved" ? "✓ Hoạt động" : post.status === "expired" ? "Hết hạn" : "⏳ Chờ duyệt"}
-                        </div>
-                      </div>
-
-                      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
-                        <div>
-                          <h4 className="font-bold text-slate-900 line-clamp-1 mb-1 group-hover:text-violet-700 transition-colors">{post.name}</h4>
-                          <p className="text-xs text-slate-500 flex items-center gap-1.5 line-clamp-1">
-                            <MapPin className="size-3 text-slate-400 shrink-0" />
-                            {post.address}
-                          </p>
-                          {post.price && (
-                            <p className="text-sm font-black text-violet-700 mt-2">
-                              {Number(post.price).toLocaleString("vi-VN")} đ<span className="text-[10px] font-medium text-slate-400">/tháng</span>
-                            </p>
+                    {brokerPosts.map((post, idx) => (
+                      <motion.div
+                        key={post._id || post.id}
+                        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ delay: idx * 0.06, ease: [0.23, 1, 0.32, 1] }}
+                        whileHover={{ y: -4 }}
+                        className="bg-white/90 rounded-3xl border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200/60 transition-all duration-400 group flex flex-col sm:flex-row"
+                      >
+                        <div className="relative h-44 sm:h-auto sm:w-40 shrink-0 bg-slate-100 overflow-hidden">
+                          {post.image ? (
+                            <img src={post.image} alt={post.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-violet-50">
+                              <FileText className="size-10 text-slate-300" />
+                            </div>
                           )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <div className={`absolute top-3 left-3 backdrop-blur-md text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider ${post.status === "approved" ? "bg-emerald-600/90" : post.status === "expired" ? "bg-red-500/90" : "bg-amber-500/90"
+                            }`}>
+                            {post.status === "approved" ? "✓ Hoạt động" : post.status === "expired" ? "Hết hạn" : "⏳ Chờ duyệt"}
+                          </div>
                         </div>
 
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-700 font-black text-[10px] sm:text-xs">
-                              {(post as any).ownerName ? (post as any).ownerName[0].toUpperCase() : "C"}
-                            </div>
-                            <div>
-                              <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest block leading-none">Chủ nhà</span>
-                              <span className="text-[11px] sm:text-xs font-bold text-slate-800">{(post as any).ownerName || "Chưa rõ"}</span>
-                            </div>
+                        <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h4 className="font-bold text-slate-900 line-clamp-1 mb-1 group-hover:text-violet-700 transition-colors">{post.name}</h4>
+                            <p className="text-xs text-slate-500 flex items-center gap-1.5 line-clamp-1">
+                              <MapPin className="size-3 text-slate-400 shrink-0" />
+                              {post.address}
+                            </p>
+                            {post.price && (
+                              <p className="text-sm font-black text-violet-700 mt-2">
+                                {Number(post.price).toLocaleString("vi-VN")} đ<span className="text-[10px] font-medium text-slate-400">/tháng</span>
+                              </p>
+                            )}
                           </div>
-                          <div className="flex items-center">
-                            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setEditingProperty(post)}
-                              className="p-1.5 sm:p-2 rounded-xl hover:bg-violet-50 text-slate-400 hover:text-violet-600 transition-colors">
-                              <Edit className="size-4" />
-                            </motion.button>
-                            <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDeleteProperty(post._id || (post as any).id)}
-                              className="p-1.5 sm:p-2 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
-                              <Trash2 className="size-4" />
-                            </motion.button>
+
+                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-700 font-black text-[10px] sm:text-xs">
+                                {(post as any).ownerName ? (post as any).ownerName[0].toUpperCase() : "C"}
+                              </div>
+                              <div>
+                                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest block leading-none">Chủ nhà</span>
+                                <span className="text-[11px] sm:text-xs font-bold text-slate-800">{(post as any).ownerName || "Chưa rõ"}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center">
+                              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setEditingProperty(post)}
+                                className="p-1.5 sm:p-2 rounded-xl hover:bg-violet-50 text-slate-400 hover:text-violet-600 transition-colors">
+                                <Edit className="size-4" />
+                              </motion.button>
+                              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => handleDeleteProperty(post._id || (post as any).id)}
+                                className="p-1.5 sm:p-2 rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+                                <Trash2 className="size-4" />
+                              </motion.button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
+                      </motion.div>
                     ))}
                   </div>
                 )}
@@ -949,12 +953,12 @@ export function BrokerDashboard() {
                     </div>
 
                     <div className="mt-5 pt-5 border-t border-slate-100 flex gap-3">
-                      <button onClick={() => navigate("/personal-info")}
+                      <button onClick={() => window.alert("Tính năng Chỉnh sửa thông tin đang được phát triển cho phiên bản Web. Vui lòng sử dụng Mobile App để chỉnh sửa!")}
                         className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm font-bold rounded-2xl shadow-md shadow-violet-500/20 hover:opacity-90 transition-opacity"
                       >
                         <Edit className="size-4" /> Chỉnh sửa thông tin
                       </button>
-                      <button onClick={() => navigate("/settings")}
+                      <button onClick={() => window.alert("Tính năng Cài đặt đang được phát triển cho phiên bản Web. Vui lòng sử dụng Mobile App để cài đặt!")}
                         className="flex items-center gap-2 px-4 py-3 bg-slate-100 text-slate-700 text-sm font-bold rounded-2xl hover:bg-slate-200 transition-colors"
                       >
                         <Settings className="size-4" />

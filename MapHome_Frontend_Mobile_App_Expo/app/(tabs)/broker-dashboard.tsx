@@ -262,7 +262,7 @@ export default function BrokerDashboardScreen() {
               </Text>
             </View>
             <Text className="text-xs text-slate-500 font-semibold">
-              {user.fullName || user.username} • MapHome Console
+              {user.fullName || user.username} • Gói {user.subscriptionTier && user.subscriptionTier.toLowerCase() !== "free" ? user.subscriptionTier : "Thường"}
             </Text>
           </View>
         </View>

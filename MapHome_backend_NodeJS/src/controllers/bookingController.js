@@ -13,7 +13,7 @@ const {
 // ─── Helper: format date for display ────────────────────────────────────────
 const formatDate = (date) => {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("en-US", {
+  return new Date(date).toLocaleDateString("vi-VN", {
     weekday: "long",
     day: "2-digit",
     month: "2-digit",
@@ -319,6 +319,173 @@ const updateBookingStatus = async (req, res) => {
   }
 };
 
+// @desc    Landlord proposes a new schedule for a booking
+// @route   PUT /api/bookings/:id/reschedule
+const rescheduleBooking = async (req, res) => {
+  try {
+    const { bookingDate, bookingTime, note } = req.body;
+    if (!bookingDate || !bookingTime) {
+      return res.status(400).json({ message: "Please provide bookingDate and bookingTime" });
+    }
+
+    const query = { _id: req.params.id };
+    let isLandlord = false;
+
+    if (req.user.role === "landlord") {
+      const landlord = await Landlord.findOne({ userId: req.user._id });
+      if (!landlord) {
+        return res.status(403).json({ message: "Landlord profile not found" });
+      }
+      query.landlordId = landlord._id;
+      isLandlord = true;
+    } else if (req.user.role === "broker") {
+      const Broker = require("../models/Broker");
+      const broker = await Broker.findOne({ userId: req.user._id });
+      if (!broker) {
+        return res.status(403).json({ message: "Broker profile not found" });
+      }
+      query.brokerId = broker._id;
+    } else {
+      return res.status(403).json({ message: "Not authorized to reschedule this booking" });
+    }
+
+    const booking = await Booking.findOne(query);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found or unauthorized" });
+    }
+
+    booking.status = "landlord_proposed";
+    booking.bookingDate = bookingDate;
+    booking.bookingTime = bookingTime;
+    if (note) {
+      booking.note = note;
+    }
+    await booking.save();
+
+    // ── Notify the Tenant ──
+    if (booking.userId) {
+      try {
+        const property = await Property.findById(booking.propertyId);
+        const { notifyTenantBookingRescheduled } = require("../utils/notificationHelper");
+        
+        await notifyTenantBookingRescheduled({
+          tenantUserId: booking.userId,
+          propertyName: property ? property.name : "the property",
+          bookingDate: formatDate(bookingDate),
+          bookingTime: bookingTime,
+          propertyId: property ? property._id : null,
+        });
+      } catch (notifErr) {
+        console.error("[rescheduleBooking] Failed to send notification:", notifErr.message);
+      }
+    }
+
+    res.status(200).json({ message: "Booking rescheduled successfully", booking });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Tenant responds to a landlord_proposed booking
+// @route   PUT /api/bookings/:id/tenant-response
+const tenantResponseBooking = async (req, res) => {
+  try {
+    const { action } = req.body; // "accept" or "reject"
+    if (!["accept", "reject"].includes(action)) {
+      return res.status(400).json({ message: "Invalid action. Use 'accept' or 'reject'." });
+    }
+
+    const booking = await Booking.findOne({ _id: req.params.id, userId: req.user._id });
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (booking.status !== "landlord_proposed") {
+      return res.status(400).json({ message: "Booking is not in landlord_proposed status." });
+    }
+
+    const property = await Property.findById(booking.propertyId);
+    const propertyName = property ? property.name : "the property";
+
+    if (action === "accept") {
+      booking.status = "confirmed";
+      await booking.save();
+
+      // Notify landlord
+      try {
+        const { notifyLandlordBookingConfirmedByTenant } = require("../utils/notificationHelper");
+        
+        if (booking.brokerId) {
+          const Broker = require("../models/Broker");
+          const broker = await Broker.findById(booking.brokerId);
+          if (broker && broker.userId) {
+            await notifyLandlordBookingConfirmedByTenant({
+              landlordUserId: broker.userId,
+              propertyName,
+              customerName: booking.customerName || "Guest",
+              bookingDate: formatDate(booking.bookingDate),
+              bookingTime: booking.bookingTime,
+              propertyId: property ? property._id : null,
+            });
+          }
+        } else if (booking.landlordId) {
+          const landlord = await Landlord.findById(booking.landlordId);
+          if (landlord && landlord.userId) {
+            await notifyLandlordBookingConfirmedByTenant({
+              landlordUserId: landlord.userId,
+              propertyName,
+              customerName: booking.customerName || "Guest",
+              bookingDate: formatDate(booking.bookingDate),
+              bookingTime: booking.bookingTime,
+              propertyId: property ? property._id : null,
+            });
+          }
+        }
+      } catch (notifErr) {
+        console.error("[tenantResponseBooking - accept] Failed to send notification:", notifErr.message);
+      }
+
+    } else if (action === "reject") {
+      booking.status = "tenant_rejected";
+      await booking.save();
+
+      // Notify landlord
+      try {
+        const { notifyLandlordBookingRejectedByTenant } = require("../utils/notificationHelper");
+        
+        if (booking.brokerId) {
+          const Broker = require("../models/Broker");
+          const broker = await Broker.findById(booking.brokerId);
+          if (broker && broker.userId) {
+            await notifyLandlordBookingRejectedByTenant({
+              landlordUserId: broker.userId,
+              propertyName,
+              customerName: booking.customerName || "Guest",
+              propertyId: property ? property._id : null,
+            });
+          }
+        } else if (booking.landlordId) {
+          const landlord = await Landlord.findById(booking.landlordId);
+          if (landlord && landlord.userId) {
+            await notifyLandlordBookingRejectedByTenant({
+              landlordUserId: landlord.userId,
+              propertyName,
+              customerName: booking.customerName || "Guest",
+              propertyId: property ? property._id : null,
+            });
+          }
+        }
+      } catch (notifErr) {
+        console.error("[tenantResponseBooking - reject] Failed to send notification:", notifErr.message);
+      }
+    }
+
+    res.status(200).json({ message: `Booking ${action}ed successfully`, booking });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getBookings,
   getBookingById,
@@ -327,4 +494,6 @@ module.exports = {
   deleteBooking,
   cancelBooking,
   updateBookingStatus,
+  rescheduleBooking,
+  tenantResponseBooking,
 };

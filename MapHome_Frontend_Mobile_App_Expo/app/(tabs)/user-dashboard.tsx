@@ -239,6 +239,36 @@ export default function UserDashboardScreen() {
     }
   };
 
+  const handleTenantResponse = async (bookingId: string, action: "accept" | "reject") => {
+    try {
+      setScreenLoading(true);
+      const res = await api.put(`/api/bookings/${bookingId}/tenant-response`, { action });
+      if (res.status === 200) {
+        Alert.alert(
+          "Thành công",
+          action === "accept"
+            ? "Đã xác nhận lịch hẹn mới! ✅"
+            : "Đã từ chối lịch hẹn mới."
+        );
+        // Update local state
+        setAppointments((prev) =>
+          prev.map((item) =>
+            item._id === bookingId
+              ? { ...item, status: action === "accept" ? "confirmed" : "tenant_rejected" }
+              : item
+          )
+        );
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Lỗi",
+        error.response?.data?.message || "Không thể phản hồi lịch hẹn."
+      );
+    } finally {
+      setScreenLoading(false);
+    }
+  };
+
   if (loading || screenLoading) {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
@@ -454,6 +484,12 @@ export default function UserDashboardScreen() {
                       className={`px-2 py-1 rounded-full ${
                         item.status === "completed"
                           ? "bg-emerald-50"
+                          : item.status === "confirmed"
+                          ? "bg-blue-50"
+                          : item.status === "landlord_proposed"
+                          ? "bg-purple-50"
+                          : item.status === "tenant_rejected"
+                          ? "bg-red-50"
                           : "bg-amber-50"
                       }`}
                     >
@@ -461,10 +497,24 @@ export default function UserDashboardScreen() {
                         className={`text-[10px] font-bold ${
                           item.status === "completed"
                             ? "text-emerald-700"
+                            : item.status === "confirmed"
+                            ? "text-blue-700"
+                            : item.status === "landlord_proposed"
+                            ? "text-purple-700"
+                            : item.status === "tenant_rejected"
+                            ? "text-red-700"
                             : "text-amber-700"
                         }`}
                       >
-                        {item.status === "completed" ? "✓ Hoàn tất" : "⏳ Chờ"}
+                        {item.status === "completed"
+                          ? "✓ Hoàn tất"
+                          : item.status === "confirmed"
+                          ? "✓ Xác nhận"
+                          : item.status === "landlord_proposed"
+                          ? "🔄 Đề xuất"
+                          : item.status === "tenant_rejected"
+                          ? "✕ Từ chối"
+                          : "⏳ Chờ"}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -636,32 +686,36 @@ export default function UserDashboardScreen() {
                         {item.bookingTime}
                       </Text>
                     </View>
-                    <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-slate-200">
-                      <View
-                        className={`px-3 py-1 rounded-full ${
-                          item.status === "completed"
-                            ? "bg-emerald-50"
-                            : item.status === "confirmed"
-                            ? "bg-blue-50"
-                            : "bg-amber-50"
-                        }`}
-                      >
-                        <Text
-                          className={`text-xs font-bold ${
-                            item.status === "completed"
-                              ? "text-emerald-700"
-                              : item.status === "confirmed"
-                              ? "text-blue-700"
-                              : "text-amber-700"
-                          }`}
-                        >
-                          {item.status === "completed"
-                            ? "✓ Hoàn tất"
-                            : item.status === "confirmed"
-                            ? "✓ Đã xác nhận"
-                            : "⏳ Chờ duyệt"}
-                        </Text>
+                    
+                    {item.note && (
+                      <View className="mt-2.5 p-3 bg-purple-50/60 border border-purple-100 rounded-2xl">
+                        <Text className="text-xs font-bold text-purple-800 leading-tight">💬 Lời nhắn chủ trọ: {item.note}</Text>
                       </View>
+                    )}
+
+                    <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-slate-200">
+                      {(() => {
+                        const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+                          pending: { bg: "bg-amber-50 border-amber-100", text: "text-amber-700", label: "⏳ Chờ duyệt" },
+                          confirmed: { bg: "bg-blue-50 border-blue-100", text: "text-blue-700", label: "✓ Đã xác nhận" },
+                          completed: { bg: "bg-emerald-50 border-emerald-100", text: "text-emerald-700", label: "✓ Hoàn tất" },
+                          cancelled: { bg: "bg-slate-100 border-slate-200", text: "text-slate-500", label: "✕ Đã hủy" },
+                          landlord_proposed: { bg: "bg-purple-50 border-purple-200", text: "text-purple-700", label: "🔄 Chủ trọ đề xuất" },
+                          tenant_rejected: { bg: "bg-red-50 border-red-200", text: "text-red-700", label: "✕ Đã từ chối" },
+                        };
+                        const config = statusConfig[item.status] || {
+                          bg: "bg-slate-50 border-slate-200",
+                          text: "text-slate-700",
+                          label: item.status,
+                        };
+                        return (
+                          <View className={`px-3 py-1 rounded-full border ${config.bg}`}>
+                            <Text className={`text-xs font-bold ${config.text}`}>
+                              {config.label}
+                            </Text>
+                          </View>
+                        );
+                      })()}
                       {item.propertyId?.phone && (
                         <TouchableOpacity className="flex-row items-center px-3 py-1 rounded-full bg-slate-100">
                           <Phone size={12} color={icon} />
@@ -671,6 +725,27 @@ export default function UserDashboardScreen() {
                         </TouchableOpacity>
                       )}
                     </View>
+
+                    {item.status === "landlord_proposed" && (
+                      <View className="mt-3 pt-3 border-t border-slate-200 flex-row gap-2">
+                        <TouchableOpacity
+                          onPress={() => handleTenantResponse(item._id, "reject")}
+                          className="flex-1 py-2.5 rounded-xl bg-red-50 border border-red-200 active:opacity-80"
+                        >
+                          <Text className="text-xs font-bold text-red-700 text-center">
+                            ✕ Từ chối
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleTenantResponse(item._id, "accept")}
+                          className="flex-1 py-2.5 rounded-xl bg-purple-600 active:opacity-80"
+                        >
+                          <Text className="text-xs font-bold text-white text-center">
+                            ✓ Đồng ý đề xuất
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
 
                     {/* Nút thanh toán phí xác minh */}
                     {item.status === "confirmed" && (
