@@ -147,5 +147,26 @@ router.put("/:id/cancel", authMiddleware, requireAnyRole(["user"]), cancelBookin
  */
 router.put("/:id/status", authMiddleware, requireAnyRole(["admin", "landlord", "broker"]), updateBookingStatusRules, validate, updateBookingStatus);
 
+/**
+ * @swagger
+ * /api/bookings/{id}/reschedule:
+ *   put:
+ *     summary: Landlord or Broker reschedules a booking
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.put("/:id/reschedule", authMiddleware, requireAnyRole(["admin", "landlord", "broker"]), require("../controllers/bookingController").rescheduleBooking);
+
+/**
+ * @swagger
+ * /api/bookings/{id}/tenant-response:
+ *   put:
+ *     summary: Tenant responds to a rescheduled booking
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.put("/:id/tenant-response", authMiddleware, requireAnyRole(["user"]), require("../controllers/bookingController").tenantResponseBooking);
 
 module.exports = router;

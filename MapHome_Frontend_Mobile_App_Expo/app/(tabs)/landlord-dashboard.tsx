@@ -34,6 +34,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import * as Clipboard from "expo-clipboard";
 
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+
 type DashboardTab =
   | "overview"
   | "posts"
@@ -51,6 +53,13 @@ export default function LandlordDashboardScreen() {
   );
   const [screenLoading, setScreenLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // States for Rescheduling Bookings
+  const [reschedulingBookingId, setReschedulingBookingId] = useState<string | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date(Date.now() + 86400000));
+  const [rescheduleTime, setRescheduleTime] = useState<string>("09:00");
+  const [rescheduleNote, setRescheduleNote] = useState<string>("");
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
   const tint = useThemeColor({}, "tint");
   const icon = useThemeColor({}, "icon");
@@ -263,6 +272,31 @@ export default function LandlordDashboardScreen() {
       );
     } catch {
       Alert.alert("Lỗi", "Không thể cập nhật lịch hẹn.");
+    }
+  };
+
+  const handleRescheduleBooking = async () => {
+    if (!reschedulingBookingId) return;
+    try {
+      const formattedDate = rescheduleDate.toISOString().split("T")[0];
+      const res = await api.put(`/api/bookings/${reschedulingBookingId}/reschedule`, {
+        bookingDate: formattedDate,
+        bookingTime: rescheduleTime,
+        note: rescheduleNote,
+      });
+      if (res.status === 200) {
+        Alert.alert("Thành công", "Đã gửi đề xuất lịch hẹn mới cho khách.");
+        setBookings((prev) =>
+          prev.map((item) =>
+            item._id === reschedulingBookingId
+              ? { ...item, status: "landlord_proposed", bookingDate: formattedDate, bookingTime: rescheduleTime, note: rescheduleNote }
+              : item,
+          ),
+        );
+        setReschedulingBookingId(null);
+      }
+    } catch {
+      Alert.alert("Lỗi", "Không thể đề xuất lịch hẹn mới.");
     }
   };
 
@@ -763,6 +797,8 @@ export default function LandlordDashboardScreen() {
                           confirmed: { bg: "bg-emerald-50 border-emerald-200", text: "text-emerald-700", label: "✓ Đã xác nhận" },
                           cancelled: { bg: "bg-red-50 border-red-200", text: "text-red-700", label: "✕ Đã hủy" },
                           completed: { bg: "bg-blue-50 border-blue-200", text: "text-blue-700", label: "✓ Đã hoàn thành" },
+                          landlord_proposed: { bg: "bg-purple-50 border-purple-200", text: "text-purple-700", label: "🔄 Đã đề xuất" },
+                          tenant_rejected: { bg: "bg-rose-50 border-rose-200", text: "text-rose-700", label: "✕ Khách từ chối" },
                         };
                         const config = statusConfig[booking.status] || {
                           bg: "bg-slate-50 border-slate-200",
@@ -786,29 +822,84 @@ export default function LandlordDashboardScreen() {
                       </Text>
                     </View>
 
-                    {booking.status === "pending" && (
-                      <View className="flex-row gap-2">
-                        <TouchableOpacity
-                          onPress={() =>
-                            handleBookingStatus(booking._id, "confirmed")
-                          }
-                          className="flex-1 px-3 py-2 rounded-xl bg-emerald-600"
-                        >
-                          <Text className="text-xs font-bold text-white text-center">
-                            ✓ Duyệt
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() =>
-                            handleBookingStatus(booking._id, "cancelled")
-                          }
-                          className="flex-1 px-3 py-2 rounded-xl bg-red-100 border border-red-200"
-                        >
-                          <Text className="text-xs font-bold text-red-700 text-center">
-                            ✕ Từ chối
-                          </Text>
-                        </TouchableOpacity>
+                    {reschedulingBookingId === booking._id ? (
+                      <View className="bg-white p-3 rounded-xl border border-slate-200 mt-2">
+                        <Text className="font-bold text-slate-700 mb-2">Đề xuất lịch hẹn mới</Text>
+                        <View className="flex-row justify-between mb-3">
+                          <TouchableOpacity
+                            onPress={() => setDatePickerVisibility(true)}
+                            className="flex-1 mr-2 bg-slate-50 border border-slate-200 p-2 rounded-lg"
+                          >
+                            <Text className="text-xs text-slate-600 font-bold">{rescheduleDate.toLocaleDateString("vi-VN")}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            className="flex-1 ml-2 bg-slate-50 border border-slate-200 p-2 rounded-lg"
+                            onPress={() => {
+                              Alert.prompt("Giờ hẹn", "Nhập giờ (vd: 14:30)", [
+                                { text: "Hủy", style: "cancel" },
+                                { text: "OK", onPress: (text?: string) => text && setRescheduleTime(text) }
+                              ]);
+                            }}
+                          >
+                            <Text className="text-xs text-slate-600 font-bold">{rescheduleTime}</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View className="flex-row gap-2">
+                          <TouchableOpacity
+                            onPress={() => setReschedulingBookingId(null)}
+                            className="flex-1 py-2 rounded-lg bg-slate-100"
+                          >
+                            <Text className="text-xs font-bold text-slate-600 text-center">Hủy</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={handleRescheduleBooking}
+                            className="flex-1 py-2 rounded-lg bg-purple-600"
+                          >
+                            <Text className="text-xs font-bold text-white text-center">Gửi đề xuất</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
+                    ) : (
+                      <>
+                        {booking.status === "pending" && (
+                          <View className="flex-row gap-2">
+                            <TouchableOpacity
+                              onPress={() =>
+                                handleBookingStatus(booking._id, "confirmed")
+                              }
+                              className="flex-1 px-3 py-2 rounded-xl bg-emerald-600"
+                            >
+                              <Text className="text-xs font-bold text-white text-center">
+                                ✓ Duyệt
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() =>
+                                handleBookingStatus(booking._id, "cancelled")
+                              }
+                              className="flex-1 px-3 py-2 rounded-xl bg-red-100 border border-red-200"
+                            >
+                              <Text className="text-xs font-bold text-red-700 text-center">
+                                ✕ Từ chối
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {(booking.status === "cancelled" || booking.status === "tenant_rejected") && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              setReschedulingBookingId(booking._id);
+                              setRescheduleDate(new Date(Date.now() + 86400000));
+                              setRescheduleTime("09:00");
+                            }}
+                            className="mt-2 px-3 py-2 rounded-xl bg-purple-100 border border-purple-200"
+                          >
+                            <Text className="text-xs font-bold text-purple-700 text-center">
+                              🔄 Hẹn lịch khác
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </>
                     )}
                   </View>
                 ))
@@ -1005,6 +1096,18 @@ export default function LandlordDashboardScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* DateTimePicker for Rescheduling */}
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="date"
+        onConfirm={(date) => {
+          setRescheduleDate(date);
+          setDatePickerVisibility(false);
+        }}
+        onCancel={() => setDatePickerVisibility(false)}
+        minimumDate={new Date()}
+      />
     </SafeAreaView>
   );
 }

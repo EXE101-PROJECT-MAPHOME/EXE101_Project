@@ -618,6 +618,7 @@ export default function ProfileScreen() {
                 </View>
                 <Text className="text-xs text-slate-400 font-bold uppercase tracking-wider">
                   {user.role === "broker" ? "Người môi giới chuyên nghiệp" : "Chủ trọ nhà đầu tư"}
+                  {user.subscriptionTier && ` • Gói ${user.subscriptionTier.toLowerCase() !== "free" ? user.subscriptionTier : "Thường"}`}
                 </Text>
                 <View className="flex-row items-center mt-1">
                   <Mail size={12} color="#94a3b8" />

@@ -23,6 +23,7 @@ export interface User {
     twoFactorEnabled?: boolean;
     loginHistory?: any[];
   };
+  subscriptionTier?: string;
 }
 
 interface AuthContextType {

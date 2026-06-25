@@ -21,16 +21,18 @@ import { Button } from "./ui/button";
 interface CalendarViewProps {
   bookings: any[];
   onUpdateStatus?: (bookingId: string, status: string) => Promise<void>;
+  onReschedule?: (bookingId: string, date: string, time: string, note: string) => Promise<void>;
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({ bookings, onUpdateStatus }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ bookings, onUpdateStatus, onReschedule }) => {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("");
+  const [rescheduleNote, setRescheduleNote] = useState("");
 
   // Map bookings to FullCalendar events
   const events = bookings.map((booking) => {
-    // Combine date and time
-    // booking.bookingDate is likely ISO string "2024-04-13T00:00:00.000Z"
-    // booking.bookingTime is "14:30"
     const datePart = new Date(booking.bookingDate).toISOString().split("T")[0];
     const startTime = `${datePart}T${booking.bookingTime}:00`;
 
@@ -39,6 +41,8 @@ const CalendarView: React.FC<CalendarViewProps> = ({ bookings, onUpdateStatus })
     if (booking.status === "pending") color = "#f59e0b"; // amber
     if (booking.status === "cancelled") color = "#ef4444"; // rose
     if (booking.status === "completed") color = "#6366f1"; // indigo
+    if (booking.status === "landlord_proposed") color = "#a855f7"; // purple
+    if (booking.status === "tenant_rejected") color = "#f43f5e"; // rose/red
 
     return {
       id: booking._id,
@@ -54,6 +58,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ bookings, onUpdateStatus })
 
   const handleEventClick = (info: any) => {
     setSelectedEvent(info.event.extendedProps);
+    setIsRescheduling(false);
+    setNewDate(info.event.extendedProps.bookingDate.split("T")[0]);
+    setNewTime(info.event.extendedProps.bookingTime);
+    setRescheduleNote("");
   };
 
   const getStatusBadge = (status: string) => {
@@ -66,6 +74,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ bookings, onUpdateStatus })
         return <span className="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Đã huỷ</span>;
       case "completed":
         return <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Hoàn thành</span>;
+      case "landlord_proposed":
+        return <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Đã đề xuất</span>;
+      case "tenant_rejected":
+        return <span className="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-[10px] font-black uppercase">Khách từ chối</span>;
       default:
         return null;
     }
@@ -154,40 +166,78 @@ const CalendarView: React.FC<CalendarViewProps> = ({ bookings, onUpdateStatus })
                   {getStatusBadge(selectedEvent.status)}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-[32px] border border-slate-100 shadow-inner">
-                  <div className="space-y-2">
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Thời gian</p>
-                    <p className="font-black text-slate-900 flex items-center gap-3">
-                      <Clock className="size-5 text-emerald-500" />
-                      {selectedEvent.bookingTime} • {new Date(selectedEvent.bookingDate).toLocaleDateString("vi-VN")}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Khách hàng</p>
-                    <p className="font-black text-slate-900 flex items-center gap-3">
-                      <User className="size-5 text-blue-500" />
-                      {selectedEvent.customerName}
-                    </p>
-                    <p className="text-xs font-bold text-slate-400 ml-8 flex items-center gap-2">
-                      <Phone className="size-3" /> {selectedEvent.customerPhone}
-                    </p>
-                  </div>
-                </div>
+                {!isRescheduling ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-[32px] border border-slate-100 shadow-inner">
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Thời gian</p>
+                        <p className="font-black text-slate-900 flex items-center gap-3">
+                          <Clock className="size-5 text-emerald-500" />
+                          {selectedEvent.bookingTime} • {new Date(selectedEvent.bookingDate).toLocaleDateString("vi-VN")}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Khách hàng</p>
+                        <p className="font-black text-slate-900 flex items-center gap-3">
+                          <User className="size-5 text-blue-500" />
+                          {selectedEvent.customerName}
+                        </p>
+                        <p className="text-xs font-bold text-slate-400 ml-8 flex items-center gap-2">
+                          <Phone className="size-3" /> {selectedEvent.customerPhone}
+                        </p>
+                      </div>
+                    </div>
 
-                {selectedEvent.note && (
-                  <div className="space-y-3">
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2">
-                      <FileText className="size-3" /> Ghi chú
-                    </p>
-                    <p className="text-sm text-slate-600 font-medium italic bg-amber-50/50 p-4 rounded-2xl border border-amber-100 flex-1">
-                      "{selectedEvent.note}"
-                    </p>
+                    {selectedEvent.note && (
+                      <div className="space-y-3">
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest flex items-center gap-2">
+                          <FileText className="size-3" /> Ghi chú
+                        </p>
+                        <p className="text-sm text-slate-600 font-medium italic bg-amber-50/50 p-4 rounded-2xl border border-amber-100 flex-1">
+                          "{selectedEvent.note}"
+                        </p>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="space-y-4 bg-slate-50 p-6 rounded-[32px] border border-slate-100">
+                    <h5 className="font-bold text-slate-800">Đề xuất lịch hẹn mới</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 mb-1 block">Ngày hẹn</label>
+                        <input 
+                          type="date" 
+                          className="w-full rounded-xl border-slate-200 p-2 text-sm"
+                          value={newDate}
+                          onChange={(e) => setNewDate(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 mb-1 block">Giờ hẹn</label>
+                        <input 
+                          type="time" 
+                          className="w-full rounded-xl border-slate-200 p-2 text-sm"
+                          value={newTime}
+                          onChange={(e) => setNewTime(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 mb-1 block">Lời nhắn cho khách (tuỳ chọn)</label>
+                      <textarea 
+                        className="w-full rounded-xl border-slate-200 p-2 text-sm"
+                        rows={2}
+                        value={rescheduleNote}
+                        onChange={(e) => setRescheduleNote(e.target.value)}
+                        placeholder="Ví dụ: Xin lỗi, giờ đó tôi bận..."
+                      />
+                    </div>
                   </div>
                 )}
 
                 {/* Actions */}
                 <div className="flex gap-4 pt-4">
-                  {selectedEvent.status === "pending" && (
+                  {selectedEvent.status === "pending" && !isRescheduling && (
                     <>
                       <Button
                         variant="ghost"
@@ -217,7 +267,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ bookings, onUpdateStatus })
                     </>
                   )}
 
-                  {selectedEvent.status === "confirmed" && (
+                  {selectedEvent.status === "confirmed" && !isRescheduling && (
                     <Button
                       className="w-full py-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black shadow-xl shadow-emerald-100 transition-all hover:scale-[1.02] active:scale-95"
                       onClick={async () => {
@@ -232,7 +282,41 @@ const CalendarView: React.FC<CalendarViewProps> = ({ bookings, onUpdateStatus })
                     </Button>
                   )}
 
-                  {(selectedEvent.status === "completed" || selectedEvent.status === "cancelled") && (
+                  {(selectedEvent.status === "tenant_rejected" || selectedEvent.status === "cancelled") && !isRescheduling && (
+                    <Button
+                      className="w-full py-7 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black shadow-xl shadow-purple-100 transition-all hover:scale-[1.02] active:scale-95"
+                      onClick={() => setIsRescheduling(true)}
+                    >
+                      <Calendar className="size-5 mr-2" />
+                      Hẹn lịch khác
+                    </Button>
+                  )}
+
+                  {isRescheduling && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        className="flex-1 py-7 rounded-2xl font-black text-slate-400 hover:bg-slate-50 border-2 border-slate-100"
+                        onClick={() => setIsRescheduling(false)}
+                      >
+                        Huỷ
+                      </Button>
+                      <Button
+                        className="flex-1 py-7 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-black shadow-xl transition-all hover:scale-[1.02] active:scale-95"
+                        onClick={async () => {
+                          if (onReschedule && newDate && newTime) {
+                            await onReschedule(selectedEvent._id, newDate, newTime, rescheduleNote);
+                            setSelectedEvent(null);
+                          }
+                        }}
+                        disabled={!newDate || !newTime}
+                      >
+                        Gửi đề xuất
+                      </Button>
+                    </>
+                  )}
+
+                  {(selectedEvent.status === "completed" || selectedEvent.status === "cancelled" || selectedEvent.status === "tenant_rejected" || selectedEvent.status === "landlord_proposed") && !isRescheduling && (
                     <Button
                       variant="ghost"
                       className="w-full py-7 rounded-2xl font-black text-slate-400 hover:bg-slate-50 border-2 border-slate-100"

@@ -193,6 +193,63 @@ const notifyPropertyExpiryWarning = async ({
   });
 };
 
+/**
+ * Notify TENANT when landlord proposes a new schedule
+ */
+const notifyTenantBookingRescheduled = async ({
+  tenantUserId,
+  propertyName,
+  bookingDate,
+  bookingTime,
+  propertyId,
+}) => {
+  await createNotification({
+    userId: tenantUserId,
+    title: "🔄 Chủ trọ đề xuất lịch hẹn mới",
+    message: `Chủ trọ đã đề xuất dời lịch xem "${propertyName}" sang ngày ${bookingDate} lúc ${bookingTime}. Vui lòng xác nhận hoặc từ chối.`,
+    type: "info",
+    link: propertyId ? `/room/${propertyId}` : undefined,
+  });
+};
+
+/**
+ * Notify LANDLORD when tenant rejects proposed schedule
+ */
+const notifyLandlordBookingRejectedByTenant = async ({
+  landlordUserId,
+  propertyName,
+  customerName,
+  propertyId,
+}) => {
+  await createNotification({
+    userId: landlordUserId,
+    title: "❌ Khách đã từ chối lịch đề xuất",
+    message: `${customerName} đã từ chối lịch xem "${propertyName}" mà bạn đề xuất. Bạn có thể hẹn một lịch khác.`,
+    type: "warning",
+    link: propertyId ? `/room/${propertyId}` : undefined,
+  });
+};
+
+/**
+ * Notify LANDLORD when tenant confirms proposed schedule
+ */
+const notifyLandlordBookingConfirmedByTenant = async ({
+  landlordUserId,
+  propertyName,
+  customerName,
+  bookingDate,
+  bookingTime,
+  propertyId,
+}) => {
+  await createNotification({
+    userId: landlordUserId,
+    title: "✅ Khách đã đồng ý lịch hẹn",
+    message: `${customerName} đã đồng ý lịch xem "${propertyName}" vào ngày ${bookingDate} lúc ${bookingTime} mà bạn đề xuất.`,
+    type: "success",
+    link: propertyId ? `/room/${propertyId}` : undefined,
+  });
+};
+
 module.exports = {
   createNotification,
   notifyLandlordNewBooking,
@@ -202,4 +259,7 @@ module.exports = {
   notifyTenantBookingCompleted,
   notifyBookingReminder,
   notifyPropertyExpiryWarning,
+  notifyTenantBookingRescheduled,
+  notifyLandlordBookingRejectedByTenant,
+  notifyLandlordBookingConfirmedByTenant,
 };
