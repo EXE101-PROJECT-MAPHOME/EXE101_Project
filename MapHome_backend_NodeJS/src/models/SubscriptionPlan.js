@@ -21,6 +21,11 @@ const SubscriptionPlanSchema = new mongoose.Schema(
     ctaVariant: { type: String, default: "default" },
     highlighted: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    targetRole: {
+      type: String,
+      enum: ["all", "landlord", "broker"],
+      default: "landlord",
+    }, // Phân loại đối tượng áp dụng gói: tất cả, chủ nhà, hoặc môi giới
   },
   { timestamps: true }
 );

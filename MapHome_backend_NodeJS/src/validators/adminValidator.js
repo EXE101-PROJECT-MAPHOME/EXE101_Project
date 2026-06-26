@@ -120,6 +120,11 @@ const planRules = [
     .optional()
     .isArray()
     .withMessage("Tính năng phải là một mảng"),
+
+  body("targetRole")
+    .optional()
+    .isIn(["all", "landlord", "broker"])
+    .withMessage("targetRole phải là 'all', 'landlord', hoặc 'broker'"),
 ];
 
 /**
