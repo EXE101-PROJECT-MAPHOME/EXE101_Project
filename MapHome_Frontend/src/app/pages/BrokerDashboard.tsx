@@ -9,8 +9,9 @@ import { Button } from "@/app/components/ui/button";
 import { EditPropertyDialog } from "@/app/components/EditPropertyDialog";
 import { ConfirmDialog } from "@/app/components/ConfirmDialog";
 import CalendarView from "@/app/components/CalendarView";
+import { SubscriptionManagement } from "@/app/components/SubscriptionManagement";
 import {
-  FileText, PlusCircle, Eye, Edit, Trash2, MapPin, Clock,
+  FileText, PlusCircle, Eye, Edit, Trash2, MapPin, Clock, CreditCard,
   CalendarDays, TrendingUp, Star, ShieldCheck, LayoutDashboard,
   Settings, Bell, Loader2, Menu, X as XIcon, Phone, Mail,
   Users, Sparkles, Zap, Bot, ChevronRight, ArrowUpRight,
@@ -19,13 +20,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-type DashboardTab = "overview" | "posts" | "bookings" | "leads" | "settings";
+type DashboardTab = "overview" | "posts" | "bookings" | "leads" | "subscription" | "notifications" | "settings";
 
 const menuItems: Array<{ id: DashboardTab; label: string; icon: any; description: string }> = [
   { id: "overview", label: "Tổng quan", icon: LayoutDashboard, description: "Analytics & KPIs" },
   { id: "posts", label: "Tin quản lý", icon: FileText, description: "Bất động sản" },
   { id: "bookings", label: "Lịch xem phòng", icon: CalendarDays, description: "Lịch hẹn" },
   { id: "leads", label: "Khách hàng (AI)", icon: Bot, description: "AI Matching" },
+  { id: "subscription", label: "Gói đăng ký", icon: CreditCard, description: "Nâng cấp" },
+  { id: "notifications", label: "Thông báo", icon: Bell, description: "Cập nhật" },
   { id: "settings", label: "Cài đặt", icon: Settings, description: "Tài khoản" },
 ];
 
@@ -92,7 +95,7 @@ function StatCard({
       whileHover={{ y: -4, scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className={`relative bg-white/80 backdrop-blur-sm rounded-3xl p-5 md:p-6 border border-white/60 cursor-pointer group overflow-hidden ${shadow}`}
+      className={`relative bg-white/80 backdrop-blur-sm rounded-[20px] md:rounded-3xl p-4 md:p-6 border border-white/60 cursor-pointer group overflow-hidden ${shadow}`}
       style={{ boxShadow: "0 4px 24px -4px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.6)" }}
     >
       {/* Glow accent */}
@@ -106,7 +109,7 @@ function StatCard({
       </div>
 
       <div className="flex items-end justify-between">
-        <span className="text-3xl font-black text-slate-900 tracking-tight">
+        <span className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
           <AnimatedNumber value={value} />
         </span>
         {trend !== undefined && (
@@ -416,13 +419,13 @@ export function BrokerDashboard() {
         </AnimatePresence>
 
         {/* ─── MAIN CONTENT ─── */}
-        <main className="flex-1 min-w-0 overflow-y-auto p-4 md:p-8 pt-20 md:pt-8">
+        <main className="flex-1 min-w-0 overflow-y-auto p-3 sm:p-4 md:p-8 pt-20 md:pt-8">
 
           {/* Page Header */}
           <motion.div
             initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8"
+            className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-8"
           >
             <div>
               <div className="flex items-center gap-3 mb-1">
@@ -443,11 +446,11 @@ export function BrokerDashboard() {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-row items-center gap-2 md:gap-3 w-full md:w-auto">
               <motion.button
                 whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                 onClick={() => fetchData(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 md:px-4 py-2.5 bg-white border border-slate-200 rounded-xl md:rounded-2xl text-[13px] md:text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
               >
                 <motion.div animate={isRefreshing ? { rotate: 360 } : {}} transition={{ duration: 0.8, repeat: isRefreshing ? Infinity : 0 }}>
                   <RefreshCw className="size-4" />
@@ -458,9 +461,9 @@ export function BrokerDashboard() {
               <motion.button
                 whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.96 }}
                 onClick={() => navigate("/post-room")}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm font-extrabold rounded-2xl shadow-lg shadow-violet-500/25 transition-all"
+                className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 md:px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-[13px] md:text-sm font-extrabold rounded-xl md:rounded-2xl shadow-md md:shadow-lg shadow-violet-500/25 transition-all whitespace-nowrap"
               >
-                <PlusCircle className="size-4" />
+                <PlusCircle className="size-4 shrink-0" />
                 Đăng tin mới
               </motion.button>
             </div>
@@ -472,7 +475,7 @@ export function BrokerDashboard() {
               <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4 }} className="space-y-8">
 
                 {/* Hero Banner */}
-                <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 p-5 md:p-8 text-white shadow-2xl shadow-violet-600/20">
+                <div className="relative overflow-hidden rounded-3xl md:rounded-[2rem] bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 p-5 md:p-8 text-white shadow-xl md:shadow-2xl shadow-violet-600/20">
                   {/* Animated decorative elements */}
                   <motion.div animate={{ rotate: 360, scale: [1, 1.2, 1] }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                     className="absolute -right-16 -top-16 w-64 h-64 bg-white/5 rounded-full" />
@@ -506,7 +509,7 @@ export function BrokerDashboard() {
 
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4, type: "spring" }}
-                      className="flex gap-2.5 shrink-0"
+                      className="flex gap-2 md:gap-2.5 shrink-0 w-full md:w-auto"
                     >
                       {[
                         { label: "Tin hoạt động", value: stats.approvedProperties, icon: CheckCircle2 },
@@ -514,9 +517,9 @@ export function BrokerDashboard() {
                       ].map((item, i) => {
                         const Icon = item.icon;
                         return (
-                          <div key={i} className="flex-1 md:flex-none bg-white/10 backdrop-blur-md px-4 md:px-5 py-3 md:py-4 rounded-2xl border border-white/15 text-center">
-                            <Icon className="size-4 text-violet-200 mx-auto mb-1.5 opacity-70" />
-                            <span className="block text-[8px] md:text-[9px] text-violet-200 font-black uppercase tracking-widest leading-none mb-1.5">{item.label}</span>
+                          <div key={i} className="flex-1 bg-white/10 backdrop-blur-md px-3 md:px-5 py-3 md:py-4 rounded-xl md:rounded-2xl border border-white/15 text-center">
+                            <Icon className="size-4 md:size-5 text-violet-200 mx-auto mb-1.5 opacity-70" />
+                            <span className="block text-[9px] md:text-[10px] text-violet-200 font-black uppercase tracking-widest leading-none mb-1 md:mb-1.5">{item.label}</span>
                             <span className="text-xl md:text-2xl font-black">{item.value}</span>
                           </div>
                         );
@@ -965,6 +968,29 @@ export function BrokerDashboard() {
                       </button>
                     </div>
                   </motion.div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ===== SUBSCRIPTION ===== */}
+            {activeTab === "subscription" && (
+              <motion.div key="subscription" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.35 }}>
+                <SubscriptionManagement />
+              </motion.div>
+            )}
+
+            {/* ===== NOTIFICATIONS ===== */}
+            {activeTab === "notifications" && (
+              <motion.div key="notifications" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.35 }}>
+                <div className="max-w-4xl space-y-6">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900">Thông báo</h3>
+                    <p className="text-sm text-slate-500 font-medium">Cập nhật mới nhất từ hệ thống</p>
+                  </div>
+                  <div className="bg-white/90 rounded-3xl p-10 border border-slate-200/60 shadow-sm text-center">
+                    <Bell className="size-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-500 font-semibold">Hiện chưa có thông báo nào.</p>
+                  </div>
                 </div>
               </motion.div>
             )}

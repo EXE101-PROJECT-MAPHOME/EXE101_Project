@@ -4155,11 +4155,29 @@ const SubscriptionsAdminView = ({
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 Landlord đang dùng
               </span>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-lg font-black text-slate-800">
-                  {plan.activeUsers || 0}
+              <div className="flex items-center gap-3">
+                {/* Badge hiển thị targetRole */}
+                <span
+                  className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
+                    plan.targetRole === "broker"
+                      ? "bg-violet-100 text-violet-700"
+                      : plan.targetRole === "all"
+                      ? "bg-gray-100 text-gray-600"
+                      : "bg-blue-100 text-blue-700"
+                  }`}
+                >
+                  {plan.targetRole === "broker"
+                    ? "💼 Môi Giới"
+                    : plan.targetRole === "all"
+                    ? "🌍 Tất cả"
+                    : "🏠 Chủ Nhà"}
                 </span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-lg font-black text-slate-800">
+                    {plan.activeUsers || 0}
+                  </span>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -4197,6 +4215,7 @@ const PlanEditorDialog = ({
     cta: "Chọn gói",
     ctaVariant: "default",
     features: [],
+    targetRole: "landlord",
   });
 
   const [newFeature, setNewFeature] = useState("");
@@ -4215,6 +4234,7 @@ const PlanEditorDialog = ({
         cta: initialData.cta || "Chọn gói",
         ctaVariant: initialData.ctaVariant || "default",
         features: initialData.features || [],
+        targetRole: initialData.targetRole || "landlord",
       });
     } else {
       setFormData({
@@ -4229,6 +4249,7 @@ const PlanEditorDialog = ({
         cta: "Chọn gói",
         ctaVariant: "default",
         features: [],
+        targetRole: "landlord",
       });
     }
   }, [initialData, isOpen]);
@@ -4354,6 +4375,23 @@ const PlanEditorDialog = ({
                     placeholder="v.d: gold-2026"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">
+                  Đối tượng áp dụng (Target Role)
+                </label>
+                <select
+                  value={formData.targetRole}
+                  onChange={(e) =>
+                    setFormData({ ...formData, targetRole: e.target.value })
+                  }
+                  className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
+                >
+                  <option value="all">Ẩp dụng cho tất cả (all)</option>
+                  <option value="landlord">Chỉ dành cho Chủ Nhà (landlord)</option>
+                  <option value="broker">Chỉ dành cho Môi Giới (broker)</option>
+                </select>
               </div>
 
               <div className="space-y-2">

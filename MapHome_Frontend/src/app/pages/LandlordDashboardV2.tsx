@@ -139,6 +139,7 @@ export function LandlordDashboardV2() {
   const [verifyingPropertyId, setVerifyingPropertyId] = useState<string | null>(
     null,
   );
+  const [overviewTimeRange, setOverviewTimeRange] = useState<"today" | "7days" | "all">("today");
 
   // Helper compute for expiration warnings
   const { expiredCount, soonToExpireCount } = useMemo(() => {
@@ -164,6 +165,26 @@ export function LandlordDashboardV2() {
 
     return { expiredCount: expired, soonToExpireCount: soon };
   }, [landlordPosts]);
+
+  const filteredOverviewStats = useMemo(() => {
+    const now = new Date();
+    let startDate = new Date(0);
+    if (overviewTimeRange === "today") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (overviewTimeRange === "7days") {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+
+    const filteredPosts = landlordPosts.filter(p => new Date(p.createdAt || Date.now()) >= startDate);
+    const totalPosts = filteredPosts.length;
+    const totalViews = filteredPosts.reduce((sum, p) => sum + (p.views || 0), 0);
+
+    const filteredBookings = bookings.filter(b => new Date(b.createdAt || Date.now()) >= startDate);
+    const approvedBookings = filteredBookings.filter(b => b.status === "confirmed" || b.status === "completed").length;
+    const pendingBookings = filteredBookings.filter(b => b.status === "pending").length;
+
+    return { totalPosts, totalViews, approvedBookings, pendingBookings };
+  }, [overviewTimeRange, landlordPosts, bookings]);
 
   const ExpiryWarningBanner = () => {
     if (expiredCount === 0 && soonToExpireCount === 0) return null;
@@ -255,13 +276,15 @@ export function LandlordDashboardV2() {
         setSavedVoucherIds((savedVouchersRes.data || []).map((v: any) => v._id || v.id));
 
         if (activeTab === "overview") {
-          const [analyticsRes, propertiesRes, vouchersRes] = await Promise.all([
+          const [analyticsRes, propertiesRes, vouchersRes, bookingsRes] = await Promise.all([
             api.get("/api/landlord/analytics"),
             api.get("/api/landlord/properties"),
             api.get("/api/vouchers/promoted"),
+            api.get("/api/landlord/bookings"),
           ]);
           const data = analyticsRes.data;
           setPromotedVouchers(vouchersRes.data || []);
+          setBookings(bookingsRes.data || []);
           setStats({
             totalPosts: data.totalProperties || 0,
             approvedPosts: data.approvedProperties || 0,
@@ -1729,16 +1752,49 @@ export function LandlordDashboardV2() {
                     transition={{ delay: 0.2 }}
                     className="text-indigo-600/60 text-sm sm:text-xl font-bold"
                   >
-                    Dưới đây là thống kê hiệu suất bài đăng của bạn hôm nay.
+                    Dưới đây là thống kê hiệu suất bài đăng của bạn {overviewTimeRange === "today" ? "hôm nay" : overviewTimeRange === "7days" ? "7 ngày qua" : "từ trước đến nay"}.
                   </motion.p>
                 </div>
-                <div className="flex bg-white/50 backdrop-blur-md rounded-2xl p-1 border border-slate-200 shadow-sm overflow-hidden self-start">
-                  <div className="px-4 py-2 bg-white rounded-xl shadow-lg shadow-slate-200/50 font-black text-indigo-600 text-sm">
+                <div className="flex bg-white/50 backdrop-blur-md rounded-2xl p-1 border border-slate-200 shadow-sm overflow-hidden self-start relative">
+                  <button 
+                    onClick={() => setOverviewTimeRange("today")}
+                    className={`relative px-4 py-2 rounded-xl text-sm font-black transition-colors duration-200 z-10 ${
+                      overviewTimeRange === "today" 
+                        ? "text-indigo-700" 
+                        : "text-indigo-400 hover:text-indigo-600"
+                    }`}
+                  >
+                    {overviewTimeRange === "today" && (
+                      <motion.div layoutId="activeOverviewTimeBg" className="absolute inset-0 bg-white shadow-sm rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />
+                    )}
                     Hôm nay
-                  </div>
-                  <div className="px-4 py-2 font-bold text-indigo-400 text-sm hover:text-indigo-600 cursor-pointer transition-colors">
+                  </button>
+                  <button 
+                    onClick={() => setOverviewTimeRange("7days")}
+                    className={`relative px-4 py-2 rounded-xl text-sm font-black transition-colors duration-200 z-10 ${
+                      overviewTimeRange === "7days" 
+                        ? "text-indigo-700" 
+                        : "text-indigo-400 hover:text-indigo-600"
+                    }`}
+                  >
+                    {overviewTimeRange === "7days" && (
+                      <motion.div layoutId="activeOverviewTimeBg" className="absolute inset-0 bg-white shadow-sm rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />
+                    )}
                     7 ngày qua
-                  </div>
+                  </button>
+                  <button 
+                    onClick={() => setOverviewTimeRange("all")}
+                    className={`relative px-4 py-2 rounded-xl text-sm font-black transition-colors duration-200 z-10 ${
+                      overviewTimeRange === "all" 
+                        ? "text-indigo-700" 
+                        : "text-indigo-400 hover:text-indigo-600"
+                    }`}
+                  >
+                    {overviewTimeRange === "all" && (
+                      <motion.div layoutId="activeOverviewTimeBg" className="absolute inset-0 bg-white shadow-sm rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />
+                    )}
+                    Tất cả
+                  </button>
                 </div>
               </div>
             )}
@@ -1756,7 +1812,7 @@ export function LandlordDashboardV2() {
                 {[
                   {
                     label: "Tin đăng",
-                    value: stats.totalPosts,
+                    value: filteredOverviewStats.totalPosts,
                     icon: FileText,
                     bg: "bg-blue-50",
                     iconBg: "from-blue-500 to-indigo-600",
@@ -1765,7 +1821,7 @@ export function LandlordDashboardV2() {
                   },
                   {
                     label: "Hẹn đã duyệt",
-                    value: bookings.filter((b) => b.status === "confirmed" || b.status === "completed").length,
+                    value: filteredOverviewStats.approvedBookings,
                     icon: CheckCircle,
                     bg: "bg-emerald-50",
                     iconBg: "from-emerald-500 to-teal-600",
@@ -1774,7 +1830,7 @@ export function LandlordDashboardV2() {
                   },
                   {
                     label: "Hẹn chờ duyệt",
-                    value: bookings.filter((b) => b.status === "pending").length,
+                    value: filteredOverviewStats.pendingBookings,
                     icon: Clock,
                     bg: "bg-orange-50",
                     iconBg: "from-orange-500 to-amber-600",
@@ -1783,7 +1839,7 @@ export function LandlordDashboardV2() {
                   },
                   {
                     label: "Lượt xem",
-                    value: stats.totalViews.toLocaleString(),
+                    value: filteredOverviewStats.totalViews.toLocaleString(),
                     icon: Eye,
                     bg: "bg-purple-50",
                     iconBg: "from-purple-500 to-indigo-700",
@@ -1827,9 +1883,18 @@ export function LandlordDashboardV2() {
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5 truncate">
                         {stat.label}
                       </p>
-                      <p className={`text-xl font-black tracking-tight leading-none ${stat.text}`}>
-                        {stat.value}
-                      </p>
+                      <AnimatePresence mode="popLayout">
+                        <motion.p
+                          key={stat.value}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          transition={{ duration: 0.2, type: "spring", bounce: 0 }}
+                          className={`text-xl font-black tracking-tight leading-none ${stat.text}`}
+                        >
+                          {stat.value}
+                        </motion.p>
+                      </AnimatePresence>
                     </div>
 
                     {/* Decorative bg circle */}

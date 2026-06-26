@@ -111,6 +111,7 @@ export interface RentalProperty {
   distance?: number; // Optional distance from search center
   status?: 'pending' | 'approved' | 'rejected' | 'reported' | 'expired';
   expiryDate?: string;
+  createdAt?: string | Date;
   rating?: number;
   ratingCount?: number;
   nearbyLandmarks?: {
