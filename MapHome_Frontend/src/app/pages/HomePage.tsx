@@ -557,7 +557,7 @@ export function HomePage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-50px" }}
           transition={{ duration: 0.6 }}
-          className="bg-gradient-to-b from-slate-50 to-white py-12 md:py-20 lg:py-32 relative overflow-hidden w-full"
+          className="bg-gradient-to-b from-slate-50 to-white py-12 md:py-20 lg:py-32 relative overflow-hidden w-full scrollbar-hide"
         >
           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-green-200 to-transparent" />
 
@@ -576,7 +576,7 @@ export function HomePage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-12 md:gap-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-12 md:gap-8 scrollbar-hide">
               {[
                 {
                   step: 1,
@@ -624,10 +624,6 @@ export function HomePage() {
                   key={s.step}
                   className="relative group will-change-transform"
                 >
-                  {i < 3 && (
-                    <div className="hidden lg:block absolute top-[50px] left-[65%] w-[70%] h-[3px] bg-gradient-to-r from-slate-100 to-slate-200 z-0" />
-                  )}
-
                   <div className="relative z-10 flex flex-col items-center">
                     <motion.div
                       whileHover={{ scale: 1.1, rotate: 5 }}
