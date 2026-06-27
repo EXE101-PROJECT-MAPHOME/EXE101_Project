@@ -154,7 +154,7 @@ export function AdminPage() {
         blogsRes,
       ] = await Promise.all([
         api.get(`/api/admin/stats?month=${selectedMonth}&year=${selectedYear}`),
-        api.get("/api/admin/stats/weekly-search"),
+        api.get("/api/admin/stats/chart"),
         api.get("/api/admin/stats/top-rooms"),
         api.get("/api/admin/properties"),
         api.get("/api/admin/users"),
@@ -523,9 +523,9 @@ export function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden flex font-sans">
+    <div className="h-[100dvh] w-full bg-white relative overflow-hidden flex font-sans">
       {/* Background Aura Effects */}
-      <div className="fixed inset-0 z-0 bg-gradient-to-tr from-[#f0f9f5] via-white to-[#f0f2f9]" />
+      <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[#f0f9f5] via-white to-[#f0f2f9] pointer-events-none" />
 
       {/* Mobile Header - Only visible on small screens */}
       <div className="fixed top-0 left-0 right-0 h-16 md:hidden bg-white border-b border-slate-100 flex items-center px-4 z-40">
@@ -559,7 +559,7 @@ export function AdminPage() {
       )}
 
       {/* Sidebar Navigation - Responsive */}
-      <aside className={`fixed md:static w-80 h-screen bg-white/70 backdrop-blur-3xl border-r border-white/40 flex-shrink-0 overflow-hidden flex flex-col z-40 shadow-[4px_0_30px_rgba(0,0,0,0.02)] transition-transform duration-300 ${
+      <aside className={`fixed md:static w-80 h-[100dvh] bg-white/70 backdrop-blur-3xl border-r border-white/40 flex-shrink-0 overflow-hidden flex flex-col z-40 shadow-[4px_0_30px_rgba(0,0,0,0.02)] transition-transform duration-300 ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       }`}>
         {/* Logo Section */}
@@ -758,10 +758,10 @@ export function AdminPage() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative z-10 flex flex-col h-screen md:mt-0 mt-16">
+      <main className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative z-10 flex flex-col h-full pt-16 md:pt-0">
         <div className="flex-1 w-full flex flex-col">
           {/* Luminous 3.0: Premium Sticky Header */}
-          <header className="px-3 sm:px-6 md:px-10 py-3 sm:py-5 flex items-center justify-between sticky top-0 z-40 bg-white/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.03)] border-b border-white mb-4 sm:mb-6">
+          <header className="px-3 sm:px-6 md:px-10 py-3 sm:py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 relative md:sticky top-0 md:z-40 bg-white/80 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.03)] border-b border-white mb-4 sm:mb-6">
             <div className="flex flex-col">
               <h2 className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-1">
                 Hệ thống quản trị
@@ -787,7 +787,7 @@ export function AdminPage() {
               </div>
             </div>
 
-            <div className="hidden md:flex items-center gap-4 bg-white/60 backdrop-blur-xl border border-white/40 p-2 rounded-[28px] shadow-2xl shadow-slate-200/50">
+            <div className="flex items-center gap-2 sm:gap-4 bg-white/60 backdrop-blur-xl border border-white/40 p-2 rounded-[28px] shadow-2xl shadow-slate-200/50 w-full md:w-auto overflow-x-auto no-scrollbar">
               <motion.button
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -1060,7 +1060,7 @@ export function AdminPage() {
 const DashboardView = forwardRef(function DashboardView(
   {
     stats,
-    weeklySearchData,
+    weeklySearchData: initialWeeklySearchData,
     recentActivities,
     topRooms,
     posts,
@@ -1073,6 +1073,19 @@ const DashboardView = forwardRef(function DashboardView(
   },
   ref: any,
 ) {
+  const [chartRange, setChartRange] = useState("week");
+  const [chartMetric, setChartMetric] = useState("revenue");
+  const [chartData, setChartData] = useState<any[]>(initialWeeklySearchData);
+  const [isChartLoading, setIsChartLoading] = useState(false);
+
+  useEffect(() => {
+    setIsChartLoading(true);
+    api.get(`/api/admin/stats/chart?range=${chartRange}`)
+      .then(res => setChartData(res.data || []))
+      .catch(console.error)
+      .finally(() => setIsChartLoading(false));
+  }, [chartRange]);
+
   const safePosts = Array.isArray(posts) ? posts : [];
   const total = safePosts.length || 1; // Avoid division by zero
   const approvedPct = Math.round(
@@ -1084,6 +1097,8 @@ const DashboardView = forwardRef(function DashboardView(
   const reportedPct = Math.round(
     (safePosts.filter((p) => p.status === "reported").length / total) * 100,
   );
+
+  const maxChartValue = Math.max(...chartData.map((d: any) => d[chartMetric] || 0), 1);
 
   return (
     <motion.div
@@ -1105,39 +1120,38 @@ const DashboardView = forwardRef(function DashboardView(
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <KPICard
-          icon="🏘️"
+          icon="💰"
           iconBg="#f0fdf4"
-          label="Tổng tin đăng"
-          value={stats?.totalProperties?.toLocaleString() || "0"}
-          change="Phát triển"
+          label="Tổng doanh thu"
+          value={stats?.totalRevenue ? `${stats.totalRevenue}đ` : "0đ"}
+          change="Tăng trưởng"
           changePositive
           topGradient="linear-gradient(90deg, #10b981, #34d399)"
         />
         <KPICard
           icon="👥"
           iconBg="#eff6ff"
-          label="Người dùng"
+          label="Tổng User"
           value={stats?.totalUsers?.toLocaleString() || "0"}
           change="+12.5%"
           changePositive
           topGradient="linear-gradient(90deg, #3b82f6, #60a5fa)"
         />
         <KPICard
-          icon="📍"
+          icon="🔄"
           iconBg="#fffbeb"
-          label="Quận / Huyện"
-          value={stats?.uniqueDistricts?.toString() || "0"}
-          change="Phủ sóng"
+          label="Giao dịch"
+          value={stats?.totalTransactions?.toLocaleString() || "0"}
+          change="Tuần này"
           changePositive
           topGradient="linear-gradient(90deg, #f59e0b, #fbbf24)"
         />
         <KPICard
-          icon="😊"
+          icon="⭐"
           iconBg="#fef3f2"
-          label="Hài lòng"
-          value={`${stats?.satisfactionRate || 98}%`}
-          change="Xuất sắc"
-          changePositive
+          label="Đánh giá"
+          value={`${stats?.averageRating || "4.9"} / 5.0`}
+          change={`${stats?.totalReviews || 0} lượt`}
           topGradient="linear-gradient(90deg, #ec4899, #f472b6)"
         />
       </div>
@@ -1148,107 +1162,112 @@ const DashboardView = forwardRef(function DashboardView(
           hidden: { opacity: 0 },
           show: { opacity: 1, transition: { staggerChildren: 0.1 } },
         }}
-        className="grid grid-cols-[1.6fr_1fr] gap-6"
+        className="grid grid-cols-1 gap-6"
       >
-        {/* Weekly Search Chart */}
+        {/* Weekly Revenue Chart (Full width) */}
         <motion.div
           variants={{
-            hidden: { opacity: 0, x: -20 },
-            show: { opacity: 1, x: 0 },
+            hidden: { opacity: 0, y: 20 },
+            show: { opacity: 1, y: 0 },
           }}
           className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm hover:shadow-md transition-shadow"
         >
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div>
               <h3 className="text-sm font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider">
-                Lượt tìm kiếm
+                Biểu đồ thống kê
               </h3>
               <p className="text-xs text-slate-400 font-semibold mt-1">
-                Dữ liệu theo tuần (Real-time)
+                Dữ liệu linh hoạt theo bộ lọc
               </p>
             </div>
-            <button className="p-2 hover:bg-slate-50 rounded-xl transition-colors">
-              <TrendingUp className="size-5 text-emerald-500" />
-            </button>
-          </div>
-
-          <div className="h-[200px] flex items-end justify-between gap-6 px-2">
-            {weeklySearchData.map((item) => (
-              <div
-                key={item.day}
-                className="flex-1 flex flex-col items-center gap-3"
+            <div className="flex w-full sm:w-auto items-center gap-2">
+              <select
+                value={chartMetric}
+                onChange={(e) => setChartMetric(e.target.value)}
+                className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
               >
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${item.value}%` }}
-                  transition={{ duration: 1, delay: 0.5, ease: "circOut" }}
-                  className={`w-full max-w-[40px] rounded-2xl relative group ${
-                    item.highlight
-                      ? "bg-gradient-to-t from-emerald-500 to-emerald-300"
-                      : "bg-slate-100 group-hover:bg-slate-200"
-                  }`}
-                >
-                  {/* Tooltip on hover */}
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                    {item.value}%
-                  </div>
-                </motion.div>
-                <span
-                  className={`text-[10px] font-bold ${item.highlight ? "text-emerald-600" : "text-slate-400"}`}
-                >
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Modern Activity Feed */}
-        <motion.div
-          variants={{
-            hidden: { opacity: 0, x: 20 },
-            show: { opacity: 1, x: 0 },
-          }}
-          className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-sm font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent uppercase tracking-wider">
-              Hoạt động hệ thống
-            </h3>
-            <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-100">
-              Mới nhất
-            </span>
+                <option value="revenue">Doanh thu</option>
+                <option value="users">Người dùng</option>
+                <option value="transactions">Giao dịch</option>
+              </select>
+              <select
+                value={chartRange}
+                onChange={(e) => setChartRange(e.target.value)}
+                className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
+              >
+                <option value="day">Hôm nay</option>
+                <option value="week">Tuần này</option>
+                <option value="month">Tháng này</option>
+                <option value="year">Năm nay</option>
+              </select>
+            </div>
           </div>
 
-          <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100">
-            {recentActivities.map((activity, idx) => (
-              <div key={activity.id} className="relative pl-8 group">
-                {/* Dot */}
-                <div
-                  className={`absolute left-0 top-1.5 w-6 h-6 rounded-full border-4 border-white shadow-sm z-10 transition-transform group-hover:scale-125 ${
-                    activity.color === "red"
-                      ? "bg-rose-500"
-                      : activity.color === "green"
-                        ? "bg-emerald-500"
-                        : activity.color === "amber"
-                          ? "bg-amber-500"
-                          : "bg-blue-500"
-                  }`}
-                />
+          <div className="relative h-[300px] w-full mt-4">
+            {/* Background Grid Lines */}
+            <div className="absolute inset-0 flex flex-col justify-between pb-8 pointer-events-none">
+              {[1, 2, 3, 4, 5].map((_, i) => (
+                <div key={i} className="w-full border-t border-slate-100 border-dashed" />
+              ))}
+            </div>
 
-                <div>
-                  <p className="text-[13px] text-slate-700 font-medium leading-relaxed">
-                    {activity.text}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Clock className="size-3 text-slate-400" />
-                    <span className="text-[10px] text-slate-400 font-bold">
-                      {activity.time}
-                    </span>
-                  </div>
+            <div className="relative h-full flex items-end justify-between gap-2 sm:gap-3 px-2 pb-8 overflow-x-auto no-scrollbar z-10">
+              {isChartLoading ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-sm font-bold text-slate-400">Đang tải dữ liệu...</span>
                 </div>
-              </div>
-            ))}
+              ) : chartData.length > 0 ? (
+                chartData.map((item, idx) => {
+                  const value = item[chartMetric] || 0;
+                  // Max height 80% so tooltip never clips (300px * 0.2 = 60px space for tooltip)
+                  const barHeightPct = maxChartValue === 0 ? 0 : (value / maxChartValue) * 80;
+                  
+                  let barColor = "from-emerald-400 to-emerald-200 shadow-emerald-200";
+                  let tooltipBg = "bg-emerald-600";
+                  if (chartMetric === "users") {
+                    barColor = "from-blue-400 to-blue-200 shadow-blue-200";
+                    tooltipBg = "bg-blue-600";
+                  } else if (chartMetric === "transactions") {
+                    barColor = "from-amber-400 to-amber-200 shadow-amber-200";
+                    tooltipBg = "bg-amber-500";
+                  }
+
+                  return (
+                    <div
+                      key={idx}
+                      className="flex-1 h-full flex flex-col items-center gap-2 justify-end min-w-[28px] sm:min-w-[36px] group cursor-pointer"
+                    >
+                      <div className="flex-1 w-full flex items-end justify-center relative">
+                        {/* The Bar */}
+                        <motion.div
+                          initial={{ height: 0 }}
+                          animate={{ height: `${barHeightPct}%` }}
+                          transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
+                          className={`w-full max-w-[28px] rounded-t-xl bg-gradient-to-t ${barColor} relative shadow-sm opacity-80 group-hover:opacity-100 transition-opacity flex justify-center`}
+                        >
+                          {/* Tooltip */}
+                          <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center z-50 pointer-events-none group-hover:-translate-y-1">
+                            <div className={`${tooltipBg} text-white text-[11px] font-black py-1.5 px-3 rounded-lg shadow-lg whitespace-nowrap`}>
+                              {chartMetric === "revenue" ? `${value.toLocaleString("vi-VN")}đ` : value.toLocaleString("vi-VN")}
+                            </div>
+                            {/* Triangle pointer */}
+                            <div className={`w-2 h-2 ${tooltipBg} rotate-45 -mt-1`} />
+                          </div>
+                        </motion.div>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 mt-1 truncate max-w-full text-center group-hover:text-slate-700 transition-colors">
+                        {item.label}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="text-sm font-bold text-slate-400">Không có dữ liệu</span>
+                </div>
+              )}
+            </div>
           </div>
         </motion.div>
       </motion.div>
@@ -1259,7 +1278,7 @@ const DashboardView = forwardRef(function DashboardView(
           hidden: { opacity: 0 },
           show: { opacity: 1, transition: { staggerChildren: 0.1 } },
         }}
-        className="grid grid-cols-2 gap-6"
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
       >
         {/* Status Pie Summary */}
         <motion.div
@@ -1272,7 +1291,7 @@ const DashboardView = forwardRef(function DashboardView(
           <h3 className="text-sm font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-8">
             Trạng thái tin đăng
           </h3>
-          <div className="flex items-center justify-around gap-8">
+          <div className="flex flex-col sm:flex-row items-center justify-around gap-8">
             <div className="relative w-[130px] h-[130px] group">
               <svg
                 className="w-full h-full -rotate-90 filter drop-shadow-sm"
@@ -1518,7 +1537,7 @@ function KPICard({
               animate={{ x: 0, opacity: 1 }}
               className="px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase bg-white/80 text-slate-600 border border-slate-100 shadow-sm"
             >
-              {changePositive ? "＋" : "↓"} {change}
+              {changePositive ? "＋ " : changeNegative ? "↓ " : ""}{change}
             </motion.div>
           )}
         </div>
@@ -1686,7 +1705,7 @@ function ExpiredPostsView({
               }}
               className="bg-white/70 backdrop-blur-xl border border-rose-200/50 rounded-[40px] p-8 hover:shadow-2xl hover:shadow-rose-200/50 transition-all group relative overflow-hidden"
             >
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 w-full">
                 {/* Image / Thumbnail */}
                 <div className="w-24 h-24 rounded-2xl bg-slate-50 flex-shrink-0 relative overflow-hidden group-hover:scale-105 transition-transform opacity-50">
                   {post.images && post.images.length > 0 ? (
@@ -1739,7 +1758,7 @@ function ExpiredPostsView({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t border-slate-50 gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl">
                         <div className="w-5 h-5 rounded-full bg-amber-500 text-white text-[8px] font-black flex items-center justify-center shadow-sm">
@@ -1955,7 +1974,7 @@ function PostsView({
               }}
               className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-[40px] p-8 hover:shadow-2xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
             >
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 w-full">
                 {/* Image / Thumbnail */}
                 <div className="w-24 h-24 rounded-2xl bg-slate-50 flex-shrink-0 relative overflow-hidden group-hover:scale-105 transition-transform">
                   {post.images && post.images.length > 0 ? (
@@ -2014,7 +2033,7 @@ function PostsView({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t border-slate-50 gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl">
                         <div className="w-5 h-5 rounded-full bg-emerald-500 text-white text-[8px] font-black flex items-center justify-center shadow-sm">
@@ -2207,7 +2226,7 @@ function UsersView({
 
       {/* Toolbar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center p-1 bg-slate-100/50 rounded-2xl w-fit">
+        <div className="flex items-center p-1 bg-slate-100/50 rounded-2xl w-fit flex-wrap">
           {[
             { id: "all", label: "Tất cả" },
             { id: "landlord", label: "Chủ trọ" },
@@ -2265,7 +2284,7 @@ function UsersView({
                 exit: { opacity: 0, scale: 0.9 },
               }}
               whileHover={{ y: -5, scale: 1.01 }}
-              className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm hover:shadow-2xl hover:shadow-slate-200/60 transition-all flex items-center justify-between group"
+              className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm hover:shadow-2xl hover:shadow-slate-200/60 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
             >
               <div className="flex items-center gap-4">
                 <div className="relative">
@@ -2337,7 +2356,7 @@ function UsersView({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 items-end">
+              <div className="flex flex-row sm:flex-col gap-2 items-center sm:items-end w-full sm:w-auto mt-2 sm:mt-0">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -2518,7 +2537,7 @@ function VerificationView({
                     show: { opacity: 1, x: 0 },
                   }}
                   whileHover={{ scale: 1.005, y: -4 }}
-                  className={`bg-white border rounded-[32px] p-6 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all group flex items-center gap-6 ${
+                  className={`bg-white border rounded-[32px] p-6 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all group flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 ${
                     item.status === "rejected"
                       ? "border-rose-100"
                       : item.status === "pending"
@@ -2928,7 +2947,7 @@ function BookingsView({
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-4 border-t border-slate-50 gap-4">
                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
                     <Clock className="size-3.5" />
                     {b.bookingTime}
@@ -3041,7 +3060,7 @@ const ReviewsView = forwardRef(function ReviewsView(
                   </div>
                 </div>
 
-                <div className="mt-6 pt-5 border-t border-slate-50 flex items-center justify-between">
+                <div className="mt-6 pt-5 border-t border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
                     ID: #{r._id.substring(r._id.length - 6).toUpperCase()}
                   </div>
@@ -3767,96 +3786,97 @@ const TransactionsView = ({ transactions }: { transactions: any[] }) => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-[35px] shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-white/80 backdrop-blur-2xl border-2 border-white rounded-[40px] shadow-xl shadow-slate-200/30 overflow-hidden">
+        <div className="p-6 md:p-8 border-b border-slate-100/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
-            <h3 className="text-xl font-black text-slate-800 tracking-tight">
+            <h3 className="text-2xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tight">
               Lịch sử Giao dịch
             </h3>
-            <p className="text-xs text-slate-500 font-medium mt-1">
-              Quản lý và đối soát các giao dịch thanh toán trên hệ thống
+            <p className="text-xs text-slate-400 font-bold mt-1.5 uppercase tracking-widest">
+              Quản lý và đối soát giao dịch hệ thống
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="px-5 py-3 bg-emerald-50 rounded-2xl border border-emerald-100/50">
-              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest block mb-1">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="w-full md:w-auto px-6 py-4 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-[24px] shadow-lg shadow-emerald-200/50 text-white flex flex-col justify-center transform hover:scale-105 transition-all">
+              <span className="text-[10px] font-black uppercase tracking-widest block mb-0.5 opacity-80">
                 Tổng doanh thu
               </span>
-              <span className="text-lg font-black text-emerald-700">
+              <span className="text-2xl font-black tracking-tight">
                 {transactions
                   .filter((t) => t.status === "success")
                   .reduce((sum, t) => sum + t.amount, 0)
                   .toLocaleString("vi-VN")}
-                đ
+                <span className="text-sm ml-1 opacity-80">VNĐ</span>
               </span>
             </div>
           </div>
         </div>
-        <div className="overflow-x-auto">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-50/50">
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   Mã GD
                 </th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   Người dùng
                 </th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   Số tiền
                 </th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   Nội dung
                 </th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   Trạng thái
                 </th>
-                <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-6 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   Thời gian
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-50/80">
               {transactions.map((t) => (
                 <tr
                   key={t._id}
-                  className="hover:bg-slate-50/30 transition-colors"
+                  className="hover:bg-slate-50/50 transition-colors group cursor-pointer"
                 >
-                  <td className="px-8 py-5 font-black text-slate-700 text-sm whitespace-nowrap">
-                    {t.invoiceId || t._id.slice(-8)}
+                  <td className="px-8 py-6 font-black text-slate-400 text-xs whitespace-nowrap group-hover:text-indigo-500 transition-colors">
+                    #{t.invoiceId || t._id.slice(-8).toUpperCase()}
                   </td>
-                  <td className="px-8 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-[10px] font-black text-indigo-600">
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xs font-black text-indigo-600 shadow-sm group-hover:scale-110 group-hover:rotate-6 transition-all">
                         {getInitials(
                           t.userId?.fullName || "User",
                           t.userId?.username,
                         )}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-black text-slate-800 truncate">
+                        <div className="text-sm font-black text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
                           {t.userId?.fullName}
                         </div>
-                        <div className="text-[10px] text-slate-400 truncate">
+                        <div className="text-[11px] font-bold text-slate-400 truncate">
                           {t.userId?.email}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-5 font-black text-slate-800 text-sm">
-                    {t.amount.toLocaleString("vi-VN")}đ
+                  <td className="px-8 py-6 font-black text-slate-800 text-sm group-hover:text-emerald-600 transition-colors">
+                    {t.amount.toLocaleString("vi-VN")}<span className="text-[10px] text-slate-400 ml-1">VNĐ</span>
                   </td>
-                  <td className="px-8 py-5 text-xs text-slate-500 max-w-xs truncate">
+                  <td className="px-8 py-6 text-xs font-bold text-slate-500 max-w-[200px] truncate group-hover:text-slate-700 transition-colors">
                     {t.description}
                   </td>
-                  <td className="px-8 py-5">
+                  <td className="px-8 py-6">
                     <span
-                      className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                      className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm ${
                         t.status === "success"
-                          ? "bg-emerald-50 text-emerald-600"
+                          ? "bg-emerald-50 text-emerald-600 border-emerald-100"
                           : t.status === "pending"
-                            ? "bg-amber-50 text-amber-600"
-                            : "bg-rose-50 text-rose-600"
+                            ? "bg-amber-50 text-amber-600 border-amber-100"
+                            : "bg-rose-50 text-rose-600 border-rose-100"
                       }`}
                     >
                       {t.status === "success"
@@ -3866,7 +3886,7 @@ const TransactionsView = ({ transactions }: { transactions: any[] }) => {
                           : "Thất bại"}
                     </span>
                   </td>
-                  <td className="px-8 py-5 text-xs text-slate-400 whitespace-nowrap">
+                  <td className="px-8 py-6 text-[11px] font-bold text-slate-400 whitespace-nowrap">
                     {formatDateVietnamese(t.createdAt)}
                   </td>
                 </tr>
@@ -3875,9 +3895,77 @@ const TransactionsView = ({ transactions }: { transactions: any[] }) => {
           </table>
           {transactions.length === 0 && (
             <div className="p-20 text-center">
-              <CreditCard className="size-12 mx-auto text-slate-200 mb-4" />
-              <p className="text-sm font-bold text-slate-400">
-                Chưa có giao dịch nào được ghi nhận
+              <div className="w-20 h-20 bg-slate-50 rounded-[24px] flex items-center justify-center mx-auto mb-4 border border-slate-100 shadow-sm">
+                <CreditCard className="size-8 text-slate-300" />
+              </div>
+              <p className="text-sm font-black text-slate-400 uppercase tracking-widest">
+                Chưa có giao dịch nào
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden p-4 space-y-4 bg-slate-50/50">
+          {transactions.map((t) => (
+            <div key={t._id} className="bg-white border border-slate-100 rounded-[32px] p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+                <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                  MÃ GD: <span className="text-indigo-500">#{t.invoiceId || t._id.slice(-8).toUpperCase()}</span>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border ${
+                    t.status === "success"
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                      : t.status === "pending"
+                        ? "bg-amber-50 text-amber-600 border-amber-100"
+                        : "bg-rose-50 text-rose-600 border-rose-100"
+                  }`}
+                >
+                  {t.status === "success"
+                    ? "Thành công"
+                    : t.status === "pending"
+                      ? "Chờ xử lý"
+                      : "Thất bại"}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-sm font-black text-indigo-600 shadow-sm">
+                  {getInitials(
+                    t.userId?.fullName || "User",
+                    t.userId?.username,
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-base font-black text-slate-800 truncate">
+                    {t.userId?.fullName}
+                  </div>
+                  <div className="text-xs font-bold text-slate-400 truncate">
+                    {t.userId?.email}
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-sm font-bold text-slate-500 bg-slate-50 p-4 rounded-2xl border border-slate-100/50 leading-relaxed">
+                {t.description}
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                 <div className="text-lg font-black text-emerald-600 tracking-tight">
+                   {t.amount.toLocaleString("vi-VN")}<span className="text-[10px] ml-1 uppercase text-slate-400">VNĐ</span>
+                 </div>
+                 <div className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                   <Clock className="size-3.5" />
+                   {formatDateVietnamese(t.createdAt)}
+                 </div>
+              </div>
+            </div>
+          ))}
+          {transactions.length === 0 && (
+            <div className="py-12 text-center">
+              <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                Chưa có giao dịch nào
               </p>
             </div>
           )}
@@ -4151,7 +4239,7 @@ const SubscriptionsAdminView = ({
               ))}
             </div>
 
-            <div className="pt-8 border-t border-slate-50 flex items-center justify-between">
+            <div className="pt-8 border-t border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 Landlord đang dùng
               </span>
@@ -4708,59 +4796,65 @@ const PricingCard = ({
   onChange,
   unit = "VNĐ",
 }: any) => {
-  const colorClasses: any = {
-    blue: "text-blue-600 bg-blue-50/50",
-    amber: "text-amber-600 bg-amber-50/50",
-    emerald: "text-emerald-600 bg-emerald-50/50",
-    violet: "text-violet-600 bg-violet-50/50",
-    rose: "text-rose-600 bg-rose-50/50",
-    indigo: "text-indigo-600 bg-indigo-50/50",
-  };
+  const theme = {
+    blue: { bg: "bg-blue-50", text: "text-blue-600", border: "group-hover:border-blue-300", glow: "group-hover:shadow-blue-500/30", grad: "from-blue-100/50 to-white", ring: "focus:border-blue-400 focus:ring-blue-500/20" },
+    amber: { bg: "bg-amber-50", text: "text-amber-600", border: "group-hover:border-amber-300", glow: "group-hover:shadow-amber-500/30", grad: "from-amber-100/50 to-white", ring: "focus:border-amber-400 focus:ring-amber-500/20" },
+    emerald: { bg: "bg-emerald-50", text: "text-emerald-600", border: "group-hover:border-emerald-300", glow: "group-hover:shadow-emerald-500/30", grad: "from-emerald-100/50 to-white", ring: "focus:border-emerald-400 focus:ring-emerald-500/20" },
+    violet: { bg: "bg-violet-50", text: "text-violet-600", border: "group-hover:border-violet-300", glow: "group-hover:shadow-violet-500/30", grad: "from-violet-100/50 to-white", ring: "focus:border-violet-400 focus:ring-violet-500/20" },
+    rose: { bg: "bg-rose-50", text: "text-rose-600", border: "group-hover:border-rose-300", glow: "group-hover:shadow-rose-500/30", grad: "from-rose-100/50 to-white", ring: "focus:border-rose-400 focus:ring-rose-500/20" },
+    indigo: { bg: "bg-indigo-50", text: "text-indigo-600", border: "group-hover:border-indigo-300", glow: "group-hover:shadow-indigo-500/30", grad: "from-indigo-100/50 to-white", ring: "focus:border-indigo-400 focus:ring-indigo-500/20" },
+  }[color as string] || { bg: "bg-slate-50", text: "text-slate-600", border: "group-hover:border-slate-300", glow: "group-hover:shadow-slate-500/30", grad: "from-slate-100/50 to-white", ring: "focus:border-slate-400 focus:ring-slate-500/20" };
 
   return (
     <motion.div
-      whileHover={{ y: -5 }}
-      className="bg-white/80 backdrop-blur-3xl rounded-[42px] border border-white/60 p-8 shadow-[0_20px_50px_rgba(0,0,0,0.02)] flex flex-col justify-between group"
+      whileHover={{ y: -8, scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className={`bg-gradient-to-br ${theme.grad} rounded-[40px] p-1 shadow-xl shadow-slate-200/40 ${theme.glow} transition-all duration-500 group`}
     >
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <div
-            className={`p-4 rounded-[22px] ${colorClasses[color]} flex items-center justify-center shadow-inner border border-white`}
-          >
-            {icon}
-          </div>
-          <div>
-            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-              Phân loại dịch vụ
-            </h4>
-            <span className="text-lg font-black text-slate-800 tracking-tight">
-              {title}
-            </span>
-          </div>
-        </div>
+      <div className={`bg-white/90 backdrop-blur-2xl rounded-[36px] border-2 border-white ${theme.border} p-8 h-full flex flex-col justify-between transition-colors duration-500 relative overflow-hidden`}>
+        {/* Background Decorative Blob */}
+        <div className={`absolute -right-12 -top-12 w-48 h-48 ${theme.bg} rounded-full blur-3xl opacity-0 group-hover:opacity-70 transition-opacity duration-700 pointer-events-none`} />
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">
-            Mức phí thiết lập ({unit})
-          </label>
-          <div className="relative group/input">
-            <input
-              type="number"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-xl font-black text-slate-700 focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 focus:bg-white outline-none transition-all"
-            />
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300 uppercase">
-              {unit}
+        <div className="space-y-6 relative z-10">
+          <div className="flex items-start justify-between">
+            <div className={`w-16 h-16 rounded-[24px] ${theme.bg} ${theme.text} flex items-center justify-center shadow-inner border border-white transform group-hover:rotate-6 group-hover:scale-110 transition-all duration-500`}>
+              {icon}
+            </div>
+            <div className={`px-3 py-1.5 rounded-xl ${theme.bg} ${theme.text} text-[9px] font-black uppercase tracking-widest border border-white shadow-sm flex items-center gap-1`}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+              Dịch vụ
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="text-[22px] font-black text-slate-800 tracking-tight group-hover:text-slate-900 transition-colors">
+              {title}
+            </h4>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+              Mức phí thiết lập
+            </label>
+            <div className="relative group/input">
+              <input
+                type="number"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className={`w-full h-14 bg-slate-50/50 hover:bg-white border-2 border-slate-100 rounded-[20px] px-6 text-xl font-black ${theme.text} focus:ring-4 ${theme.ring} focus:bg-white outline-none transition-all shadow-inner`}
+              />
+              <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300 uppercase pointer-events-none bg-white px-2 py-1 rounded-lg border border-slate-100 shadow-sm">
+                {unit}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="mt-8 pt-6 border-t border-slate-50">
-        <p className="text-[11px] font-bold text-slate-400 leading-relaxed italic">
-          * {description}
-        </p>
+        <div className="mt-8 pt-6 border-t border-slate-100/50 relative z-10">
+          <p className="text-[11px] font-bold text-slate-500 leading-relaxed flex items-start gap-2">
+            <span className={`text-[14px] ${theme.text}`}>✦</span> {description}
+          </p>
+        </div>
       </div>
     </motion.div>
   );
@@ -4824,7 +4918,7 @@ const BlogAdminView = ({ blogs, onAdd, onEdit, onDelete }: any) => {
                   {blog.excerpt}
                 </p>
               </div>
-              <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+              <div className="mt-4 pt-4 border-t border-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
                   {blog.authorAvatar ? (
                     <img

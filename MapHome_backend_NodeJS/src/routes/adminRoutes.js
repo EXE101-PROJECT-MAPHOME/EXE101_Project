@@ -20,7 +20,7 @@ const {
   getRevenueStats,
   updatePropertyStatus,
   getTopRooms,
-  getWeeklySearchStats,
+  getChartStats,
   broadcastNotification,
   getAdminNotifications,
 } = require("../controllers/adminController");
@@ -107,7 +107,7 @@ router.get("/stats/top-rooms", getTopRooms);
  *       200:
  *         description: Weekly search statistics
  */
-router.get("/stats/weekly-search", getWeeklySearchStats);
+router.get("/stats/chart", getChartStats);
 
 // User Management
 /**

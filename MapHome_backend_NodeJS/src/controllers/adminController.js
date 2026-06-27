@@ -33,7 +33,8 @@ const getDashboardStats = async (req, res) => {
       reviews,
       totalViewsData,
       newUsers,
-      totalTransactionsSuccess,
+      totalTransactions,
+      totalRevenueData,
     ] = await Promise.all([
       Property.countDocuments({}), // Global total
       User.countDocuments({}),     // Global total
@@ -49,7 +50,11 @@ const getDashboardStats = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$views" } } },
       ]),
       User.countDocuments(query),
-      Transaction.countDocuments({ ...query, status: "success" }),
+      Transaction.countDocuments(query),
+      Transaction.aggregate([
+        { $match: { status: "success", ...query } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
     ]);
 
     const totalViews =
@@ -66,6 +71,14 @@ const getDashboardStats = async (req, res) => {
           )
         : 98; // Default 98% if no reviews
 
+    const averageRating =
+      reviews.length > 0
+        ? Number((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1))
+        : 4.9;
+
+    const totalRevenue =
+      totalRevenueData && totalRevenueData.length > 0 ? totalRevenueData[0].total : 0;
+
     res.status(200).json({
       totalProperties,
       totalUsers,
@@ -77,9 +90,12 @@ const getDashboardStats = async (req, res) => {
       pendingBookings,
       uniqueDistricts: distinctDistricts.filter((d) => d).length, // Count unique districts, exclude null
       satisfactionRate,
+      averageRating,
       totalViews,
       newUsers,
-      totalTransactionsSuccess,
+      totalTransactions,
+      totalRevenue,
+      totalReviews: reviews.length,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -579,20 +595,82 @@ const getTopRooms = async (req, res) => {
   }
 };
 
-// @desc    Get weekly search stats (Mock)
-// @route   GET /api/admin/stats/weekly-search
-const getWeeklySearchStats = async (req, res) => {
+// @desc    Get dynamic chart stats (Revenue, Transactions, Users)
+// @route   GET /api/admin/stats/chart
+const getChartStats = async (req, res) => {
   try {
-    // Mock data for weekly search trends
-    const stats = [
-      { day: "T2", count: 120 },
-      { day: "T3", count: 150 },
-      { day: "T4", count: 180 },
-      { day: "T5", count: 140 },
-      { day: "T6", count: 210 },
-      { day: "T7", count: 250 },
-      { day: "CN", count: 300 },
-    ];
+    const Transaction = require("../models/Transaction");
+    const User = require("../models/User");
+    const { range = "week" } = req.query;
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const stats = [];
+    let startDate;
+
+    const formatLocalDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+    if (range === "day") {
+      startDate = new Date(today);
+      startDate.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 24; i++) {
+        const hourStr = `${String(i).padStart(2, "0")}:00`;
+        stats.push({ label: hourStr, revenue: 0, transactions: 0, users: 0, matchKey: i });
+      }
+    } else if (range === "week") {
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        stats.push({ label: days[d.getDay()], revenue: 0, transactions: 0, users: 0, matchKey: formatLocalDate(d) });
+      }
+    } else if (range === "month") {
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 29);
+      startDate.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        stats.push({ label: `${d.getDate()}/${d.getMonth()+1}`, revenue: 0, transactions: 0, users: 0, matchKey: formatLocalDate(d) });
+      }
+    } else if (range === "year") {
+      startDate = new Date(today.getFullYear(), 0, 1);
+      for (let i = 0; i < 12; i++) {
+        stats.push({ label: `Th${i + 1}`, revenue: 0, transactions: 0, users: 0, matchKey: i });
+      }
+    }
+
+    const [transactions, users] = await Promise.all([
+      Transaction.find({ createdAt: { $gte: startDate, $lte: today } }),
+      User.find({ createdAt: { $gte: startDate, $lte: today } })
+    ]);
+
+    transactions.forEach(t => {
+      const d = new Date(t.createdAt);
+      let matchKey = range === "day" ? d.getHours() : range === "year" ? d.getMonth() : formatLocalDate(d);
+
+      const statObj = stats.find(s => s.matchKey === matchKey);
+      if (statObj) {
+        if (t.status === "success") {
+          statObj.revenue += t.amount || 0;
+        }
+        statObj.transactions += 1;
+      }
+    });
+
+    users.forEach(u => {
+      const d = new Date(u.createdAt);
+      let matchKey = range === "day" ? d.getHours() : range === "year" ? d.getMonth() : formatLocalDate(d);
+
+      const statObj = stats.find(s => s.matchKey === matchKey);
+      if (statObj) {
+        statObj.users += 1;
+      }
+    });
+
     res.status(200).json(stats);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -741,7 +819,7 @@ module.exports = {
   getRevenueStats,
   updatePropertyStatus,
   getTopRooms,
-  getWeeklySearchStats,
+  getChartStats,
   broadcastNotification,
   getAdminNotifications,
 };

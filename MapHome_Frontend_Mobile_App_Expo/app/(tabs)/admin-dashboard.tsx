@@ -98,8 +98,15 @@ const EmptyState = ({ icon, title, desc }: { icon: React.ReactNode; title: strin
 
 const DashboardTab = () => {
   const [stats, setStats] = useState<any>(null);
+  const [weeklyData, setWeeklyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [chartRange, setChartRange] = useState("week");
+  const [chartMetric, setChartMetric] = useState("revenue");
+  const [isChartLoading, setIsChartLoading] = useState(false);
+  const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
 
+  // Fetch KPI Stats
   useEffect(() => {
     api.get("/api/admin/stats")
       .then((res) => setStats(res.data))
@@ -107,15 +114,28 @@ const DashboardTab = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Fetch Dynamic Chart Data
+  useEffect(() => {
+    setIsChartLoading(true);
+    api.get(`/api/admin/stats/chart?range=${chartRange}`)
+      .then((res) => setWeeklyData(res.data || []))
+      .catch(() => {})
+      .finally(() => setIsChartLoading(false));
+  }, [chartRange]);
+
   if (loading) return <LoadingState />;
 
-  const KPICard = ({ title, value, icon, color }: any) => (
+  const maxChartValue = Math.max(...weeklyData.map((d: any) => d[chartMetric] || 0), 1);
+
+  const KPICard = ({ title, value, icon, color, subtitle }: any) => (
     <View className="w-[48%] bg-white rounded-3xl p-5 border border-slate-100 mb-4 shadow-sm">
       <View className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-3`} style={{ backgroundColor: `${color}15` }}>
         {icon}
       </View>
       <Text className="text-2xl font-black text-slate-800">{value}</Text>
-      <Text className="text-[11px] font-bold text-slate-400 uppercase mt-1">{title}</Text>
+      <Text className="text-[11px] font-bold text-slate-400 uppercase mt-1">
+        {title} {subtitle && <Text className="text-[9px] lowercase text-slate-300">({subtitle})</Text>}
+      </Text>
     </View>
   );
 
@@ -138,19 +158,119 @@ const DashboardTab = () => {
       </View>
 
       <View className="flex-row flex-wrap justify-between">
-        <KPICard title="Doanh thu" value={stats?.totalRevenue ? `${(stats.totalRevenue / 1000000).toFixed(1)}M` : "0đ"} icon={<CreditCard size={20} color="#10b981" />} color="#10b981" />
+        <KPICard title="Doanh thu" value={stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString("vi-VN")}đ` : "0đ"} icon={<CreditCard size={20} color="#10b981" />} color="#10b981" />
         <KPICard title="Người dùng" value={stats?.totalUsers || 0} icon={<Users size={20} color="#3b82f6" />} color="#3b82f6" />
-        <KPICard title="Tin đăng" value={stats?.totalProperties || 0} icon={<FileText size={20} color="#f59e0b" />} color="#f59e0b" />
-        <KPICard title="Lịch hẹn" value={stats?.totalBookings || 0} icon={<CalendarDays size={20} color="#8b5cf6" />} color="#8b5cf6" />
+        <KPICard title="Giao dịch" value={stats?.totalTransactions || 0} icon={<FileText size={20} color="#f59e0b" />} color="#f59e0b" />
+        <KPICard title="Đánh giá" subtitle={`${stats?.totalReviews || 0} lượt`} value={`${stats?.averageRating || "4.9"}/5`} icon={<Star size={20} color="#8b5cf6" />} color="#8b5cf6" />
       </View>
 
       <View className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm mt-2">
-        <Text className="text-sm font-black uppercase text-emerald-600 tracking-widest mb-4">Hoạt động hệ thống</Text>
-        <View className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-          <Text className="text-slate-600 font-medium text-sm leading-relaxed">
-            Hệ thống đang hoạt động ổn định. Tỷ lệ hài lòng đạt <Text className="font-black text-emerald-600">{stats?.satisfactionRate || 98}%</Text>.
-          </Text>
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-sm font-black uppercase text-emerald-600 tracking-widest">Biểu đồ thống kê</Text>
         </View>
+
+        {/* Metric Selector */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-3">
+          {[
+            { id: "revenue", label: "Doanh thu", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
+            { id: "users", label: "Người dùng", color: "bg-blue-50 text-blue-600 border-blue-200" },
+            { id: "transactions", label: "Giao dịch", color: "bg-amber-50 text-amber-600 border-amber-200" }
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => setChartMetric(item.id)}
+              className={`px-4 py-2 rounded-full border mr-2 ${chartMetric === item.id ? item.color : "bg-white border-slate-200"}`}
+            >
+              <Text className={`text-xs font-bold ${chartMetric === item.id ? item.color.split(" ")[1] : "text-slate-500"}`}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Range Selector */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6">
+          {[
+            { id: "day", label: "Hôm nay" },
+            { id: "week", label: "Tuần này" },
+            { id: "month", label: "Tháng này" },
+            { id: "year", label: "Năm nay" }
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => setChartRange(item.id)}
+              className={`px-4 py-1.5 rounded-full mr-2 ${chartRange === item.id ? "bg-slate-800" : "bg-slate-100"}`}
+            >
+              <Text className={`text-[10px] font-bold uppercase ${chartRange === item.id ? "text-white" : "text-slate-500"}`}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View className="h-56 relative min-w-full mt-6">
+            {/* Background Grid Lines */}
+            <View className="absolute inset-0 justify-between pb-8 pointer-events-none" style={{ zIndex: 0 }}>
+              {[1, 2, 3, 4, 5].map((_, i) => (
+                <View key={i} className="w-full border-t border-slate-100" style={{ borderStyle: 'dashed', borderWidth: 1, borderColor: '#f1f5f9' }} />
+              ))}
+            </View>
+
+            <View className="flex-row items-end justify-between px-2 pb-8 h-full" style={{ zIndex: 10 }}>
+              {isChartLoading ? (
+                <View className="w-full h-full flex items-center justify-center">
+                  <Text className="text-xs font-bold text-slate-400">Đang tải...</Text>
+                </View>
+              ) : weeklyData.length > 0 ? weeklyData.map((item, i) => {
+                const value = item[chartMetric] || 0;
+                // Max height 85% to reserve space for tooltip
+                const barHeightPct = maxChartValue === 0 ? 0 : (value / maxChartValue) * 85;
+                
+                let barColor = "bg-emerald-400";
+                let tooltipBg = "bg-emerald-600";
+                if (chartMetric === "users") {
+                  barColor = "bg-blue-400";
+                  tooltipBg = "bg-blue-600";
+                } else if (chartMetric === "transactions") {
+                  barColor = "bg-amber-400";
+                  tooltipBg = "bg-amber-500";
+                }
+                
+                const isSelected = selectedBarIndex === i;
+                const displayValue = chartMetric === "revenue" ? `${value.toLocaleString("vi-VN")}đ` : value.toLocaleString("vi-VN");
+
+                return (
+                  <TouchableOpacity 
+                    key={i} 
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedBarIndex(isSelected ? null : i)}
+                    className="items-center mx-1.5 h-full justify-end" 
+                    style={{ width: chartRange === "month" ? 24 : 32 }}
+                  >
+                    <View className="flex-row w-full justify-center items-end flex-1 gap-0.5 relative">
+                      {/* Tooltip */}
+                      {isSelected && (
+                        <View className="absolute -top-10 items-center z-50 shadow-sm" style={{ elevation: 5 }}>
+                          <View className={`px-2 py-1 rounded-md ${tooltipBg}`}>
+                            <Text className="text-[10px] text-white font-black">{displayValue}</Text>
+                          </View>
+                          <View className={`w-2 h-2 rotate-45 -mt-1 ${tooltipBg}`} />
+                        </View>
+                      )}
+                      
+                      <View 
+                        className={`flex-1 w-full rounded-t-lg ${barColor} ${isSelected ? 'opacity-100' : 'opacity-70'}`} 
+                        style={{ height: `${barHeightPct}%` }} 
+                      />
+                    </View>
+                    <Text className={`text-[9px] font-bold mt-2 ${isSelected ? 'text-slate-700' : 'text-slate-400'}`} numberOfLines={1}>{item.label}</Text>
+                  </TouchableOpacity>
+                );
+              }) : (
+                <View className="w-full h-full flex items-center justify-center">
+                  <Text className="text-xs font-bold text-slate-400">Không có dữ liệu</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
       </View>
     </ScrollView>
   );
