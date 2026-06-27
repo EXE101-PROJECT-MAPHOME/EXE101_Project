@@ -228,7 +228,7 @@ export function SettingsView() {
       animate="show"
       className="max-w-5xl mx-auto space-y-8"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent tracking-tight flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner">
@@ -259,9 +259,9 @@ export function SettingsView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-[260px_1fr] gap-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4 md:gap-8 items-start">
         {/* Navigation Sidebar */}
-        <div className="bg-white rounded-[32px] border border-slate-100 p-3 shadow-sm space-y-1.5 sticky top-24">
+        <div className="bg-white rounded-[32px] border border-slate-100 p-3 shadow-sm flex flex-row md:flex-col gap-2 overflow-x-auto no-scrollbar md:sticky top-24">
           <TabNav active={activeTab === "general"} onClick={() => setActiveTab("general")} icon={<Globe />} label="Thông tin chung" />
           <TabNav active={activeTab === "banners"} onClick={() => setActiveTab("banners")} icon={<Layout />} label="Banner & Slide" />
           <TabNav active={activeTab === "seo"} onClick={() => setActiveTab("seo")} icon={<Layers />} label="SEO & Metadata" />
@@ -269,7 +269,7 @@ export function SettingsView() {
           <TabNav active={activeTab === "policies"} onClick={() => setActiveTab("policies")} icon={<FileText />} label="Pháp lý & CS" />
           <TabNav active={activeTab === "automation"} onClick={() => setActiveTab("automation")} icon={<Activity />} label="Tự động hóa" />
           
-          <div className="pt-2 mt-2 border-t border-slate-50">
+          <div className="pl-2 ml-2 md:pl-0 md:ml-0 border-l md:border-l-0 md:border-t border-slate-100 md:pt-2 md:mt-2 flex-shrink-0">
             <TabNav active={activeTab === "account"} onClick={() => setActiveTab("account")} icon={<User />} label="Hồ sơ Admin" />
           </div>
         </div>
@@ -283,19 +283,19 @@ export function SettingsView() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-              className="p-10 space-y-10"
+              className="p-4 sm:p-10 space-y-10"
             >
               {activeTab === "general" && (
                 <div className="space-y-8">
                   <SectionHeader title="Thông tin nền tảng" description="Cấu hình danh tính và liên hệ chính thức." />
-                  <div className="grid grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
                     <InputGroup label="Tên Website" value={settings.siteName} onChange={(val) => setSettings({ ...settings, siteName: val })} icon={<Globe className="size-4" />} />
                     <InputGroup label="Email Hỗ trợ" value={settings.contactEmail} onChange={(val) => setSettings({ ...settings, contactEmail: val })} icon={<Mail className="size-4" />} />
                     <InputGroup label="Hotline" value={settings.contactPhone} onChange={(val) => setSettings({ ...settings, contactPhone: val })} icon={<Phone className="size-4" />} />
                   </div>
 
                   <div className="pt-8 border-t border-slate-100">
-                    <div className="flex items-center justify-between p-6 bg-rose-50/30 rounded-[32px] border border-rose-100/50 group">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-rose-50/30 rounded-[32px] border border-rose-100/50 group gap-4">
                       <div className="flex items-center gap-4">
                         <div className="bg-white p-3 rounded-2xl text-rose-600 shadow-inner border border-rose-50 group-hover:rotate-12 transition-transform">
                           <ShieldAlert className="size-6" />
@@ -313,7 +313,7 @@ export function SettingsView() {
 
               {activeTab === "banners" && (
                 <div className="space-y-8">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <SectionHeader title="Quản lý Slider" description="Cấu hình các ảnh trình chiếu trên trang chủ." />
                     <label className={`cursor-pointer inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all ${uploadingBanner ? "opacity-50" : ""}`}>
                       <Plus className="size-4" />
@@ -324,12 +324,12 @@ export function SettingsView() {
 
                   <div className="grid grid-cols-1 gap-4">
                     {(settings.banners || []).map((banner: any, idx: number) => (
-                      <div key={idx} className="p-5 bg-slate-50/50 rounded-[32px] border border-slate-100 flex gap-6 items-center group">
-                        <div className="w-40 h-24 rounded-2xl overflow-hidden bg-slate-200 shadow-sm shrink-0">
+                      <div key={idx} className="p-5 bg-slate-50/50 rounded-[32px] border border-slate-100 flex flex-col sm:flex-row gap-6 items-start sm:items-center group">
+                        <div className="w-full sm:w-40 h-32 sm:h-24 rounded-2xl overflow-hidden bg-slate-200 shadow-sm shrink-0">
                           <img src={banner.imageUrl} className="w-full h-full object-cover" />
                         </div>
                         <div className="flex-1 space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                             <input 
                               type="text" 
                               value={banner.title} 
@@ -452,7 +452,7 @@ export function SettingsView() {
               {activeTab === "automation" && (
                 <div className="space-y-8">
                   <SectionHeader title="Tự động hóa & Quy tắc" description="Thiết lập các tham số thời gian tự động." />
-                  <div className="grid grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                     <InputGroup 
                       label="Thời hạn tin đăng mặc định (Ngày)" 
                       type="number" 
@@ -499,7 +499,7 @@ export function SettingsView() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8">
                     <InputGroup label="Họ và tên" value={adminData.fullName} onChange={(val) => setAdminData({...adminData, fullName: val})} icon={<User className="size-4" />} />
                     <InputGroup label="Tên đăng nhập" value={adminData.username} onChange={(val) => setAdminData({...adminData, username: val})} icon={<User className="size-4" />} />
                     <InputGroup label="Số điện thoại" value={adminData.phone} onChange={(val) => setAdminData({...adminData, phone: val})} icon={<Phone className="size-4" />} />
@@ -514,7 +514,7 @@ export function SettingsView() {
                     Lưu thay đổi hồ sơ Admin
                   </Button>
 
-                  <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100 flex items-center justify-between group">
+                  <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group">
                     <div className="flex items-center gap-4">
                       <div className="bg-white p-4 rounded-2xl text-indigo-50 shadow-inner group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-500">
                         <Key className="size-6" />
@@ -576,7 +576,7 @@ function TabNav({
   return (
     <button
       onClick={onClick}
-      className={`relative w-full flex items-center gap-3 px-5 py-4 rounded-2xl text-[13px] font-black tracking-tight transition-all active:scale-95 ${
+      className={`relative flex-shrink-0 md:w-full flex items-center gap-3 px-4 py-3 md:px-5 md:py-4 rounded-2xl text-[12px] md:text-[13px] font-black tracking-tight transition-all active:scale-95 ${
         active
           ? "text-white"
           : "text-slate-400 hover:text-slate-700 hover:bg-slate-50"
@@ -652,7 +652,7 @@ function InputGroup({
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          className={`w-full h-12 ${icon ? "pl-11" : "px-5"} pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-emerald-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner disabled:bg-slate-100 disabled:text-slate-400`}
+          className={`w-full h-12 ${icon ? "!pl-12" : "!px-5"} !pr-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-black text-emerald-700 focus:border-emerald-500 focus:bg-white outline-none transition-all shadow-inner disabled:bg-slate-100 disabled:text-slate-400`}
         />
       </div>
     </div>
