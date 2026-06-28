@@ -2162,11 +2162,12 @@ function UsersView({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<
-    "all" | "landlord" | "user" | "admin"
+    "all" | "landlord" | "user" | "admin" | "broker"
   >("all");
 
   const totalLandlords = users.filter((u) => u.role === "landlord").length;
   const totalUsers = users.filter((u) => u.role === "user").length;
+  const totalBrokers = users.filter((u) => u.role === "broker").length;
   const totalBlocked = users.filter((u) => u.status === "blocked").length;
 
   const filteredUsers = users.filter((user) => {
@@ -2190,7 +2191,7 @@ function UsersView({
       className="space-y-8"
     >
       {/* Stat Mini Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-6">
         <KPICard
           icon="👥"
           iconBg="#eff6ff"
@@ -2208,6 +2209,15 @@ function UsersView({
           change="Đối tác"
           changePositive
           topGradient="linear-gradient(90deg, #f59e0b, #fbbf24)"
+        />
+        <KPICard
+          icon="🤝"
+          iconBg="#f5f3ff"
+          label="Môi giới"
+          value={totalBrokers.toLocaleString()}
+          change="Đối tác"
+          changePositive
+          topGradient="linear-gradient(90deg, #8b5cf6, #a78bfa)"
         />
         <KPICard
           icon="👤"
@@ -2235,6 +2245,7 @@ function UsersView({
           {[
             { id: "all", label: "Tất cả" },
             { id: "landlord", label: "Chủ trọ" },
+            { id: "broker", label: "Môi giới" },
             { id: "user", label: "Người thuê" },
             { id: "admin", label: "Admin" },
           ].map((role) => (
@@ -2306,7 +2317,9 @@ function UsersView({
                           ? "bg-indigo-500"
                           : user.role === "landlord"
                             ? "bg-amber-500"
-                            : "bg-blue-500"
+                            : user.role === "broker"
+                              ? "bg-purple-500"
+                              : "bg-blue-500"
                       }`}
                     >
                       {getInitials(user.fullName, user.username)}
