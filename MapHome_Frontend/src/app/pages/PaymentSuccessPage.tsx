@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/app/contexts/AuthContext";
 import api from "@/app/utils/api";
 import { formatDateVietnamese } from "@/app/utils/dateUtils";
 import { Button } from "@/app/components/ui/button";
@@ -20,6 +21,7 @@ import {
 export function PaymentSuccessPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, refreshProfile } = useAuth();
 
   const [searchParams] = useSearchParams();
 
@@ -31,6 +33,7 @@ export function PaymentSuccessPage() {
   const planIdFromUrl = searchParams.get("planId");
   const [availablePlans, setAvailablePlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -49,22 +52,55 @@ export function PaymentSuccessPage() {
     fetchPlans();
   }, []);
 
-  const tier =
+  // Tìm tier trong danh sách plans đã load từ API
+  const tierFromList =
     location.state?.tier ||
     (planIdFromUrl
       ? availablePlans.find((p) => p.planId === planIdFromUrl)
       : null);
+
+  // Fallback: Nếu API không trả về plan (ví dụ plan đã bị admin xóa),
+  // vẫn hiển thị thông tin cơ bản dựa vào planId trong URL để không mất trang success
+  const tier = tierFromList || (planIdFromUrl && !loading
+    ? { planId: planIdFromUrl, name: planIdFromUrl.charAt(0).toUpperCase() + planIdFromUrl.slice(1) }
+    : null);
+
   const amountStr = searchParams.get("amount");
   const amount =
     location.state?.amount || (amountStr ? Number(amountStr) : null);
   const orderId = location.state?.orderId || searchParams.get("orderId");
   const inspectionData = location.state?.inspectionData;
 
+  // Redirect to pricing page if parameters are missing or invalid
   useEffect(() => {
-    if (!loading && (!tier || !amount || !orderId)) {
-      navigate(isInspection ? "/admin/dashboard" : "/pricing");
+    if (!loading && (!planIdFromUrl || !amount || !orderId)) {
+      navigate("/pricing");
     }
-  }, [loading, tier, amount, orderId, navigate, isInspection]);
+  }, [loading, planIdFromUrl, amount, orderId, navigate]);
+
+  // Refresh profile context on successful payment confirmation
+  useEffect(() => {
+    if (!loading && tier && amount && orderId) {
+      refreshProfile();
+    }
+  }, [loading, tier, amount, orderId]);
+
+  // Auto-redirect countdown after data loaded successfully
+  useEffect(() => {
+    if (loading || !tier || !amount || !orderId) return;
+    const destination = isInspection 
+      ? "/admin/dashboard" 
+      : user?.role === "user" 
+        ? "/user/dashboard" 
+        : "/landlord/dashboard";
+    if (countdown <= 0) {
+      // replace:true → location.key thay đổi → SubscriptionManagement sẽ refetch subscription mới
+      navigate(destination, { replace: true });
+      return;
+    }
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown, loading, tier, amount, orderId, navigate, isInspection, user?.role]);
 
   if (loading) {
     return (
@@ -350,7 +386,7 @@ export function PaymentSuccessPage() {
                 size="lg"
                 variant="outline"
                 className="border-2 border-gray-300 hover:border-gray-400 font-semibold h-14 text-base"
-                onClick={() => navigate("/landlord/dashboard")}
+                onClick={() => navigate(user?.role === "user" ? "/user/dashboard" : "/landlord/dashboard")}
               >
                 <LayoutDashboard className="size-5 mr-2" />
                 Về trang quản lý
@@ -375,6 +411,32 @@ export function PaymentSuccessPage() {
             )}
           </p>
         </div>
+
+        {/* Auto-redirect countdown */}
+        {!isInspection && (
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <p className="text-sm text-gray-500">
+              Tự động chuyển về{" "}
+              <span className="font-semibold text-blue-600">trang quản lý</span>{" "}
+              sau{" "}
+              <span className="font-bold text-blue-700 text-base">{countdown}</span>{" "}
+              giây...
+            </p>
+            {/* Progress bar */}
+            <div className="w-full max-w-xs h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-1000"
+                style={{ width: `${((5 - countdown) / 5) * 100}%` }}
+              />
+            </div>
+            <button
+              onClick={() => setCountdown(9999)}
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
+            >
+              Huỷ tự động chuyển trang
+            </button>
+          </div>
+        )}
       </div>
 
       {/* CSS Animations */}

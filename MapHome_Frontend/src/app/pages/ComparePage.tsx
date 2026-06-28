@@ -278,10 +278,10 @@ export function ComparePage() {
                   ))}
                 </tr>
 
-                {/* Nội thất */}
+                {/* Đầy đủ nội thất */}
                 <tr className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900 sticky left-0 bg-white">
-                    Nội thất
+                    Đầy đủ nội thất
                   </td>
                   {comparedProperties.map((property) => (
                     <td key={property.id} className="px-6 py-4 text-center">
@@ -373,7 +373,6 @@ export function ComparePage() {
                     </td>
                   ))}
                 </tr>
-
               </tbody>
             </table>
           </div>

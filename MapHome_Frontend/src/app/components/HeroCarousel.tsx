@@ -49,7 +49,7 @@ function NextArrow(props: any) {
   return (
     <button
       onClick={onClick}
-      className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-10 bg-white/30 hover:bg-white/50 backdrop-blur-sm rounded-full p-2 md:p-3 transition-all duration-300 group"
+      className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full p-2 md:p-3 transition-all duration-300 group"
       aria-label="Next slide"
     >
       <ChevronRight className="size-6 md:size-8 text-white group-hover:scale-110 transition-transform" />
@@ -62,7 +62,7 @@ function PrevArrow(props: any) {
   return (
     <button
       onClick={onClick}
-      className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-10 bg-white/30 hover:bg-white/50 backdrop-blur-sm rounded-full p-2 md:p-3 transition-all duration-300 group"
+      className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-50 bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full p-2 md:p-3 transition-all duration-300 group"
       aria-label="Previous slide"
     >
       <ChevronLeft className="size-6 md:size-8 text-white group-hover:scale-110 transition-transform" />
@@ -103,16 +103,15 @@ export function HeroCarousel() {
   const settings = {
     dots: true,
     infinite: true,
+    arrows: false,
     speed: 800,
     slidesToShow: 1,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 5000,
-    fade: true,
     pauseOnHover: true,
+    swipeToSlide: true,
     beforeChange: (_current: number, next: number) => setCurrentSlide(next),
-    nextArrow: <NextArrow />,
-    prevArrow: <PrevArrow />,
     appendDots: (dots: any) => (
       <div className="bottom-6 md:bottom-8">
         <ul className="flex justify-center gap-2"> {dots} </ul>
@@ -128,7 +127,7 @@ export function HeroCarousel() {
       <Slider {...settings}>
         {slides.map((slide) => (
           <div key={slide.id} className="relative">
-            <div className="relative h-[500px] md:h-[600px] lg:h-[700px] overflow-hidden">
+            <div className="relative h-[350px] sm:h-[450px] md:h-[600px] lg:h-[700px] overflow-hidden bg-slate-800">
               {/* Background Image */}
               <div
                 className="absolute inset-0 bg-cover bg-center"
@@ -144,33 +143,24 @@ export function HeroCarousel() {
               {/* Content */}
               <div className="relative h-full flex flex-col items-center justify-center text-center px-4 text-white">
                 <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentSlide}
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ duration: 0.6, ease: "easeOut" }}
-                      className="space-y-4 md:space-y-6"
-                    >
-                      <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold drop-shadow-2xl leading-tight">
-                        {slide.title}
-                      </h1>
-                      <p className="text-base md:text-xl lg:text-2xl drop-shadow-lg text-white/95 max-w-2xl mx-auto">
-                        {slide.subtitle}
-                      </p>
-                      <div className="pt-4 md:pt-6">
-                        <Button
-                          size="lg"
-                          onClick={() => navigate(slide.link || "/map")}
-                          className="text-base md:text-lg px-8 md:px-12 py-5 md:py-7 h-auto bg-white text-gray-900 hover:bg-gray-100 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
-                        >
-                          <MapPin className="size-5 md:size-6 mr-2" />
-                          Khám phá ngay
-                        </Button>
-                      </div>
-                    </motion.div>
-                  </AnimatePresence>
+                  <div className="space-y-4 md:space-y-6">
+                    <h1 className="text-3xl md:text-5xl lg:text-7xl font-bold drop-shadow-2xl leading-tight">
+                      {slide.title}
+                    </h1>
+                    <p className="text-base md:text-xl lg:text-2xl drop-shadow-lg text-white/95 max-w-2xl mx-auto">
+                      {slide.subtitle}
+                    </p>
+                    <div className="pt-4 md:pt-6">
+                      <Button
+                        size="lg"
+                        onClick={() => navigate(slide.link || "/map")}
+                        className="text-base md:text-lg px-8 md:px-12 py-5 md:py-7 h-auto bg-white text-gray-900 hover:bg-gray-100 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105"
+                      >
+                        <MapPin className="size-5 md:size-6 mr-2" />
+                        Khám phá ngay
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -2,96 +2,170 @@ const { body, query, param } = require("express-validator");
 
 const createPropertyRules = [
   body("name")
-    .notEmpty().withMessage("Property name is required")
+    .notEmpty()
+    .withMessage("Tên phòng trọ/căn hộ là bắt buộc")
     .trim()
-    .isLength({ min: 5, max: 100 }).withMessage("Name must be between 5 and 100 characters"),
-    
+    .isLength({ min: 5, max: 100 })
+    .withMessage("Tên phải từ 5 đến 100 ký tự"),
+
   body("address")
-    .notEmpty().withMessage("Address is required")
-    .trim(),
-    
+    .notEmpty()
+    .withMessage("Địa chỉ là bắt buộc")
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage("Địa chỉ phải từ 5 đến 200 ký tự"),
+
   body("price")
-    .notEmpty().withMessage("Price is required")
-    .isNumeric().withMessage("Price must be a number")
-    .isFloat({ min: 0 }).withMessage("Price must be a positive number"),
-    
+    .notEmpty()
+    .withMessage("Giá thuê là bắt buộc")
+    .isNumeric()
+    .withMessage("Giá thuê phải là số")
+    .isFloat({ min: 0 })
+    .withMessage("Giá thuê phải là số dương"),
+
   body("area")
-    .notEmpty().withMessage("Area is required")
-    .isNumeric().withMessage("Area must be a number")
-    .isFloat({ min: 0 }).withMessage("Area must be a positive number"),
-    
+    .notEmpty()
+    .withMessage("Diện tích là bắt buộc")
+    .isNumeric()
+    .withMessage("Diện tích phải là số")
+    .isFloat({ min: 0.1, max: 10000 })
+    .withMessage("Diện tích phải từ 0.1 đến 10000 m²"),
+
   body("location")
-    .isArray({ min: 2, max: 2 }).withMessage("Location must be an array of [latitude, longitude]")
+    .notEmpty()
+    .withMessage("Vị trí là bắt buộc")
+    .isArray({ min: 2, max: 2 })
+    .withMessage("Vị trí phải là mảng [longitude, latitude]")
     .custom((value) => {
       if (typeof value[0] !== "number" || typeof value[1] !== "number") {
-        throw new Error("Latitude and longitude must be numbers");
+        throw new Error("Kinh độ và vĩ độ phải là số");
       }
-      if (value[0] < -180 || value[0] > 180) throw new Error("Invalid longitude");
-      if (value[1] < -90 || value[1] > 90) throw new Error("Invalid latitude");
+      if (value[0] < -180 || value[0] > 180)
+        throw new Error("Kinh độ không hợp lệ (phải từ -180 đến 180)");
+      if (value[1] < -90 || value[1] > 90)
+        throw new Error("Vĩ độ không hợp lệ (phải từ -90 đến 90)");
       return true;
     }),
-    
+
   body("phone")
-    .notEmpty().withMessage("Phone number is required")
-    .matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/).withMessage("Invalid Vietnamese phone number format"),
-    
+    .notEmpty()
+    .withMessage("Số điện thoại là bắt buộc")
+    .matches(/^(?:\+?84|0)(3|5|7|8|9)[0-9]{8}$/)
+    .withMessage(
+      "Số điện thoại không hợp lệ (VD: 0912345678 hoặc 84912345678)",
+    ),
+
   body("description")
     .optional()
     .trim()
-    .isLength({ max: 2000 }).withMessage("Description cannot exceed 2000 characters"),
+    .isLength({ max: 2000 })
+    .withMessage("Mô tả không được vượt quá 2000 ký tự"),
 
   body("status")
     .optional()
-    .isIn(["pending", "approved", "rejected", "reported"]).withMessage("Invalid status"),
+    .isIn(["pending", "approved", "rejected", "reported"])
+    .withMessage("Trạng thái không hợp lệ"),
 ];
 
 const updatePropertyRules = [
-  param("id")
-    .isMongoId().withMessage("Invalid Property ID format"),
-    
-  body("name").optional().trim().isLength({ min: 5, max: 100 }),
-  body("address").optional().trim(),
-  body("price").optional().isNumeric().isFloat({ min: 0 }),
-  body("area").optional().isNumeric().isFloat({ min: 0 }),
+  param("id").isMongoId().withMessage("ID bất động sản không hợp lệ"),
+
+  body("name")
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 100 })
+    .withMessage("Tên phải từ 5 đến 100 ký tự"),
+  body("address")
+    .optional()
+    .trim()
+    .isLength({ min: 5, max: 200 })
+    .withMessage("Địa chỉ phải từ 5 đến 200 ký tự"),
+  body("price")
+    .optional()
+    .isNumeric()
+    .isFloat({ min: 0 })
+    .withMessage("Giá thuê phải là số dương"),
+  body("area")
+    .optional()
+    .isNumeric()
+    .isFloat({ min: 0.1, max: 10000 })
+    .withMessage("Diện tích phải từ 0.1 đến 10000 m²"),
   body("location")
     .optional()
     .isArray({ min: 2, max: 2 })
     .custom((value) => {
       if (typeof value[0] !== "number" || typeof value[1] !== "number") {
-        throw new Error("Latitude and longitude must be numbers");
+        throw new Error("Kinh độ và vĩ độ phải là số");
       }
-      if (value[0] < -180 || value[0] > 180) throw new Error("Invalid longitude");
-      if (value[1] < -90 || value[1] > 90) throw new Error("Invalid latitude");
+      if (value[0] < -180 || value[0] > 180)
+        throw new Error("Kinh độ không hợp lệ");
+      if (value[1] < -90 || value[1] > 90)
+        throw new Error("Vĩ độ không hợp lệ");
       return true;
     }),
-  body("phone").optional().matches(/(84|0[3|5|7|8|9])+([0-9]{8})\b/),
-  body("status").optional().isIn(["pending", "approved", "rejected", "reported"]),
+  body("phone")
+    .optional({ values: "falsy" })
+    .matches(/^(?:\+?84|0)(3|5|7|8|9)[0-9]{8}$/)
+    .withMessage("Số điện thoại không hợp lệ"),
+  body("status")
+    .optional()
+    .isIn(["pending", "approved", "rejected", "reported"])
+    .withMessage("Trạng thái không hợp lệ"),
 ];
 
 const nearbyPropertiesRules = [
   query("lat")
-    .notEmpty().withMessage("Vĩ độ (lat) là bắt buộc")
-    .isFloat({ min: -90, max: 90 }).withMessage("Vĩ độ không hợp lệ (phải từ -90 đến 90)"),
-    
+    .notEmpty()
+    .withMessage("Vĩ độ (lat) là bắt buộc")
+    .isFloat({ min: -90, max: 90 })
+    .withMessage("Vĩ độ không hợp lệ (phải từ -90 đến 90)"),
+
   query("lng")
-    .notEmpty().withMessage("Kinh độ (lng) là bắt buộc")
-    .isFloat({ min: -180, max: 180 }).withMessage("Kinh độ không hợp lệ (phải từ -180 đến 180)"),
-    
+    .notEmpty()
+    .withMessage("Kinh độ (lng) là bắt buộc")
+    .isFloat({ min: -180, max: 180 })
+    .withMessage("Kinh độ không hợp lệ (phải từ -180 đến 180)"),
+
   query("radius")
     .optional()
-    .isFloat({ min: 0.1, max: 100 }).withMessage("Bán kính tìm kiếm phải từ 0.1km đến 100km"),
+    .isFloat({ min: 0.1, max: 100 })
+    .withMessage("Bán kính tìm kiếm phải từ 0.1km đến 100km"),
 ];
 
 const searchPropertiesRules = [
-  query("page").optional().isInt({ min: 1 }).withMessage("Page must be at least 1"),
-  query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be between 1 and 100"),
-  query("minPrice").optional().isNumeric(),
-  query("maxPrice").optional().isNumeric(),
-  query("minArea").optional().isNumeric(),
-  query("maxArea").optional().isNumeric(),
-  query("lat").optional().isFloat({ min: -90, max: 90 }).withMessage("Vĩ độ không hợp lệ"),
-  query("lng").optional().isFloat({ min: -180, max: 180 }).withMessage("Kinh độ không hợp lệ"),
-  query("radius").optional().isFloat({ min: 0.1, max: 100 }).withMessage("Bán kính không hợp lệ"),
+  query("page")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("Trang phải lớn hơn hoặc bằng 1"),
+  query("limit")
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage("Giới hạn phải từ 1 đến 100"),
+  query("minPrice")
+    .optional()
+    .isNumeric()
+    .withMessage("Giá tối thiểu phải là số"),
+  query("maxPrice").optional().isNumeric().withMessage("Giá tối đa phải là số"),
+  query("minArea")
+    .optional()
+    .isNumeric()
+    .withMessage("Diện tích tối thiểu phải là số"),
+  query("maxArea")
+    .optional()
+    .isNumeric()
+    .withMessage("Diện tích tối đa phải là số"),
+  query("lat")
+    .optional()
+    .isFloat({ min: -90, max: 90 })
+    .withMessage("Vĩ độ không hợp lệ"),
+  query("lng")
+    .optional()
+    .isFloat({ min: -180, max: 180 })
+    .withMessage("Kinh độ không hợp lệ"),
+  query("radius")
+    .optional()
+    .isFloat({ min: 0.1, max: 100 })
+    .withMessage("Bán kính không hợp lệ"),
 ];
 
 module.exports = {

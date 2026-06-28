@@ -1,5 +1,6 @@
 const VerificationRequest = require("../models/VerificationRequest");
 const SystemSetting = require("../models/SystemSetting");
+const Transaction = require("../models/Transaction");
 
 // @desc    Get all verification requests
 // @route   GET /api/verifications
@@ -43,6 +44,23 @@ const getVerificationById = async (req, res) => {
 // @route   POST /api/verifications
 const createVerification = async (req, res) => {
   try {
+    const { bookingId } = req.body;
+
+    // Nếu có bookingId (tenant yêu cầu xác minh trọ), bắt buộc phải đã thanh toán phí xác minh
+    if (bookingId) {
+      const paidTx = await Transaction.findOne({
+        bookingId,
+        planId: "inspection",
+        status: "success",
+      });
+      if (!paidTx) {
+        return res.status(402).json({
+          message:
+            "Bạn cần thanh toán phí xác minh trọ (119,000đ) trước khi tạo yêu cầu. Vui lòng sử dụng API /api/payments/create với planId='inspection'.",
+        });
+      }
+    }
+
     const verification = await VerificationRequest.create(req.body);
     res.status(201).json(verification);
   } catch (error) {
@@ -171,7 +189,7 @@ const submitUserPhotos = async (req, res) => {
 const getVerificationPricing = async (req, res) => {
   try {
     const settings = await SystemSetting.findOne();
-    const pricing = settings ? settings.pricing : { basicVerification: 0, premiumVerification: 0 };
+    const pricing = settings ? settings.pricing : { basicVerification: 119000, premiumVerification: 0 };
     res.status(200).json(pricing);
   } catch (error) {
     res.status(500).json({ message: error.message });

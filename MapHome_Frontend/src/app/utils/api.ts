@@ -1,7 +1,10 @@
 import axios from "axios";
 
-const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE || "http://localhost:5000";
+const useLocalBackend = (import.meta as any).env?.VITE_USE_LOCAL_BACKEND === "true";
+const localUrl = "http://localhost:5000";
+const deployedUrl = (import.meta as any).env?.VITE_API_BASE || "https://exe101project-maphome-api.up.railway.app";
+
+export const API_BASE = useLocalBackend ? localUrl : deployedUrl;
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -50,6 +53,9 @@ api.interceptors.response.use(
         console.error("Session expired. Please login again.");
         localStorage.removeItem("token");
         localStorage.removeItem("auth");
+        if (logoutCallback) {
+          logoutCallback();
+        }
         // Redirect logic can be added here or handled by AuthContext
         return Promise.reject(refreshError);
       }
@@ -58,5 +64,10 @@ api.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+let logoutCallback: (() => void) | null = null;
+export const registerLogoutCallback = (callback: () => void) => {
+  logoutCallback = callback;
+};
 
 export default api;

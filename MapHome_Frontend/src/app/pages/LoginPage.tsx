@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useGoogleLogin } from "@react-oauth/google";
 import { toast } from "sonner";
+import api, { API_BASE } from "@/app/utils/api";
 
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -17,6 +18,8 @@ import {
   CheckCircle,
   Shield,
   Building2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import {
   validateUsernameOrEmail,
@@ -31,7 +34,7 @@ import {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { login, register, googleLogin } = useAuth();
+  const { login, register, googleLogin, logout } = useAuth();
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
@@ -40,10 +43,10 @@ export function LoginPage() {
 
   // Check on mount if an admin already exists to conditionally lock the role option
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth/admin-exists`)
+    fetch(`${API_BASE}/api/auth/admin-exists`)
       .then((r) => r.json())
       .then((data) => setAdminExists(data.exists))
-      .catch(() => {}); // silently fail - default stays unlocked
+      .catch(() => { }); // silently fail - default stays unlocked
   }, []);
 
   // Login form - single smart identifier field
@@ -71,7 +74,7 @@ export function LoginPage() {
     confirmPassword: "",
     fullName: "",
     phone: "",
-    role: "landlord" as "landlord" | "user" | "admin",
+    role: "landlord" as "landlord" | "user" | "admin" | "broker",
   });
 
   const [registerErrors, setRegisterErrors] = useState({
@@ -90,6 +93,26 @@ export function LoginPage() {
     hasDigit: false,
     hasSpecialChar: false,
   });
+
+  // Show/Hide password states
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
+
+  const checkMaintenanceBeforeRedirect = async (role?: string): Promise<boolean> => {
+    if (role === "admin") return true;
+    try {
+      const settingsRes = await api.get("/api/settings/public").catch(() => null);
+      if (settingsRes?.data?.maintenanceMode === true) {
+        setError("Hệ thống đang nâng cấp, vui lòng thử lại trong vài ngày hoặc vài phút nữa.");
+        await logout();
+        return false;
+      }
+    } catch (e) {
+      console.error("Failed to check maintenance settings", e);
+    }
+    return true;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,11 +134,15 @@ export function LoginPage() {
     try {
       const result = await login(loginIdentifier.trim(), loginPassword);
       if (result.success) {
-        toast.success("Đăng nhập thành công!");
+        const allowed = await checkMaintenanceBeforeRedirect(result.role);
+        if (!allowed) return;
+
         if (result.role === "admin") {
           navigate("/admin/dashboard");
         } else if (result.role === "landlord") {
           navigate("/landlord/dashboard");
+        } else if (result.role === "broker") {
+          navigate("/broker/dashboard");
         } else {
           navigate("/");
         }
@@ -173,8 +200,9 @@ export function LoginPage() {
         setTimeout(() => {
           setMode("login");
           setSuccess("");
+          setError(""); // Clear any registration validation error
           // Điền sẵn username vừa đăng ký
-          setLoginUsername(registerData.username);
+          setLoginIdentifier(registerData.username);
           // Reset form
           setRegisterData({
             username: "",
@@ -204,16 +232,15 @@ export function LoginPage() {
 
   const handleGoogleSuccess = async (tokenResponse: any) => {
     try {
-      // For useGoogleLogin 'implicit' flow, we get access_token.
-      // But the backend expects idToken.
-      // Actually, if we use the GSI button, we get idToken.
-      // If we use useGoogleLogin, we usually get access_token.
-      // I'll use the idToken flow.
       setError("");
       const result = await googleLogin({ idToken: tokenResponse.credential });
       if (result.success) {
+        const allowed = await checkMaintenanceBeforeRedirect(result.role);
+        if (!allowed) return;
+
         if (result.role === "admin") navigate("/admin/dashboard");
         else if (result.role === "landlord") navigate("/landlord/dashboard");
+        else if (result.role === "broker") navigate("/broker/dashboard");
         else navigate("/");
       } else {
         setError(result.message || "Đăng nhập Google thất bại");
@@ -232,9 +259,13 @@ export function LoginPage() {
           role: mode === "register" ? registerData.role : undefined,
         });
         if (result.success) {
+          const allowed = await checkMaintenanceBeforeRedirect(result.role);
+          if (!allowed) return;
+
           toast.success("Đăng nhập bằng Google thành công!");
           if (result.role === "admin") navigate("/admin/dashboard");
           else if (result.role === "landlord") navigate("/landlord/dashboard");
+          else if (result.role === "broker") navigate("/broker/dashboard");
           else navigate("/");
         } else {
           setError(result.message || "Đăng nhập Google thất bại");
@@ -356,7 +387,7 @@ export function LoginPage() {
 
               <h2 className="text-3xl lg:text-4xl font-[900] bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent tracking-tight leading-tight">
                 {mode === "login"
-                  ? "Chào mừng trở lại!"
+                  ? "Chào mừng bạn đến với MapHome"
                   : "Khởi tạo hành trình"}
               </h2>
               <p className="text-slate-400 font-semibold text-lg leading-relaxed">
@@ -391,13 +422,12 @@ export function LoginPage() {
                               initial={{ opacity: 0, scale: 0.8 }}
                               animate={{ opacity: 1, scale: 1 }}
                               exit={{ opacity: 0, scale: 0.8 }}
-                              className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                                inputType === "phone"
-                                  ? "bg-blue-50 text-blue-500"
-                                  : inputType === "email"
-                                    ? "bg-purple-50 text-purple-500"
-                                    : "bg-emerald-50 text-emerald-500"
-                              }`}
+                              className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${inputType === "phone"
+                                ? "bg-blue-50 text-blue-500"
+                                : inputType === "email"
+                                  ? "bg-purple-50 text-purple-500"
+                                  : "bg-emerald-50 text-emerald-500"
+                                }`}
                             >
                               {inputType === "phone" ? (
                                 <><Phone className="inline size-3 mr-1" />Số điện thoại</>
@@ -435,9 +465,9 @@ export function LoginPage() {
                             }
                           }}
                           placeholder="Username, email hoặc số điện thoại"
-                          className={`pl-16 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${
-                            loginErrors.identifier ? "border-red-500" : "border-slate-200"
-                          }`}
+                          className={`h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${loginErrors.identifier ? "border-red-500" : "border-slate-200"
+                            }`}
+                          style={{ paddingLeft: '4rem' }}
                           autoComplete="username"
                         />
                       </div>
@@ -468,7 +498,7 @@ export function LoginPage() {
                           <Lock className="size-5" />
                         </div>
                         <Input
-                          type="password"
+                          type={showLoginPassword ? "text" : "password"}
                           value={loginPassword}
                           onChange={(e) => {
                             setLoginPassword(e.target.value);
@@ -485,9 +515,21 @@ export function LoginPage() {
                             }
                           }}
                           placeholder="••••••••"
-                          className={`pl-16 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 rounded-2xl transition-all shadow-sm border ${loginErrors.password ? "border-red-500" : "border-slate-200"}`}
+                          className={`h-14 bg-white focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 rounded-2xl transition-all shadow-sm border ${loginErrors.password ? "border-red-500" : "border-slate-200"}`}
+                          style={{ paddingLeft: '4rem', paddingRight: '3rem' }}
                           required
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowLoginPassword(!showLoginPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500 transition-colors"
+                        >
+                          {showLoginPassword ? (
+                            <EyeOff className="size-5" />
+                          ) : (
+                            <Eye className="size-5" />
+                          )}
+                        </button>
                       </div>
                       {loginErrors.password && (
                         <motion.p
@@ -712,37 +754,51 @@ export function LoginPage() {
                         <label className="text-[12px] font-black text-blue-600/70 uppercase tracking-widest ml-1">
                           Mật khẩu
                         </label>
-                        <Input
-                          type="password"
-                          value={registerData.password}
-                          onChange={(e) => {
-                            setRegisterData({
-                              ...registerData,
-                              password: e.target.value,
-                            });
-                            setPasswordStrength(
-                              getPasswordStrength(e.target.value),
-                            );
-                            if (e.target.value) {
+                        <div className="relative group">
+                          <Input
+                            type={showRegisterPassword ? "text" : "password"}
+                            value={registerData.password}
+                            onChange={(e) => {
+                              setRegisterData({
+                                ...registerData,
+                                password: e.target.value,
+                              });
+                              setPasswordStrength(
+                                getPasswordStrength(e.target.value),
+                              );
+                              if (e.target.value) {
+                                setRegisterErrors({
+                                  ...registerErrors,
+                                  password: "",
+                                });
+                              }
+                            }}
+                            onBlur={() => {
+                              const result = validatePassword(
+                                registerData.password,
+                              );
                               setRegisterErrors({
                                 ...registerErrors,
-                                password: "",
+                                password: result.error || "",
                               });
-                            }
-                          }}
-                          onBlur={() => {
-                            const result = validatePassword(
-                              registerData.password,
-                            );
-                            setRegisterErrors({
-                              ...registerErrors,
-                              password: result.error || "",
-                            });
-                          }}
-                          placeholder="••••••••"
-                          className={`h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.password ? "border-red-500" : "border-slate-200"}`}
-                          required
-                        />
+                            }}
+                            placeholder="••••••••"
+                            className={`h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.password ? "border-red-500" : "border-slate-200"}`}
+                            style={{ paddingRight: '3rem' }}
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                          >
+                            {showRegisterPassword ? (
+                              <EyeOff className="size-5" />
+                            ) : (
+                              <Eye className="size-5" />
+                            )}
+                          </button>
+                        </div>
                         {registerErrors.password && (
                           <motion.p
                             initial={{ opacity: 0 }}
@@ -813,35 +869,49 @@ export function LoginPage() {
                       <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1">
                         Xác nhận mật khẩu
                       </label>
-                      <Input
-                        type="password"
-                        value={registerData.confirmPassword}
-                        onChange={(e) => {
-                          setRegisterData({
-                            ...registerData,
-                            confirmPassword: e.target.value,
-                          });
-                          if (e.target.value) {
+                      <div className="relative group">
+                        <Input
+                          type={showRegisterConfirmPassword ? "text" : "password"}
+                          value={registerData.confirmPassword}
+                          onChange={(e) => {
+                            setRegisterData({
+                              ...registerData,
+                              confirmPassword: e.target.value,
+                            });
+                            if (e.target.value) {
+                              setRegisterErrors({
+                                ...registerErrors,
+                                confirmPassword: "",
+                              });
+                            }
+                          }}
+                          onBlur={() => {
+                            const result = validatePasswordMatch(
+                              registerData.password,
+                              registerData.confirmPassword,
+                            );
                             setRegisterErrors({
                               ...registerErrors,
-                              confirmPassword: "",
+                              confirmPassword: result.error || "",
                             });
-                          }
-                        }}
-                        onBlur={() => {
-                          const result = validatePasswordMatch(
-                            registerData.password,
-                            registerData.confirmPassword,
-                          );
-                          setRegisterErrors({
-                            ...registerErrors,
-                            confirmPassword: result.error || "",
-                          });
-                        }}
-                        placeholder="••••••••"
-                        className={`h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.confirmPassword ? "border-red-500" : "border-slate-200"}`}
-                        required
-                      />
+                          }}
+                          placeholder="••••••••"
+                          className={`h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-medium border transition-colors ${registerErrors.confirmPassword ? "border-red-500" : "border-slate-200"}`}
+                          style={{ paddingRight: '3rem' }}
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRegisterConfirmPassword(!showRegisterConfirmPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500 transition-colors"
+                        >
+                          {showRegisterConfirmPassword ? (
+                            <EyeOff className="size-5" />
+                          ) : (
+                            <Eye className="size-5" />
+                          )}
+                        </button>
+                      </div>
                       {registerErrors.confirmPassword && (
                         <motion.p
                           initial={{ opacity: 0 }}
@@ -854,82 +924,26 @@ export function LoginPage() {
                       )}
                     </motion.div>
 
-                    <motion.div variants={itemVariants} className="space-y-4">
-                      <label className="text-[14px] font-[900] bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent ml-1 flex items-center gap-2 uppercase tracking-tight">
-                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                    <motion.div variants={itemVariants} className="space-y-2">
+                      <label className="text-[12px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
                         Lựa chọn vai trò của bạn
                       </label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          {
-                            id: "landlord",
-                            label: "Chủ trọ",
-                            icon: Building2,
-                            desc: "Đăng tin",
-                            color: "emerald",
-                          },
-                          {
-                            id: "user",
-                            label: "Người tìm",
-                            icon: User,
-                            desc: "Tìm thuê",
-                            color: "blue",
-                          },
-                          {
-                            id: "admin",
-                            label: "Quản trị",
-                            icon: Shield,
-                            desc: "Quản lý",
-                            color: "slate",
-                          },
-                        ].map((role) => {
-                          const isAdminLocked = role.id === "admin" && adminExists;
-                          return (
-                          <button
-                            key={role.id}
-                            type="button"
-                            disabled={isAdminLocked}
-                            onClick={() =>
-                              !isAdminLocked && setRegisterData({
-                                ...registerData,
-                                role: role.id as any,
-                              })
-                            }
-                            title={isAdminLocked ? "Hệ thống đã có quản trị viên" : undefined}
-                            className={`relative p-3 rounded-2xl border-2 transition-all duration-300 flex flex-col items-center justify-center gap-1 group overflow-hidden ${
-                              isAdminLocked
-                                ? "opacity-40 cursor-not-allowed bg-slate-50 border-slate-100"
-                                : registerData.role === role.id
-                                  ? `border-${role.color}-500 bg-${role.color}-50 shadow-lg shadow-${role.color}-500/10 scale-[1.02]`
-                                  : "bg-white/40 border-slate-100 hover:border-slate-300 hover:bg-white"
-                            }`}
-                          >
-                            <role.icon
-                              className={`size-6 mb-1 transition-all ${
-                                isAdminLocked
-                                  ? "text-slate-300"
-                                  : registerData.role === role.id
-                                    ? `text-${role.color}-600`
-                                    : "text-slate-400 group-hover:text-slate-600"
-                              }`}
-                            />
-                            <span
-                              className={`text-[12px] font-extrabold ${
-                                isAdminLocked
-                                  ? "text-slate-300"
-                                  : registerData.role === role.id
-                                    ? `text-${role.color}-900`
-                                    : "text-slate-600"
-                              }`}
-                            >
-                              {role.label}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              {isAdminLocked ? "Đã đủ" : role.desc}
-                            </span>
-                          </button>
-                          );
-                        })}
+                      <div className="relative">
+                        <select
+                          value={registerData.role}
+                          onChange={(e) => setRegisterData({ ...registerData, role: e.target.value as "landlord" | "user" | "admin" | "broker" })}
+                          className="w-full h-13 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 rounded-2xl font-bold text-slate-700 border border-slate-200 transition-colors px-4 appearance-none outline-none cursor-pointer hover:border-emerald-300"
+                        >
+                          <option value="landlord">Chủ trọ (Đăng tin cho thuê)</option>
+                          <option value="broker">Người môi giới (Môi giới trọ)</option>
+                          <option value="user">Khách thuê (Tìm thuê phòng)</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
+                          <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path>
+                          </svg>
+                        </div>
                       </div>
                     </motion.div>
 

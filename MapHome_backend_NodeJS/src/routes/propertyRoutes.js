@@ -185,7 +185,7 @@ router
   .get(getProperties)
   .post(
     authMiddleware,
-    requireAnyRole(["landlord"]),
+    requireAnyRole(["landlord", "broker"]),
     createPropertyRules,
     validate,
     createProperty,
@@ -237,12 +237,12 @@ router
   .get(getPropertyById)
   .put(
     authMiddleware,
-    requireAnyRole(["landlord"]),
+    requireAnyRole(["landlord", "broker"]),
     updatePropertyRules,
     validate,
     updateProperty,
   )
-  .delete(authMiddleware, requireAnyRole(["landlord"]), deleteProperty);
+  .delete(authMiddleware, requireAnyRole(["landlord", "broker"]), deleteProperty);
 
 /**
  * @swagger
@@ -310,7 +310,7 @@ router.post("/:id/view", incrementView);
 router.put(
   "/:id/renew",
   authMiddleware,
-  requireAnyRole(["landlord"]),
+  requireAnyRole(["landlord", "broker"]),
   renewProperty,
 );
 
@@ -347,7 +347,7 @@ router.put(
 router.post(
   "/:id/pin",
   authMiddleware,
-  requireAnyRole(["landlord"]),
+  requireAnyRole(["landlord", "broker"]),
   pinProperty,
 );
 
@@ -371,7 +371,7 @@ router.post(
 router.post(
   "/:id/unpin",
   authMiddleware,
-  requireAnyRole(["landlord"]),
+  requireAnyRole(["landlord", "broker"]),
   unpinProperty,
 );
 
@@ -412,7 +412,7 @@ router.post(
 router.post(
   "/:id/verify-location",
   authMiddleware,
-  requireAnyRole(["landlord"]),
+  requireAnyRole(["landlord", "broker"]),
   verifyPropertyLocation,
 );
 

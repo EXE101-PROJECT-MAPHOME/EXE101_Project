@@ -134,12 +134,11 @@ export function UserDetailDialog({
                         data?.user?.username ||
                         "Đang tải..."}
                     </h2>
-                    <RoleBadge 
-                      role={(data?.user?.role as any) || "user"} 
+                    <RoleBadge
+                      role={(data?.user?.role as any) || "user"}
                       showIcon={true}
                       className="!bg-white/20 !border-white/30"
                     />
-
                   </div>
                   <p className="text-white/90 text-base flex items-center gap-2 font-medium drop-shadow-sm">
                     <Mail className="size-4" /> {data?.user?.email}
@@ -276,9 +275,11 @@ export function UserDetailDialog({
                             </motion.span>
                           </div>
                           <div className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 hover:bg-slate-50/50 transition-colors rounded-xl px-2 -mx-2">
-                            <span className="text-gray-500 text-sm font-medium">Vai trò:</span>
-                            <RoleBadge 
-                              role={(data?.user?.role as any) || "user"} 
+                            <span className="text-gray-500 text-sm font-medium">
+                              Vai trò:
+                            </span>
+                            <RoleBadge
+                              role={(data?.user?.role as any) || "user"}
                               showIcon={false}
                               className="scale-90"
                             />
@@ -296,7 +297,11 @@ export function UserDetailDialog({
                           />
                           <InfoItem
                             label="Cấp độ xác minh"
-                            value={`Level ${data?.user?.verificationLevel || 1}`}
+                            value={
+                              data?.user?.role === "admin"
+                                ? "Đặc quyền Quản trị (Tối đa)"
+                                : `${data?.user?.verificationLevelLabel || "Level 1"} - ${data?.user?.subscriptionTier || "Standard"}`
+                            }
                           />
                         </div>
                       </motion.div>

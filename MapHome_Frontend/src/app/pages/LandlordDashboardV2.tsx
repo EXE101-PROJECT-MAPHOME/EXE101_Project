@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/contexts/AuthContext";
-import api from "@/app/utils/api";
+import api, { API_BASE } from "@/app/utils/api";
 import { getAvatarUrl, getInitials } from "@/app/utils/avatarUtils";
 import { formatDateVietnamese } from "@/app/utils/dateUtils";
 import { RentalProperty, VerificationRequest } from "@/app/components/types";
@@ -45,8 +45,13 @@ import {
   Zap,
   Bell,
   Loader2,
+  Menu,
+  X as XIcon,
+  Ticket,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
+import { io } from "socket.io-client";
 import { ConfirmDialog } from "@/app/components/ConfirmDialog";
 import CalendarView from "@/app/components/CalendarView";
 
@@ -86,7 +91,8 @@ const formatTrendNumber = (num: number) => {
 export function LandlordDashboardV2() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, logout, isAuthenticated, updateUser } = useAuth();
+  const { user, logout, isAuthenticated, updateUser, refreshProfile } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [editingProperty, setEditingProperty] = useState<RentalProperty | null>(
     null,
@@ -101,6 +107,8 @@ export function LandlordDashboardV2() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [landlordDistricts, setLandlordDistricts] = useState<string[]>([]);
+  const [promotedVouchers, setPromotedVouchers] = useState<any[]>([]);
+  const [savedVoucherIds, setSavedVoucherIds] = useState<string[]>([]);
   const [stats, setStats] = useState({
     totalPosts: 0,
     approvedPosts: 0,
@@ -131,6 +139,7 @@ export function LandlordDashboardV2() {
   const [verifyingPropertyId, setVerifyingPropertyId] = useState<string | null>(
     null,
   );
+  const [overviewTimeRange, setOverviewTimeRange] = useState<"today" | "7days" | "all">("today");
 
   // Helper compute for expiration warnings
   const { expiredCount, soonToExpireCount } = useMemo(() => {
@@ -157,6 +166,26 @@ export function LandlordDashboardV2() {
     return { expiredCount: expired, soonToExpireCount: soon };
   }, [landlordPosts]);
 
+  const filteredOverviewStats = useMemo(() => {
+    const now = new Date();
+    let startDate = new Date(0);
+    if (overviewTimeRange === "today") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    } else if (overviewTimeRange === "7days") {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+
+    const filteredPosts = landlordPosts.filter(p => new Date(p.createdAt || Date.now()) >= startDate);
+    const totalPosts = filteredPosts.length;
+    const totalViews = filteredPosts.reduce((sum, p) => sum + (p.views || 0), 0);
+
+    const filteredBookings = bookings.filter(b => new Date(b.createdAt || Date.now()) >= startDate);
+    const approvedBookings = filteredBookings.filter(b => b.status === "confirmed" || b.status === "completed").length;
+    const pendingBookings = filteredBookings.filter(b => b.status === "pending").length;
+
+    return { totalPosts, totalViews, approvedBookings, pendingBookings };
+  }, [overviewTimeRange, landlordPosts, bookings]);
+
   const ExpiryWarningBanner = () => {
     if (expiredCount === 0 && soonToExpireCount === 0) return null;
 
@@ -164,29 +193,28 @@ export function LandlordDashboardV2() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-10 rounded-[32px] bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-100 p-6 shadow-sm overflow-hidden relative"
+        className="mb-8 md:mb-10 rounded-[24px] md:rounded-[32px] bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-100 p-4 md:p-6 shadow-sm overflow-hidden relative"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 rounded-full blur-3xl -mr-16 -mt-16" />
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-200 animate-pulse">
-              <AlertTriangle className="size-7" />
+        <div className="absolute top-0 right-0 w-24 h-24 md:w-32 md:h-32 bg-amber-200/20 rounded-full blur-3xl -mr-12 -mt-12 md:-mr-16 md:-mt-16" />
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 relative z-10">
+          <div className="flex items-center gap-3 md:gap-5 w-full">
+            <div className="w-10 h-10 md:w-14 md:h-14 shrink-0 rounded-xl md:rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-lg shadow-amber-200 animate-pulse">
+              <AlertTriangle className="size-5 md:size-7" />
             </div>
-            <div>
-              <h4 className="text-xl font-black text-amber-900 leading-tight">
+            <div className="flex-1">
+              <h4 className="text-base md:text-xl font-black text-amber-900 leading-tight">
                 {expiredCount > 0
                   ? `Bạn có ${expiredCount} tin đăng đã hết hạn!`
                   : `Bạn có ${soonToExpireCount} tin đăng sắp hết hạn!`}
               </h4>
-              <p className="text-amber-700 font-bold text-sm mt-1">
-                Gia hạn ngay để tiếp tục tiếp cận khách hàng và không bị gỡ khỏi
-                bản đồ.
+              <p className="text-amber-700 font-bold text-xs md:text-sm mt-0.5 md:mt-1">
+                Gia hạn ngay để tiếp tục tiếp cận khách hàng.
               </p>
             </div>
           </div>
           <Button
             onClick={() => setActiveTab("posts")}
-            className="whitespace-nowrap px-8 py-6 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-2xl shadow-xl shadow-amber-200/50 transition-all hover:scale-105 active:scale-95 border-none"
+            className="w-full md:w-auto whitespace-nowrap px-4 py-4 md:px-8 md:py-6 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl md:rounded-2xl shadow-xl shadow-amber-200/50 transition-all hover:scale-105 active:scale-95 border-none"
           >
             <Zap className="size-4 mr-2" />
             Gia hạn ngay
@@ -199,6 +227,35 @@ export function LandlordDashboardV2() {
   // Get active tab from URL params, default to 'overview'
   const activeTab = (searchParams.get("tab") as DashboardTab) || "overview";
 
+  const handleToggleSaveVoucher = async (voucher: any) => {
+    const isSaved = savedVoucherIds.includes(voucher._id || voucher.id);
+    const voucherId = voucher._id || voucher.id;
+
+    try {
+      if (isSaved) {
+        const res = await api.post(`/api/vouchers/${voucherId}/unsave`);
+        if (res.status === 200) {
+          setSavedVoucherIds(prev => prev.filter(id => id !== voucherId));
+          toast.success(`Đã bỏ lưu voucher: ${voucher.code}`);
+        }
+      } else {
+        const res = await api.post(`/api/vouchers/${voucherId}/save`);
+        if (res.status === 200) {
+          setSavedVoucherIds(prev => [...prev, voucherId]);
+          toast.success(`Đã lưu voucher vào ví: ${voucher.code} 🎉`);
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Không thể thực hiện yêu cầu.");
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshProfile();
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "landlord") {
       navigate("/login");
@@ -206,12 +263,28 @@ export function LandlordDashboardV2() {
     }
 
     const fetchData = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
 
       try {
+        const savedVouchersRes = await api.get("/api/vouchers/me/saved").catch(() => ({ data: [] }));
+        setSavedVoucherIds((savedVouchersRes.data || []).map((v: any) => v._id || v.id));
+
         if (activeTab === "overview") {
-          const response = await api.get("/api/landlord/analytics");
-          const data = response.data;
+          const [analyticsRes, propertiesRes, vouchersRes, bookingsRes] = await Promise.all([
+            api.get("/api/landlord/analytics"),
+            api.get("/api/landlord/properties"),
+            api.get("/api/vouchers/promoted"),
+            api.get("/api/landlord/bookings"),
+          ]);
+          const data = analyticsRes.data;
+          setPromotedVouchers(vouchersRes.data || []);
+          setBookings(bookingsRes.data || []);
           setStats({
             totalPosts: data.totalProperties || 0,
             approvedPosts: data.approvedProperties || 0,
@@ -224,6 +297,7 @@ export function LandlordDashboardV2() {
               pendingPostsTrend: 0,
             },
           });
+          setLandlordPosts(propertiesRes.data);
         } else if (activeTab === "posts") {
           const response = await api.get("/api/landlord/properties");
           setLandlordPosts(response.data);
@@ -254,6 +328,40 @@ export function LandlordDashboardV2() {
 
     fetchData();
   }, [isAuthenticated, user, navigate, activeTab]);
+
+  // Real-time notifications via Socket.IO
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== "landlord") return;
+
+    const token = localStorage.getItem("token");
+    const socketUrl = API_BASE;
+    const socket = io(socketUrl, {
+      auth: { token },
+      transports: ["websocket"],
+    });
+
+    socket.on("connect", () => {
+      console.debug("[Socket] Connected", socket.id);
+    });
+
+    socket.on("notification", (notif: any) => {
+      try {
+        setNotifications((prev) => [notif, ...(prev || [])]);
+        // show a subtle toast for new landlord notifications
+        toast.success(`${notif.title} — ${notif.message}`);
+      } catch (err) {
+        console.error("Failed to handle incoming notification", err);
+      }
+    });
+
+    socket.on("disconnect", () => {
+      console.debug("[Socket] Disconnected");
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isAuthenticated, user]);
 
   const handleToggleAvailability = async (property: RentalProperty) => {
     const newStatus = !property.available;
@@ -452,6 +560,28 @@ export function LandlordDashboardV2() {
     }
   };
 
+  const handleDeleteProperty = async (propertyId: string) => {
+    const loadingToast = toast.loading("Đang xoá tin đăng...");
+    try {
+      const res = await api.delete(`/api/properties/${propertyId}`);
+      if (res.status === 200) {
+        toast.success("Đã xoá tin đăng thành công! 🗑️", { id: loadingToast });
+        setLandlordPosts((prev) =>
+          prev.filter((p) => (p._id || p.id) !== propertyId),
+        );
+        if (activeTab === "overview") {
+          setStats((prev) => ({
+            ...prev,
+            totalPosts: Math.max(0, prev.totalPosts - 1),
+            approvedPosts: Math.max(0, prev.approvedPosts - 1),
+          }));
+        }
+      }
+    } catch (err) {
+      toast.error("Xoá thất bại! ❌", { id: loadingToast });
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -503,6 +633,56 @@ export function LandlordDashboardV2() {
     );
   };
 
+  const getPostActionConfig = (post: RentalProperty) => {
+    const status = post.status || "approved";
+
+    if (status === "expired") {
+      return {
+        label: "Gia hạn",
+        icon: Zap,
+        className:
+          "bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700",
+        onClick: handleRenewProperty,
+      };
+    }
+
+    if (status === "pending") {
+      return {
+        label: "Chờ duyệt",
+        icon: Clock,
+        className: "bg-orange-50 text-orange-600 cursor-not-allowed",
+        disabled: true,
+      };
+    }
+
+    if (status === "rejected") {
+      return {
+        label: "Bị từ chối",
+        icon: XCircle,
+        className: "bg-rose-50 text-rose-600 cursor-not-allowed",
+        disabled: true,
+      };
+    }
+
+    if (status === "reported") {
+      return {
+        label: "Bị báo cáo",
+        icon: AlertTriangle,
+        className: "bg-rose-50 text-rose-600 cursor-not-allowed",
+        disabled: true,
+      };
+    }
+
+    return {
+      label: post.available ? "Ngừng thuê" : "Mở thuê",
+      icon: post.available ? XCircle : CheckCircle,
+      className: post.available
+        ? "bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700"
+        : "bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700",
+      onClick: handleToggleAvailability,
+    };
+  };
+
   const getVerificationBadge = (level: number) => {
     const badges = [
       { label: "Chưa xác thực", color: "bg-gray-100 text-gray-800" },
@@ -511,11 +691,13 @@ export function LandlordDashboardV2() {
       { label: "Cấp 3", color: "bg-green-100 text-green-800" },
     ];
     const badge = badges[level] || badges[0];
+    // subscriptionTier từ API /user/me luôn là planName thực từ DB (Basic, Standard, Pro, v.v.)
+    const tier = user?.subscriptionTier || "Free";
     return (
       <span
         className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}
       >
-        {badge.label}
+        {badge.label} - {tier}
       </span>
     );
   };
@@ -548,10 +730,10 @@ export function LandlordDashboardV2() {
                 <div className="relative z-10">
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex-1">
-                      <h2 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight mb-2">
+                      <h2 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tight leading-tight mb-2">
                         Khách hàng tiềm năng
                       </h2>
-                      <p className="text-xl text-slate-600 font-bold leading-relaxed">
+                      <p className="text-lg text-indigo-500/80 font-black leading-relaxed">
                         từ{" "}
                         <span className="bg-gradient-to-r from-maphome-600 to-indigo-600 bg-clip-text text-transparent font-black">
                           AI Advisor
@@ -925,7 +1107,7 @@ export function LandlordDashboardV2() {
                       </div>
 
                       {req.notes && (
-                        <div className="p-4 bg-white/30 rounded-2xl border border-white/20">
+                        <div className="p-4 bg-white/30 rounded-2xl border border-white/20 mb-4">
                           <p className="text-xs text-gray-500 font-bold uppercase tracking-tighter mb-1">
                             Ghi chú từ MapHome
                           </p>
@@ -933,6 +1115,16 @@ export function LandlordDashboardV2() {
                             "{req.notes}"
                           </p>
                         </div>
+                      )}
+
+                      {req.status === "completed" && req.propertyId && (
+                        <Button
+                          onClick={() => navigate(`/room/${req.propertyId}`)}
+                          className="w-full bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all shadow-sm rounded-xl py-6 font-bold flex items-center justify-center gap-2"
+                        >
+                          <Eye className="size-4" />
+                          Xem chi tiết Báo cáo xác thực
+                        </Button>
                       )}
                     </div>
                   ))}
@@ -983,7 +1175,7 @@ export function LandlordDashboardV2() {
                 </p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
                   <div className="size-3 rounded-full bg-amber-500 shadow-sm" />
                   <span className="text-[10px] font-black uppercase text-slate-500">
@@ -996,6 +1188,18 @@ export function LandlordDashboardV2() {
                     Đã xác nhận
                   </span>
                 </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                  <div className="size-3 rounded-full bg-purple-500 shadow-sm" />
+                  <span className="text-[10px] font-black uppercase text-slate-500">
+                    Đã đề xuất
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                  <div className="size-3 rounded-full bg-rose-500 shadow-sm" />
+                  <span className="text-[10px] font-black uppercase text-slate-500">
+                    Khách từ chối
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1003,6 +1207,25 @@ export function LandlordDashboardV2() {
               <CalendarView
                 bookings={bookings}
                 onUpdateStatus={handleUpdateBookingStatus}
+                onReschedule={async (bookingId, date, time, note) => {
+                  try {
+                    const res = await api.put(`/api/bookings/${bookingId}/reschedule`, {
+                      bookingDate: date,
+                      bookingTime: time,
+                      note: note,
+                    });
+                    if (res.status === 200) {
+                      toast.success("Đã gửi đề xuất lịch hẹn mới cho khách! ✨");
+                      setBookings((prev) =>
+                        prev.map((b) =>
+                          (b._id || b.id) === bookingId ? { ...b, status: "landlord_proposed", bookingDate: date, bookingTime: time, note: note } : b,
+                        ),
+                      );
+                    }
+                  } catch (err) {
+                    toast.error("Không thể đề xuất lịch hẹn mới. ❌");
+                  }
+                }}
               />
             ) : (
               <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm p-20 text-center mx-auto">
@@ -1442,6 +1665,72 @@ export function LandlordDashboardV2() {
             {/* Expiry Warning Banner */}
             <ExpiryWarningBanner />
 
+            {/* Promoted Vouchers Wallet / Banner */}
+            {activeTab === "overview" && promotedVouchers.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-[24px] md:rounded-[32px] bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-5 md:p-8 shadow-xl relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 w-48 h-48 md:w-64 md:h-64 bg-white/20 rounded-full blur-3xl -mr-20 -mt-20" />
+                <div className="absolute bottom-0 left-0 w-32 h-32 md:w-40 md:h-40 bg-emerald-400/30 rounded-full blur-2xl -ml-10 -mb-10" />
+                
+                <div className="relative z-10">
+                  <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4 md:mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 md:p-2.5 bg-white/20 backdrop-blur-md rounded-xl md:rounded-2xl w-fit">
+                        <Ticket className="size-5 md:size-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">Ưu Đãi Đặc Quyền</h3>
+                        <p className="text-emerald-50 font-medium text-xs md:text-sm">Nhập mã khi thanh toán để nhận ngay khuyến mãi</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                    {promotedVouchers.map((voucher, idx) => (
+                      <div key={idx} className="bg-white/95 backdrop-blur-md rounded-2xl md:rounded-3xl p-4 md:p-5 shadow-lg flex items-center justify-between group relative overflow-hidden">
+                        {voucher.bannerImage && (
+                          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: `url(${voucher.bannerImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                        )}
+                        <div className="relative z-10 flex-1 min-w-0 mr-3">
+                          <div className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-emerald-600 to-blue-600">
+                            -{voucher.discountPercentage}%
+                          </div>
+                          <p className="text-[11px] md:text-xs font-black text-slate-800 uppercase tracking-tight mt-1 truncate">{voucher.title || "Khuyến mãi"}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{voucher.description}</p>
+                        </div>
+                        <div className="relative z-10 flex flex-col items-end gap-2 shrink-0">
+                          <span className="px-2 py-1 md:px-3 md:py-1 bg-emerald-50 text-emerald-600 font-black text-[9px] md:text-[10px] rounded-lg md:rounded-full border border-emerald-100 uppercase tracking-widest border-dashed">
+                            {voucher.code}
+                          </span>
+                          <Button
+                            size="sm"
+                            onClick={() => handleToggleSaveVoucher(voucher)}
+                            className={`rounded-lg md:rounded-xl text-[10px] h-7 px-3 md:h-8 md:px-4 font-black transition-all hover:scale-105 active:scale-95 border-none shadow-md ${
+                              savedVoucherIds.includes(voucher._id || voucher.id)
+                                ? "bg-emerald-100 hover:bg-rose-50 hover:text-rose-600 text-emerald-700 border border-emerald-200 shadow-none hover:border-rose-200 group/btn"
+                                : "bg-gradient-to-r from-emerald-500 to-blue-600 hover:brightness-110 text-white shadow-blue-500/20"
+                            }`}
+                          >
+                            {savedVoucherIds.includes(voucher._id || voucher.id) ? (
+                              <>
+                                <span className="group-hover/btn:hidden">Đã lưu</span>
+                                <span className="hidden group-hover/btn:inline">Bỏ lưu</span>
+                              </>
+                            ) : (
+                              "Lưu mã"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {/* Page Header */}
             {activeTab === "overview" && (
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -1450,7 +1739,7 @@ export function LandlordDashboardV2() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                    className="text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3"
+                    className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-2 sm:mb-3"
                   >
                     Chào buổi sáng, <br />
                     <span className="bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent">
@@ -1461,18 +1750,51 @@ export function LandlordDashboardV2() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
-                    className="text-indigo-600/60 text-xl font-bold"
+                    className="text-indigo-600/60 text-sm sm:text-xl font-bold"
                   >
-                    Dưới đây là thống kê hiệu suất bài đăng của bạn hôm nay.
+                    Dưới đây là thống kê hiệu suất bài đăng của bạn {overviewTimeRange === "today" ? "hôm nay" : overviewTimeRange === "7days" ? "7 ngày qua" : "từ trước đến nay"}.
                   </motion.p>
                 </div>
-                <div className="flex bg-white/50 backdrop-blur-md rounded-2xl p-1 border border-slate-200 shadow-sm overflow-hidden self-start">
-                  <div className="px-4 py-2 bg-white rounded-xl shadow-lg shadow-slate-200/50 font-black text-indigo-600 text-sm">
+                <div className="flex bg-white/50 backdrop-blur-md rounded-2xl p-1 border border-slate-200 shadow-sm overflow-hidden self-start relative">
+                  <button 
+                    onClick={() => setOverviewTimeRange("today")}
+                    className={`relative px-4 py-2 rounded-xl text-sm font-black transition-colors duration-200 z-10 ${
+                      overviewTimeRange === "today" 
+                        ? "text-indigo-700" 
+                        : "text-indigo-400 hover:text-indigo-600"
+                    }`}
+                  >
+                    {overviewTimeRange === "today" && (
+                      <motion.div layoutId="activeOverviewTimeBg" className="absolute inset-0 bg-white shadow-sm rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />
+                    )}
                     Hôm nay
-                  </div>
-                  <div className="px-4 py-2 font-bold text-indigo-400 text-sm hover:text-indigo-600 cursor-pointer transition-colors">
+                  </button>
+                  <button 
+                    onClick={() => setOverviewTimeRange("7days")}
+                    className={`relative px-4 py-2 rounded-xl text-sm font-black transition-colors duration-200 z-10 ${
+                      overviewTimeRange === "7days" 
+                        ? "text-indigo-700" 
+                        : "text-indigo-400 hover:text-indigo-600"
+                    }`}
+                  >
+                    {overviewTimeRange === "7days" && (
+                      <motion.div layoutId="activeOverviewTimeBg" className="absolute inset-0 bg-white shadow-sm rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />
+                    )}
                     7 ngày qua
-                  </div>
+                  </button>
+                  <button 
+                    onClick={() => setOverviewTimeRange("all")}
+                    className={`relative px-4 py-2 rounded-xl text-sm font-black transition-colors duration-200 z-10 ${
+                      overviewTimeRange === "all" 
+                        ? "text-indigo-700" 
+                        : "text-indigo-400 hover:text-indigo-600"
+                    }`}
+                  >
+                    {overviewTimeRange === "all" && (
+                      <motion.div layoutId="activeOverviewTimeBg" className="absolute inset-0 bg-white shadow-sm rounded-xl -z-10" transition={{ type: "spring", bounce: 0.2, duration: 0.5 }} />
+                    )}
+                    Tất cả
+                  </button>
                 </div>
               </div>
             )}
@@ -1484,113 +1806,107 @@ export function LandlordDashboardV2() {
                 variants={{
                   visible: { transition: { staggerChildren: 0.1 } },
                 }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6"
+                className="grid gap-3"
+                style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}
               >
                 {[
                   {
-                    label: "Tổng tin đăng",
-                    value: stats.totalPosts,
+                    label: "Tin đăng",
+                    value: filteredOverviewStats.totalPosts,
                     icon: FileText,
-                    color: "blue",
-                    trend: formatTrendNumber(stats.trends.totalPostsTrend),
+                    bg: "bg-blue-50",
+                    iconBg: "from-blue-500 to-indigo-600",
+                    text: "text-blue-600",
+                    onClick: () => setActiveTab("posts"),
                   },
                   {
-                    label: "Đã duyệt",
-                    value: stats.approvedPosts,
+                    label: "Hẹn đã duyệt",
+                    value: filteredOverviewStats.approvedBookings,
                     icon: CheckCircle,
-                    color: "emerald",
-                    trend: formatTrendNumber(stats.trends.approvedPostsTrend),
+                    bg: "bg-emerald-50",
+                    iconBg: "from-emerald-500 to-teal-600",
+                    text: "text-emerald-600",
+                    onClick: () => setActiveTab("bookings"),
                   },
                   {
-                    label: "Chờ duyệt",
-                    value: stats.pendingPosts,
+                    label: "Hẹn chờ duyệt",
+                    value: filteredOverviewStats.pendingBookings,
                     icon: Clock,
-                    color: "orange",
-                    trend: formatTrendNumber(stats.trends.pendingPostsTrend),
+                    bg: "bg-orange-50",
+                    iconBg: "from-orange-500 to-amber-600",
+                    text: "text-orange-600",
+                    onClick: () => setActiveTab("bookings"),
                   },
                   {
                     label: "Lượt xem",
-                    value: stats.totalViews.toLocaleString(),
+                    value: filteredOverviewStats.totalViews.toLocaleString(),
                     icon: Eye,
-                    color: "purple",
-                    trend: "TỔNG",
+                    bg: "bg-purple-50",
+                    iconBg: "from-purple-500 to-indigo-700",
+                    text: "text-purple-600",
+                    onClick: () => setActiveTab("overview"),
                   },
-                  {
-                    label: "Yêu thích",
-                    value: stats.totalFavorites,
-                    icon: Star,
-                    color: "amber",
-                    trend: "TỔNG",
-                  },
-                ].map((stat, idx) => (
+                ].map((stat) => (
                   <motion.div
                     key={stat.label}
+                    onClick={stat.onClick}
                     variants={{
-                      hidden: { opacity: 0, y: 30, scale: 0.95 },
+                      hidden: { opacity: 0, y: 20, scale: 0.96 },
                       visible: {
                         opacity: 1,
                         y: 0,
                         scale: 1,
-                        transition: { type: "spring", bounce: 0.4 },
+                        transition: { type: "spring", bounce: 0.35 },
                       },
                     }}
-                    whileHover={{
-                      y: -12,
-                      scale: 1.05,
-                      transition: {
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 10,
-                      },
-                    }}
-                    className={`relative overflow-hidden rounded-[40px] p-8 shadow-xl shadow-slate-200/40 group transition-all duration-500 bg-white/80 backdrop-blur-3xl border border-white/50`}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`relative overflow-hidden rounded-2xl p-3 shadow-sm border border-white/80 ${stat.bg} min-h-[100px] cursor-pointer`}
+                    style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}
                   >
-                    {/* Background Aura Effect (Subtle) */}
-                    <div
-                      className={`absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-700 bg-gradient-to-br ${
-                        stat.color === "blue"
-                          ? "from-blue-600 to-indigo-700"
-                          : stat.color === "emerald"
-                            ? "from-emerald-500 to-teal-600"
-                            : stat.color === "orange"
-                              ? "from-orange-500 to-amber-600"
-                              : stat.color === "purple"
-                                ? "from-purple-600 to-indigo-800"
-                                : "from-amber-500 to-rose-600"
-                      }`}
-                    />
-
-                    {/* Inner Glow */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-40 transition-opacity blur-3xl bg-white" />
-
-                    <div className="relative z-10">
-                      <div className="flex items-center justify-between mb-8">
-                        <div
-                          className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 border border-white bg-gradient-to-br ${
-                            stat.color === "blue"
-                              ? "from-blue-600 to-indigo-700"
-                              : stat.color === "emerald"
-                                ? "from-emerald-500 to-teal-600"
-                                : stat.color === "orange"
-                                  ? "from-orange-500 to-amber-600"
-                                  : stat.color === "purple"
-                                    ? "from-purple-600 to-indigo-800"
-                                    : "from-amber-500 to-rose-600"
-                          }`}
-                        >
-                          <stat.icon className="size-7 text-white" />
-                        </div>
-                        <span className="px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase bg-slate-50 text-slate-500 border border-slate-100">
-                          {stat.trend}
-                        </span>
+                    {/* Top: Icon only */}
+                    <div style={{ display: "flex", alignItems: "flex-start" }}>
+                      <div
+                        style={{
+                          width: 36, height: 36, borderRadius: 10,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                        }}
+                        className={`bg-gradient-to-br ${stat.iconBg} flex-shrink-0`}
+                      >
+                        <stat.icon className="size-4 text-white" />
                       </div>
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
+                    </div>
+
+                    {/* Bottom: Label + Value */}
+                    <div style={{ marginTop: 12 }}>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5 truncate">
                         {stat.label}
                       </p>
-                      <p className="text-5xl font-black text-slate-900 tracking-tighter drop-shadow-sm">
-                        {stat.value}
-                      </p>
+                      <AnimatePresence mode="popLayout">
+                        <motion.p
+                          key={stat.value}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          transition={{ duration: 0.2, type: "spring", bounce: 0 }}
+                          className={`text-xl font-black tracking-tight leading-none ${stat.text}`}
+                        >
+                          {stat.value}
+                        </motion.p>
+                      </AnimatePresence>
                     </div>
+
+                    {/* Decorative bg circle */}
+                    <div
+                      style={{
+                        position: "absolute", bottom: -20, right: -20,
+                        width: 70, height: 70, borderRadius: "50%",
+                        background: "rgba(255,255,255,0.35)",
+                        filter: "blur(10px)",
+                        pointerEvents: "none",
+                      }}
+                    />
                   </motion.div>
                 ))}
               </motion.div>
@@ -1628,7 +1944,7 @@ export function LandlordDashboardV2() {
                 variants={{
                   visible: { transition: { staggerChildren: 0.1 } },
                 }}
-                className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-10"
+                className="grid grid-cols-2 gap-3 sm:gap-8 pb-10"
               >
                 {landlordPosts
                   .slice(0, activeTab === "overview" ? 4 : 20)
@@ -1657,191 +1973,154 @@ export function LandlordDashboardV2() {
                             damping: 15,
                           },
                         }}
-                        className="bg-white/80 backdrop-blur-xl border border-white/50 rounded-[40px] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.08)] transition-all group"
+                        className="bg-white/90 backdrop-blur-xl border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all group cursor-pointer"
+                        onClick={() => navigate(`/room/${post._id || post.id}`)}
                       >
-                        <div className="p-8">
-                          <div className="flex items-start justify-between mb-6">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-4 flex-wrap">
-                                <div className="scale-90 origin-left">
-                                  {getStatusBadge(propertyStatus as any)}
-                                </div>
-                                {!post.available && (
-                                  <div className="scale-90 origin-left">
-                                    <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-500 text-white shadow-lg shadow-rose-200 flex items-center gap-1">
-                                      <XCircle className="size-3" />
-                                      ĐÃ THUÊ
-                                    </span>
-                                  </div>
-                                )}
-                                <div className="scale-90 origin-left">
-                                  {getVerificationBadge(greenBadgeLevel)}
-                                </div>
-                                {post.expiryDate && (
-                                  <PropertyExpiryBadge
-                                    expiryDate={post.expiryDate}
-                                    status={propertyStatus as any}
-                                    size="sm"
-                                  />
-                                )}
-                              </div>
-                              <h4 className="font-black text-2xl bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent group-hover:from-blue-600 group-hover:to-indigo-700 transition-all duration-300 leading-tight tracking-tight">
-                                {post.name}
-                              </h4>
+                        {/* Property Image */}
+                        <div className="relative h-36 sm:h-48 overflow-hidden bg-slate-100">
+                          {(post.images?.[0] || post.image) ? (
+                            <img
+                              src={post.images?.[0] || post.image}
+                              alt={post.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.name)}&background=6366f1&color=fff&size=400`;
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                              <FileText className="size-10 text-slate-400" />
+                            </div>
+                          )}
+                          {/* Status badge overlay */}
+                          <div className="absolute top-2.5 left-2.5">
+                            <div className="scale-90 origin-top-left">
+                              {getStatusBadge(propertyStatus as any)}
+                            </div>
+                          </div>
+                          {!post.available && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                              <span className="px-3 py-1.5 bg-rose-500 text-white text-xs font-black rounded-full shadow-lg">
+                                ĐÃ THUÊ
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="p-3.5 sm:p-5">
+                          {/* Title + verification */}
+                          <div className="flex items-start justify-between mb-2 gap-2">
+                            <h4 className="font-black text-sm sm:text-base text-slate-900 leading-tight line-clamp-2 flex-1">
+                              {post.name}
+                            </h4>
+                            <div className="flex-shrink-0">
+                              {getVerificationBadge(greenBadgeLevel)}
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                            <div className="flex items-center gap-3 bg-slate-50/50 p-4 rounded-3xl border border-white/40 shadow-inner group-hover:bg-emerald-50/50 transition-colors">
-                              <div className="p-2.5 bg-white rounded-2xl shadow-sm">
-                                <DollarSign className="size-4 text-emerald-500" />
-                              </div>
-                              <span className="text-[17px] font-black text-emerald-600">
-                                {(post.price || 0).toLocaleString("vi-VN")}đ
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3 bg-slate-50/50 p-4 rounded-3xl border border-white/40 shadow-inner group-hover:bg-blue-50/50 transition-colors">
-                              <div className="p-2.5 bg-white rounded-2xl shadow-sm">
-                                <Maximize className="size-4 text-blue-500" />
-                              </div>
-                              <span className="text-[15px] font-black text-blue-600">
-                                {post.area} m²
-                              </span>
-                            </div>
-                            <div className="col-span-full flex items-center gap-3 bg-slate-50/50 p-4 rounded-3xl border border-white/40 shadow-inner group-hover:bg-indigo-50/50 transition-colors">
-                              <div className="p-2.5 bg-white rounded-2xl shadow-sm">
-                                <MapPin className="size-4 text-indigo-500" />
-                              </div>
-                              <span className="text-xs font-bold text-slate-500 truncate">
-                                {post.address}
-                              </span>
-                            </div>
+                          {/* Address */}
+                          <p className="flex items-center gap-1 text-[11px] text-slate-400 font-medium mb-3 truncate">
+                            <MapPin className="size-3 flex-shrink-0 text-indigo-400" />
+                            {post.address}
+                          </p>
+
+                          {/* Price + Area row */}
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-black text-emerald-600">
+                              {(post.price || 0).toLocaleString("vi-VN")}đ
+                            </span>
+                            <span className="text-xs font-bold text-slate-400">
+                              {post.area} m²
+                            </span>
                           </div>
 
-                          <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-                            <div className="flex items-center gap-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                              <span className="flex items-center gap-2 bg-slate-50/50 px-3 py-1.5 rounded-full">
-                                <Eye className="size-3.5 text-slate-300" />{" "}
-                                {post.views || 0}
-                              </span>
-                              <span className="flex items-center gap-2 bg-slate-50/50 px-3 py-1.5 rounded-full">
-                                <Star className="size-3.5 text-amber-300" />{" "}
+                          {/* Stats + Actions */}
+                          <div className="flex items-center justify-between pt-2.5 border-t border-slate-100">
+                            <div className="flex items-center gap-3 text-[11px] font-bold text-slate-400">
+                              <span className="flex items-center gap-1">
+                                <Star className="size-3 text-amber-400" />
                                 {post.favorites || 0}
                               </span>
+                              <span className="flex items-center gap-1">
+                                <Eye className="size-3 text-blue-400" />
+                                {post.views || 0}
+                              </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                className={`rounded-2xl font-black ${post.available ? "text-emerald-600 hover:bg-emerald-50" : "text-amber-600 hover:bg-amber-50"}`}
-                                onClick={() => handleToggleAvailability(post)}
-                                title={
-                                  post.available
-                                    ? "Đánh dấu đã cho thuê"
-                                    : "Đánh dấu còn trống"
-                                }
-                              >
-                                {post.available ? (
-                                  <>
-                                    <CheckCircle className="size-4 mr-2" />
-                                    Còn trống
-                                  </>
-                                ) : (
-                                  <>
-                                    <Clock className="size-4 mr-2" />
-                                    Đã thuê
-                                  </>
-                                )}
-                              </Button>
-                              {post.expiryDate &&
-                                new Date(post.expiryDate) < new Date() && (
-                                  <Button
-                                    variant="ghost"
-                                    className="rounded-2xl font-black text-red-600 hover:bg-red-50 px-4"
-                                    onClick={() => handleRenewProperty(post)}
-                                    title="Gia hạn tin đăng"
-                                  >
-                                    <Zap className="size-4 mr-2" />
-                                    Gia hạn
-                                  </Button>
-                                )}
-                              <Button
-                                variant="ghost"
-                                className="rounded-2xl font-black text-blue-600 hover:bg-blue-50 px-5"
-                                onClick={() => navigate(`/room/${post.id}`)}
-                              >
-                                <Eye className="size-4 mr-2" />
-                                Xem
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                className="rounded-2xl font-black text-amber-600 hover:bg-amber-50"
-                                onClick={() => setEditingProperty(post)}
-                              >
-                                <Edit className="size-4 mr-2" />
-                                Sửa
-                              </Button>
-                              {post.verificationLevel !==
-                                "location-verified" && (
-                                <Button
-                                  variant="ghost"
-                                  className="rounded-2xl font-black text-emerald-600 hover:bg-emerald-50"
-                                  onClick={() => handleVerifyLocation(post)}
-                                  disabled={
-                                    verifyingPropertyId ===
-                                    (post._id || post.id)
-                                  }
-                                >
-                                  {verifyingPropertyId ===
-                                  (post._id || post.id) ? (
-                                    <>
-                                      <Loader2 className="size-4 mr-2 animate-spin" />
-                                      Đang xác thực...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ShieldCheck className="size-4 mr-2" />
-                                      Xác thực GPS
-                                    </>
-                                  )}
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                className="rounded-2xl font-black text-rose-600 hover:bg-rose-50"
-                                onClick={() => {
-                                  setConfirmDelete({
-                                    open: true,
-                                    title: "Xác nhận xóa tin đăng",
-                                    description: `Bạn có chắc muốn xóa tin đăng "${post.name}"?`,
-                                    onConfirm: async () => {
-                                      try {
-                                        const res = await api.delete(
-                                          `/api/properties/${post._id || post.id}`,
-                                        );
-                                        if (res.status === 200) {
-                                          toast.success(
-                                            "Đã xóa tin đăng thành công! 🗑️",
-                                          );
-                                          setLandlordPosts((prev) =>
-                                            prev.filter(
-                                              (p) =>
-                                                (p._id || p.id) !==
-                                                (post._id || post.id),
-                                            ),
-                                          );
+                            {activeTab === "posts" && (
+                              <div className="flex items-center gap-1.5">
+                                {(() => {
+                                  const action = getPostActionConfig(post);
+                                  const ActionIcon = action.icon;
+                                  return (
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (action.disabled) return;
+                                        if (action.onClick) {
+                                          action.onClick(post);
                                         }
-                                      } catch (err) {
-                                        toast.error("Xóa thất bại! ❌");
-                                      }
-                                    },
-                                  });
-                                }}
-                              >
-                                <Trash2 className="size-4" />
-                              </Button>
-                            </div>
+                                      }}
+                                      variant="ghost"
+                                      disabled={action.disabled}
+                                      size="sm"
+                                      className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wide transition-all flex items-center gap-1 ${action.className} ${
+                                        action.disabled ? "opacity-70" : ""
+                                      }`}
+                                    >
+                                      <ActionIcon className="size-3" />
+                                      <span className="hidden sm:inline">{action.label}</span>
+                                    </Button>
+                                  );
+                                })()}
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingProperty(post);
+                                  }}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-all"
+                                  title="Chỉnh sửa tin"
+                                >
+                                  <Edit className="size-3" />
+                                </Button>
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setConfirmDelete({
+                                      open: true,
+                                      title: "Xác nhận xoá tin đăng",
+                                      description:
+                                        "Bạn có chắc chắn muốn xoá tin đăng này? Hành động này không thể hoàn tác.",
+                                      onConfirm: () =>
+                                        handleDeleteProperty(
+                                          post._id || post.id,
+                                        ),
+                                    });
+                                  }}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-1.5 bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 rounded-lg transition-all"
+                                  title="Xoá tin đăng"
+                                >
+                                  <Trash2 className="size-3" />
+                                </Button>
+                              </div>
+                            )}
+
                           </div>
+
+                          {/* Expiry badge */}
+                          {post.expiryDate && (
+                            <div className="mt-2">
+                              <PropertyExpiryBadge
+                                expiryDate={post.expiryDate}
+                                status={propertyStatus as any}
+                                size="sm"
+                              />
+                            </div>
+                          )}
                         </div>
                       </motion.div>
                     );
@@ -1887,11 +2166,59 @@ export function LandlordDashboardV2() {
       {/* Static Background Gradient - Maximum Smoothness */}
       <div className="fixed inset-0 z-0 bg-gradient-to-tr from-[#f0f9f5] via-white to-[#f0f2f9]" />
 
-      {/* Left Sidebar Navigation - Solid & Lean */}
-      <aside className="w-80 bg-white/70 backdrop-blur-3xl border-r border-white/40 flex-shrink-0 sticky top-0 h-screen overflow-hidden flex flex-col z-20 shadow-[4px_0_30px_rgba(0,0,0,0.02)]">
+      {/* Mobile Header - Only visible on small screens */}
+      <div className="fixed top-0 left-0 right-0 h-16 md:hidden bg-white border-b border-slate-100 flex items-center px-4 z-40">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          {sidebarOpen ? (
+            <XIcon className="size-6 text-slate-900" />
+          ) : (
+            <Menu className="size-6 text-slate-900" />
+          )}
+        </button>
+        <div 
+          onClick={() => navigate("/")}
+          className="ml-4 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-lg">
+            <Home className="size-4 text-white" />
+          </div>
+          <h1 className="font-black text-lg text-slate-900">MapHome</h1>
+        </div>
+        
+        {activeTab !== "overview" && (
+          <div className="ml-auto">
+            <button
+              onClick={() => setActiveTab("overview")}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors shadow-sm active:scale-95"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span>Tổng quan</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Left Sidebar Navigation - Responsive */}
+      <aside className={`fixed md:static w-80 h-screen bg-white/70 backdrop-blur-3xl border-r border-white/40 flex-shrink-0 overflow-hidden flex flex-col z-40 shadow-[4px_0_30px_rgba(0,0,0,0.02)] transition-transform duration-300 ${
+        sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      }`}>
         {/* Logo Section */}
         <div className="p-10">
-          <div className="flex items-center gap-4 px-2 hover:scale-105 transition-transform">
+          <div 
+            onClick={() => navigate("/")}
+            className="flex items-center gap-4 px-2 hover:scale-105 transition-transform cursor-pointer"
+          >
             <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-3 rounded-[20px] shadow-2xl shadow-blue-100">
               <Home className="size-8 text-white" />
             </div>
@@ -1942,7 +2269,10 @@ export function LandlordDashboardV2() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setSidebarOpen(false);
+                  }}
                   className={`w-full flex items-center gap-5 px-6 py-5 rounded-[28px] text-sm font-black tracking-tight transition-all relative group ${
                     isActive
                       ? "bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white shadow-[0_15px_35px_rgba(59,130,246,0.25)] scale-[1.03]"
@@ -1971,7 +2301,10 @@ export function LandlordDashboardV2() {
         <div className="p-6 space-y-3 mt-auto mb-4">
           <Button
             variant="ghost"
-            onClick={() => navigate("/")}
+            onClick={() => {
+              navigate("/");
+              setSidebarOpen(false);
+            }}
             className="w-full justify-start gap-4 px-5 py-6 rounded-2xl font-bold text-gray-600 hover:bg-white/60 hover:text-gray-900 group"
           >
             <Home className="size-5 transition-transform group-hover:-translate-y-0.5" />
@@ -1989,12 +2322,12 @@ export function LandlordDashboardV2() {
       </aside>
 
       {/* Main Content Area - Glass Canvas */}
-      <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative z-10 flex flex-col h-screen">
+      <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative z-10 flex flex-col h-screen md:mt-0 mt-16">
         {/* Top Navbar Blur Effect */}
         <div className="sticky top-0 h-10 bg-gradient-to-b from-white to-transparent pointer-events-none z-30 opacity-60" />
 
         <div className="flex-1 w-full flex flex-col">
-          <main className="max-w-[1400px] w-full mx-auto px-6 md:px-12 pt-8 pb-20 flex-1">
+          <main className="max-w-[1400px] w-full mx-auto px-3 sm:px-6 md:px-12 pt-8 pb-20 flex-1">
             <AnimatePresence mode="wait">{renderContent()}</AnimatePresence>
           </main>
         </div>

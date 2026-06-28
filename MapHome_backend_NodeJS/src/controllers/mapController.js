@@ -29,6 +29,69 @@ const normalizeAddressComponents = (components) => {
     }));
 };
 
+// Fallback: Parse formatted_address to create synthetic address_components
+const parseFormattedAddress = (formattedAddress) => {
+  if (!formattedAddress || typeof formattedAddress !== "string") return [];
+
+  // Split by comma and clean up
+  const parts = formattedAddress.split(",").map((p) => p.trim());
+  const components = [];
+
+  // Vietnam location hierarchy: address, street, ward, district, province
+  const vietnamProvinces = [
+    "Thành phố Hồ Chí Minh",
+    "TP. Hồ Chí Minh",
+    "Hà Nội",
+    "Đà Nẵng",
+    "Thành phố Cần Thơ",
+    "Thành phố Hải Phòng",
+  ];
+  const wardPatterns = /^(Phường|Xã|Thị trấn|P\.|X\.)/i;
+  const districtPatterns = /^(Quận|Huyện|Q\.|H\.)/i;
+
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i];
+
+    // Try to match province
+    if (vietnamProvinces.some((prov) => part.includes(prov))) {
+      components.unshift({
+        long_name: part,
+        short_name: part.replace("Thành phố ", "").replace("TP. ", ""),
+        types: ["administrative_area_level_1"],
+      });
+    }
+    // Try to match district
+    else if (districtPatterns.test(part)) {
+      components.unshift({
+        long_name: part,
+        short_name: part.replace(/^(Quận|Huyện|Q\.|H\.)\s*/, ""),
+        types: ["administrative_area_level_2"],
+      });
+    }
+    // Try to match ward
+    else if (wardPatterns.test(part)) {
+      components.unshift({
+        long_name: part,
+        short_name: part.replace(/^(Phường|Xã|Thị trấn|P\.|X\.)\s*/, ""),
+        types: ["sublocality_level_1"],
+      });
+    }
+    // Otherwise treat as street/locality
+    else if (
+      i === 0 ||
+      !vietnamProvinces.some((prov) => parts[i + 1]?.includes(prov))
+    ) {
+      components.unshift({
+        long_name: part,
+        short_name: part,
+        types: i === 0 ? ["route"] : ["locality"],
+      });
+    }
+  }
+
+  return components;
+};
+
 // @desc    Convert coordinates (lat, lng) to human-readable address
 // @route   GET /api/map/reverse-geocode
 const reverseGeocode = async (req, res, next) => {
@@ -132,12 +195,53 @@ const getPlaceDetail = async (req, res, next) => {
 
     if (response.data && response.data.result) {
       const result = response.data.result;
+
+      // Debug logging
+      console.log("[Goong Place Detail] Raw result:", {
+        formatted_address: result.formatted_address,
+        address_components: result.address_components,
+      });
+
+      // Extract geometry safely
+      const geometry = result.geometry || {};
+      const location = geometry.location || {};
+
+      // Normalize address components, with fallback to parse formatted_address
+      let addressComponents = normalizeAddressComponents(
+        result.address_components,
+      );
+
+      // If no components, try to parse from formatted_address
+      if (addressComponents.length === 0 && result.formatted_address) {
+        console.log(
+          "[Goong Place Detail] No address_components, using fallback parser",
+        );
+        addressComponents = parseFormattedAddress(result.formatted_address);
+      }
+
       const normalizedResult = {
-        ...result,
-        address_components: normalizeAddressComponents(
-          result.address_components,
-        ),
+        // Return structured format that matches frontend expectations
+        formatted_address: result.formatted_address || "",
+        geometry: {
+          location: {
+            lat: location.lat || 0,
+            lng: location.lng || 0,
+          },
+        },
+        address_components: addressComponents,
+        // Keep other useful fields
+        place_id: result.place_id,
+        name: result.name,
+        types: result.types || [],
       };
+
+      console.log("[Goong Place Detail] Final normalized result:", {
+        formatted_address: normalizedResult.formatted_address,
+        location: normalizedResult.geometry.location,
+        components_count: normalizedResult.address_components.length,
+        components: normalizedResult.address_components,
+      });
+
       mapCache.set(cacheKey, normalizedResult);
       res.status(200).json(normalizedResult);
     } else {

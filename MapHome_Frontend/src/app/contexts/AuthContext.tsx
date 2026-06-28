@@ -1,16 +1,24 @@
-import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import api from "@/app/utils/api";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
+import api, { registerLogoutCallback } from "@/app/utils/api";
 import { toast } from "sonner";
 
 export interface User {
   id: string;
   username: string;
   email: string;
-  role: "admin" | "landlord" | "user";
+  role: "admin" | "landlord" | "user" | "broker";
   phone?: string;
   fullName?: string;
   avatar?: string; // user profile picture URL
   verificationLevel?: number;
+  verificationLevelLabel?: string; // e.g., "Level 1", "Level 2", "Level 3"
+  subscriptionTier?: string; // "Standard" or "Premium"
   createdAt?: string;
 
   // Personalized settings
@@ -42,15 +50,18 @@ interface AuthContextType {
     username: string,
     password: string,
   ) => Promise<{ success: boolean; role?: string; message?: string }>;
-  googleLogin: (
-    tokens: { idToken?: string; accessToken?: string; role?: string },
-  ) => Promise<{ success: boolean; role?: string; message?: string }>;
+  googleLogin: (tokens: {
+    idToken?: string;
+    accessToken?: string;
+    role?: string;
+  }) => Promise<{ success: boolean; role?: string; message?: string }>;
   register: (
     data: RegisterData,
   ) => Promise<{ success: boolean; message?: string }>;
 
   logout: () => void;
   updateUser: (userData: User) => void;
+  refreshProfile: () => Promise<User | null>;
   isAuthenticated: boolean;
 }
 
@@ -61,7 +72,7 @@ interface RegisterData {
   confirmPassword?: string;
   fullName: string;
   phone: string;
-  role: "landlord" | "user" | "admin";
+  role: "landlord" | "user" | "admin" | "broker";
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,13 +85,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return stored ? JSON.parse(stored) : null;
   });
 
+  // Register API logout callback to sync React state with token expiration
+  useEffect(() => {
+    registerLogoutCallback(() => {
+      setUser(null);
+    });
+    return () => {
+      registerLogoutCallback(() => {});
+    };
+  }, []);
+
   // Check for token on mount and fetch profile
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem("token");
-      if (token && !user) {
+      if (token) {
         try {
-          const res = await api.get("/api/auth/me");
+          const res = await api.get("/api/user/me");
           if (res.status === 200) {
             setUser(res.data);
             localStorage.setItem("auth", JSON.stringify(res.data));
@@ -92,21 +113,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (err) {
           console.error("Auth check failed:", err);
-          // If 401, interceptor already handles it, but we should clear local state too
           localStorage.removeItem("token");
           localStorage.removeItem("auth");
           setUser(null);
         }
+      } else {
+        localStorage.removeItem("auth");
+        setUser(null);
       }
     };
     checkAuth();
-  }, [user]);
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {
-      const res = await api.post("/api/auth/login", { usernameOrEmail: username, password });
+      const res = await api.post("/api/auth/login", {
+        usernameOrEmail: username,
+        password,
+      });
       const payload = res.data;
-      
+
       if (payload.user) {
         setUser(payload.user);
         localStorage.setItem("auth", JSON.stringify(payload.user));
@@ -116,7 +142,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { success: true, role: payload.user?.role };
     } catch (err: any) {
-      return { success: false, message: err.response?.data?.message || "Lỗi kết nối máy chủ" };
+      return {
+        success: false,
+        message: err.response?.data?.message || "Lỗi kết nối máy chủ",
+      };
     }
   };
 
@@ -128,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post("/api/auth/google", tokens);
       const payload = res.data;
-      
+
       if (payload.user) {
         setUser(payload.user);
         localStorage.setItem("auth", JSON.stringify(payload.user));
@@ -138,7 +167,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { success: true, role: payload.user?.role };
     } catch (err: any) {
-      return { success: false, message: err.response?.data?.message || "Lỗi kết nối máy chủ" };
+      return {
+        success: false,
+        message: err.response?.data?.message || "Lỗi kết nối máy chủ",
+      };
     }
   };
 
@@ -167,7 +199,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { success: false, message: "Đăng ký thất bại" };
     } catch (err: any) {
-      return { success: false, message: err.response?.data?.message || "Lỗi kết nối máy chủ" };
+      return {
+        success: false,
+        message: err.response?.data?.message || "Lỗi kết nối máy chủ",
+      };
     }
   };
 
@@ -188,6 +223,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("auth", JSON.stringify(userData));
   };
 
+  const refreshProfile = async (): Promise<User | null> => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const res = await api.get("/api/user/me");
+        if (res.status === 200) {
+          setUser(res.data);
+          localStorage.setItem("auth", JSON.stringify(res.data));
+          return res.data;
+        }
+      } catch (err) {
+        console.error("Failed to refresh user profile:", err);
+      }
+    }
+    return null;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -197,6 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         updateUser,
+        refreshProfile,
         isAuthenticated: !!user,
       }}
     >

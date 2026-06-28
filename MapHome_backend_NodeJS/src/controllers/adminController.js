@@ -5,6 +5,9 @@ const VerificationRequest = require("../models/VerificationRequest");
 const Booking = require("../models/Booking");
 const Review = require("../models/Review");
 const Transaction = require("../models/Transaction");
+const Subscription = require("../models/Subscription");
+const { uploadToCloudinary } = require("../services/cloudinaryService");
+
 
 const getDashboardStats = async (req, res) => {
   try {
@@ -30,7 +33,8 @@ const getDashboardStats = async (req, res) => {
       reviews,
       totalViewsData,
       newUsers,
-      totalTransactionsSuccess,
+      totalTransactions,
+      totalRevenueData,
     ] = await Promise.all([
       Property.countDocuments({}), // Global total
       User.countDocuments({}),     // Global total
@@ -46,7 +50,11 @@ const getDashboardStats = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$views" } } },
       ]),
       User.countDocuments(query),
-      Transaction.countDocuments({ ...query, status: "success" }),
+      Transaction.countDocuments(query),
+      Transaction.aggregate([
+        { $match: { status: "success", ...query } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
     ]);
 
     const totalViews =
@@ -63,6 +71,14 @@ const getDashboardStats = async (req, res) => {
           )
         : 98; // Default 98% if no reviews
 
+    const averageRating =
+      reviews.length > 0
+        ? Number((reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1))
+        : 4.9;
+
+    const totalRevenue =
+      totalRevenueData && totalRevenueData.length > 0 ? totalRevenueData[0].total : 0;
+
     res.status(200).json({
       totalProperties,
       totalUsers,
@@ -74,9 +90,12 @@ const getDashboardStats = async (req, res) => {
       pendingBookings,
       uniqueDistricts: distinctDistricts.filter((d) => d).length, // Count unique districts, exclude null
       satisfactionRate,
+      averageRating,
       totalViews,
       newUsers,
-      totalTransactionsSuccess,
+      totalTransactions,
+      totalRevenue,
+      totalReviews: reviews.length,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -158,15 +177,42 @@ const rejectVerification = async (req, res) => {
 
 const completeVerification = async (req, res) => {
   try {
-    const { badgeAwarded, inspectorNotes } = req.body;
+    const { badgeAwarded, inspectorNotes, inspectionChecklist } = req.body;
+
+    // Process files if any
+    let uploadedMediaUrls = [];
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await uploadToCloudinary(file.buffer, "maphome/verification_media");
+        uploadedMediaUrls.push(result.secure_url);
+      }
+    }
+
+    let parsedChecklist = {};
+    if (inspectionChecklist) {
+      try {
+        parsedChecklist = typeof inspectionChecklist === "string" ? JSON.parse(inspectionChecklist) : inspectionChecklist;
+      } catch (e) {
+        console.error("Parse checklist error", e);
+      }
+    }
+
+    const updateData = {
+      status: badgeAwarded === "none" ? "rejected" : "completed",
+      completedAt: new Date(),
+      inspectorNotes: inspectorNotes || "",
+    };
+    
+    if (uploadedMediaUrls.length > 0) {
+      updateData.inspectionMedia = uploadedMediaUrls;
+    }
+    if (Object.keys(parsedChecklist).length > 0) {
+      updateData.inspectionChecklist = parsedChecklist;
+    }
 
     const verification = await VerificationRequest.findByIdAndUpdate(
       req.params.id,
-      {
-        status: badgeAwarded === "none" ? "rejected" : "completed",
-        completedAt: new Date(),
-        inspectorNotes: inspectorNotes || "",
-      },
+      updateData,
       { new: true },
     );
 
@@ -184,6 +230,8 @@ const completeVerification = async (req, res) => {
           awardedAt: new Date(),
           awardedBy: "admin", // Or req.user.id if available
           inspectionNotes: inspectorNotes || "",
+          inspectionMedia: uploadedMediaUrls,
+          inspectionChecklist: parsedChecklist,
         },
       });
     }
@@ -245,6 +293,48 @@ const getUserDetail = async (req, res) => {
     const user = await User.findById(req.params.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    // Lấy subscription thực tế
+    const subscription = await Subscription.findOne({
+      userId: user._id,
+      status: "active",
+    }).populate({ path: "planId", select: "planId name" });
+
+    let subscriptionTier = "Free";
+    let verificationLevel = 0;
+    let verificationLevelLabel = "Chưa xác thực";
+
+    if (subscription && subscription.status === "active") {
+      subscriptionTier = subscription.planName || "Free";
+
+      const planSlug = (
+        subscription.planId?.planId ||
+        subscription.planName ||
+        ""
+      ).toLowerCase();
+
+      if (planSlug.includes("pro")) {
+        verificationLevel = 3;
+        verificationLevelLabel = "Cấp 3";
+      } else if (planSlug.includes("standard")) {
+        verificationLevel = 2;
+        verificationLevelLabel = "Cấp 2";
+      } else if (planSlug.includes("basic")) {
+        verificationLevel = 1;
+        verificationLevelLabel = "Cấp 1";
+      } else {
+        // Fallback cho các gói khác hoặc theo user.verificationLevel
+        verificationLevel = user.verificationLevel || 1;
+        verificationLevelLabel = `Cấp ${verificationLevel}`;
+      }
+    }
+
+    const userObj = user.toObject();
+    userObj.verificationLevel = verificationLevel;
+    userObj.verificationLevelLabel = verificationLevelLabel;
+    userObj.subscriptionTier = subscriptionTier;
+    userObj.subscriptionPlanId = subscription?.planId?.planId || null;
+    userObj.subscriptionExpiry = subscription?.expiryDate || null;
+
     let properties = [];
     if (user.role === "landlord") {
       properties = await Property.find({ landlordId: user._id });
@@ -260,7 +350,7 @@ const getUserDetail = async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.status(200).json({
-      user,
+      user: userObj,
       properties,
       bookings,
     });
@@ -505,20 +595,82 @@ const getTopRooms = async (req, res) => {
   }
 };
 
-// @desc    Get weekly search stats (Mock)
-// @route   GET /api/admin/stats/weekly-search
-const getWeeklySearchStats = async (req, res) => {
+// @desc    Get dynamic chart stats (Revenue, Transactions, Users)
+// @route   GET /api/admin/stats/chart
+const getChartStats = async (req, res) => {
   try {
-    // Mock data for weekly search trends
-    const stats = [
-      { day: "T2", count: 120 },
-      { day: "T3", count: 150 },
-      { day: "T4", count: 180 },
-      { day: "T5", count: 140 },
-      { day: "T6", count: 210 },
-      { day: "T7", count: 250 },
-      { day: "CN", count: 300 },
-    ];
+    const Transaction = require("../models/Transaction");
+    const User = require("../models/User");
+    const { range = "week" } = req.query;
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const stats = [];
+    let startDate;
+
+    const formatLocalDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+    if (range === "day") {
+      startDate = new Date(today);
+      startDate.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 24; i++) {
+        const hourStr = `${String(i).padStart(2, "0")}:00`;
+        stats.push({ label: hourStr, revenue: 0, transactions: 0, users: 0, matchKey: i });
+      }
+    } else if (range === "week") {
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 6);
+      startDate.setHours(0, 0, 0, 0);
+      const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        stats.push({ label: days[d.getDay()], revenue: 0, transactions: 0, users: 0, matchKey: formatLocalDate(d) });
+      }
+    } else if (range === "month") {
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - 29);
+      startDate.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        stats.push({ label: `${d.getDate()}/${d.getMonth()+1}`, revenue: 0, transactions: 0, users: 0, matchKey: formatLocalDate(d) });
+      }
+    } else if (range === "year") {
+      startDate = new Date(today.getFullYear(), 0, 1);
+      for (let i = 0; i < 12; i++) {
+        stats.push({ label: `Th${i + 1}`, revenue: 0, transactions: 0, users: 0, matchKey: i });
+      }
+    }
+
+    const [transactions, users] = await Promise.all([
+      Transaction.find({ createdAt: { $gte: startDate, $lte: today } }),
+      User.find({ createdAt: { $gte: startDate, $lte: today } })
+    ]);
+
+    transactions.forEach(t => {
+      const d = new Date(t.createdAt);
+      let matchKey = range === "day" ? d.getHours() : range === "year" ? d.getMonth() : formatLocalDate(d);
+
+      const statObj = stats.find(s => s.matchKey === matchKey);
+      if (statObj) {
+        if (t.status === "success") {
+          statObj.revenue += t.amount || 0;
+        }
+        statObj.transactions += 1;
+      }
+    });
+
+    users.forEach(u => {
+      const d = new Date(u.createdAt);
+      let matchKey = range === "day" ? d.getHours() : range === "year" ? d.getMonth() : formatLocalDate(d);
+
+      const statObj = stats.find(s => s.matchKey === matchKey);
+      if (statObj) {
+        statObj.users += 1;
+      }
+    });
+
     res.status(200).json(stats);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -573,8 +725,9 @@ const broadcastNotification = async (req, res) => {
 
 const getAdminNotifications = async (req, res) => {
   try {
+    const Blog = require("../models/Blog");
     // Get latest system events across models
-    const [newUsers, newProperties, newVerifications, newBookings] =
+    const [newUsers, newProperties, newVerifications, newBookings, newBlogs] =
       await Promise.all([
         User.find().sort({ createdAt: -1 }).limit(5),
         Property.find()
@@ -589,6 +742,9 @@ const getAdminNotifications = async (req, res) => {
           .sort({ createdAt: -1 })
           .limit(5)
           .populate("userId", "fullName"),
+        Blog.find({ status: "pending" })
+          .sort({ createdAt: -1 })
+          .limit(5),
       ]);
 
     // Format all events into a unified notification structure
@@ -625,6 +781,14 @@ const getAdminNotifications = async (req, res) => {
         type: "booking",
         icon: "📅",
       })),
+      ...newBlogs.map((b) => ({
+        id: `blog-${b._id}`,
+        title: "Bài blog chờ duyệt",
+        message: `Bài blog "${b.title}" từ ${b.author || "chủ trọ"} đang chờ duyệt.`,
+        time: b.createdAt,
+        type: "blog",
+        icon: "📝",
+      })),
     ]
       .sort((a, b) => new Date(b.time) - new Date(a.time))
       .slice(0, 20);
@@ -655,7 +819,7 @@ module.exports = {
   getRevenueStats,
   updatePropertyStatus,
   getTopRooms,
-  getWeeklySearchStats,
+  getChartStats,
   broadcastNotification,
   getAdminNotifications,
 };

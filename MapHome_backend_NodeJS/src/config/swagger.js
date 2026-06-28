@@ -14,7 +14,7 @@ const options = {
     },
     servers: [
       {
-        url: process.env.API_URL || "http://localhost:5000",
+        url: process.env.API_URL || "https://exe101project-maphome-api.up.railway.app",
         description: "Development Server",
       },
     ],

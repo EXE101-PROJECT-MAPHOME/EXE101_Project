@@ -19,8 +19,7 @@ const PropertySchema = new mongoose.Schema(
       },
     },
     amenities: {
-      type: Map,
-      of: Boolean,
+      type: mongoose.Schema.Types.Mixed,
       default: {},
     },
     image: { type: String }, // Deprecated: kept for backward compatibility. Use 'images' instead.
@@ -40,6 +39,7 @@ const PropertySchema = new mongoose.Schema(
     verifiedAt: { type: Date },
     locationAccuracy: { type: Number },
     landlordId: { type: mongoose.Schema.Types.ObjectId, ref: "Landlord" },
+    brokerId: { type: mongoose.Schema.Types.ObjectId, ref: "Broker" },
     pinInfo: {
       pinnedAt: { type: Date },
       pinnedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Landlord" },
@@ -51,6 +51,13 @@ const PropertySchema = new mongoose.Schema(
       awardedAt: { type: Date },
       awardedBy: { type: String },
       inspectionNotes: { type: String },
+      inspectionMedia: { type: [String], default: [] },
+      inspectionChecklist: {
+        isAccurate: { type: Boolean, default: false },
+        hasAmenities: { type: Boolean, default: false },
+        isSecure: { type: Boolean, default: false },
+        isLegal: { type: Boolean, default: false }
+      }
     },
     views: { type: Number, default: 0 },
     favorites: { type: Number, default: 0 },

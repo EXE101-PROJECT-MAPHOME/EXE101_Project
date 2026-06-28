@@ -1,0 +1,66 @@
+const mongoose = require("mongoose");
+
+const VoucherSchema = new mongoose.Schema(
+  {
+    code: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      uppercase: true,
+    },
+    discountPercentage: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100,
+    },
+    applicablePlans: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "SubscriptionPlan",
+      },
+    ],
+    startDate: {
+      type: Date,
+      required: true,
+    },
+    endDate: {
+      type: Date,
+      required: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    maxUses: {
+      type: Number,
+      default: null, // null means unlimited
+    },
+    usedCount: {
+      type: Number,
+      default: 0,
+    },
+    title: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    bannerImage: {
+      type: String,
+      default: "",
+    },
+    showOnHome: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Voucher", VoucherSchema);

@@ -8,46 +8,29 @@ import { Button } from "@/app/components/ui/button";
 import {
   Home,
   Mail,
-  Lock,
-  Eye,
-  EyeOff,
   CheckCircle,
   AlertCircle,
   ArrowLeft,
-  Phone,
-  Hash,
 } from "lucide-react";
 import {
   validateEmail,
-  validatePassword,
 } from "@/app/utils/validationRules";
 
-type Step = "method_select" | "email" | "phone" | "otp_verify" | "reset_password" | "success";
-type ResetMethod = "email" | "phone";
+type Step = "email" | "success";
 
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
 
   // State management
   const [step, setStep] = useState<Step>("email");
-  const [resetMethod, setResetMethod] = useState<ResetMethod>("email");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [resetToken, setResetToken] = useState(""); // Server-generated reset token after OTP verify
-  const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
   // Error state
   const [error, setError] = useState("");
   const [errors, setErrors] = useState({
     email: "",
-    phone: "",
-    otp: "",
-    newPassword: "",
-    confirmPassword: "",
   });
 
   // Step 1 (Email): Request password reset
@@ -69,92 +52,6 @@ export function ForgotPasswordPage() {
       toast.success("Mật khẩu mới đã được gửi đến email của bạn");
     } catch (err: any) {
       const errorMsg = err?.response?.data?.message || "Có lỗi xảy ra";
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 1 (Phone): Request OTP via our Backend (using eSMS.vn)
-  const handleRequestPhoneOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setErrors((prev) => ({ ...prev, phone: "" }));
-
-    if (!phone || phone.length < 10) {
-      setErrors((prev) => ({ ...prev, phone: "Số điện thoại không hợp lệ" }));
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Call backend to generate and send OTP
-      const response = await api.post("/api/auth/forgot-password-phone", { phone });
-      setStep("otp_verify");
-      toast.success(response.data.message || "Mã OTP đã được gửi đến điện thoại của bạn");
-    } catch (err: any) {
-      console.error(err);
-      const errorMsg = err?.response?.data?.message || "Không thể gửi OTP. Vui lòng thử lại.";
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 2 (Phone): Verify OTP with our Backend
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setErrors((prev) => ({ ...prev, otp: "" }));
-
-    if (otp.length !== 6) {
-      setErrors((prev) => ({ ...prev, otp: "Mã OTP phải có 6 chữ số" }));
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Verify OTP and get a temporary Reset Token
-      const response = await api.post("/api/auth/verify-otp-phone", { phone, otp });
-      setResetToken(response.data.resetToken);
-      setStep("reset_password");
-      toast.success("Xác thực OTP thành công");
-    } catch (err: any) {
-      console.error(err);
-      const errorMsg = err?.response?.data?.message || "Mã OTP không đúng hoặc đã hết hạn";
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 3 (Phone): Reset Password with Reset Token
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setErrors((prev) => ({ ...prev, newPassword: "", confirmPassword: "" }));
-
-    const pwdValidation = validatePassword(newPassword);
-    if (!pwdValidation.valid) {
-      setErrors((prev) => ({ ...prev, newPassword: pwdValidation.error }));
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setErrors((prev) => ({ ...prev, confirmPassword: "Mật khẩu xác nhận không khớp" }));
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await api.post("/api/auth/reset-password-phone", { resetToken, newPassword });
-      setStep("success");
-      toast.success("Đổi mật khẩu thành công");
-    } catch (err: any) {
-      const errorMsg = err?.response?.data?.message || "Có lỗi xảy ra khi đổi mật khẩu";
       setError(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -227,9 +124,7 @@ export function ForgotPasswordPage() {
               {/* Back Button */}
               <button
                 onClick={() => {
-                  if (step === "otp_verify") setStep("phone");
-                  else if (step === "reset_password") setStep("otp_verify");
-                  else navigate("/login");
+                  navigate("/login");
                 }}
                 className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors text-sm font-medium mb-2"
               >
@@ -244,32 +139,9 @@ export function ForgotPasswordPage() {
                 </h2>
                 <p className="text-slate-400 font-semibold text-base lg:text-lg leading-relaxed">
                   {step === "email" && "Nhập email của bạn để nhận mật khẩu mới"}
-                  {step === "phone" && "Nhập số điện thoại để nhận mã xác thực"}
-                  {step === "otp_verify" && "Nhập mã OTP đã được gửi đến điện thoại"}
-                  {step === "reset_password" && "Thiết lập mật khẩu mới cho tài khoản"}
-                  {step === "success" && (resetMethod === "email" ? "Mật khẩu mới đã được gửi vào email" : "Mật khẩu của bạn đã được thay đổi thành công")}
+                  {step === "success" && "Mật khẩu mới đã được gửi vào email"}
                 </p>
               </header>
-
-              {/* Method Tabs */}
-              {(step === "email" || step === "phone") && (
-                <div className="flex p-1 bg-slate-100 rounded-2xl">
-                  <button
-                    onClick={() => { setStep("email"); setResetMethod("email"); setError(""); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${step === "email" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                  >
-                    <Mail className="size-4" />
-                    Email
-                  </button>
-                  <button
-                    onClick={() => { setStep("phone"); setResetMethod("phone"); setError(""); }}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${step === "phone" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                  >
-                    <Phone className="size-4" />
-                    Số điện thoại
-                  </button>
-                </div>
-              )}
 
               {/* Error Message */}
               {error && (
@@ -282,6 +154,9 @@ export function ForgotPasswordPage() {
                   <p className="text-red-700 font-medium">{error}</p>
                 </motion.div>
               )}
+
+              {/* Recaptcha container for Firebase */}
+              <div id="recaptcha-container"></div>
 
               {/* Forms Container */}
               <AnimatePresence mode="wait">
@@ -317,122 +192,6 @@ export function ForgotPasswordPage() {
                   </motion.form>
                 )}
 
-                {/* Phone Form */}
-                {step === "phone" && (
-                  <motion.form
-                    key="phone"
-                    onSubmit={handleRequestPhoneOtp}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-6"
-                  >
-                    <div className="space-y-2.5">
-                      <label className="text-[14px] font-black text-emerald-600/80 uppercase tracking-wide ml-1">Số điện thoại</label>
-                      <div className="relative group">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 size-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-500 transition-all duration-300">
-                          <Phone className="size-5" />
-                        </div>
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="09xx xxx xxx"
-                          className={`w-full pl-16 h-14 bg-white focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm font-medium border ${errors.phone ? "border-red-500" : "border-slate-200"}`}
-                        />
-                      </div>
-                      {errors.phone && <p className="text-xs text-red-500 font-medium ml-1 flex items-center gap-1"><AlertCircle className="size-3" />{errors.phone}</p>}
-                    </div>
-                    <Button type="submit" disabled={loading} className="w-full h-14 bg-gradient-to-r from-emerald-600 to-blue-600 text-white font-[800] rounded-[1.25rem] shadow-xl shadow-emerald-500/20 active:scale-[0.98]">
-                      {loading ? "Đang gửi..." : "Gửi mã OTP"}
-                    </Button>
-                  </motion.form>
-                )}
-
-                {/* OTP Verification Form */}
-                {step === "otp_verify" && (
-                  <motion.form
-                    key="otp"
-                    onSubmit={handleVerifyOtp}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-6"
-                  >
-                    <div className="space-y-2.5">
-                      <label className="text-[14px] font-black text-emerald-600/80 uppercase tracking-wide ml-1">Mã xác thực OTP</label>
-                      <div className="relative group">
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 size-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-500 transition-all duration-300">
-                          <Hash className="size-5" />
-                        </div>
-                        <input
-                          type="text"
-                          maxLength={6}
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                          placeholder="______"
-                          className="w-full pl-16 h-14 bg-white tracking-[0.5em] text-center text-2xl font-bold focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 rounded-2xl transition-all shadow-sm border border-slate-200"
-                        />
-                      </div>
-                      {errors.otp && <p className="text-xs text-red-500 font-medium ml-1 flex items-center gap-1"><AlertCircle className="size-3" />{errors.otp}</p>}
-                    </div>
-                    <Button type="submit" disabled={loading} className="w-full h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-[800] rounded-[1.25rem]">
-                      {loading ? "Đang xác thực..." : "Xác nhận mã OTP"}
-                    </Button>
-                  </motion.form>
-                )}
-
-                {/* Reset Password Form */}
-                {step === "reset_password" && (
-                  <motion.form
-                    key="reset"
-                    onSubmit={handleResetPassword}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-6"
-                  >
-                    <div className="space-y-4">
-                      <div className="space-y-2.5">
-                        <label className="text-[14px] font-black text-emerald-600/80 uppercase tracking-wide ml-1">Mật khẩu mới</label>
-                        <div className="relative group">
-                          <div className="absolute left-4 top-1/2 -translate-y-1/2 size-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
-                            <Lock className="size-5" />
-                          </div>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full pl-16 pr-14 h-14 bg-white rounded-2xl border border-slate-200"
-                          />
-                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500">
-                            {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-                          </button>
-                        </div>
-                        {errors.newPassword && <p className="text-xs text-red-500">{errors.newPassword}</p>}
-                      </div>
-                      <div className="space-y-2.5">
-                        <label className="text-[14px] font-black text-emerald-600/80 uppercase tracking-wide ml-1">Xác nhận mật khẩu</label>
-                        <div className="relative group">
-                          <div className="absolute left-4 top-1/2 -translate-y-1/2 size-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">
-                            <Lock className="size-5" />
-                          </div>
-                          <input
-                            type={showPassword ? "text" : "password"}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="w-full pl-16 h-14 bg-white rounded-2xl border border-slate-200"
-                          />
-                        </div>
-                        {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
-                      </div>
-                    </div>
-                    <Button type="submit" disabled={loading} className="w-full h-14 bg-emerald-600 text-white font-[800] rounded-[1.25rem]">
-                      {loading ? "Đang xử lý..." : "Đổi mật khẩu"}
-                    </Button>
-                  </motion.form>
-                )}
-
                 {/* Success View */}
                 {step === "success" && (
                   <motion.div
@@ -447,9 +206,7 @@ export function ForgotPasswordPage() {
                     <div className="space-y-2">
                       <h3 className="text-2xl font-black text-slate-900">Thành công!</h3>
                       <p className="text-slate-500">
-                        {resetMethod === "email" 
-                          ? "Mật khẩu mới đã được gửi vào email của bạn. Vui lòng kiểm tra hộp thư."
-                          : "Mật khẩu của bạn đã được cập nhật. Bây giờ bạn có thể đăng nhập bằng mật khẩu mới."}
+                        Mật khẩu mới đã được gửi vào email của bạn. Vui lòng kiểm tra hộp thư.
                       </p>
                     </div>
                     <Button onClick={() => navigate("/login")} className="w-full h-14 bg-emerald-600 text-white font-bold rounded-[1.25rem]">
@@ -459,11 +216,6 @@ export function ForgotPasswordPage() {
                 )}
               </AnimatePresence>
 
-              {/* Footer */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-400">
-                <button onClick={() => navigate("/login")} className="hover:text-emerald-600">Đã nhớ mật khẩu?</button>
-                <button onClick={() => navigate("/register")} className="text-emerald-600 hover:text-emerald-700">Đăng ký ngay</button>
-              </div>
             </div>
           </motion.div>
         </div>

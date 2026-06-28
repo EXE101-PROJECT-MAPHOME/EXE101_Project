@@ -15,6 +15,13 @@ const VerificationRequestSchema = new mongoose.Schema({
   completedAt: { type: Date },
   badgeAwarded: { type: String, enum: ['none', 'verified'] },
   inspectorNotes: { type: String },
+  inspectionMedia: { type: [String], default: [] },
+  inspectionChecklist: {
+    isAccurate: { type: Boolean, default: false },
+    hasAmenities: { type: Boolean, default: false },
+    isSecure: { type: Boolean, default: false },
+    isLegal: { type: Boolean, default: false }
+  },
   requesterType: { type: String, enum: ['landlord', 'user'], required: true },
   requesterId: { type: String, required: true },
   requesterName: { type: String, required: true },
@@ -23,7 +30,10 @@ const VerificationRequestSchema = new mongoose.Schema({
   notifiedAt: { type: Date },
   photosSubmittedAt: { type: Date },
   amount: { type: Number, default: 0 },
-  packageType: { type: String, enum: ['basic', 'premium', 'none'], default: 'none' }
+  packageType: { type: String, enum: ['basic', 'premium', 'none'], default: 'none' },
+  bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' },
+  transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
+  paymentStatus: { type: String, enum: ['unpaid', 'paid'], default: 'unpaid' }
 }, {
   timestamps: true
 });

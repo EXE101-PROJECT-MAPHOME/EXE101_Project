@@ -49,7 +49,6 @@ import { getImageUrl } from "@/app/utils/avatarUtils";
 import { toast } from "sonner";
 import { RentalProperty, GreenBadgeLevel } from "@/app/components/types";
 import {
-  vietnamLocations,
   Province,
   District,
   Ward,
@@ -117,6 +116,7 @@ export function PostRoomPage() {
     street: "",
     description: "",
     phone: "",
+    ownerName: "",
   });
 
   // ─── Goong Search State ─────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ export function PostRoomPage() {
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [fieldErrors, setFieldErrors] = useState({
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({
     name: "",
     price: "",
     area: "",
@@ -136,25 +136,39 @@ export function PostRoomPage() {
     address: "",
   });
 
-  const [selectedProvince, setSelectedProvince] = useState("HCM");
-  const [selectedDistrict, setSelectedDistrict] = useState("");
-  const [selectedWard, setSelectedWard] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState<number | "">(79);
+  const [selectedDistrict, setSelectedDistrict] = useState<number | "">("");
+  const [selectedWard, setSelectedWard] = useState<number | "">("");
 
-  const availableDistricts = useMemo(() => {
-    if (!selectedProvince) return [];
-    const province = vietnamLocations.find(
-      (p: Province) => p.code === selectedProvince,
-    );
-    return province?.districts || [];
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [availableDistricts, setAvailableDistricts] = useState<District[]>([]);
+  const [availableWards, setAvailableWards] = useState<Ward[]>([]);
+
+  useEffect(() => {
+    api.get("/api/locations/provinces")
+      .then(res => setProvinces(res.data))
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (selectedProvince) {
+      api.get(`/api/locations/districts/${selectedProvince}`)
+        .then(res => setAvailableDistricts(res.data))
+        .catch(console.error);
+    } else {
+      setAvailableDistricts([]);
+    }
   }, [selectedProvince]);
 
-  const availableWards = useMemo(() => {
-    if (!selectedDistrict) return [];
-    const district = availableDistricts.find(
-      (d: District) => d.code === selectedDistrict,
-    );
-    return district?.wards || [];
-  }, [selectedDistrict, availableDistricts]);
+  useEffect(() => {
+    if (selectedDistrict) {
+      api.get(`/api/locations/wards/${selectedDistrict}`)
+        .then(res => setAvailableWards(res.data))
+        .catch(console.error);
+    } else {
+      setAvailableWards([]);
+    }
+  }, [selectedDistrict]);
 
   const fullAddress = useMemo(() => {
     const parts = [];
@@ -170,7 +184,7 @@ export function PostRoomPage() {
       if (district) parts.push(district.name);
     }
     if (selectedProvince) {
-      const province = vietnamLocations.find(
+      const province = provinces.find(
         (p: Province) => p.code === selectedProvince,
       );
       if (province) parts.push(province.name);
@@ -183,6 +197,7 @@ export function PostRoomPage() {
     selectedProvince,
     availableWards,
     availableDistricts,
+    provinces,
   ]);
 
   // Calculate GPS location mismatch distance
@@ -229,7 +244,61 @@ export function PostRoomPage() {
     }, 400);
   };
 
-  const autoPopulateLocation = (result: GeocodeResult) => {
+  // Helper: Normalize location names for better matching
+  const normalizeName = (name: string): string => {
+    if (!name) return "";
+    return (
+      name
+        .toLowerCase()
+        .trim()
+        // Remove common prefixes/suffixes
+        .replace(
+          /^(quận|huyện|phường|xã|thị trấn|tp\.|thành phố|t\.|q\.|h\.|p\.)[\s\.]*/,
+          "",
+        )
+        .replace(/[\s\.]+/g, " ")
+        .trim()
+    );
+  };
+
+  // Helper: Find best match for a name from a list
+  const findBestMatch = <T extends { name: string; code: string | number }>(
+    searchName: string,
+    items: T[],
+  ): T | undefined => {
+    const normalized = normalizeName(searchName);
+
+    // 1. Try exact match first
+    const exact = items.find((item) => normalizeName(item.name) === normalized);
+    if (exact) return exact;
+
+    // 2. Try word boundary match (prevents "3" matching inside "435")
+    const escapeRegExp = (string: string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    
+    const partial = items.find((item) => {
+      const itemNorm = normalizeName(item.name);
+      if (!itemNorm) return false;
+      // Use word boundaries. E.g. \b3\b will match "Quận 3" but NOT "435"
+      const regexItem = new RegExp(`\\b${escapeRegExp(itemNorm)}\\b`);
+      const regexSearch = new RegExp(`\\b${escapeRegExp(normalized)}\\b`);
+      return regexItem.test(normalized) || regexSearch.test(itemNorm);
+    });
+    if (partial) return partial;
+
+    // 3. Try matching isolated numbers as a last resort
+    const numberMatch = normalized.match(/\b\d+\b/);
+    if (numberMatch) {
+      const num = numberMatch[0];
+      return items.find((item) => {
+        const itemNumberMatch = item.name.match(/\b\d+\b/);
+        return itemNumberMatch && itemNumberMatch[0] === num;
+      });
+    }
+
+    return undefined;
+  };
+
+  const autoPopulateLocation = async (result: GeocodeResult) => {
     const components = Array.isArray(result.address_components)
       ? result.address_components.filter(
           (
@@ -248,53 +317,66 @@ export function PostRoomPage() {
       type: string,
     ) => component.types.includes(type);
 
-    const findComponent = (...types: string[]) =>
-      components.find((component) =>
-        types.some((type) => hasType(component, type)),
-      );
+    // Goong AI often returns "locality" for BOTH Province and District!
+    // So relying purely on `types` like "administrative_area_level_1" will fail.
+    // Instead, we will try to match ANY component's name against our known databases.
+    
+    // 1. Find Province
+    let matchedProvince: Province | undefined;
+    for (const comp of components) {
+      matchedProvince = findBestMatch(comp.long_name, provinces);
+      if (matchedProvince) break;
+    }
 
-    // Find Province (City)
-    const cityComp = findComponent("administrative_area_level_1");
-    if (cityComp) {
-      const province = vietnamLocations.find(
-        (p) =>
-          p.name.toLowerCase().includes(cityComp.long_name.toLowerCase()) ||
-          cityComp.long_name.toLowerCase().includes(p.name.toLowerCase()),
-      );
-      if (province) {
-        setSelectedProvince(province.code);
+    if (!matchedProvince) {
+      console.warn("⚠️ AutoPopulate - Could not find City/Province in Goong result.", components);
+      return;
+    }
 
-        // Find District
-        const distComp = findComponent(
-          "administrative_area_level_2",
-          "locality",
-        );
-        if (distComp) {
-          const district = province.districts.find(
-            (d) =>
-              d.name.toLowerCase().includes(distComp.long_name.toLowerCase()) ||
-              distComp.long_name.toLowerCase().includes(d.name.toLowerCase()),
-          );
-          if (district) {
-            setSelectedDistrict(district.code);
+    console.log("🏙️ AutoPopulate - Province Matched:", matchedProvince);
+    setSelectedProvince(matchedProvince.code);
 
-            // Find Ward
-            const wardComp = findComponent("sublocality_level_1", "ward");
-            if (wardComp) {
-              const ward = district.wards.find(
-                (w) =>
-                  w.name
-                    .toLowerCase()
-                    .includes(wardComp.long_name.toLowerCase()) ||
-                  wardComp.long_name
-                    .toLowerCase()
-                    .includes(w.name.toLowerCase()),
-              );
-              if (ward) setSelectedWard(ward.code);
-            }
-          }
-        }
+    // 2. Find District
+    try {
+      const distRes = await api.get(`/api/locations/districts/${matchedProvince.code}`);
+      const districtList: District[] = distRes.data;
+      
+      let matchedDistrict: District | undefined;
+      for (const comp of components) {
+        matchedDistrict = findBestMatch(comp.long_name, districtList);
+        if (matchedDistrict) break;
       }
+
+      if (!matchedDistrict) {
+        console.warn("⚠️ AutoPopulate - Could not find District in Goong result.", components);
+        return;
+      }
+
+      console.log("🏙️ AutoPopulate - District Matched:", matchedDistrict);
+      setSelectedDistrict(matchedDistrict.code);
+
+      // 3. Find Ward
+      try {
+        const wardRes = await api.get(`/api/locations/wards/${matchedDistrict.code}`);
+        const wardList: Ward[] = wardRes.data;
+        
+        let matchedWard: Ward | undefined;
+        for (const comp of components) {
+          matchedWard = findBestMatch(comp.long_name, wardList);
+          if (matchedWard) break;
+        }
+
+        if (matchedWard) {
+          console.log("🏙️ AutoPopulate - Ward Matched:", matchedWard);
+          setSelectedWard(matchedWard.code);
+        } else {
+          console.warn("⚠️ AutoPopulate - Could not find Ward in Goong result.", components);
+        }
+      } catch (e) {
+        console.error("Failed to fetch wards for auto-populate", e);
+      }
+    } catch (e) {
+      console.error("Failed to fetch districts for auto-populate", e);
     }
   };
 
@@ -366,6 +448,9 @@ export function PostRoomPage() {
           : "",
         description: validateDescription(formData.description).error || "",
         phone: validatePhone(formData.phone).error || "",
+        ownerName: user?.role === "broker" && !formData.ownerName.trim()
+          ? "Vui lòng nhập tên chủ nhà sở hữu"
+          : "",
         address:
           !selectedProvince ||
           !selectedDistrict ||
@@ -480,9 +565,10 @@ export function PostRoomPage() {
           } else {
             toast.error("Lỗi khi tải ảnh lên " + file.name);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Upload error:", err);
-          toast.error("Lỗi kết nối khi tải ảnh " + file.name);
+          const errorMsg = err.response?.data?.message || err.message || "Lỗi không xác định";
+          toast.error(`Lỗi tải ảnh ${file.name}: ${errorMsg}`);
         }
       }
 
@@ -504,7 +590,7 @@ export function PostRoomPage() {
       return;
     }
 
-    if (!user?.id) {
+    if (!user?.id && !(user as any)?._id) {
       toast.error("Lỗi: Vui lòng đăng nhập lại! 🔐");
       return;
     }
@@ -522,14 +608,14 @@ export function PostRoomPage() {
       description: formData.description,
       available: true,
       phone: formData.phone,
-      ownerName: user?.fullName || user?.username || "Chủ trọ",
+      ownerName: user?.role === "broker" ? formData.ownerName : (user?.fullName || user?.username || "Chủ trọ"),
       verificationLevel: verificationLevel,
       verifiedAt: locationData ? new Date().toISOString() : undefined,
       locationAccuracy: locationData?.accuracy,
       // Note: landlordId will be set by backend from req.user
       pinInfo: {
         pinnedAt: new Date().toISOString(),
-        pinnedBy: user?.id || "unknown",
+        pinnedBy: user?.id || (user as any)?._id || "unknown",
         note: pinNote || undefined,
       },
     };
@@ -538,15 +624,33 @@ export function PostRoomPage() {
       const success = await addProperty(newProperty);
       if (success) {
         toast.success("Đăng tin thành công! ✨");
-        navigate("/landlord/dashboard");
+        navigate(user?.role === "broker" ? "/broker/dashboard" : "/landlord/dashboard");
       } else {
         toast.error("Không thể đăng tin. Vui lòng kiểm tra lại thông tin!");
       }
     } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.message || err.message || "Lỗi không xác định";
-      toast.error(`❌ ${errorMsg}`);
       console.error("Submit error:", err);
+
+      // Handle validation errors from backend
+      const backendErrors = err.response?.data?.errors;
+      if (Array.isArray(backendErrors) && backendErrors.length > 0) {
+        // Map backend errors to field errors
+        const newErrors: Record<string, string> = {};
+        backendErrors.forEach((error: any) => {
+          const field = error.field || error.param;
+          newErrors[field] = error.message;
+        });
+        setFieldErrors(newErrors);
+
+        // Show first error as toast
+        const firstError = backendErrors[0];
+        toast.error(`❌ ${firstError.message}`);
+      } else {
+        // Fallback to generic error message
+        const errorMsg =
+          err.response?.data?.message || err.message || "Lỗi không xác định";
+        toast.error(`❌ ${errorMsg}`);
+      }
     }
   };
 
@@ -572,7 +676,7 @@ export function PostRoomPage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/landlord/dashboard")}
+              onClick={() => navigate(user?.role === "broker" ? "/broker/dashboard" : "/landlord/dashboard")}
               className="rounded-lg hover:bg-slate-100 transition-colors"
             >
               <ArrowLeft className="size-5 text-slate-600" />
@@ -897,9 +1001,9 @@ export function PostRoomPage() {
                               Tỉnh / Thành phố
                             </Label>
                             <Select
-                              value={selectedProvince}
+                              value={selectedProvince.toString()}
                               onValueChange={(value) => {
-                                setSelectedProvince(value);
+                                setSelectedProvince(Number(value));
                                 setSelectedDistrict("");
                                 setSelectedWard("");
                               }}
@@ -908,10 +1012,10 @@ export function PostRoomPage() {
                                 <SelectValue placeholder="Chọn tỉnh/thành phố" />
                               </SelectTrigger>
                               <SelectContent className="rounded-lg border border-slate-200 shadow-lg">
-                                {vietnamLocations.map((province) => (
+                                {provinces.map((province) => (
                                   <SelectItem
                                     key={province.code}
-                                    value={province.code}
+                                    value={province.code.toString()}
                                     className="font-medium py-2"
                                   >
                                     {province.name}
@@ -926,9 +1030,9 @@ export function PostRoomPage() {
                               Quận/Huyện
                             </Label>
                             <Select
-                              value={selectedDistrict}
+                              value={selectedDistrict.toString()}
                               onValueChange={(value) => {
-                                setSelectedDistrict(value);
+                                setSelectedDistrict(Number(value));
                                 setSelectedWard("");
                               }}
                             >
@@ -939,7 +1043,7 @@ export function PostRoomPage() {
                                 {availableDistricts.map((district) => (
                                   <SelectItem
                                     key={district.code}
-                                    value={district.code}
+                                    value={district.code.toString()}
                                     className="font-medium py-2"
                                   >
                                     {district.name}
@@ -954,8 +1058,8 @@ export function PostRoomPage() {
                               Phường/Xã
                             </Label>
                             <Select
-                              value={selectedWard}
-                              onValueChange={setSelectedWard}
+                              value={selectedWard.toString()}
+                              onValueChange={(v) => setSelectedWard(Number(v))}
                               disabled={!selectedDistrict}
                             >
                               <SelectTrigger className="h-11 rounded-lg border border-slate-300 bg-white font-medium focus:ring-2 focus:ring-indigo-100">
@@ -965,7 +1069,7 @@ export function PostRoomPage() {
                                 {availableWards.map((ward) => (
                                   <SelectItem
                                     key={ward.code}
-                                    value={ward.code}
+                                    value={ward.code.toString()}
                                     className="font-medium py-2"
                                   >
                                     {ward.name}
@@ -1087,16 +1191,48 @@ export function PostRoomPage() {
                           </motion.div>
                         )}
 
+                        {user?.role === "broker" && (
+                          <div className="space-y-2 pt-4 border-t border-slate-300">
+                            <Label className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                              Tên chủ nhà sở hữu *
+                            </Label>
+                            <Input
+                              type="text"
+                              placeholder="Nguyễn Văn A"
+                              value={formData.ownerName}
+                              onChange={(e) => {
+                                setFormData({
+                                  ...formData,
+                                  ownerName: e.target.value,
+                                });
+                                if (fieldErrors.ownerName)
+                                  setFieldErrors({ ...fieldErrors, ownerName: "" });
+                              }}
+                              className={`h-12 rounded-lg border focus:ring-2 text-base font-medium bg-white transition-all ${
+                                fieldErrors.ownerName
+                                  ? "border-red-500 focus:ring-red-100"
+                                  : "border-slate-300 focus:border-indigo-500 focus:ring-indigo-100"
+                              }`}
+                            />
+                            {fieldErrors.ownerName && (
+                              <p className="text-xs text-red-500 mt-1 flex items-center gap-1 font-medium">
+                                <AlertCircle className="size-3" />{" "}
+                                {fieldErrors.ownerName}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
                         <div className="space-y-2 pt-4 border-t border-slate-300">
                           <Label className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                            Số điện thoại liên hệ *
+                            {user?.role === "broker" ? "Số điện thoại liên hệ chủ nhà *" : "Số điện thoại liên hệ *"}
                           </Label>
                           <Input
                             type="tel"
                             placeholder="0912 345 678"
                             value={formData.phone}
                             onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, '');
+                              const val = e.target.value.replace(/[^0-9]/g, "");
                               setFormData({
                                 ...formData,
                                 phone: val,

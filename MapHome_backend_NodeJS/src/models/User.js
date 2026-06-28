@@ -11,14 +11,19 @@ const UserSchema = new mongoose.Schema(
     phone: { type: String },
     role: {
       type: String,
-      enum: ["admin", "landlord", "user"],
+      enum: ["admin", "landlord", "user", "broker"],
       default: "user",
     },
     avatar: { type: String, default: "" }, // user profile picture URL
     verificationLevel: { type: Number, default: 1 },
+    subscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subscription",
+    }, // Link to active subscription
     status: { type: String, enum: ["active", "blocked"], default: "active" },
-    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Property' }],
-    savedBlogs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Blog' }],
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: "Property" }],
+    savedBlogs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Blog" }],
+    savedVouchers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Voucher" }],
     resetPasswordToken: { type: String },
     resetPasswordExpires: { type: Date },
 

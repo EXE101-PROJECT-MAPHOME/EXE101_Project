@@ -32,20 +32,27 @@ router.get("/", blogController.getBlogs);
 
 /**
  * @swagger
- * /api/blogs/{id}:
+ * /api/blogs/categories:
  *   get:
- *     summary: Get single blog post by ID
+ *     summary: Get all distinct blog categories
  *     tags: [Blog]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string }
  *     responses:
  *       200:
- *         description: Blog post data
+ *         description: List of categories
  */
-router.get("/:id", optionalAuthMiddleware, blogController.getBlogById);
+router.get("/categories", blogController.getCategories);
+
+/**
+ * @swagger
+ * /api/blogs/tags/popular:
+ *   get:
+ *     summary: Get popular tags from approved blog posts
+ *     tags: [Blog]
+ *     responses:
+ *       200:
+ *         description: List of popular tags
+ */
+router.get("/tags/popular", blogController.getPopularTags);
 
 // Protected routes for Admin and Landlord
 
@@ -286,5 +293,22 @@ router.get("/me/saved", authMiddleware, blogController.getSavedBlogs);
  *         description: Success message with save status
  */
 router.post("/:id/save", authMiddleware, blogController.toggleSaveBlog);
+
+/**
+ * @swagger
+ * /api/blogs/{id}:
+ *   get:
+ *     summary: Get single blog post by ID
+ *     tags: [Blog]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Blog post data
+ */
+router.get("/:id", optionalAuthMiddleware, blogController.getBlogById);
 
 module.exports = router;

@@ -15,14 +15,19 @@ const createPaymentRules = [
   body("planId")
     .notEmpty()
     .withMessage("Mã gói cước không được để trống")
-    .isIn(["basic", "standard", "pro"])
-    .withMessage("Gói cước không hợp lệ"),
+    .isString()
+    .withMessage("Mã gói cước phải là chuỗi"),
 
   body("description")
     .optional()
     .trim()
-    .isLength({ max: 100 })
-    .withMessage("Mô tả giao dịch không được quá 100 ký tự"),
+    .isLength({ max: 255 })
+    .withMessage("Mô tả giao dịch không được quá 255 ký tự"),
+
+  body("bookingId")
+    .optional()
+    .isMongoId()
+    .withMessage("bookingId phải là MongoDB ObjectId hợp lệ"),
 ];
 
 module.exports = {

@@ -4,6 +4,7 @@ const {
   getMySubscription,
   getAvailablePlans,
   subscribe,
+  cancelMySubscription,
 } = require("../controllers/subscriptionController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 
@@ -55,5 +56,19 @@ router.get("/plans", getAvailablePlans);
  *         description: Subscription successful
  */
 router.post("/subscribe", authMiddleware, subscribe);
+
+/**
+ * @swagger
+ * /api/subscriptions/cancel:
+ *   post:
+ *     summary: Cancel current active subscription
+ *     tags: [Subscriptions]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Subscription cancelled successfully
+ */
+router.post("/cancel", authMiddleware, cancelMySubscription);
 
 module.exports = router;

@@ -51,28 +51,9 @@ interface BlogPost {
   featured?: boolean;
 }
 
-const ALL_CATEGORIES = [
-  "Tất cả",
-  "Kinh nghiệm",
-  "Hướng dẫn",
-  "Thị trường",
-  "Pháp luật",
-  "Mẹo hay",
-  "Tính năng",
-];
 
-const POPULAR_TAGS = [
-  "tìm trọ",
-  "sinh viên",
-  "Hà Nội",
-  "tiết kiệm",
-  "pháp luật",
-  "hợp đồng",
-  "decor",
-  "Trust is King",
-  "thị trường",
-  "mẹo hay",
-];
+
+
 
 const POSTS_PER_PAGE = 6;
 
@@ -88,11 +69,48 @@ export function BlogPage() {
   const { user, isAuthenticated } = useAuth();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [categories, setCategories] = useState<string[]>(["Tất cả"]);
+  const [popularTags, setPopularTags] = useState<string[]>([]);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [catRes, tagsRes] = await Promise.all([
+          api.get("/api/blogs/categories").catch(() => ({ data: [] })),
+          api.get("/api/blogs/tags/popular").catch(() => ({ data: [] }))
+        ]);
+        
+        if (catRes.data && Array.isArray(catRes.data)) {
+          setCategories(["Tất cả", ...catRes.data]);
+        }
+        
+        if (tagsRes.data && Array.isArray(tagsRes.data)) {
+          setPopularTags(tagsRes.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch initial data", err);
+      }
+    };
+    fetchInitialData();
+  }, []);
+
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
         setLoading(true);
-        const res = await api.get("/api/blogs");
+        const params = new URLSearchParams();
+        if (activeCategory !== "Tất cả") params.append("category", activeCategory);
+        if (debouncedSearchQuery) params.append("search", debouncedSearchQuery);
+        
+        const res = await api.get(`/api/blogs?${params.toString()}`);
         if (res.status === 200) {
           const data = res.data;
           setBlogs(data.map((b: any) => ({ ...b, id: b._id })));
@@ -120,7 +138,7 @@ export function BlogPage() {
 
     fetchBlogs();
     fetchSavedBlogs();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, activeCategory, debouncedSearchQuery]);
 
   const toggleBookmark = async (id: number | string) => {
     if (!isAuthenticated) {
@@ -175,23 +193,8 @@ export function BlogPage() {
   // Filtered posts (excluding featured from grid)
   const filteredPosts = useMemo(() => {
     if (!blogs.length) return [];
-
-    return blogs
-      .filter((p) => p.id !== (featuredPost?.id || featuredPost?._id))
-
-      .filter(
-        (p) => activeCategory === "Tất cả" || p.category === activeCategory,
-      )
-      .filter((p) => {
-        if (!searchQuery) return true;
-        const q = searchQuery.toLowerCase();
-        return (
-          p.title.toLowerCase().includes(q) ||
-          p.excerpt.toLowerCase().includes(q) ||
-          (p.tags && p.tags.some((t) => t.toLowerCase().includes(q)))
-        );
-      });
-  }, [activeCategory, searchQuery]);
+    return blogs.filter((p) => p.id !== (featuredPost?.id || featuredPost?._id));
+  }, [blogs, featuredPost]);
 
   // Pagination
   const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
@@ -326,7 +329,7 @@ export function BlogPage() {
         >
           <article
             className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden cursor-pointer group hover:shadow-2xl hover:shadow-maphome-500/10 transition-all duration-500"
-            onClick={() => {}}
+            onClick={() => navigate(`/blog/${featuredPost.id}`)}
           >
             <div className="grid grid-cols-1 lg:grid-cols-2">
               {featuredPost.image && (
@@ -433,7 +436,7 @@ export function BlogPage() {
         className="max-w-7xl mx-auto px-4 mb-8"
       >
         <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-          {ALL_CATEGORIES.map((cat, idx) => (
+          {categories.map((cat, idx) => (
             <motion.button
               key={cat}
               initial={{ opacity: 0, y: 20 }}
@@ -521,6 +524,7 @@ export function BlogPage() {
                         },
                       }}
                       whileHover={{ y: -4 }}
+                      onClick={() => navigate(`/blog/${post.id}`)}
                       className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl border border-gray-100 transition-all duration-400 cursor-pointer group"
                     >
                       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-maphome-50 to-green-50">
@@ -699,6 +703,7 @@ export function BlogPage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 1.5 + i * 0.08, duration: 0.4 }}
                     whileHover={{ x: 4 }}
+                    onClick={() => navigate(`/blog/${post.id}`)}
                     className="flex gap-3 cursor-pointer group"
                   >
                     <motion.span
@@ -783,7 +788,7 @@ export function BlogPage() {
                 Tags phổ biến
               </h3>
               <div className="flex flex-wrap gap-2">
-                {POPULAR_TAGS.map((tag, idx) => (
+                {popularTags.map((tag, idx) => (
                   <motion.button
                     key={tag}
                     initial={{ opacity: 0, scale: 0.8 }}

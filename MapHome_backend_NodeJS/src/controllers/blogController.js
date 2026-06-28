@@ -26,6 +26,47 @@ exports.getBlogs = async (req, res) => {
   }
 };
 
+// Get distinct categories
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await Blog.distinct("category", { status: "approved" });
+    // Filter out any falsy values (null, empty strings)
+    const validCategories = categories.filter(c => c && c.trim() !== "");
+    res.json(validCategories);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get popular tags based on frequency in approved blogs
+exports.getPopularTags = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const tags = await Blog.aggregate([
+      { $match: { status: "approved", tags: { $exists: true, $not: { $size: 0 } } } },
+      { $unwind: "$tags" },
+      { 
+        $group: { 
+          _id: { $trim: { input: "$tags" } }, 
+          count: { $sum: 1 } 
+        } 
+      },
+      { $sort: { count: -1 } },
+      { $limit: limit }
+    ]);
+    
+    // Filter out empty tags and return array of string
+    const popularTags = tags
+      .map(t => t._id)
+      .filter(t => t && t.trim() !== "");
+      
+    res.json(popularTags);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Get all blogs for admin (all statuses)
 exports.getAllBlogsAdmin = async (req, res) => {
   try {
@@ -145,6 +186,21 @@ exports.createBlog = async (req, res) => {
     const newBlog = new Blog(blogData);
     const savedBlog = await newBlog.save();
 
+    // Send notification to admins if pending
+    if (blogData.status === "pending") {
+      const Notification = require("../models/Notification");
+      const admins = await User.find({ role: "admin" });
+      const notifications = admins.map((admin) => ({
+        userId: admin._id,
+        title: "Bài blog mới chờ duyệt",
+        message: `Chủ trọ ${req.user.fullName || req.user.username} vừa đăng bài blog: "${savedBlog.title}".`,
+        type: "info",
+      }));
+      if (notifications.length > 0) {
+        await Notification.insertMany(notifications);
+      }
+    }
+
     const message =
       req.user.role === "admin"
         ? "Blog created successfully"
@@ -255,6 +311,16 @@ exports.approveBlog = async (req, res) => {
     blog.rejectionReason = null;
 
     await blog.save();
+
+    // Notify author
+    const Notification = require("../models/Notification");
+    await Notification.create({
+      userId: blog.createdBy,
+      title: "Blog đã được duyệt",
+      message: `Bài blog "${blog.title}" của bạn đã được duyệt và hiển thị trên hệ thống.`,
+      type: "success",
+    });
+
     res.json({ message: "Blog approved successfully", blog });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -274,6 +340,16 @@ exports.rejectBlog = async (req, res) => {
     blog.rejectionReason = reason || "Không đạt yêu cầu";
 
     await blog.save();
+
+    // Notify author
+    const Notification = require("../models/Notification");
+    await Notification.create({
+      userId: blog.createdBy,
+      title: "Blog bị từ chối",
+      message: `Bài blog "${blog.title}" của bạn đã bị từ chối. Lý do: ${blog.rejectionReason}`,
+      type: "error",
+    });
+
     res.json({ message: "Blog rejected", blog });
   } catch (error) {
     res.status(500).json({ message: error.message });

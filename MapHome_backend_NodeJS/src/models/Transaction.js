@@ -22,7 +22,7 @@ const TransactionSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      default: "VNPay",
+      default: "PayOS",
     },
     invoiceId: {
       type: String,
@@ -32,6 +32,13 @@ const TransactionSchema = new mongoose.Schema(
     orderId: {
       type: String,
       required: true,
+    },
+    planId: {
+      type: String,
+    },
+    bookingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Booking",
     },
   },
   { timestamps: true },

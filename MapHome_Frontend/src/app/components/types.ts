@@ -6,6 +6,13 @@ export interface GreenBadge {
   awardedAt: string; // ISO date string
   awardedBy: string; // Admin ID
   inspectionNotes?: string;
+  inspectionMedia?: string[];
+  inspectionChecklist?: {
+    isAccurate: boolean;
+    hasAmenities: boolean;
+    isSecure: boolean;
+    isLegal: boolean;
+  };
 }
 
 export interface VerificationRequest {
@@ -95,6 +102,7 @@ export interface RentalProperty {
   verifiedAt?: string;
   locationAccuracy?: number | string; // Can be string for display like "±5m"
   landlordId?: string | LandlordProfile;
+  brokerId?: string;
   pinInfo?: PinInfo;
   greenBadge?: GreenBadge;
   views?: number;
@@ -103,6 +111,7 @@ export interface RentalProperty {
   distance?: number; // Optional distance from search center
   status?: 'pending' | 'approved' | 'rejected' | 'reported' | 'expired';
   expiryDate?: string;
+  createdAt?: string | Date;
   rating?: number;
   ratingCount?: number;
   nearbyLandmarks?: {

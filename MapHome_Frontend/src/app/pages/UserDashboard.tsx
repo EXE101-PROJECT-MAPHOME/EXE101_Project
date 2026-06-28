@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { formatDateVietnamese } from "@/app/utils/dateUtils";
@@ -46,6 +46,14 @@ import {
   Lock,
   Activity,
   Info,
+  Menu,
+  Shield,
+  CreditCard,
+  ExternalLink,
+  ImageIcon,
+  CheckCheck,
+  Hourglass,
+  BadgeCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { amenityMeta } from "@/app/constants/amenities";
@@ -81,8 +89,10 @@ interface ConfirmModalState {
 
 export function UserDashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout, isAuthenticated } = useAuth();
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [activeView, setActiveView] = useState<UserView>("favorites");
   const [favorites, setFavorites] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
@@ -90,6 +100,7 @@ export function UserDashboard() {
   const [myBlogs, setMyBlogs] = useState<any[]>([]);
   const [savedBlogs, setSavedBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [highlightedBookingId, setHighlightedBookingId] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<ConfirmModalState>({
     open: false,
   });
@@ -98,6 +109,32 @@ export function UserDashboard() {
     subject: "",
     message: "",
   });
+
+  // Xử lý query params từ redirect PayOS (payment=cancelled hoặc tab=appointments)
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    const payment = searchParams.get("payment");
+    const bookingId = searchParams.get("bookingId");
+
+    if (tab === "appointments") {
+      setActiveView("appointments");
+      if (payment === "cancelled") {
+        toast.warning("Bạn đã hủy thanh toán xác minh. Lịch hẹn vẫn còn hiệu lực — bạn có thể thanh toán lại bất cứ lúc nào.", {
+          duration: 6000,
+          icon: "⚠️",
+        });
+      }
+      if (bookingId) {
+        setHighlightedBookingId(bookingId);
+        // Xóa params khỏi URL sau khi đã xử lý
+        setTimeout(() => {
+          setSearchParams({}, { replace: true });
+          setHighlightedBookingId(null);
+        }, 5000);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -222,10 +259,10 @@ export function UserDashboard() {
               variant="ghost"
               onClick={handleLogout}
               size="sm"
-              className="text-gray-500 hover:text-red-600 transition-colors rounded-full px-4"
+              className="text-gray-500 hover:text-red-600 transition-colors rounded-full px-2 md:px-4"
             >
-              <LogOut className="size-4 mr-2" />
-              Đăng xuất
+              <LogOut className="size-4 md:mr-2" />
+              <span className="hidden md:inline">Đăng xuất</span>
             </Button>
           </div>
         </div>
@@ -239,11 +276,11 @@ export function UserDashboard() {
         className="max-w-7xl mx-auto px-4 py-8"
       >
         {/* Welcome Section */}
-        <div className="mb-10 text-center md:text-left">
+        <div className="mb-6 md:mb-10 text-center md:text-left">
           <motion.h2
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-3xl md:text-4xl font-black text-gray-900 mb-3 tracking-tight"
+            className="text-2xl md:text-4xl font-black text-gray-900 mb-1.5 md:mb-3 tracking-tight"
           >
             Xin chào, {user?.fullName || user?.username}! 👋
           </motion.h2>
@@ -258,7 +295,7 @@ export function UserDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8 md:mb-12">
           {[
             {
               label: "Trọ yêu thích",
@@ -266,6 +303,7 @@ export function UserDashboard() {
               icon: Heart,
               color: "text-red-500",
               bg: "bg-red-50",
+              onClick: () => setActiveView("favorites"),
             },
             {
               label: "Lịch hẹn",
@@ -273,6 +311,7 @@ export function UserDashboard() {
               icon: Calendar,
               color: "text-blue-500",
               bg: "bg-blue-50",
+              onClick: () => setActiveView("appointments"),
             },
             {
               label: "Chờ xác nhận",
@@ -280,6 +319,7 @@ export function UserDashboard() {
               icon: Clock,
               color: "text-orange-500",
               bg: "bg-orange-50",
+              onClick: () => setActiveView("appointments"),
             },
             {
               label: "Đã hoàn thành",
@@ -288,19 +328,21 @@ export function UserDashboard() {
               icon: CheckCircle,
               color: "text-green-500",
               bg: "bg-green-50",
+              onClick: () => setActiveView("appointments"),
             },
           ].map((stat, i) => (
             <motion.div
               key={i}
+              onClick={stat.onClick}
               whileHover={{ y: -5 }}
-              className="bg-white/60 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.05)]"
+              className="bg-white/60 backdrop-blur-md rounded-2xl p-4 md:p-6 border border-white/50 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.05)] cursor-pointer"
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
                 <div className={`p-2 rounded-xl ${stat.bg} ${stat.color}`}>
                   <stat.icon className="size-5" />
                 </div>
               </div>
-              <p className="text-3xl font-black text-indigo-600 mb-1">
+              <p className="text-2xl md:text-3xl font-black text-indigo-600 mb-0.5 md:mb-1">
                 {stat.value}
               </p>
               <p className="text-[10px] font-black text-indigo-500/60 uppercase tracking-widest leading-none">
@@ -310,48 +352,60 @@ export function UserDashboard() {
           ))}
         </div>
 
-        {/* Navigation Tabs */}
-        <div
-          ref={scrollRef}
-          className="flex items-center gap-3 mb-6 overflow-x-auto pb-4 custom-h-scrollbar relative scroll-smooth"
-        >
-          {[
-            { id: "favorites", label: "Trọ yêu thích", icon: Heart },
-            { id: "search", label: "Tìm kiếm thông minh", icon: Search },
-            { id: "appointments", label: "Lịch hẹn của tôi", icon: Calendar },
-            { id: "inspections", label: "Yêu cầu kiểm tra", icon: ShieldCheck },
-            { id: "saved-blogs", label: "Blog đã lưu", icon: Heart },
-            { id: "my-blogs", label: "Bài viết của tôi", icon: MessageCircle },
-            { id: "history", label: "Lịch sử đã xem", icon: Eye },
-            { id: "settings", label: "Cài đặt", icon: Settings },
-          ].map((tab) => {
-            const isActive = activeView === tab.id;
-            return (
-              <motion.button
-                key={tab.id}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveView(tab.id as UserView)}
-                className={`relative flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-sm z-10 ${
-                  isActive
-                    ? "text-white"
-                    : "bg-white text-gray-500 hover:text-gray-900 border border-gray-100"
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTabIndicator"
-                    className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl z-[-1] shadow-lg shadow-green-500/20"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+        {/* Navigation Tabs - Mobile & Desktop Unified Scrollable Bar */}
+        <div className="relative mb-6">
+          <style>{`
+            .no-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+            .no-scrollbar {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+            }
+          `}</style>
+          <div
+            ref={scrollRef}
+            className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-2 scroll-smooth no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {[
+              { id: "favorites", label: "Trọ yêu thích", icon: Heart },
+              { id: "search", label: "Tìm kiếm thông minh", icon: Search },
+              { id: "appointments", label: "Lịch hẹn của tôi", icon: Calendar },
+              { id: "inspections", label: "Yêu cầu kiểm tra", icon: ShieldCheck },
+              { id: "saved-blogs", label: "Blog đã lưu", icon: Heart },
+              { id: "my-blogs", label: "Bài viết của tôi", icon: MessageCircle },
+              { id: "history", label: "Lịch sử đã xem", icon: Eye },
+              { id: "settings", label: "Cài đặt", icon: Settings },
+            ].map((tab) => {
+              const isActive = activeView === tab.id;
+              return (
+                <motion.button
+                  key={tab.id}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveView(tab.id as UserView)}
+                  className={`relative flex items-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-2xl font-bold text-[11px] sm:text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-sm z-10 ${
+                    isActive
+                      ? "text-white"
+                      : "bg-white text-gray-500 hover:text-gray-900 border border-gray-100"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTabIndicator"
+                      className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-2xl z-[-1] shadow-lg shadow-green-500/20"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <tab.icon
+                    className={`size-3.5 sm:size-4 ${isActive ? "text-white" : ""}`}
                   />
-                )}
-                <tab.icon
-                  className={`size-4 ${isActive ? "text-white" : ""}`}
-                />
-                {tab.label}
-              </motion.button>
-            );
-          })}
+                  {tab.label}
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Content Views */}
@@ -375,6 +429,9 @@ export function UserDashboard() {
               <AppointmentsView
                 appointments={appointments}
                 setAppointments={setAppointments}
+                inspections={inspections}
+                setInspections={setInspections}
+                highlightedBookingId={highlightedBookingId}
                 setConfirmModal={setConfirmModal}
               />
             )}
@@ -728,11 +785,11 @@ function FavoritesView({
               show: { opacity: 1, x: 0 },
             }}
             whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
-            className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-6"
+            className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-4 sm:p-6"
           >
-            <div className="flex items-start gap-6">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-4 sm:gap-6">
               {/* Image */}
-              <div className="w-32 h-32 rounded-lg bg-gradient-to-br from-green-100 to-blue-100 overflow-hidden flex-shrink-0">
+              <div className="w-full sm:w-32 h-44 sm:h-32 rounded-xl bg-gradient-to-br from-green-100 to-blue-100 overflow-hidden flex-shrink-0">
                 <img
                   src={
                     getImageUrl(property.image) ||
@@ -744,53 +801,53 @@ function FavoritesView({
               </div>
 
               {/* Info */}
-              <div className="flex-1">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h4 className="text-lg font-bold text-gray-900 mb-1">
-                      {property.name}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-1 flex items-center flex-wrap gap-1.5 truncate">
+                      <span className="truncate">{property.name}</span>
                       {property.verificationLevel === "verified" && (
                         <span
-                          className="ml-2 text-green-600"
+                          className="text-green-600 flex-shrink-0"
                           title="Đã xác thực"
                         >
                           ✓
                         </span>
                       )}
                     </h4>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600">
                       <span className="flex items-center gap-1">
-                        <MapPin className="size-4" />
+                        <MapPin className="size-3.5" />
                         {property.address?.split(",")[0]}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Maximize className="size-4" />
+                        <Maximize className="size-3.5" />
                         {property.area}m²
                       </span>
                       <span className="flex items-center gap-1">
-                        <Star className="size-4 text-yellow-500 fill-yellow-500" />
+                        <Star className="size-3.5 text-yellow-500 fill-yellow-500" />
                         {property.rating?.toFixed(1) || "5.0"}
                       </span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-green-600">
+                  <div className="text-left sm:text-right flex sm:flex-col items-baseline sm:items-end gap-1 shrink-0">
+                    <div className="text-xl sm:text-2xl font-black text-green-600">
                       {property.price?.toLocaleString("vi-VN")}đ
                     </div>
                     <div className="text-xs text-gray-500">/tháng</div>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-600 mb-3">{property.address}</p>
+                <p className="text-xs sm:text-sm text-gray-500 mb-3 line-clamp-2 sm:line-clamp-none">{property.address}</p>
 
                 {/* Amenities */}
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="flex flex-wrap gap-1.5 mb-4">
                   {Object.entries(property.amenities || {}).map(
                     ([key, value], idx) =>
                       value && (
                         <span
                           key={idx}
-                          className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full capitalize"
+                          className="px-2.5 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded-lg capitalize"
                         >
                           {key}
                         </span>
@@ -799,40 +856,41 @@ function FavoritesView({
                 </div>
 
                 {/* Contact & Actions */}
-                <div className="flex items-center justify-between pt-4 border-t">
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
+                  <div className="flex items-center gap-4 text-xs sm:text-sm text-gray-600">
                     <span className="flex items-center gap-1">
-                      <User className="size-4" />
+                      <User className="size-3.5" />
                       {property.ownerName}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Phone className="size-4" />
+                      <Phone className="size-3.5" />
                       {property.phone}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-blue-300 text-blue-700"
+                      className="flex-1 sm:flex-none border-blue-300 text-blue-700 h-10 px-4 rounded-xl text-xs font-bold"
                       onClick={() => navigate(`/room/${property._id}`)}
                     >
-                      <Calendar className="size-4 mr-2" />
+                      <Calendar className="size-4 mr-1.5" />
                       Đặt lịch xem
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-300"
+                      className="flex-1 sm:flex-none border-gray-300 h-10 px-4 rounded-xl text-xs font-bold"
                       onClick={() => navigate(`/room/${property._id}`)}
                     >
-                      <Eye className="size-4 mr-2" />
-                      Xem chi tiết
+                      <Eye className="size-4 mr-1.5" />
+                      Chi tiết
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
+                      className="h-10 w-10 p-0 rounded-xl flex items-center justify-center"
                       onClick={() => handleRemoveFavorite(property._id)}
                     >
                       <Trash2 className="size-4" />
@@ -1181,20 +1239,34 @@ function SearchView() {
 function AppointmentsView({
   appointments,
   setAppointments,
+  inspections,
+  setInspections,
+  highlightedBookingId,
   setConfirmModal,
 }: {
   appointments: any[];
   setAppointments: (appointments: any[]) => void;
+  inspections: any[];
+  setInspections: (inspections: any[]) => void;
+  highlightedBookingId: string | null;
   setConfirmModal: React.Dispatch<React.SetStateAction<ConfirmModalState>>;
 }) {
   const [filter, setFilter] = useState<
-    "all" | "pending" | "confirmed" | "completed" | "cancelled"
+    "all" | "pending" | "confirmed" | "completed" | "cancelled" | "landlord_proposed" | "tenant_rejected"
   >("all");
+  const [paymentModal, setPaymentModal] = useState<{
+    open: boolean;
+    booking: any | null;
+  }>({ open: false, booking: null });
 
   const filteredAppointments =
     filter === "all"
       ? appointments
       : appointments.filter((a) => a.status === filter);
+
+  // Kiểm tra booking đã có VerificationRequest chưa
+  const hasVerificationRequest = (bookingId: string) =>
+    inspections.some((insp) => String(insp.bookingId) === String(bookingId));
 
   const handleCancelAppointment = async (id: string) => {
     setConfirmModal({
@@ -1220,6 +1292,23 @@ function AppointmentsView({
     });
   };
 
+  const handleTenantResponse = async (id: string, action: "accept" | "reject") => {
+    try {
+      const res = await api.put(`/api/bookings/${id}/tenant-response`, { action });
+      if (res.status === 200) {
+        setAppointments(
+          appointments.map((a) =>
+            a._id === id ? { ...a, status: action === "accept" ? "confirmed" : "tenant_rejected" } : a,
+          ),
+        );
+        toast.success(action === "accept" ? "Đã xác nhận lịch hẹn mới! ✅" : "Đã từ chối lịch hẹn mới.");
+      }
+    } catch (err) {
+      console.error("Failed to respond to booking:", err);
+      toast.error("Có lỗi xảy ra khi phản hồi lịch hẹn. ❌");
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const badges = {
       pending: {
@@ -1239,11 +1328,21 @@ function AppointmentsView({
       },
       cancelled: {
         label: "Đã hủy",
+        color: "bg-gray-100 text-gray-800",
+        icon: XCircle,
+      },
+      landlord_proposed: {
+        label: "Chủ trọ đề xuất",
+        color: "bg-purple-100 text-purple-800",
+        icon: AlertCircle,
+      },
+      tenant_rejected: {
+        label: "Đã từ chối",
         color: "bg-red-100 text-red-800",
         icon: XCircle,
       },
     };
-    const badge = badges[status as keyof typeof badges];
+    const badge = badges[status as keyof typeof badges] || badges.pending;
     const Icon = badge.icon;
     return (
       <span
@@ -1259,7 +1358,7 @@ function AppointmentsView({
     <div className="space-y-6">
       {/* Filter Tabs */}
       <div className="bg-white rounded-xl shadow p-4">
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2">
           <FilterButton
             active={filter === "all"}
             onClick={() => setFilter("all")}
@@ -1274,6 +1373,13 @@ function AppointmentsView({
             {appointments.filter((a) => a.status === "pending").length})
           </FilterButton>
           <FilterButton
+            active={filter === "landlord_proposed"}
+            onClick={() => setFilter("landlord_proposed")}
+          >
+            Chủ đề xuất (
+            {appointments.filter((a) => a.status === "landlord_proposed").length})
+          </FilterButton>
+          <FilterButton
             active={filter === "confirmed"}
             onClick={() => setFilter("confirmed")}
           >
@@ -1286,13 +1392,6 @@ function AppointmentsView({
           >
             Đã hoàn thành (
             {appointments.filter((a) => a.status === "completed").length})
-          </FilterButton>
-          <FilterButton
-            active={filter === "cancelled"}
-            onClick={() => setFilter("cancelled")}
-          >
-            Đã hủy (
-            {appointments.filter((a) => a.status === "cancelled").length})
           </FilterButton>
         </div>
       </div>
@@ -1331,14 +1430,19 @@ function AppointmentsView({
                 show: { opacity: 1, x: 0 },
               }}
               whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
-              className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-6"
+              className={`bg-white rounded-xl shadow hover:shadow-lg transition-all p-4 sm:p-6 ${
+                highlightedBookingId === appointment._id
+                  ? "ring-2 ring-orange-400 ring-offset-2 shadow-orange-100"
+                  : ""
+              }`}
             >
-              <div className="flex items-start gap-6">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-4 sm:gap-6">
                 {/* Property Image */}
-                <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-green-100 to-blue-100 overflow-hidden flex-shrink-0">
+                <div className="w-full sm:w-24 h-40 sm:h-24 rounded-xl bg-gradient-to-br from-green-100 to-blue-100 overflow-hidden flex-shrink-0">
                   <img
                     src={
                       getImageUrl(appointment.propertyId?.image) ||
+                      getImageUrl(appointment.propertyId?.images?.[0]) ||
                       "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400"
                     }
                     alt={appointment.propertyId?.name}
@@ -1347,14 +1451,14 @@ function AppointmentsView({
                 </div>
 
                 {/* Info */}
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-1">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-1 truncate">
                         {appointment.propertyId?.name || "Căn trọ cũ"}
                       </h4>
-                      <p className="text-sm text-gray-600 flex items-center gap-1">
-                        <MapPin className="size-4" />
+                      <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1">
+                        <MapPin className="size-3.5" />
                         {appointment.propertyId?.address?.split(",")[0] ||
                           "Hồ Chí Minh"}
                       </p>
@@ -1362,46 +1466,46 @@ function AppointmentsView({
                     {getStatusBadge(appointment.status)}
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-3 border-y">
+                  <div className="grid grid-cols-2 gap-3 py-3 border-y border-slate-100">
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Ngày hẹn</p>
-                      <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                        <Calendar className="size-4" />
+                      <p className="text-[10px] text-gray-500 mb-0.5">Ngày hẹn</p>
+                      <p className="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                        <Calendar className="size-3.5 text-blue-500" />
                         {formatDateVietnamese(appointment.bookingDate)}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Giờ hẹn</p>
-                      <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                        <Clock className="size-4" />
+                      <p className="text-[10px] text-gray-500 mb-0.5">Giờ hẹn</p>
+                      <p className="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                        <Clock className="size-3.5 text-blue-500" />
                         {appointment.bookingTime}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Chủ trọ</p>
-                      <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                        <User className="size-4" />
-                        {appointment.landlordId?.fullName ||
-                          appointment.landlordId?.username ||
+                      <p className="text-[10px] text-gray-500 mb-0.5">Chủ trọ</p>
+                      <p className="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                        <User className="size-3.5 text-blue-500" />
+                        {appointment.landlordId?.name ||
+                          appointment.customerName ||
                           "Chủ trọ"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Liên hệ</p>
-                      <p className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                        <Phone className="size-4" />
-                        {appointment.phone ||
+                      <p className="text-[10px] text-gray-500 mb-0.5">Liên hệ</p>
+                      <p className="text-xs sm:text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                        <Phone className="size-3.5 text-blue-500" />
+                        {appointment.customerPhone ||
                           appointment.landlordId?.phone ||
                           "N/A"}
                       </p>
                     </div>
                   </div>
 
-                  {appointment.notes && (
+                  {(appointment.note || appointment.notes) && (
                     <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                       <p className="text-xs text-gray-500 mb-1">Ghi chú:</p>
                       <p className="text-sm text-gray-700">
-                        {appointment.notes}
+                        {appointment.note || appointment.notes}
                       </p>
                     </div>
                   )}
@@ -1419,13 +1523,253 @@ function AppointmentsView({
                       </Button>
                     </div>
                   )}
+
+                  {appointment.status === "landlord_proposed" && (
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={() => handleTenantResponse(appointment._id, "reject")}
+                      >
+                        <XCircle className="size-4 mr-2" />
+                        Từ chối
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white shadow-md"
+                        onClick={() => handleTenantResponse(appointment._id, "accept")}
+                      >
+                        <CheckCircle className="size-4 mr-2" />
+                        Đồng ý
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Nút thanh toán xác minh khi booking được confirm */}
+                  {appointment.status === "confirmed" && (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4 pt-4 border-t border-gray-100">
+                      {hasVerificationRequest(appointment._id) ? (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-200">
+                          <CheckCheck className="size-4 text-green-600" />
+                          <span className="text-sm font-bold text-green-700">Yêu cầu xác minh đã được gửi</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <Shield className="size-4 text-blue-500" />
+                            <span>Xác minh để đảm bảo trọ có thật</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-md shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                            onClick={() =>
+                              setPaymentModal({ open: true, booking: appointment })
+                            }
+                          >
+                            <Shield className="size-4" />
+                            Thanh toán xác minh trọ
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
           ))}
         </motion.div>
       )}
+
+      {/* Modal xác nhận thanh toán phí xác minh */}
+      <InspectionPaymentModal
+        open={paymentModal.open}
+        booking={paymentModal.booking}
+        onClose={() => setPaymentModal({ open: false, booking: null })}
+        onSuccess={(newInspection) => {
+          if (newInspection) setInspections([...inspections, newInspection]);
+          setPaymentModal({ open: false, booking: null });
+        }}
+      />
     </div>
+  );
+}
+
+// ─── InspectionPaymentModal ────────────────────────────────────────────────────
+function InspectionPaymentModal({
+  open,
+  booking,
+  onClose,
+  onSuccess,
+}: {
+  open: boolean;
+  booking: any | null;
+  onClose: () => void;
+  onSuccess: (newInspection?: any) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [fee, setFee] = useState<number>(119000);
+
+  useEffect(() => {
+    if (open) {
+      api
+        .get("/api/payments/inspection-fee")
+        .then((res) => setFee(res.data.fee || 119000))
+        .catch(() => setFee(119000));
+    }
+  }, [open]);
+
+  const handlePay = async () => {
+    if (!booking) return;
+    setLoading(true);
+    try {
+      const res = await api.post("/api/payments/create", {
+        amount: fee,
+        planId: "inspection",
+        bookingId: booking._id,
+        description: "Phi xac minh tro",
+      });
+      // Redirect đến PayOS checkout
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Không thể tạo thanh toán. Vui lòng thử lại.");
+      setLoading(false);
+    }
+  };
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(price);
+
+  return (
+    <AnimatePresence>
+      {open && booking && (
+        <motion.div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-md px-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
+          <motion.div
+            className="bg-white rounded-[28px] shadow-2xl w-full max-w-md overflow-hidden border border-white/20"
+            initial={{ scale: 0.9, y: 24, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 24, opacity: 0 }}
+            transition={{ type: "spring", bounce: 0.25 }}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-7 text-white relative overflow-hidden">
+              <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/10 rounded-full" />
+              <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/5 rounded-full" />
+              <button
+                onClick={onClose}
+                className="absolute top-5 right-5 p-1.5 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="size-5" />
+              </button>
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
+                  <Shield className="size-8" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black tracking-tight">Xác minh phòng trọ</h2>
+                  <p className="text-blue-100 text-sm font-medium mt-0.5">
+                    Đảm bảo trọ có thật trước khi ký hợp đồng
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-7 space-y-5">
+              {/* Thông tin booking */}
+              <div className="bg-slate-50 rounded-2xl p-5 space-y-3 border border-slate-100">
+                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                  Thông tin lịch hẹn
+                </p>
+                <div className="flex items-start gap-3">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 overflow-hidden flex-shrink-0">
+                    <img
+                      src={
+                        getImageUrl(booking.propertyId?.image) ||
+                        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=200"
+                      }
+                      alt={booking.propertyId?.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-sm">
+                      {booking.propertyId?.name || "Căn phòng"}
+                    </p>
+                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                      <MapPin className="size-3" />
+                      {booking.propertyId?.address?.split(",")[0] || "Địa chỉ"}
+                    </p>
+                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                      <Calendar className="size-3" />
+                      {formatDateVietnamese(booking.bookingDate)} lúc {booking.bookingTime}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phí */}
+              <div className="flex items-center justify-between p-5 bg-blue-50 rounded-2xl border border-blue-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-xl">
+                    <CreditCard className="size-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">Phí xác minh trọ</p>
+                    <p className="text-xs text-gray-500">Một lần duy nhất</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-black text-blue-700">{formatPrice(fee)}</p>
+              </div>
+
+              {/* Mô tả dịch vụ */}
+              <div className="space-y-2.5">
+                {[
+                  { icon: CheckCheck, text: "Nhân viên kiểm tra thực địa tại địa chỉ trọ" },
+                  { icon: BadgeCheck, text: "Xác nhận trọ tồn tại và đúng với thông tin đăng" },
+                  { icon: Shield, text: "Cấp huy hiệu ✓ Verified nếu đạt tiêu chuẩn" },
+                ].map(({ icon: Icon, text }, i) => (
+                  <div key={i} className="flex items-center gap-3 text-sm text-gray-600">
+                    <div className="p-1 bg-green-50 rounded-lg flex-shrink-0">
+                      <Icon className="size-4 text-green-600" />
+                    </div>
+                    {text}
+                  </div>
+                ))}
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={onClose}
+                  className="flex-1 h-12 rounded-xl font-bold border-slate-200 text-slate-500 hover:bg-slate-50"
+                  disabled={loading}
+                >
+                  Để sau
+                </Button>
+                <Button
+                  onClick={handlePay}
+                  loading={loading}
+                  className="flex-[2] h-12 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-black shadow-xl shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+                >
+                  <ExternalLink className="size-4" />
+                  Thanh toán qua PayOS
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -1444,7 +1788,7 @@ function FilterButton({
       whileHover={{ y: -1 }}
       whileTap={{ scale: 0.96 }}
       onClick={onClick}
-      className={`relative px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all z-10 flex items-center justify-center min-w-[100px] ${
+      className={`relative px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest whitespace-nowrap shrink-0 transition-all z-10 flex items-center justify-center min-w-[100px] ${
         active
           ? "text-white"
           : "bg-gray-50/50 text-gray-400 hover:text-gray-600 border border-gray-100 hover:border-gray-200"
@@ -1557,28 +1901,48 @@ function InspectionsView({
   };
 
   const getStatusBadge = (status: string) => {
-    const badges = {
+    const badges: Record<string, { label: string; color: string; icon: any }> = {
       pending: {
-        label: "Đang chờ",
+        label: "Đang chờ xét duyệt",
         color: "bg-orange-100 text-orange-800",
-        icon: Clock,
+        icon: Hourglass,
       },
-      completed: {
-        label: "Đã hoàn thành",
-        color: "bg-green-100 text-green-800",
+      approved: {
+        label: "Đã duyệt — Chờ kiểm tra",
+        color: "bg-blue-100 text-blue-800",
         icon: CheckCircle,
       },
-      cancelled: {
-        label: "Đã hủy",
+      awaiting_photos: {
+        label: "Cần gửi ảnh",
+        color: "bg-yellow-100 text-yellow-800",
+        icon: ImageIcon,
+      },
+      photos_submitted: {
+        label: "Ảnh đã gửi — Chờ duyệt",
+        color: "bg-purple-100 text-purple-800",
+        icon: Upload,
+      },
+      completed: {
+        label: "Xác minh thành công",
+        color: "bg-green-100 text-green-800",
+        icon: BadgeCheck,
+      },
+      rejected: {
+        label: "Không đạt yêu cầu",
         color: "bg-red-100 text-red-800",
         icon: XCircle,
       },
+      cancelled: {
+        label: "Đã hủy",
+        color: "bg-gray-100 text-gray-600",
+        icon: XCircle,
+      },
     };
-    const badge = badges[status as keyof typeof badges] || badges.pending;
+    const badge = badges[status] || badges.pending;
     const Icon = badge.icon;
     return (
       <span
-        className={`px-3 py-1 rounded-full text-xs font-medium ${badge.color} flex items-center gap-1 w-fit`}
+        className={`px-3 py-1 rounded-full text-xs font-bold ${badge.color} flex items-center gap-1 w-fit`}
       >
         <Icon className="size-3" />
         {badge.label}
@@ -1589,7 +1953,7 @@ function InspectionsView({
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow p-4">
-        <div className="flex items-center gap-2 overflow-x-auto">
+        <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2">
           <FilterButton
             active={filter === "all"}
             onClick={() => setFilter("all")}
@@ -1657,8 +2021,8 @@ function InspectionsView({
               whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
               className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-6"
             >
-              <div className="flex items-start gap-6">
-                <div className="w-24 h-24 rounded-lg bg-gradient-to-br from-green-100 to-blue-100 overflow-hidden flex-shrink-0">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-4 sm:gap-6">
+                <div className="w-full sm:w-24 h-40 sm:h-24 rounded-xl bg-gradient-to-br from-green-100 to-blue-100 overflow-hidden flex-shrink-0">
                   <img
                     src={
                       getImageUrl(insp.propertyId?.image) ||
@@ -1669,14 +2033,14 @@ function InspectionsView({
                   />
                 </div>
 
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h4 className="text-lg font-bold text-gray-900 mb-1">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-1 truncate">
                         {insp.propertyId?.name || "Căn trọ cũ"}
                       </h4>
-                      <p className="text-sm text-gray-600 flex items-center gap-1">
-                        <MapPin className="size-4" />
+                      <p className="text-xs sm:text-sm text-gray-500 flex items-center gap-1">
+                        <MapPin className="size-3.5" />
                         {insp.propertyId?.address?.split(",")[0] ||
                           "Hồ Chí Minh"}
                       </p>
@@ -1684,40 +2048,86 @@ function InspectionsView({
                     {getStatusBadge(insp.status)}
                   </div>
 
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 py-3 border-y border-gray-100 mt-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 py-3 border-y border-gray-100 mt-2">
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Mã yêu cầu</p>
-                      <p className="text-sm font-semibold text-gray-900 truncate">
+                      <p className="text-[10px] text-gray-500 mb-0.5">Mã yêu cầu</p>
+                      <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">
                         #{insp._id?.slice(-8).toUpperCase()}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Ngày gửi</p>
-                      <p className="text-sm font-semibold text-gray-900">
+                      <p className="text-[10px] text-gray-500 mb-0.5">Ngày gửi</p>
+                      <p className="text-xs sm:text-sm font-bold text-gray-900">
                         {formatDateVietnamese(insp.createdAt)}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Địa điểm</p>
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {insp.propertyId?.address}
-                      </p>
-                    </div>
+                    {insp.scheduledDate ? (
+                      <div>
+                        <p className="text-[10px] text-gray-500 mb-0.5">Ngày kiểm tra dự kiến</p>
+                        <p className="text-xs sm:text-sm font-bold text-blue-700 flex items-center gap-1">
+                          <Calendar className="size-3.5 text-blue-500" />
+                          {formatDateVietnamese(insp.scheduledDate)}
+                        </p>
+                       </div>
+                    ) : (
+                      <div>
+                        <p className="text-[10px] text-gray-500 mb-0.5">Địa điểm</p>
+                        <p className="text-xs sm:text-sm font-bold text-gray-900 truncate">
+                          {insp.propertyId?.address || "Hồ Chí Minh"}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
-                  {insp.status === "pending" && (
-                    <div className="flex justify-end mt-4">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50"
-                        onClick={() => handleCancelInspection(insp._id)}
-                      >
-                        <XCircle className="size-4 mr-2" />
-                        Hủy yêu cầu
-                      </Button>
-                    </div>
-                  )}
+                  {/* Nút hành động tùy theo trạng thái */}
+                  <div className="flex items-center justify-between mt-4">
+                    {insp.status === "awaiting_photos" && (
+                      <div className="flex items-center gap-3 w-full">
+                        <div className="flex items-center gap-2 text-xs text-yellow-700 bg-yellow-50 px-3 py-2 rounded-xl border border-yellow-200 flex-1">
+                          <ImageIcon className="size-4 flex-shrink-0" />
+                          <span>Vui lòng gửi ảnh thực địa để hoàn tất xác minh</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl font-bold shadow-md hover:scale-105 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap"
+                          onClick={() => toast.info("Tính năng gửi ảnh đang được phát triển. Vui lòng liên hệ hỗ trợ.")}
+                        >
+                          <Camera className="size-4" />
+                          Gửi ảnh ngay
+                        </Button>
+                      </div>
+                    )}
+
+                    {insp.status === "pending" && (
+                      <div className="flex justify-end w-full">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:bg-red-50"
+                          onClick={() => handleCancelInspection(insp._id)}
+                        >
+                          <XCircle className="size-4 mr-2" />
+                          Hủy yêu cầu
+                        </Button>
+                      </div>
+                    )}
+
+                    {insp.status === "completed" && insp.badgeAwarded && insp.badgeAwarded !== "none" && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-200">
+                        <BadgeCheck className="size-5 text-green-600" />
+                        <span className="text-sm font-bold text-green-700">
+                          Huy hiệu: {insp.badgeAwarded === "premium" ? "🏆 Premium" : "✅ Verified"}
+                        </span>
+                      </div>
+                    )}
+
+                    {insp.status === "rejected" && insp.inspectorNotes && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-red-50 rounded-xl border border-red-100 text-sm text-red-700 flex-1">
+                        <AlertCircle className="size-4 flex-shrink-0" />
+                        <span className="line-clamp-2">{insp.inspectorNotes}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -2471,7 +2881,7 @@ function TabNav({
       </span>
       <span className="relative z-10">{label}</span>
       {active && (
-        <div className="absolute right-4 w-1.5 h-1.5 bg-white rounded-full relative z-10" />
+        <div className="absolute right-4 w-1.5 h-1.5 bg-white rounded-full z-10" />
       )}
     </button>
   );
@@ -2634,10 +3044,10 @@ function RecentlyViewedView() {
             whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
             className="bg-white rounded-xl shadow hover:shadow-lg transition-shadow p-4"
           >
-            <div className="flex items-start gap-5">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-4 sm:gap-5">
               {/* Thumbnail */}
               <div
-                className="w-28 h-28 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer"
+                className="w-full sm:w-28 h-40 sm:h-28 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer"
                 onClick={() => navigate(`/room/${item.id}`)}
               >
                 <img
@@ -2656,7 +3066,7 @@ function RecentlyViewedView() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex-1 min-w-0">
                     <h4
                       className="text-base font-bold text-gray-900 truncate cursor-pointer hover:text-green-700 transition-colors"
@@ -2664,7 +3074,7 @@ function RecentlyViewedView() {
                     >
                       {item.name}
                     </h4>
-                    <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                    <div className="flex items-center gap-1 text-xs sm:text-sm text-gray-500 mt-1">
                       <MapPin className="size-3.5 text-green-600 flex-shrink-0" />
                       <span className="truncate">{item.address}</span>
                     </div>
@@ -2678,7 +3088,7 @@ function RecentlyViewedView() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-4 mt-2 text-sm">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2 text-xs sm:text-sm">
                   <span className="text-green-600 font-bold">
                     {item.price.toLocaleString("vi-VN")}đ/tháng
                   </span>
@@ -2697,14 +3107,14 @@ function RecentlyViewedView() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-[11px] text-gray-400">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-50">
+                  <span className="text-[10px] sm:text-[11px] text-gray-400">
                     Đã xem: {new Date(item.viewedAt).toLocaleString("vi-VN")}
                   </span>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-blue-200 text-blue-700 hover:bg-blue-50 h-8 text-xs"
+                    className="w-full sm:w-auto border-blue-200 text-blue-700 hover:bg-blue-50 h-9 px-4 rounded-xl text-xs font-bold"
                     onClick={() => navigate(`/room/${item.id}`)}
                   >
                     <Calendar className="size-3.5 mr-1.5" />
@@ -2960,13 +3370,13 @@ function MyBlogsView({
             key={blog._id}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-5 hover:shadow-md transition-shadow relative overflow-hidden"
+            className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col sm:flex-row gap-4 sm:gap-5 hover:shadow-md transition-shadow relative overflow-hidden"
           >
             {blog.status === "rejected" && (
-              <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500" />
+              <div className="absolute left-0 top-0 bottom-0 w-1 sm:w-1 bg-red-500" />
             )}
 
-            <div className="size-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50">
+            <div className="w-full sm:w-24 h-40 sm:h-24 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50">
               <img
                 src={blog.image || "/images/blog-placeholder.jpg"}
                 alt={blog.title}
@@ -2976,13 +3386,13 @@ function MyBlogsView({
 
             <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
               <div>
-                <div className="flex items-center gap-3 mb-1.5">
+                <div className="flex flex-wrap items-center gap-3 mb-1.5">
                   {getStatusBadge(blog.status)}
-                  <span className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">
+                  <span className="text-[10px] sm:text-[11px] text-gray-400 font-bold uppercase tracking-wider">
                     {blog.category} • {formatDateVietnamese(blog.createdAt)}
                   </span>
                 </div>
-                <h4 className="font-black text-gray-900 truncate pr-20">
+                <h4 className="font-black text-gray-900 truncate pr-0 sm:pr-20">
                   {blog.title}
                 </h4>
                 {blog.status === "rejected" && blog.rejectionReason && (
@@ -2993,11 +3403,11 @@ function MyBlogsView({
                 )}
               </div>
 
-              <div className="flex items-center gap-2 mt-3">
+              <div className="flex flex-wrap items-center gap-2 mt-3">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-9 px-4 rounded-xl font-bold text-[11px] border-blue-200 text-blue-600 hover:bg-blue-50"
+                  className="flex-1 sm:flex-none h-9 px-4 rounded-xl font-bold text-[11px] border-blue-200 text-blue-600 hover:bg-blue-50"
                   onClick={() => handleEditBlog(blog)}
                 >
                   <Settings className="size-3.5 mr-1.5" /> Sửa bài
@@ -3005,7 +3415,7 @@ function MyBlogsView({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-9 px-4 rounded-xl font-bold text-[11px] border-red-100 text-red-500 hover:bg-red-50"
+                  className="flex-1 sm:flex-none h-9 px-4 rounded-xl font-bold text-[11px] border-red-100 text-red-500 hover:bg-red-50"
                   onClick={() => handleDeleteBlog(blog._id)}
                 >
                   <Trash2 className="size-3.5 mr-1.5" /> Xóa
@@ -3014,7 +3424,7 @@ function MyBlogsView({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-9 px-4 rounded-xl font-bold text-[11px] border-gray-200 text-gray-600 hover:bg-gray-50"
+                    className="flex-1 sm:flex-none h-9 px-4 rounded-xl font-bold text-[11px] border-gray-200 text-gray-600 hover:bg-gray-50"
                     onClick={() => navigate(`/blog/${blog._id}`)}
                   >
                     <Eye className="size-3.5 mr-1.5" /> Xem

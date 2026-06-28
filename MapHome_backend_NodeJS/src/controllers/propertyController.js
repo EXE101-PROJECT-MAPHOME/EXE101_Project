@@ -107,6 +107,31 @@ const serializePropertyForClient = (propertyDoc) => {
   return property;
 };
 
+const getPopularPriceRange = (propertyDocs) => {
+  const pinnedProperties = propertyDocs.filter(
+    (property) =>
+      property.pinInfo &&
+      (property.pinInfo.pinnedAt ||
+        property.pinInfo.pinnedBy ||
+        property.pinInfo.note ||
+        property.pinInfo.photoAtPin),
+  );
+
+  const source = pinnedProperties.length > 0 ? pinnedProperties : propertyDocs;
+  const prices = source
+    .map((property) => Number(property.price))
+    .filter((price) => Number.isFinite(price));
+
+  if (prices.length === 0) {
+    return { min: 0, max: 0 };
+  }
+
+  return {
+    min: Math.min(...prices),
+    max: Math.max(...prices),
+  };
+};
+
 /**
  * Helper to fetch real-time nearby landmarks from Goong API
  * @param {Array|Object} propertyLocation [lng, lat] or GeoJSON Point { type: "Point", coordinates: [lng, lat] }
@@ -129,11 +154,22 @@ const getNearbyLandmarks = async (propertyLocation) => {
     return [];
   }
 
-  const GOONG_API_KEY =
-    process.env.GOONG_API_KEY || "9Xau7e646cReoQa17uHw6Dp1KLPG7ahl9iDGy8V1";
+  // Validate coordinates to prevent "undefined,undefined"
+  if (lat === undefined || lng === undefined || Number.isNaN(Number(lat)) || Number.isNaN(Number(lng))) {
+    return [];
+  }
 
   try {
-    // Types to search for near the property
+    // NOTE: Goong API does not natively support the /Place/NearbySearch endpoint 
+    // (this is a Google Maps endpoint). Calling it will result in a 404 error.
+    // For now, we return an empty array to prevent spamming errors.
+    // If you need Nearby Search, consider using Google Maps Places API or 
+    // implement a local geospatial query if you have POI data in your database.
+    return [];
+
+    /* 
+    const GOONG_API_KEY =
+      process.env.GOONG_API_KEY || "9Xau7e646cReoQa17uHw6Dp1KLPG7ahl9iDGy8V1";
     const types = "university,school,hospital,park";
     const radius = 3000; // 3km radius
 
@@ -145,8 +181,6 @@ const getNearbyLandmarks = async (propertyLocation) => {
     return places
       .slice(0, 10)
       .map((place) => {
-        // Calculate distance manually if API doesn't provide it in the results directly in a way we want
-        // Actually Goong NearbySearch doesn't always provide distance in the main results array
         const distance = haversineKm(
           lat,
           lng,
@@ -164,9 +198,16 @@ const getNearbyLandmarks = async (propertyLocation) => {
         };
       })
       .sort((a, b) => a.distanceKm - b.distanceKm);
+    */
   } catch (error) {
-    console.error("Goong API Error:", error.message);
-    return []; // Return empty array on failure to avoid breaking the whole response
+    console.error("Goong API Error:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      url: error.config?.url,
+    });
+
+    return [];
   }
 };
 
@@ -200,7 +241,7 @@ const getProperties = async (req, res) => {
       query.available = req.query.available === "true";
     } else if (!req.query.all) {
       // Default to only showing available properties for public users
-      query.available = true;
+      // query.available = true; // Bỏ lọc available mặc định để đồng nhất với Search API
     }
 
     // Add status and verified filters
@@ -209,6 +250,11 @@ const getProperties = async (req, res) => {
       query.status = "approved"; // Default to approved unless explicitly asking for all
       // Also filter out expired if only approved are requested
       query.status = { $eq: "approved" };
+      query.$or = [
+        { expiryDate: { $gt: new Date() } },
+        { expiryDate: { $exists: false } },
+        { expiryDate: null }
+      ];
     }
 
     if (req.query.verified === "true") query["greenBadge.level"] = "verified";
@@ -221,6 +267,8 @@ const getProperties = async (req, res) => {
     // Augment with proximity info (Processing sequentially or with Promise.all)
     // For many properties, calling API for each one is slow.
     // We'll only augment if there are few results or it's specifically requested.
+    const priceRange = getPopularPriceRange(properties || []);
+
     const augmentedProperties = await Promise.all(
       properties.map(async (p) => {
         const pObj = serializePropertyForClient(p);
@@ -262,21 +310,40 @@ const createProperty = async (req, res) => {
     const Landlord = require("../models/Landlord");
 
     if (req.user) {
-      const landlord = await Landlord.findOne({ userId: req.user._id });
-      if (landlord) {
-        payload.landlordId = landlord._id;
-        payload.ownerName = landlord.name;
+      if (req.user.role === "broker") {
+        const Broker = require("../models/Broker");
+        const broker = await Broker.findOne({ userId: req.user._id });
+        if (broker) {
+          payload.brokerId = broker._id;
+          payload.ownerName = payload.ownerName || broker.name;
+          payload.phone = payload.phone || broker.phone;
 
-        // Increment listing count
-        landlord.totalListings += 1;
-        await landlord.save();
+          // Increment listing count
+          broker.totalListings += 1;
+          await broker.save();
+        } else {
+          return res.status(400).json({
+            message: "Broker profile not found.",
+            error: "BROKER_NOT_FOUND",
+          });
+        }
       } else {
-        // Landlord not found - return error
-        return res.status(400).json({
-          message:
-            "Landlord profile not found. Please complete your landlord profile first.",
-          error: "LANDLORD_NOT_FOUND",
-        });
+        const landlord = await Landlord.findOne({ userId: req.user._id });
+        if (landlord) {
+          payload.landlordId = landlord._id;
+          payload.ownerName = landlord.name;
+
+          // Increment listing count
+          landlord.totalListings += 1;
+          await landlord.save();
+        } else {
+          // Landlord not found - return error
+          return res.status(400).json({
+            message:
+              "Landlord profile not found. Please complete your landlord profile first.",
+            error: "LANDLORD_NOT_FOUND",
+          });
+        }
       }
     } else {
       // Not authenticated
@@ -296,8 +363,8 @@ const createProperty = async (req, res) => {
     payload.verificationLevel = normalizeFrontendVerificationLevel(
       payload.verificationLevel,
     );
-    // Auto-approve landlord properties so they appear on the map immediately
-    payload.status = payload.status || "approved";
+    // Properties start as pending until admin approval
+    payload.status = payload.status || "pending";
 
     // Normalize location to GeoJSON format
     const geoJsonLocation = normalizeLocationToGeoJSON(payload.location);
@@ -305,7 +372,8 @@ const createProperty = async (req, res) => {
       payload.location = geoJsonLocation;
     } else {
       return res.status(400).json({
-        message: "Invalid location format. Must provide coordinates as [lng, lat].",
+        message:
+          "Invalid location format. Must provide coordinates as [lng, lat].",
         error: "INVALID_LOCATION",
       });
     }
@@ -397,7 +465,22 @@ const updateProperty = async (req, res) => {
       const landlord = await Landlord.findOne({ userId: req.user._id });
       if (
         !landlord ||
+        !property.landlordId ||
         property.landlordId.toString() !== landlord._id.toString()
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to update this property" });
+      }
+    }
+
+    if (req.user && req.user.role === "broker") {
+      const Broker = require("../models/Broker");
+      const broker = await Broker.findOne({ userId: req.user._id });
+      if (
+        !broker ||
+        !property.brokerId ||
+        property.brokerId.toString() !== broker._id.toString()
       ) {
         return res
           .status(403)
@@ -419,7 +502,8 @@ const updateProperty = async (req, res) => {
         updates.location = geoJsonLocation;
       } else {
         return res.status(400).json({
-          message: "Invalid location format. Must provide coordinates as [lng, lat].",
+          message:
+            "Invalid location format. Must provide coordinates as [lng, lat].",
           error: "INVALID_LOCATION",
         });
       }
@@ -451,11 +535,27 @@ const deleteProperty = async (req, res) => {
     }
 
     const Landlord = require("../models/Landlord");
+    const Broker = require("../models/Broker");
+
     if (req.user && req.user.role === "landlord") {
       const landlord = await Landlord.findOne({ userId: req.user._id });
       if (
         !landlord ||
+        !property.landlordId ||
         property.landlordId.toString() !== landlord._id.toString()
+      ) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this property" });
+      }
+    }
+
+    if (req.user && req.user.role === "broker") {
+      const broker = await Broker.findOne({ userId: req.user._id });
+      if (
+        !broker ||
+        !property.brokerId ||
+        property.brokerId.toString() !== broker._id.toString()
       ) {
         return res
           .status(403)
@@ -465,6 +565,12 @@ const deleteProperty = async (req, res) => {
 
     if (property.landlordId) {
       await Landlord.findByIdAndUpdate(property.landlordId, {
+        $inc: { totalListings: -1 },
+      });
+    }
+
+    if (property.brokerId) {
+      await Broker.findByIdAndUpdate(property.brokerId, {
         $inc: { totalListings: -1 },
       });
     }
@@ -552,6 +658,11 @@ const searchProperties = async (req, res) => {
       query.status = status;
     } else {
       query.status = "approved"; // Default to approved for public search
+      query.$or = [
+        { expiryDate: { $gt: new Date() } },
+        { expiryDate: { $exists: false } },
+        { expiryDate: null }
+      ];
     }
 
     // Only filter by available if explicitly requested - map should show all approved listings
@@ -652,6 +763,8 @@ const searchProperties = async (req, res) => {
       total = await Property.countDocuments(query);
     }
 
+    const priceRange = getPopularPriceRange(properties || []);
+
     const augmentedProperties = await Promise.all(
       properties.map(async (p) => {
         const pObj = serializePropertyForClient(p);
@@ -676,6 +789,7 @@ const searchProperties = async (req, res) => {
 
     res.status(200).json({
       properties: augmentedProperties,
+      priceRange,
       pagination: {
         total,
         page: Number(page),
@@ -688,7 +802,6 @@ const searchProperties = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // GET /api/properties/search-multiple?locations=[{"lat":10.7,"lng":106.6,"radius":2},...]
 const searchByMultipleLocations = async (req, res) => {

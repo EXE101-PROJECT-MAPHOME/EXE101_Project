@@ -120,6 +120,11 @@ const planRules = [
     .optional()
     .isArray()
     .withMessage("Tính năng phải là một mảng"),
+
+  body("targetRole")
+    .optional()
+    .isIn(["all", "landlord", "broker"])
+    .withMessage("targetRole phải là 'all', 'landlord', hoặc 'broker'"),
 ];
 
 /**
@@ -130,6 +135,24 @@ const updateSettingsRules = [
   body("contactEmail").optional().trim().isEmail().withMessage("Email không hợp lệ"),
   body("contactPhone").optional().trim().notEmpty(),
   body("maintenanceMode").optional().isBoolean(),
+
+  // Pricing fields
+  body("pricing.basicVerification")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Phí xác minh cơ bản phải là số nguyên không âm"),
+  body("pricing.premiumVerification")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Phí xác minh cao cấp phải là số nguyên không âm"),
+  body("pricing.postRoomFee")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Phí đăng phòng phải là số nguyên không âm"),
+  body("pricing.pushRoomFee")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Phí đẩy tin phải là số nguyên không âm"),
 ];
 
 module.exports = {

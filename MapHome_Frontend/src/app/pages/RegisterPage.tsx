@@ -23,7 +23,7 @@ export function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [role, setRole] = useState<"user" | "landlord" | "admin">("user");
+  const [role, setRole] = useState<"user" | "landlord" | "admin" | "broker">("user");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -102,6 +102,7 @@ export function RegisterPage() {
         return;
       }
 
+      setError(null); // Clear any previous errors
       // No longer auto-login to follow user request
       setSuccess(
         "Đăng ký thành công! Đang chuyển hướng đến trang đăng nhập...",
@@ -111,7 +112,6 @@ export function RegisterPage() {
       }, 2000);
     } catch (err: any) {
       setError(err?.message || "Lỗi mạng");
-    } finally {
       setLoading(false);
     }
   };
@@ -426,6 +426,15 @@ export function RegisterPage() {
                 <input
                   type="radio"
                   name="role"
+                  checked={role === "broker"}
+                  onChange={() => setRole("broker")}
+                />
+                Người môi giới
+              </label>
+              <label className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="role"
                   checked={role === "user"}
                   onChange={() => setRole("user")}
                 />
@@ -458,7 +467,7 @@ export function RegisterPage() {
             <Button
               type="submit"
               disabled={
-                loading || Object.values(fieldErrors).some((err) => err)
+                loading || !!success || Object.values(fieldErrors).some((err) => err)
               }
               className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
