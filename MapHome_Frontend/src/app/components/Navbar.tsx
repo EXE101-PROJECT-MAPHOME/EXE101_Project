@@ -204,55 +204,49 @@ export function Navbar() {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors ml-1"
+                className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors ml-1"
               >
-                {mobileMenuOpen ? (
-                  <XIcon className="size-5 text-gray-700" />
-                ) : (
-                  <Menu className="size-5 text-gray-700" />
-                )}
+                <Menu className="size-5 text-gray-700" />
               </button>
             </div>
           </div>
         </div>
       </motion.header>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Sidebar Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="fixed top-16 right-3 w-[260px] bg-white/95 backdrop-blur-xl border border-gray-200/60 rounded-2xl sm:hidden z-50 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] overflow-hidden"
-          >
-            <div className="px-2 py-2 space-y-1.5">
-              {/* User Info */}
-              {isAuthenticated && user && (
-              <div className="flex items-center gap-3 pb-2 border-b border-gray-100">
-                <div className="w-10 h-10 rounded-full border-2 border-green-600 overflow-hidden bg-gradient-to-br from-[#16a34a] to-[#0ea5e9] flex items-center justify-center text-white text-xs font-bold shrink-0">
-                  {user?.avatar ? (
-                    <img
-                      src={getAvatarUrl(user.avatar) || ""}
-                      alt="Avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    getInitials(user?.fullName, user?.username)
-                  )}
+          <>
+            {/* Dark Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 z-50 md:hidden"
+            />
+            
+            {/* Sidebar */}
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed top-0 left-0 bottom-0 w-[240px] bg-white z-50 flex flex-col md:hidden overflow-hidden shadow-2xl"
+            >
+              <div className="p-2 flex items-center justify-between border-b border-gray-100">
+                <div className="flex items-center gap-2 cursor-pointer" onClick={() => { navigate("/"); setMobileMenuOpen(false); }}>
+                  <img src="/images/MapHome_logo_2.png" alt="MapHome Logo" className="w-8 h-8 rounded-lg object-cover shadow-sm border border-gray-100" />
+                  <span className="font-black text-emerald-700 text-lg tracking-tighter">MapHome</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-gray-900 truncate">
-                    {user?.fullName || user?.username}
-                  </p>
-                  <RoleBadge role={(user?.role as any) || "user"} showIcon={false} />
-                </div>
+                <button onClick={() => setMobileMenuOpen(false)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                  <XIcon className="size-5" />
+                </button>
               </div>
-              )}
 
               {/* Navigation Items */}
-              <div className="space-y-1">
+              <div className="flex-1 overflow-y-auto p-2 space-y-1">
                 {navItems.map(({ path, label, icon: Icon }) => (
                   <button
                     key={path}
@@ -260,27 +254,28 @@ export function Navbar() {
                       navigate(path);
                       setMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all ${
+                    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-bold transition-all ${
                       isActive(path)
-                        ? "bg-green-600 text-white shadow-lg"
+                        ? "bg-green-600 text-white shadow-md"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
-                    <Icon className="size-5 flex-shrink-0" />
+                    <Icon className="size-[18px] flex-shrink-0" />
                     <span>{label}</span>
                   </button>
                 ))}
 
                 {isAuthenticated && (user?.role === "landlord" || user?.role === "broker") && (
                   <>
+                    <div className="my-2 border-t border-gray-100" />
                     <button
                       onClick={() => {
                         navigate("/post-room");
                         setMobileMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all text-emerald-600 bg-emerald-50 hover:bg-emerald-100 mt-2"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-bold transition-all text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
                     >
-                      <PenSquare className="size-5 flex-shrink-0" />
+                      <PenSquare className="size-[18px] flex-shrink-0" />
                       <span>Đăng tin trọ</span>
                     </button>
                     <button
@@ -288,60 +283,83 @@ export function Navbar() {
                         navigate("/pricing");
                         setMobileMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all text-blue-600 bg-blue-50 hover:bg-blue-100 mt-1"
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-bold transition-all text-blue-600 bg-blue-50 hover:bg-blue-100"
                     >
-                      <UserPlus className="size-5 flex-shrink-0" />
+                      <UserPlus className="size-[18px] flex-shrink-0" />
                       <span>Nâng cấp gói</span>
                     </button>
                   </>
                 )}
               </div>
 
-              {/* User Actions */}
-              <div className="pt-2 border-t border-gray-100 space-y-1.5">
-                {isAuthenticated ? (
-                  <>
-                    <button
-                      onClick={() => {
-                        handleUserAction();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-gray-700 hover:bg-gray-100 transition-all"
-                    >
-                      <User className="size-5 flex-shrink-0" />
-                      <span>Tài khoản</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        logout();
-                        navigate("/");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-red-600 hover:bg-red-50 transition-all"
-                    >
-                      <LogOut className="size-5 flex-shrink-0" />
-                      <span>Đăng xuất</span>
-                    </button>
-                  </>
+              {/* Account Card at Bottom */}
+              <div className="p-2 border-t border-gray-100 bg-gray-50/50 mt-auto w-full box-border">
+                {isAuthenticated && user ? (
+                  <div className="flex flex-col gap-2 w-full">
+                    {/* User Info */}
+                    <div className="flex items-center gap-2 overflow-hidden w-full">
+                      <div className="w-[30px] h-[30px] rounded-full border border-green-200 overflow-hidden bg-gradient-to-br from-[#16a34a] to-[#0ea5e9] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        {user?.avatar ? (
+                          <img
+                            src={getAvatarUrl(user.avatar) || ""}
+                            alt="Avatar"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          getInitials(user?.fullName, user?.username)
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <p className="text-[13px] font-black text-gray-900 truncate leading-tight w-full">
+                          {user?.fullName || user?.username}
+                        </p>
+                        <div className="text-[10px] truncate w-full -mt-0.5">
+                           <RoleBadge role={(user?.role as any) || "user"} showIcon={false} />
+                        </div>
+                      </div>
+                    </div>
+                    {/* 2 Action Buttons */}
+                    <div className="flex items-center gap-1.5 w-full">
+                      <button
+                        onClick={() => {
+                          handleUserAction();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-white border border-gray-200 rounded text-[11px] font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm truncate"
+                      >
+                        <Home className="size-3.5 shrink-0" />
+                        <span className="truncate">Trang chủ</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          logout();
+                          navigate("/");
+                          setMobileMenuOpen(false);
+                        }}
+                        className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-red-50 border border-red-100 rounded text-[11px] font-bold text-red-600 hover:bg-red-100 transition-colors shadow-sm truncate"
+                      >
+                        <LogOut className="size-3.5 shrink-0" />
+                        <span className="truncate">Đăng xuất</span>
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <button
                     onClick={() => {
                       navigate("/login");
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-white bg-green-600 shadow-md hover:bg-green-700 transition-all"
+                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded text-[12px] font-black text-white bg-green-600 shadow-md hover:bg-green-700 transition-all"
                   >
-                    <User className="size-5 flex-shrink-0" />
+                    <User className="size-4 shrink-0" />
                     <span>Đăng nhập ngay</span>
                   </button>
                 )}
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
-
-
     </>
   );
 }
