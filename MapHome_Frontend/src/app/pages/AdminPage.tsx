@@ -90,12 +90,14 @@ type AdminView =
 
 export function AdminPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeView, setActiveView] = useState<AdminView>(
-    (searchParams.get("view") as AdminView) || "dashboard",
-  );
+  
+  const activeView = (searchParams.get("view") as AdminView) || "dashboard";
+  const setActiveView = (view: AdminView) => {
+    setSearchParams({ view });
+  };
   const [stats, setStats] = useState<any>(null);
   const [weeklySearchData, setWeeklySearchData] = useState<any[]>([]);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
