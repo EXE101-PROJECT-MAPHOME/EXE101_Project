@@ -2,6 +2,23 @@ import { useState, useEffect, forwardRef, ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/contexts/AuthContext";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  Legend,
+  ComposedChart,
+  Line,
+} from "recharts";
 import api from "@/app/utils/api";
 import { getAvatarUrl, getInitials } from "@/app/utils/avatarUtils";
 import { formatDateVietnamese, getDaysLeftText } from "@/app/utils/dateUtils";
@@ -907,6 +924,10 @@ export function AdminPage() {
                       recentActivities={recentActivities}
                       topRooms={topRooms}
                       posts={posts}
+                      users={users}
+                      reports={reports}
+                      verifications={verifications}
+                      transactions={transactions}
                       onNavigate={(view) => setActiveView(view as any)}
                     />
                   )}
@@ -1072,6 +1093,10 @@ const DashboardView = forwardRef(function DashboardView(
     recentActivities,
     topRooms,
     posts,
+    users = [],
+    reports = [],
+    verifications = [],
+    transactions = [],
     onNavigate,
   }: {
     stats: any;
@@ -1079,6 +1104,10 @@ const DashboardView = forwardRef(function DashboardView(
     recentActivities: any[];
     topRooms: any[];
     posts: any[];
+    users?: any[];
+    reports?: any[];
+    verifications?: any[];
+    transactions?: any[];
     onNavigate?: (view: string) => void;
   },
   ref: any,
@@ -1090,25 +1119,82 @@ const DashboardView = forwardRef(function DashboardView(
 
   useEffect(() => {
     setIsChartLoading(true);
-    api.get(`/api/admin/stats/chart?range=${chartRange}`)
-      .then(res => setChartData(res.data || []))
+    api
+      .get(`/api/admin/stats/chart?range=${chartRange}`)
+      .then((res) => setChartData(res.data || []))
       .catch(console.error)
       .finally(() => setIsChartLoading(false));
   }, [chartRange]);
 
+  // --- Data Processors ---
+  
+  // 1. Posts Data
+  const isPostExpired = (p: any) => {
+    if (p.status === "expired") return true;
+    if (p.status === "approved" && p.expiryDate) {
+      return new Date(p.expiryDate) < new Date();
+    }
+    return false;
+  };
   const safePosts = Array.isArray(posts) ? posts : [];
-  const total = safePosts.length || 1; // Avoid division by zero
-  const approvedPct = Math.round(
-    (safePosts.filter((p) => p.status === "approved").length / total) * 100,
-  );
-  const pendingPct = Math.round(
-    (safePosts.filter((p) => p.status === "pending").length / total) * 100,
-  );
-  const reportedPct = Math.round(
-    (safePosts.filter((p) => p.status === "reported").length / total) * 100,
-  );
+  const expiredPostsCount = safePosts.filter(isPostExpired).length;
+  const approvedPostsCount = safePosts.filter((p) => p.status === "approved" && !isPostExpired(p)).length;
+  const pendingPostsCount = safePosts.filter((p) => p.status === "pending").length;
+  const reportedPostsCount = safePosts.filter((p) => p.status === "reported").length;
 
-  const maxChartValue = Math.max(...chartData.map((d: any) => d[chartMetric] || 0), 1);
+  const postStatusData = [
+    { name: "Đang hiển thị", value: approvedPostsCount, color: "#10b981" },
+    { name: "Chờ duyệt", value: pendingPostsCount, color: "#f59e0b" },
+    { name: "Hết hạn", value: expiredPostsCount, color: "#64748b" },
+    { name: "Bị báo cáo", value: reportedPostsCount, color: "#ef4444" },
+  ];
+
+  // 2. Users Data
+  const landlordsCount = users.filter((u) => u.role === "landlord").length;
+  const tenantsCount = users.filter((u) => u.role === "user").length;
+  const brokersCount = users.filter((u) => u.role === "broker").length;
+
+  const userRoleData = [
+    { name: "Chủ trọ", count: landlordsCount, fill: "#3b82f6" },
+    { name: "Người thuê", count: tenantsCount, fill: "#8b5cf6" },
+    { name: "Môi giới", count: brokersCount, fill: "#06b6d4" },
+  ];
+
+  // 3. Operations Data
+  const pendingReports = reports.filter((r) => r.status === "pending").length;
+  const resolvedReports = reports.filter((r) => r.status === "resolved").length;
+  
+  const pendingVerifs = verifications.filter((v) => v.status === "pending").length;
+  const approvedVerifs = verifications.filter((v) => v.status === "approved").length;
+
+  const operationsData = [
+    { name: "Báo cáo", Pending: pendingReports, Resolved: resolvedReports },
+    { name: "Tích xanh", Pending: pendingVerifs, Resolved: approvedVerifs },
+  ];
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-xl shadow-xl border border-slate-100 flex flex-col gap-1">
+          <p className="text-xs font-bold text-slate-500 mb-1">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
+                <span className="text-xs font-semibold text-slate-700">{entry.name}:</span>
+              </div>
+              <span className="text-xs font-black text-slate-900">
+                {entry.name === "Doanh thu" || chartMetric === "revenue" 
+                  ? `${Number(entry.value).toLocaleString("vi-VN")}đ` 
+                  : Number(entry.value).toLocaleString("vi-VN")}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <motion.div
@@ -1117,26 +1203,21 @@ const DashboardView = forwardRef(function DashboardView(
       animate="show"
       variants={{
         hidden: { opacity: 0 },
-        show: {
-          opacity: 1,
-          transition: {
-            staggerChildren: 0.15,
-            delayChildren: 0.1,
-          },
-        },
+        show: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
       }}
-      className="space-y-10"
+      className="space-y-8 pb-10"
     >
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      {/* 1. KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <KPICard
           icon="💰"
           iconBg="#f0fdf4"
           label="Tổng doanh thu"
-          value={stats?.totalRevenue ? `${stats.totalRevenue}đ` : "0đ"}
+          value={stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString("vi-VN")}đ` : "0đ"}
           change="Tăng trưởng"
           changePositive
           topGradient="linear-gradient(90deg, #10b981, #34d399)"
+          onClick={() => onNavigate && onNavigate("revenue")}
         />
         <KPICard
           icon="👥"
@@ -1154,9 +1235,9 @@ const DashboardView = forwardRef(function DashboardView(
           label="Giao dịch"
           value={stats?.totalTransactions?.toLocaleString() || "0"}
           change="Tuần này"
-          onClick={() => onNavigate && onNavigate("transactions")}
           changePositive
           topGradient="linear-gradient(90deg, #f59e0b, #fbbf24)"
+          onClick={() => onNavigate && onNavigate("transactions")}
         />
         <KPICard
           icon="⭐"
@@ -1165,242 +1246,223 @@ const DashboardView = forwardRef(function DashboardView(
           value={`${stats?.averageRating || "4.9"} / 5.0`}
           change={`${stats?.totalReviews || 0} lượt`}
           topGradient="linear-gradient(90deg, #ec4899, #f472b6)"
+          onClick={() => onNavigate && onNavigate("reviews")}
         />
       </div>
 
-      {/* Charts & Timeline Row */}
+      {/* 2. Main Revenue Chart */}
       <motion.div
-        variants={{
-          hidden: { opacity: 0 },
-          show: { opacity: 1, transition: { staggerChildren: 0.1 } },
-        }}
-        className="grid grid-cols-1 gap-6"
+        variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+        className="bg-white rounded-[32px] border border-slate-100 p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow"
       >
-        {/* Weekly Revenue Chart (Full width) */}
-        <motion.div
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            show: { opacity: 1, y: 0 },
-          }}
-          className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm hover:shadow-md transition-shadow"
-        >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-            <div>
-              <h3 className="text-sm font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider">
-                Biểu đồ thống kê
-              </h3>
-              <p className="text-xs text-slate-400 font-semibold mt-1">
-                Dữ liệu linh hoạt theo bộ lọc
-              </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+          <div>
+            <h3 className="text-sm font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider">
+              Biểu đồ Doanh thu & Tăng trưởng
+            </h3>
+            <p className="text-xs text-slate-400 font-semibold mt-1">Dữ liệu linh hoạt theo thời gian</p>
+          </div>
+          <div className="flex w-full sm:w-auto items-center gap-2">
+            <select
+              value={chartMetric}
+              onChange={(e) => setChartMetric(e.target.value)}
+              className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
+            >
+              <option value="revenue">Doanh thu</option>
+              <option value="users">Người dùng mới</option>
+              <option value="transactions">Giao dịch</option>
+            </select>
+            <select
+              value={chartRange}
+              onChange={(e) => setChartRange(e.target.value)}
+              className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
+            >
+              <option value="day">Hôm nay</option>
+              <option value="week">Tuần này</option>
+              <option value="month">Tháng này</option>
+              <option value="year">Năm nay</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="h-[320px] w-full">
+          {isChartLoading ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-sm font-bold text-slate-400">Đang tải dữ liệu...</span>
             </div>
-            <div className="flex w-full sm:w-auto items-center gap-2">
-              <select
-                value={chartMetric}
-                onChange={(e) => setChartMetric(e.target.value)}
-                className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
-              >
-                <option value="revenue">Doanh thu</option>
-                <option value="users">Người dùng</option>
-                <option value="transactions">Giao dịch</option>
-              </select>
-              <select
-                value={chartRange}
-                onChange={(e) => setChartRange(e.target.value)}
-                className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
-              >
-                <option value="day">Hôm nay</option>
-                <option value="week">Tuần này</option>
-                <option value="month">Tháng này</option>
-                <option value="year">Năm nay</option>
-              </select>
+          ) : chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartMetric === "revenue" ? "#10b981" : chartMetric === "users" ? "#3b82f6" : "#f59e0b"} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={chartMetric === "revenue" ? "#10b981" : chartMetric === "users" ? "#3b82f6" : "#f59e0b"} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="label" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} 
+                  dy={10} 
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} 
+                  dx={-10}
+                  tickFormatter={(val) => chartMetric === "revenue" ? `${val / 1000}k` : val}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey={chartMetric} 
+                  name={chartMetric === "revenue" ? "Doanh thu" : chartMetric === "users" ? "Người dùng" : "Giao dịch"}
+                  stroke={chartMetric === "revenue" ? "#10b981" : chartMetric === "users" ? "#3b82f6" : "#f59e0b"} 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#colorMetric)" 
+                  activeDot={{ r: 6, strokeWidth: 0, fill: chartMetric === "revenue" ? "#10b981" : chartMetric === "users" ? "#3b82f6" : "#f59e0b" }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-sm font-bold text-slate-400">Không có dữ liệu</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* 3. Secondary Charts Grid */}
+      <motion.div
+        variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+      >
+        {/* Posts Status */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          className="bg-white rounded-[32px] border border-slate-100 p-6 shadow-sm relative overflow-hidden group cursor-pointer"
+          onClick={() => onNavigate && onNavigate("posts")}
+        >
+          <div className="flex items-center justify-between mb-4 relative z-10">
+            <h3 className="text-sm font-black bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent uppercase tracking-wider">
+              Tình trạng Tin Đăng
+            </h3>
+            <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-slate-100 transition-colors">
+              <ChevronRight className="size-4 text-slate-400" />
             </div>
           </div>
-
-          <div className="relative h-[300px] w-full mt-4">
-            {/* Background Grid Lines */}
-            <div className="absolute inset-0 flex flex-col justify-between pb-8 pointer-events-none">
-              {[1, 2, 3, 4, 5].map((_, i) => (
-                <div key={i} className="w-full border-t border-slate-100 border-dashed" />
-              ))}
+          
+          <div className="h-[220px] w-full relative z-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={postStatusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={85}
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {postStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36} 
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            
+            {/* Total Posts in Center */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center -translate-y-4 pointer-events-none">
+              <span className="text-2xl font-black text-slate-800">{posts.length}</span>
+              <span className="text-[9px] uppercase font-bold text-slate-400">Tổng cộng</span>
             </div>
+          </div>
+        </motion.div>
 
-            <div className="relative h-full flex items-end justify-between gap-2 sm:gap-3 px-2 pb-8 overflow-x-auto no-scrollbar z-10">
-              {isChartLoading ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-slate-400">Đang tải dữ liệu...</span>
-                </div>
-              ) : chartData.length > 0 ? (
-                chartData.map((item, idx) => {
-                  const value = item[chartMetric] || 0;
-                  // Max height 80% so tooltip never clips (300px * 0.2 = 60px space for tooltip)
-                  const barHeightPct = maxChartValue === 0 ? 0 : (value / maxChartValue) * 80;
-                  
-                  let barColor = "from-emerald-400 to-emerald-200 shadow-emerald-200";
-                  let tooltipBg = "bg-emerald-600";
-                  if (chartMetric === "users") {
-                    barColor = "from-blue-400 to-blue-200 shadow-blue-200";
-                    tooltipBg = "bg-blue-600";
-                  } else if (chartMetric === "transactions") {
-                    barColor = "from-amber-400 to-amber-200 shadow-amber-200";
-                    tooltipBg = "bg-amber-500";
-                  }
-
-                  return (
-                    <div
-                      key={idx}
-                      className="flex-1 h-full flex flex-col items-center gap-2 justify-end min-w-[28px] sm:min-w-[36px] group cursor-pointer"
-                    >
-                      <div className="flex-1 w-full flex items-end justify-center relative">
-                        {/* The Bar */}
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${barHeightPct}%` }}
-                          transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
-                          className={`w-full max-w-[28px] rounded-t-xl bg-gradient-to-t ${barColor} relative shadow-sm opacity-80 group-hover:opacity-100 transition-opacity flex justify-center`}
-                        >
-                          {/* Tooltip */}
-                          <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center z-50 pointer-events-none group-hover:-translate-y-1">
-                            <div className={`${tooltipBg} text-white text-[11px] font-black py-1.5 px-3 rounded-lg shadow-lg whitespace-nowrap`}>
-                              {chartMetric === "revenue" ? `${value.toLocaleString("vi-VN")}đ` : value.toLocaleString("vi-VN")}
-                            </div>
-                            {/* Triangle pointer */}
-                            <div className={`w-2 h-2 ${tooltipBg} rotate-45 -mt-1`} />
-                          </div>
-                        </motion.div>
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-400 mt-1 truncate max-w-full text-center group-hover:text-slate-700 transition-colors">
-                        {item.label}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-slate-400">Không có dữ liệu</span>
-                </div>
-              )}
+        {/* Users Breakdown */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          className="bg-white rounded-[32px] border border-slate-100 p-6 shadow-sm cursor-pointer group"
+          onClick={() => onNavigate && onNavigate("users")}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent uppercase tracking-wider">
+              Cơ cấu Người Dùng
+            </h3>
+            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+              <Users className="size-4 text-blue-500" />
             </div>
+          </div>
+          
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={userRoleData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} />
+                <Tooltip cursor={{ fill: "#f8fafc" }} content={<CustomTooltip />} />
+                <Bar dataKey="count" name="Số lượng" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                  {userRoleData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Operations (Reports & Verifications) */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          className="bg-white rounded-[32px] border border-slate-100 p-6 shadow-sm"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-black bg-gradient-to-r from-rose-500 to-orange-500 bg-clip-text text-transparent uppercase tracking-wider">
+              Vận hành & Yêu cầu
+            </h3>
+            <AlertTriangle className="size-4 text-rose-500" />
+          </div>
+          
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={operationsData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36} 
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}
+                />
+                <Bar dataKey="Pending" name="Chờ xử lý" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar dataKey="Resolved" name="Đã xử lý" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </motion.div>
       </motion.div>
 
-      {/* Bottom Row - Status & Top Rooms */}
+      {/* 4. Bottom Row: Top Rooms & Recent Activity (Placeholder) */}
       <motion.div
-        variants={{
-          hidden: { opacity: 0 },
-          show: { opacity: 1, transition: { staggerChildren: 0.1 } },
-        }}
+        variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
       >
-        {/* Status Pie Summary */}
-        <motion.div
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            show: { opacity: 1, y: 0 },
-          }}
-          className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm"
-        >
-          <h3 className="text-sm font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-8">
-            Trạng thái tin đăng
-          </h3>
-          <div className="flex flex-col sm:flex-row items-center justify-around gap-8">
-            <div className="relative w-[130px] h-[130px] group">
-              <svg
-                className="w-full h-full -rotate-90 filter drop-shadow-sm"
-                viewBox="0 0 36 36"
-              >
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="none"
-                  stroke="#f1f5f9"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="4"
-                  strokeDasharray={`${approvedPct} 100`}
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="none"
-                  stroke="#f59e0b"
-                  strokeWidth="4"
-                  strokeDasharray={`${pendingPct} 100`}
-                  strokeDashoffset={-approvedPct}
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="none"
-                  stroke="#ef4444"
-                  strokeWidth="4"
-                  strokeDasharray={`${reportedPct} 100`}
-                  strokeDashoffset={-(approvedPct + pendingPct)}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-black text-slate-800">
-                  {posts.length}
-                </span>
-                <span className="text-[9px] uppercase font-bold text-slate-400">
-                  Tin đăng
-                </span>
-              </div>
-            </div>
-
-            <div className="flex-1 space-y-4">
-              {[
-                {
-                  label: "Đang hiển thị",
-                  value: approvedPct,
-                  color: "emerald",
-                },
-                { label: "Chờ phê duyệt", value: pendingPct, color: "amber" },
-                { label: "Bị báo cáo", value: reportedPct, color: "rose" },
-              ].map((item) => (
-                <div key={item.label} className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-2 h-2 rounded-full bg-${item.color}-500`}
-                      />
-                      <span className="font-bold text-slate-600">
-                        {item.label}
-                      </span>
-                    </div>
-                    <span className="font-black text-slate-900">
-                      {item.value}%
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.value}%` }}
-                      transition={{ duration: 1, delay: 0.8 }}
-                      className={`h-full bg-${item.color}-500`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
         {/* Top Performing Rooms */}
         <motion.div
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            show: { opacity: 1, y: 0 },
-          }}
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
           className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm"
         >
           <div className="flex items-center justify-between mb-8">
@@ -1410,25 +1472,26 @@ const DashboardView = forwardRef(function DashboardView(
             <Eye className="size-5 text-emerald-500" />
           </div>
 
-          <div className="space-y-6">
-            {topRooms.map((room, idx) => (
+          <div className="space-y-5">
+            {topRooms.slice(0, 5).map((room, idx) => (
               <div key={room.rank} className="group cursor-pointer">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center font-black text-slate-400 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center font-black text-slate-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
                     0{room.rank}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13.5px] font-black text-slate-800 truncate group-hover:text-emerald-500 transition-colors">
                       {room.name}
                     </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <MapPin className="size-3 text-slate-300" />
-                      <span className="text-[11px] text-slate-400 font-medium truncate">
-                        {room.location}
-                      </span>
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                       {/* Progress bar based on highest view count */}
+                       <div 
+                         className="h-full bg-gradient-to-r from-emerald-400 to-emerald-300 rounded-full" 
+                         style={{ width: `${topRooms[0]?.views ? (room.views / topRooms[0].views) * 100 : 0}%` }}
+                       />
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right w-20">
                     <p className="text-sm font-black text-emerald-600">
                       {room.views.toLocaleString()}
                     </p>
@@ -1437,11 +1500,39 @@ const DashboardView = forwardRef(function DashboardView(
                     </p>
                   </div>
                 </div>
-                {idx < topRooms.length - 1 && (
-                  <div className="h-px bg-slate-50 mt-4" />
-                )}
               </div>
             ))}
+          </div>
+        </motion.div>
+
+        {/* System Summary (Placeholder/Additional info) */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 rounded-[32px] p-8 shadow-lg text-white flex flex-col justify-between relative overflow-hidden"
+        >
+          {/* Decorative shapes */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500 rounded-full opacity-10 blur-3xl -translate-y-1/2 translate-x-1/3" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500 rounded-full opacity-10 blur-3xl translate-y-1/3 -translate-x-1/4" />
+          
+          <div className="relative z-10">
+            <h3 className="text-lg font-black mb-2 flex items-center gap-2">
+              <Zap className="size-5 text-emerald-400 fill-emerald-400" />
+              Tổng quan Hệ thống
+            </h3>
+            <p className="text-sm text-slate-300 font-medium leading-relaxed max-w-sm">
+              Hệ thống đang hoạt động ổn định. Đã xử lý {transactions.length} giao dịch và hỗ trợ {users.length} người dùng trên nền tảng.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-8 relative z-10">
+             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+               <div className="text-3xl font-black text-emerald-400 mb-1">{posts.length}</div>
+               <div className="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Tin Đăng Lưu Trữ</div>
+             </div>
+             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+               <div className="text-3xl font-black text-blue-400 mb-1">{reports.length}</div>
+               <div className="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Báo cáo hệ thống</div>
+             </div>
           </div>
         </motion.div>
       </motion.div>
