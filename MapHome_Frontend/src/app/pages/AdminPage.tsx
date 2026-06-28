@@ -905,6 +905,7 @@ export function AdminPage() {
                       recentActivities={recentActivities}
                       topRooms={topRooms}
                       posts={posts}
+                      onNavigate={(view) => setActiveView(view as any)}
                     />
                   )}
                   {activeView === "posts" && (
@@ -1069,12 +1070,14 @@ const DashboardView = forwardRef(function DashboardView(
     recentActivities,
     topRooms,
     posts,
+    onNavigate,
   }: {
     stats: any;
     weeklySearchData: any[];
     recentActivities: any[];
     topRooms: any[];
     posts: any[];
+    onNavigate?: (view: string) => void;
   },
   ref: any,
 ) {
@@ -1141,6 +1144,7 @@ const DashboardView = forwardRef(function DashboardView(
           change="+12.5%"
           changePositive
           topGradient="linear-gradient(90deg, #3b82f6, #60a5fa)"
+          onClick={() => onNavigate && onNavigate("users")}
         />
         <KPICard
           icon="🔄"
@@ -1148,6 +1152,7 @@ const DashboardView = forwardRef(function DashboardView(
           label="Giao dịch"
           value={stats?.totalTransactions?.toLocaleString() || "0"}
           change="Tuần này"
+          onClick={() => onNavigate && onNavigate("transactions")}
           changePositive
           topGradient="linear-gradient(90deg, #f59e0b, #fbbf24)"
         />
@@ -1487,6 +1492,7 @@ function KPICard({
   changePositive,
   changeNegative,
   topGradient,
+  onClick,
 }: {
   icon: ReactNode;
   iconBg: string;
@@ -1496,9 +1502,11 @@ function KPICard({
   changePositive?: boolean;
   changeNegative?: boolean;
   topGradient: string;
+  onClick?: () => void;
 }) {
   return (
     <motion.div
+      onClick={onClick}
       variants={{
         hidden: { opacity: 0, y: 20 },
         show: { opacity: 1, y: 0 },
@@ -1508,7 +1516,7 @@ function KPICard({
         scale: 1.02,
         transition: { type: "spring", stiffness: 400, damping: 10 },
       }}
-      className="relative overflow-hidden rounded-[28px] p-6 transition-all group shadow-2xl shadow-slate-200/30 bg-white/70 backdrop-blur-2xl border border-white/40"
+      className={`relative overflow-hidden rounded-[28px] p-6 transition-all group shadow-2xl shadow-slate-200/30 bg-white/70 backdrop-blur-2xl border border-white/40 ${onClick ? "cursor-pointer" : ""}`}
     >
       {/* decorative blurred blobs */}
       <div
