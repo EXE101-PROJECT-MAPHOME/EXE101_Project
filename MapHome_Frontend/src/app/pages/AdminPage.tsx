@@ -1147,7 +1147,7 @@ const DashboardView = forwardRef(function DashboardView(
     { name: "Chờ duyệt", value: pendingPostsCount, color: "#f59e0b" },
     { name: "Hết hạn", value: expiredPostsCount, color: "#64748b" },
     { name: "Bị báo cáo", value: reportedPostsCount, color: "#ef4444" },
-  ];
+  ].filter((d) => d.value > 0);
 
   // 2. Users Data
   const landlordsCount = users.filter((u) => u.role === "landlord").length;
@@ -1356,37 +1356,45 @@ const DashboardView = forwardRef(function DashboardView(
           </div>
           
           <div className="h-[220px] w-full relative z-10">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={postStatusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={85}
-                  paddingAngle={5}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {postStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36} 
-                  iconType="circle"
-                  wrapperStyle={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            
-            {/* Total Posts in Center */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center -translate-y-4 pointer-events-none">
-              <span className="text-2xl font-black text-slate-800">{posts.length}</span>
-              <span className="text-[9px] uppercase font-bold text-slate-400">Tổng cộng</span>
-            </div>
+            {postStatusData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={postStatusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={85}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {postStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36} 
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Total Posts in Center */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center -translate-y-4 pointer-events-none">
+                  <span className="text-2xl font-black text-slate-800">{safePosts.length}</span>
+                  <span className="text-[9px] uppercase font-bold text-slate-400">Tổng cộng</span>
+                </div>
+              </>
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center">
+                <span className="text-sm font-bold text-slate-400">Chưa có dữ liệu</span>
+              </div>
+            )}
           </div>
         </motion.div>
 
