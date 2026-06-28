@@ -2,6 +2,23 @@ import { useState, useEffect, forwardRef, ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/contexts/AuthContext";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  Legend,
+  ComposedChart,
+  Line,
+} from "recharts";
 import api from "@/app/utils/api";
 import { getAvatarUrl, getInitials } from "@/app/utils/avatarUtils";
 import { formatDateVietnamese, getDaysLeftText } from "@/app/utils/dateUtils";
@@ -90,12 +107,14 @@ type AdminView =
 
 export function AdminPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout, isAuthenticated } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeView, setActiveView] = useState<AdminView>(
-    (searchParams.get("view") as AdminView) || "dashboard",
-  );
+  
+  const activeView = (searchParams.get("view") as AdminView) || "dashboard";
+  const setActiveView = (view: AdminView) => {
+    setSearchParams({ view });
+  };
   const [stats, setStats] = useState<any>(null);
   const [weeklySearchData, setWeeklySearchData] = useState<any[]>([]);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
@@ -528,61 +547,61 @@ export function AdminPage() {
       <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[#f0f9f5] via-white to-[#f0f2f9] pointer-events-none" />
 
       {/* Mobile Header - Only visible on small screens */}
-      <div className="fixed top-0 left-0 right-0 h-16 md:hidden bg-white border-b border-slate-100 flex items-center px-4 z-40">
+      <div className="fixed top-0 left-0 right-0 h-14 md:hidden bg-white/90 backdrop-blur-md border-b border-slate-100 flex items-center px-4 z-40 shadow-sm">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-slate-100 rounded-md transition-colors"
         >
           {sidebarOpen ? (
-            <XIcon className="size-6 text-slate-900" />
+            <XIcon className="size-5 text-slate-900" />
           ) : (
-            <Menu className="size-6 text-slate-900" />
+            <Menu className="size-5 text-slate-900" />
           )}
         </button>
         <div 
           onClick={() => navigate("/")}
           className="ml-4 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
-          <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-lg">
+          <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-1.5 rounded-lg shadow-sm">
             <Home className="size-4 text-white" />
           </div>
-          <h1 className="font-black text-lg text-slate-900">MapHome</h1>
+          <h1 className="font-black text-[15px] text-slate-900">MapHome</h1>
         </div>
       </div>
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          className="fixed inset-0 bg-black/60 z-30 md:hidden transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar Navigation - Responsive */}
-      <aside className={`fixed md:static w-80 h-[100dvh] bg-white/70 backdrop-blur-3xl border-r border-white/40 flex-shrink-0 overflow-hidden flex flex-col z-40 shadow-[4px_0_30px_rgba(0,0,0,0.02)] transition-transform duration-300 ${
+      <aside className={`fixed md:static w-[240px] h-[100dvh] bg-white/70 backdrop-blur-3xl border-r border-slate-200/40 flex-shrink-0 overflow-hidden flex flex-col z-40 shadow-[4px_0_30px_rgba(0,0,0,0.02)] transition-transform duration-300 ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       }`}>
         {/* Logo Section */}
-        <div className="p-10">
+        <div className="p-3 border-b border-slate-100">
           <div
-            className="flex items-center gap-4 px-2 hover:scale-105 transition-transform cursor-pointer"
+            className="flex items-center gap-2.5 cursor-pointer group"
             onClick={() => navigate("/")}
           >
-            <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-3 rounded-[20px] shadow-2xl shadow-blue-100">
-              <Home className="size-8 text-white" />
+            <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-xl shadow-lg shadow-blue-100 group-hover:shadow-blue-200 transition-all">
+              <Home className="size-5 text-white" />
             </div>
             <div>
-              <h1 className="font-black text-2xl bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 bg-clip-text text-transparent tracking-tighter leading-none">
+              <h1 className="font-black text-lg bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 bg-clip-text text-transparent tracking-tighter leading-none">
                 MapHome
               </h1>
-              <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mt-2 inline-block shadow-sm">
+              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 inline-block shadow-sm">
                 Admin Panel
               </span>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 py-4 px-6 space-y-8 overflow-y-auto no-scrollbar">
+        <nav className="flex-1 py-3 px-2 space-y-4 overflow-y-auto custom-scrollbar">
           {/* NAVIGATION SECTIONS */}
           {[
             {
@@ -657,40 +676,40 @@ export function AdminPage() {
             },
           ].map((section, sIdx) => (
             <div key={section.title}>
-              <div className="px-4 mb-4 text-[10px] font-black uppercase text-indigo-500/70 tracking-[0.2em]">
+              <div className="px-3 mb-2 text-[9px] font-black uppercase text-indigo-500/70 tracking-[0.2em]">
                 {section.title}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {section.items.map((item) => {
                   const isActive = activeView === item.id;
                   const Icon = item.icon;
                   return (
                     <motion.button
                       key={item.id}
-                      whileHover={{ scale: 1.02, x: 5 }}
+                      whileHover={{ scale: 1.01, x: 2 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         setActiveView(item.id as any);
                         setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center gap-4 px-5 py-4 rounded-[22px] text-sm font-black tracking-tight transition-all relative group ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold tracking-tight transition-all relative group overflow-hidden ${
                         isActive
-                          ? "bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white shadow-[0_15px_35px_rgba(59,130,246,0.2)]"
+                          ? "bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/20"
                           : "text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50"
                       }`}
                     >
                       <div
-                        className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? "text-white" : ""}`}
+                        className={`transition-transform duration-300 ${isActive ? "text-white" : ""}`}
                       >
-                        <Icon className="size-5 flex-shrink-0" />
+                        <Icon className="size-[18px] flex-shrink-0" />
                       </div>
-                      <span>{item.label}</span>
+                      <span className="truncate flex-1 text-left">{item.label}</span>
                       {item.count !== undefined && (
                         <span
-                          className={`ml-auto px-2 py-0.5 rounded-lg text-[9px] font-black ${
+                          className={`px-1.5 py-0.5 rounded font-black text-[9px] shrink-0 ${
                             isActive
                               ? "bg-white/20 text-white"
-                              : `bg-${item.color || "slate"}-50 text-${item.color || "slate"}-600`
+                              : `bg-${item.color || "slate"}-100 text-${item.color || "slate"}-600`
                           }`}
                         >
                           {item.count}
@@ -699,7 +718,7 @@ export function AdminPage() {
                       {isActive && (
                         <motion.div
                           layoutId="activeAdminTab"
-                          className="absolute right-4 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                          className="absolute right-2 w-1 h-1 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]"
                         />
                       )}
                     </motion.button>
@@ -710,11 +729,14 @@ export function AdminPage() {
           ))}
         </nav>
 
-        {/* User Card */}
-        <div className="p-6 mt-auto">
-          <div className="p-5 rounded-[32px] bg-white/50 border border-white/60 shadow-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-[18px] border-2 border-white shadow-xl overflow-hidden bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 flex items-center justify-center text-white text-[11px] font-black shrink-0">
+        {/* Compact Account Card at Bottom */}
+        <motion.div
+          className="p-2 border-t border-slate-100 bg-slate-50/50 mt-auto w-full box-border"
+        >
+          <div className="flex flex-col gap-2 w-full">
+            {/* User Info */}
+            <div className="flex items-center gap-2 overflow-hidden w-full">
+              <div className="w-[30px] h-[30px] rounded-full border border-indigo-200 overflow-hidden bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                 {user?.avatar ? (
                   <img
                     src={getAvatarUrl(user.avatar) || ""}
@@ -725,36 +747,38 @@ export function AdminPage() {
                   getInitials(user?.fullName, user?.username)
                 )}
               </div>
-              <div className="flex-1 min-w-0 pr-1">
-                <div className="text-[13px] font-black text-slate-800 truncate">
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <p className="text-[13px] font-black text-slate-900 truncate leading-tight w-full">
                   {user?.fullName || user?.username || "Admin"}
-                </div>
-                <div className="text-[9px] text-indigo-600 font-black uppercase tracking-tight">
+                </p>
+                <div className="text-[9px] text-indigo-600 font-black uppercase tracking-tight truncate w-full mt-0.5">
                   System Administrator
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="ghost"
+            
+            {/* 2 Action Buttons */}
+            <div className="flex items-center gap-1.5 w-full">
+              <button
                 onClick={() => {
                   navigate("/");
                   setSidebarOpen(false);
                 }}
-                className="rounded-xl h-10 bg-slate-50 hover:bg-white text-slate-500 hover:text-indigo-600 font-black text-[10px] p-0"
+                className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-white border border-slate-200 rounded text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm truncate"
               >
-                <Home className="size-3.5 mr-1.5" /> Trang chủ
-              </Button>
-              <Button
-                variant="ghost"
+                <Home className="size-3.5 shrink-0" />
+                <span className="truncate">Trang chủ</span>
+              </button>
+              <button
                 onClick={handleLogout}
-                className="rounded-xl h-10 bg-rose-50 hover:bg-rose-100 text-rose-500 font-black text-[10px] p-0"
+                className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-rose-50 border border-rose-100 rounded text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-colors shadow-sm truncate"
               >
-                <LogOut className="size-3.5 mr-1.5" /> Đăng xuất
-              </Button>
+                <LogOut className="size-3.5 shrink-0" />
+                <span className="truncate">Đăng xuất</span>
+              </button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </aside>
 
       {/* Main Content Area */}
@@ -900,6 +924,11 @@ export function AdminPage() {
                       recentActivities={recentActivities}
                       topRooms={topRooms}
                       posts={posts}
+                      users={users}
+                      reports={reports}
+                      verifications={verifications}
+                      transactions={transactions}
+                      onNavigate={(view) => setActiveView(view as any)}
                     />
                   )}
                   {activeView === "posts" && (
@@ -1064,12 +1093,22 @@ const DashboardView = forwardRef(function DashboardView(
     recentActivities,
     topRooms,
     posts,
+    users = [],
+    reports = [],
+    verifications = [],
+    transactions = [],
+    onNavigate,
   }: {
     stats: any;
     weeklySearchData: any[];
     recentActivities: any[];
     topRooms: any[];
     posts: any[];
+    users?: any[];
+    reports?: any[];
+    verifications?: any[];
+    transactions?: any[];
+    onNavigate?: (view: string) => void;
   },
   ref: any,
 ) {
@@ -1080,25 +1119,82 @@ const DashboardView = forwardRef(function DashboardView(
 
   useEffect(() => {
     setIsChartLoading(true);
-    api.get(`/api/admin/stats/chart?range=${chartRange}`)
-      .then(res => setChartData(res.data || []))
+    api
+      .get(`/api/admin/stats/chart?range=${chartRange}`)
+      .then((res) => setChartData(res.data || []))
       .catch(console.error)
       .finally(() => setIsChartLoading(false));
   }, [chartRange]);
 
+  // --- Data Processors ---
+  
+  // 1. Posts Data
+  const isPostExpired = (p: any) => {
+    if (p.status === "expired") return true;
+    if (p.status === "approved" && p.expiryDate) {
+      return new Date(p.expiryDate) < new Date();
+    }
+    return false;
+  };
   const safePosts = Array.isArray(posts) ? posts : [];
-  const total = safePosts.length || 1; // Avoid division by zero
-  const approvedPct = Math.round(
-    (safePosts.filter((p) => p.status === "approved").length / total) * 100,
-  );
-  const pendingPct = Math.round(
-    (safePosts.filter((p) => p.status === "pending").length / total) * 100,
-  );
-  const reportedPct = Math.round(
-    (safePosts.filter((p) => p.status === "reported").length / total) * 100,
-  );
+  const expiredPostsCount = safePosts.filter(isPostExpired).length;
+  const approvedPostsCount = safePosts.filter((p) => p.status === "approved" && !isPostExpired(p)).length;
+  const pendingPostsCount = safePosts.filter((p) => p.status === "pending").length;
+  const reportedPostsCount = safePosts.filter((p) => p.status === "reported").length;
 
-  const maxChartValue = Math.max(...chartData.map((d: any) => d[chartMetric] || 0), 1);
+  const postStatusData = [
+    { name: "Đang hiển thị", value: approvedPostsCount, color: "#10b981" },
+    { name: "Chờ duyệt", value: pendingPostsCount, color: "#f59e0b" },
+    { name: "Hết hạn", value: expiredPostsCount, color: "#64748b" },
+    { name: "Bị báo cáo", value: reportedPostsCount, color: "#ef4444" },
+  ].filter((d) => d.value > 0);
+
+  // 2. Users Data
+  const landlordsCount = users.filter((u) => u.role === "landlord").length;
+  const tenantsCount = users.filter((u) => u.role === "user").length;
+  const brokersCount = users.filter((u) => u.role === "broker").length;
+
+  const userRoleData = [
+    { name: "Chủ trọ", count: landlordsCount, fill: "#3b82f6" },
+    { name: "Người thuê", count: tenantsCount, fill: "#8b5cf6" },
+    { name: "Môi giới", count: brokersCount, fill: "#06b6d4" },
+  ];
+
+  // 3. Operations Data
+  const pendingReports = reports.filter((r) => r.status === "pending").length;
+  const resolvedReports = reports.filter((r) => r.status === "resolved").length;
+  
+  const pendingVerifs = verifications.filter((v) => v.status === "pending").length;
+  const approvedVerifs = verifications.filter((v) => v.status === "approved").length;
+
+  const operationsData = [
+    { name: "Báo cáo", Pending: pendingReports, Resolved: resolvedReports },
+    { name: "Tích xanh", Pending: pendingVerifs, Resolved: approvedVerifs },
+  ];
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-xl shadow-xl border border-slate-100 flex flex-col gap-1">
+          <p className="text-xs font-bold text-slate-500 mb-1">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <div key={index} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
+                <span className="text-xs font-semibold text-slate-700">{entry.name}:</span>
+              </div>
+              <span className="text-xs font-black text-slate-900">
+                {entry.name === "Doanh thu" || chartMetric === "revenue" 
+                  ? `${Number(entry.value).toLocaleString("vi-VN")}đ` 
+                  : Number(entry.value).toLocaleString("vi-VN")}
+              </span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <motion.div
@@ -1107,26 +1203,21 @@ const DashboardView = forwardRef(function DashboardView(
       animate="show"
       variants={{
         hidden: { opacity: 0 },
-        show: {
-          opacity: 1,
-          transition: {
-            staggerChildren: 0.15,
-            delayChildren: 0.1,
-          },
-        },
+        show: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
       }}
-      className="space-y-10"
+      className="space-y-8 pb-10"
     >
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      {/* 1. KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <KPICard
           icon="💰"
           iconBg="#f0fdf4"
           label="Tổng doanh thu"
-          value={stats?.totalRevenue ? `${stats.totalRevenue}đ` : "0đ"}
+          value={stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString("vi-VN")}đ` : "0đ"}
           change="Tăng trưởng"
           changePositive
           topGradient="linear-gradient(90deg, #10b981, #34d399)"
+          onClick={() => onNavigate && onNavigate("revenue")}
         />
         <KPICard
           icon="👥"
@@ -1136,6 +1227,7 @@ const DashboardView = forwardRef(function DashboardView(
           change="+12.5%"
           changePositive
           topGradient="linear-gradient(90deg, #3b82f6, #60a5fa)"
+          onClick={() => onNavigate && onNavigate("users")}
         />
         <KPICard
           icon="🔄"
@@ -1145,6 +1237,7 @@ const DashboardView = forwardRef(function DashboardView(
           change="Tuần này"
           changePositive
           topGradient="linear-gradient(90deg, #f59e0b, #fbbf24)"
+          onClick={() => onNavigate && onNavigate("transactions")}
         />
         <KPICard
           icon="⭐"
@@ -1153,242 +1246,231 @@ const DashboardView = forwardRef(function DashboardView(
           value={`${stats?.averageRating || "4.9"} / 5.0`}
           change={`${stats?.totalReviews || 0} lượt`}
           topGradient="linear-gradient(90deg, #ec4899, #f472b6)"
+          onClick={() => onNavigate && onNavigate("reviews")}
         />
       </div>
 
-      {/* Charts & Timeline Row */}
+      {/* 2. Main Revenue Chart */}
       <motion.div
-        variants={{
-          hidden: { opacity: 0 },
-          show: { opacity: 1, transition: { staggerChildren: 0.1 } },
-        }}
-        className="grid grid-cols-1 gap-6"
+        variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+        className="bg-white rounded-[32px] border border-slate-100 p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow"
       >
-        {/* Weekly Revenue Chart (Full width) */}
-        <motion.div
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            show: { opacity: 1, y: 0 },
-          }}
-          className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm hover:shadow-md transition-shadow"
-        >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-            <div>
-              <h3 className="text-sm font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider">
-                Biểu đồ thống kê
-              </h3>
-              <p className="text-xs text-slate-400 font-semibold mt-1">
-                Dữ liệu linh hoạt theo bộ lọc
-              </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+          <div>
+            <h3 className="text-sm font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider">
+              Biểu đồ Doanh thu & Tăng trưởng
+            </h3>
+            <p className="text-xs text-slate-400 font-semibold mt-1">Dữ liệu linh hoạt theo thời gian</p>
+          </div>
+          <div className="flex w-full sm:w-auto items-center gap-2">
+            <select
+              value={chartMetric}
+              onChange={(e) => setChartMetric(e.target.value)}
+              className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
+            >
+              <option value="revenue">Doanh thu</option>
+              <option value="users">Người dùng mới</option>
+              <option value="transactions">Giao dịch</option>
+            </select>
+            <select
+              value={chartRange}
+              onChange={(e) => setChartRange(e.target.value)}
+              className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
+            >
+              <option value="day">Hôm nay</option>
+              <option value="week">Tuần này</option>
+              <option value="month">Tháng này</option>
+              <option value="year">Năm nay</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="h-[320px] w-full">
+          {isChartLoading ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-sm font-bold text-slate-400">Đang tải dữ liệu...</span>
             </div>
-            <div className="flex w-full sm:w-auto items-center gap-2">
-              <select
-                value={chartMetric}
-                onChange={(e) => setChartMetric(e.target.value)}
-                className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
-              >
-                <option value="revenue">Doanh thu</option>
-                <option value="users">Người dùng</option>
-                <option value="transactions">Giao dịch</option>
-              </select>
-              <select
-                value={chartRange}
-                onChange={(e) => setChartRange(e.target.value)}
-                className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
-              >
-                <option value="day">Hôm nay</option>
-                <option value="week">Tuần này</option>
-                <option value="month">Tháng này</option>
-                <option value="year">Năm nay</option>
-              </select>
+          ) : chartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={chartMetric === "revenue" ? "#10b981" : chartMetric === "users" ? "#3b82f6" : "#f59e0b"} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={chartMetric === "revenue" ? "#10b981" : chartMetric === "users" ? "#3b82f6" : "#f59e0b"} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="label" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} 
+                  dy={10} 
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} 
+                  dx={-10}
+                  tickFormatter={(val) => chartMetric === "revenue" ? `${val / 1000}k` : val}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey={chartMetric} 
+                  name={chartMetric === "revenue" ? "Doanh thu" : chartMetric === "users" ? "Người dùng" : "Giao dịch"}
+                  stroke={chartMetric === "revenue" ? "#10b981" : chartMetric === "users" ? "#3b82f6" : "#f59e0b"} 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill="url(#colorMetric)" 
+                  activeDot={{ r: 6, strokeWidth: 0, fill: chartMetric === "revenue" ? "#10b981" : chartMetric === "users" ? "#3b82f6" : "#f59e0b" }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-sm font-bold text-slate-400">Không có dữ liệu</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* 3. Secondary Charts Grid */}
+      <motion.div
+        variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+      >
+        {/* Posts Status */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          className="bg-white rounded-[32px] border border-slate-100 p-6 shadow-sm relative overflow-hidden group cursor-pointer"
+          onClick={() => onNavigate && onNavigate("posts")}
+        >
+          <div className="flex items-center justify-between mb-4 relative z-10">
+            <h3 className="text-sm font-black bg-gradient-to-r from-slate-700 to-slate-900 bg-clip-text text-transparent uppercase tracking-wider">
+              Tình trạng Tin Đăng
+            </h3>
+            <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-slate-100 transition-colors">
+              <ChevronRight className="size-4 text-slate-400" />
             </div>
           </div>
-
-          <div className="relative h-[300px] w-full mt-4">
-            {/* Background Grid Lines */}
-            <div className="absolute inset-0 flex flex-col justify-between pb-8 pointer-events-none">
-              {[1, 2, 3, 4, 5].map((_, i) => (
-                <div key={i} className="w-full border-t border-slate-100 border-dashed" />
-              ))}
-            </div>
-
-            <div className="relative h-full flex items-end justify-between gap-2 sm:gap-3 px-2 pb-8 overflow-x-auto no-scrollbar z-10">
-              {isChartLoading ? (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-slate-400">Đang tải dữ liệu...</span>
-                </div>
-              ) : chartData.length > 0 ? (
-                chartData.map((item, idx) => {
-                  const value = item[chartMetric] || 0;
-                  // Max height 80% so tooltip never clips (300px * 0.2 = 60px space for tooltip)
-                  const barHeightPct = maxChartValue === 0 ? 0 : (value / maxChartValue) * 80;
-                  
-                  let barColor = "from-emerald-400 to-emerald-200 shadow-emerald-200";
-                  let tooltipBg = "bg-emerald-600";
-                  if (chartMetric === "users") {
-                    barColor = "from-blue-400 to-blue-200 shadow-blue-200";
-                    tooltipBg = "bg-blue-600";
-                  } else if (chartMetric === "transactions") {
-                    barColor = "from-amber-400 to-amber-200 shadow-amber-200";
-                    tooltipBg = "bg-amber-500";
-                  }
-
-                  return (
-                    <div
-                      key={idx}
-                      className="flex-1 h-full flex flex-col items-center gap-2 justify-end min-w-[28px] sm:min-w-[36px] group cursor-pointer"
+          
+          <div className="h-[220px] w-full relative z-10">
+            {postStatusData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={postStatusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={85}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
                     >
-                      <div className="flex-1 w-full flex items-end justify-center relative">
-                        {/* The Bar */}
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${barHeightPct}%` }}
-                          transition={{ duration: 0.8, type: "spring", bounce: 0.3 }}
-                          className={`w-full max-w-[28px] rounded-t-xl bg-gradient-to-t ${barColor} relative shadow-sm opacity-80 group-hover:opacity-100 transition-opacity flex justify-center`}
-                        >
-                          {/* Tooltip */}
-                          <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center z-50 pointer-events-none group-hover:-translate-y-1">
-                            <div className={`${tooltipBg} text-white text-[11px] font-black py-1.5 px-3 rounded-lg shadow-lg whitespace-nowrap`}>
-                              {chartMetric === "revenue" ? `${value.toLocaleString("vi-VN")}đ` : value.toLocaleString("vi-VN")}
-                            </div>
-                            {/* Triangle pointer */}
-                            <div className={`w-2 h-2 ${tooltipBg} rotate-45 -mt-1`} />
-                          </div>
-                        </motion.div>
-                      </div>
-                      <span className="text-[10px] font-bold text-slate-400 mt-1 truncate max-w-full text-center group-hover:text-slate-700 transition-colors">
-                        {item.label}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-slate-400">Không có dữ liệu</span>
+                      {postStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36} 
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Total Posts in Center */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center -translate-y-4 pointer-events-none">
+                  <span className="text-2xl font-black text-slate-800">{safePosts.length}</span>
+                  <span className="text-[9px] uppercase font-bold text-slate-400">Tổng cộng</span>
                 </div>
-              )}
+              </>
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center">
+                <span className="text-sm font-bold text-slate-400">Chưa có dữ liệu</span>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Users Breakdown */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          className="bg-white rounded-[32px] border border-slate-100 p-6 shadow-sm cursor-pointer group"
+          onClick={() => onNavigate && onNavigate("users")}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent uppercase tracking-wider">
+              Cơ cấu Người Dùng
+            </h3>
+            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+              <Users className="size-4 text-blue-500" />
             </div>
+          </div>
+          
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={userRoleData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} />
+                <Tooltip cursor={{ fill: "#f8fafc" }} content={<CustomTooltip />} />
+                <Bar dataKey="count" name="Số lượng" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                  {userRoleData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Operations (Reports & Verifications) */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          className="bg-white rounded-[32px] border border-slate-100 p-6 shadow-sm"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-black bg-gradient-to-r from-rose-500 to-orange-500 bg-clip-text text-transparent uppercase tracking-wider">
+              Vận hành & Yêu cầu
+            </h3>
+            <AlertTriangle className="size-4 text-rose-500" />
+          </div>
+          
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={operationsData} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36} 
+                  iconType="circle"
+                  wrapperStyle={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}
+                />
+                <Bar dataKey="Pending" name="Chờ xử lý" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={20} />
+                <Bar dataKey="Resolved" name="Đã xử lý" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </motion.div>
       </motion.div>
 
-      {/* Bottom Row - Status & Top Rooms */}
+      {/* 4. Bottom Row: Top Rooms & Recent Activity (Placeholder) */}
       <motion.div
-        variants={{
-          hidden: { opacity: 0 },
-          show: { opacity: 1, transition: { staggerChildren: 0.1 } },
-        }}
+        variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
       >
-        {/* Status Pie Summary */}
-        <motion.div
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            show: { opacity: 1, y: 0 },
-          }}
-          className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm"
-        >
-          <h3 className="text-sm font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider mb-8">
-            Trạng thái tin đăng
-          </h3>
-          <div className="flex flex-col sm:flex-row items-center justify-around gap-8">
-            <div className="relative w-[130px] h-[130px] group">
-              <svg
-                className="w-full h-full -rotate-90 filter drop-shadow-sm"
-                viewBox="0 0 36 36"
-              >
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="none"
-                  stroke="#f1f5f9"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="4"
-                  strokeDasharray={`${approvedPct} 100`}
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="none"
-                  stroke="#f59e0b"
-                  strokeWidth="4"
-                  strokeDasharray={`${pendingPct} 100`}
-                  strokeDashoffset={-approvedPct}
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="15.915"
-                  fill="none"
-                  stroke="#ef4444"
-                  strokeWidth="4"
-                  strokeDasharray={`${reportedPct} 100`}
-                  strokeDashoffset={-(approvedPct + pendingPct)}
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-black text-slate-800">
-                  {posts.length}
-                </span>
-                <span className="text-[9px] uppercase font-bold text-slate-400">
-                  Tin đăng
-                </span>
-              </div>
-            </div>
-
-            <div className="flex-1 space-y-4">
-              {[
-                {
-                  label: "Đang hiển thị",
-                  value: approvedPct,
-                  color: "emerald",
-                },
-                { label: "Chờ phê duyệt", value: pendingPct, color: "amber" },
-                { label: "Bị báo cáo", value: reportedPct, color: "rose" },
-              ].map((item) => (
-                <div key={item.label} className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-2 h-2 rounded-full bg-${item.color}-500`}
-                      />
-                      <span className="font-bold text-slate-600">
-                        {item.label}
-                      </span>
-                    </div>
-                    <span className="font-black text-slate-900">
-                      {item.value}%
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.value}%` }}
-                      transition={{ duration: 1, delay: 0.8 }}
-                      className={`h-full bg-${item.color}-500`}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-
         {/* Top Performing Rooms */}
         <motion.div
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            show: { opacity: 1, y: 0 },
-          }}
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
           className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm"
         >
           <div className="flex items-center justify-between mb-8">
@@ -1398,25 +1480,26 @@ const DashboardView = forwardRef(function DashboardView(
             <Eye className="size-5 text-emerald-500" />
           </div>
 
-          <div className="space-y-6">
-            {topRooms.map((room, idx) => (
+          <div className="space-y-5">
+            {topRooms.slice(0, 5).map((room, idx) => (
               <div key={room.rank} className="group cursor-pointer">
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center font-black text-slate-400 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                  <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center font-black text-slate-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
                     0{room.rank}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13.5px] font-black text-slate-800 truncate group-hover:text-emerald-500 transition-colors">
                       {room.name}
                     </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <MapPin className="size-3 text-slate-300" />
-                      <span className="text-[11px] text-slate-400 font-medium truncate">
-                        {room.location}
-                      </span>
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                       {/* Progress bar based on highest view count */}
+                       <div 
+                         className="h-full bg-gradient-to-r from-emerald-400 to-emerald-300 rounded-full" 
+                         style={{ width: `${topRooms[0]?.views ? (room.views / topRooms[0].views) * 100 : 0}%` }}
+                       />
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right w-20">
                     <p className="text-sm font-black text-emerald-600">
                       {room.views.toLocaleString()}
                     </p>
@@ -1425,11 +1508,39 @@ const DashboardView = forwardRef(function DashboardView(
                     </p>
                   </div>
                 </div>
-                {idx < topRooms.length - 1 && (
-                  <div className="h-px bg-slate-50 mt-4" />
-                )}
               </div>
             ))}
+          </div>
+        </motion.div>
+
+        {/* System Summary (Placeholder/Additional info) */}
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 rounded-[32px] p-8 shadow-lg text-white flex flex-col justify-between relative overflow-hidden"
+        >
+          {/* Decorative shapes */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500 rounded-full opacity-10 blur-3xl -translate-y-1/2 translate-x-1/3" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500 rounded-full opacity-10 blur-3xl translate-y-1/3 -translate-x-1/4" />
+          
+          <div className="relative z-10">
+            <h3 className="text-lg font-black mb-2 flex items-center gap-2">
+              <Zap className="size-5 text-emerald-400 fill-emerald-400" />
+              Tổng quan Hệ thống
+            </h3>
+            <p className="text-sm text-slate-300 font-medium leading-relaxed max-w-sm">
+              Hệ thống đang hoạt động ổn định. Đã xử lý {transactions.length} giao dịch và hỗ trợ {users.length} người dùng trên nền tảng.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mt-8 relative z-10">
+             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+               <div className="text-3xl font-black text-emerald-400 mb-1">{posts.length}</div>
+               <div className="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Tin Đăng Lưu Trữ</div>
+             </div>
+             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+               <div className="text-3xl font-black text-blue-400 mb-1">{reports.length}</div>
+               <div className="text-[10px] uppercase font-bold text-slate-300 tracking-wider">Báo cáo hệ thống</div>
+             </div>
           </div>
         </motion.div>
       </motion.div>
@@ -1482,6 +1593,7 @@ function KPICard({
   changePositive,
   changeNegative,
   topGradient,
+  onClick,
 }: {
   icon: ReactNode;
   iconBg: string;
@@ -1491,9 +1603,11 @@ function KPICard({
   changePositive?: boolean;
   changeNegative?: boolean;
   topGradient: string;
+  onClick?: () => void;
 }) {
   return (
     <motion.div
+      onClick={onClick}
       variants={{
         hidden: { opacity: 0, y: 20 },
         show: { opacity: 1, y: 0 },
@@ -1503,7 +1617,7 @@ function KPICard({
         scale: 1.02,
         transition: { type: "spring", stiffness: 400, damping: 10 },
       }}
-      className="relative overflow-hidden rounded-[28px] p-6 transition-all group shadow-2xl shadow-slate-200/30 bg-white/70 backdrop-blur-2xl border border-white/40"
+      className={`relative overflow-hidden rounded-[28px] p-6 transition-all group shadow-2xl shadow-slate-200/30 bg-white/70 backdrop-blur-2xl border border-white/40 ${onClick ? "cursor-pointer" : ""}`}
     >
       {/* decorative blurred blobs */}
       <div
@@ -2157,11 +2271,12 @@ function UsersView({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState<
-    "all" | "landlord" | "user" | "admin"
+    "all" | "landlord" | "user" | "admin" | "broker"
   >("all");
 
   const totalLandlords = users.filter((u) => u.role === "landlord").length;
   const totalUsers = users.filter((u) => u.role === "user").length;
+  const totalBrokers = users.filter((u) => u.role === "broker").length;
   const totalBlocked = users.filter((u) => u.status === "blocked").length;
 
   const filteredUsers = users.filter((user) => {
@@ -2185,7 +2300,7 @@ function UsersView({
       className="space-y-8"
     >
       {/* Stat Mini Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-6">
         <KPICard
           icon="👥"
           iconBg="#eff6ff"
@@ -2203,6 +2318,15 @@ function UsersView({
           change="Đối tác"
           changePositive
           topGradient="linear-gradient(90deg, #f59e0b, #fbbf24)"
+        />
+        <KPICard
+          icon="🤝"
+          iconBg="#f5f3ff"
+          label="Môi giới"
+          value={totalBrokers.toLocaleString()}
+          change="Đối tác"
+          changePositive
+          topGradient="linear-gradient(90deg, #8b5cf6, #a78bfa)"
         />
         <KPICard
           icon="👤"
@@ -2230,6 +2354,7 @@ function UsersView({
           {[
             { id: "all", label: "Tất cả" },
             { id: "landlord", label: "Chủ trọ" },
+            { id: "broker", label: "Môi giới" },
             { id: "user", label: "Người thuê" },
             { id: "admin", label: "Admin" },
           ].map((role) => (
@@ -2301,7 +2426,9 @@ function UsersView({
                           ? "bg-indigo-500"
                           : user.role === "landlord"
                             ? "bg-amber-500"
-                            : "bg-blue-500"
+                            : user.role === "broker"
+                              ? "bg-purple-500"
+                              : "bg-blue-500"
                       }`}
                     >
                       {getInitials(user.fullName, user.username)}

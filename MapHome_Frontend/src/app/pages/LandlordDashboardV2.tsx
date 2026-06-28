@@ -2166,103 +2166,82 @@ export function LandlordDashboardV2() {
       {/* Static Background Gradient - Maximum Smoothness */}
       <div className="fixed inset-0 z-0 bg-gradient-to-tr from-[#f0f9f5] via-white to-[#f0f2f9]" />
 
-      {/* Mobile Header - Only visible on small screens */}
-      <div className="fixed top-0 left-0 right-0 h-16 md:hidden bg-white border-b border-slate-100 flex items-center px-4 z-40">
+      {/* Header - Visible on all screens for hamburger (or just mobile if preferred, but user asked for hamburger in header) */}
+      <div className="fixed top-0 left-0 right-0 h-14 bg-white/90 backdrop-blur-md border-b border-slate-100 flex items-center px-4 z-40 shadow-sm md:hidden">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-slate-100 rounded-md transition-colors"
         >
           {sidebarOpen ? (
-            <XIcon className="size-6 text-slate-900" />
+            <XIcon className="size-5 text-slate-900" />
           ) : (
-            <Menu className="size-6 text-slate-900" />
+            <Menu className="size-5 text-slate-900" />
           )}
         </button>
         <div 
           onClick={() => navigate("/")}
-          className="ml-4 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+          className="ml-3 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
-          <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-lg">
+          <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-1.5 rounded-md">
             <Home className="size-4 text-white" />
           </div>
-          <h1 className="font-black text-lg text-slate-900">MapHome</h1>
+          <h1 className="font-black text-base text-slate-900">MapHome</h1>
         </div>
         
         {activeTab !== "overview" && (
           <div className="ml-auto">
             <button
               onClick={() => setActiveTab("overview")}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors shadow-sm active:scale-95"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11px] font-bold transition-colors shadow-sm active:scale-95"
             >
-              <ArrowLeft className="size-3.5" />
+              <ArrowLeft className="size-3" />
               <span>Tổng quan</span>
             </button>
           </div>
         )}
       </div>
 
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Sidebar Overlay for Mobile */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Left Sidebar Navigation - Responsive */}
-      <aside className={`fixed md:static w-80 h-screen bg-white/70 backdrop-blur-3xl border-r border-white/40 flex-shrink-0 overflow-hidden flex flex-col z-40 shadow-[4px_0_30px_rgba(0,0,0,0.02)] transition-transform duration-300 ${
+      {/* Left Sidebar Navigation */}
+      <aside className={`fixed md:static top-0 left-0 bottom-0 w-[240px] h-screen bg-white/95 backdrop-blur-xl border-r border-slate-200 flex flex-col z-50 shadow-2xl md:shadow-none transition-transform duration-300 ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       }`}>
         {/* Logo Section */}
-        <div className="p-10">
+        <div className="p-3 border-b border-slate-100">
           <div 
             onClick={() => navigate("/")}
-            className="flex items-center gap-4 px-2 hover:scale-105 transition-transform cursor-pointer"
+            className="flex items-center gap-2.5 px-2 hover:scale-105 transition-transform cursor-pointer"
           >
-            <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-3 rounded-[20px] shadow-2xl shadow-blue-100">
-              <Home className="size-8 text-white" />
+            <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-xl shadow-md shadow-blue-100">
+              <Home className="size-5 text-white" />
             </div>
             <div>
-              <h1 className="font-black text-3xl bg-gradient-to-r from-slate-900 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tighter leading-none">
+              <h1 className="font-black text-lg bg-gradient-to-r from-slate-900 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tighter leading-none">
                 MapHome
               </h1>
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white bg-gradient-to-r from-emerald-500 to-blue-600 px-4 py-1.5 rounded-full mt-2 inline-block shadow-lg shadow-blue-100/50">
-                Landlord Portal
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white bg-gradient-to-r from-emerald-500 to-blue-600 px-2 py-0.5 rounded-full mt-1 inline-block shadow-sm">
+                Landlord
               </span>
             </div>
           </div>
         </div>
 
-        {/* User Quick Profile */}
-        <div className="mx-6 p-5 rounded-3xl bg-white/50 border border-white/60 shadow-sm mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl border-2 border-white shadow-xl overflow-hidden bg-gradient-to-br from-green-500 via-blue-500 to-indigo-600 flex items-center justify-center text-white text-xl font-black flex-shrink-0 hover:rotate-3 transition-transform">
-              {user?.avatar ? (
-                <img
-                  src={getAvatarUrl(user.avatar) || ""}
-                  alt="Avatar"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                getInitials(user?.fullName, user?.username)
-              )}
-            </div>
-            <div className="flex-1 min-w-0 pr-2">
-              <p className="text-sm font-black text-gray-900 truncate leading-tight">
-                {user?.fullName || user?.username}
-              </p>
-              <div className="mt-1">
-                {user?.verificationLevel !== undefined &&
-                  getVerificationBadge(user.verificationLevel)}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Main Navigation Menu */}
-        <nav className="flex-1 px-4 overflow-y-auto custom-scrollbar">
-          <div className="space-y-2">
-            {menuItems.map((item, idx) => {
+        <nav className="flex-1 px-2 py-3 overflow-y-auto custom-scrollbar">
+          <div className="space-y-1">
+            {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
 
@@ -2271,24 +2250,20 @@ export function LandlordDashboardV2() {
                   key={item.id}
                   onClick={() => {
                     setActiveTab(item.id);
-                    setSidebarOpen(false);
+                    if (window.innerWidth < 768) setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-5 px-6 py-5 rounded-[28px] text-sm font-black tracking-tight transition-all relative group ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold tracking-tight transition-all relative group ${
                     isActive
-                      ? "bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white shadow-[0_15px_35px_rgba(59,130,246,0.25)] scale-[1.03]"
-                      : "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50/50"
+                      ? "bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white shadow-md scale-[1.02]"
+                      : "text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"
                   }`}
                 >
-                  <div
-                    className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? "text-white" : ""}`}
-                  >
-                    <Icon className="size-5 flex-shrink-0" />
-                  </div>
+                  <Icon className={`size-[18px] flex-shrink-0 transition-transform group-hover:scale-110 ${isActive ? "text-white" : ""}`} />
                   <span className="relative z-10">{item.label}</span>
                   {isActive && (
                     <motion.div
                       layoutId="activeTabIndicator"
-                      className="absolute right-6 w-2 h-2 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.9)]"
+                      className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white shadow-sm"
                     />
                   )}
                 </button>
@@ -2297,37 +2272,67 @@ export function LandlordDashboardV2() {
           </div>
         </nav>
 
-        {/* Action Footer */}
-        <div className="p-6 space-y-3 mt-auto mb-4">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              navigate("/");
-              setSidebarOpen(false);
-            }}
-            className="w-full justify-start gap-4 px-5 py-6 rounded-2xl font-bold text-gray-600 hover:bg-white/60 hover:text-gray-900 group"
-          >
-            <Home className="size-5 transition-transform group-hover:-translate-y-0.5" />
-            Về trang chủ
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="w-full justify-start gap-4 px-5 py-6 rounded-2xl font-bold text-rose-500 hover:bg-rose-50 hover:text-rose-600 group shadow-sm bg-rose-50/10"
-          >
-            <LogOut className="size-5 transition-transform group-hover:translate-x-1" />
-            Đăng xuất
-          </Button>
+        {/* Compact Account Card at Bottom */}
+        <div className="p-2 border-t border-slate-100 bg-slate-50/50 mt-auto w-full box-border">
+          <div className="flex flex-col gap-2 w-full">
+            {/* User Info */}
+            <div className="flex items-center gap-2 overflow-hidden w-full">
+              <div className="w-[30px] h-[30px] rounded-full border border-green-200 overflow-hidden bg-gradient-to-br from-[#16a34a] to-[#0ea5e9] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                {user?.avatar ? (
+                  <img
+                    src={getAvatarUrl(user.avatar) || ""}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  getInitials(user?.fullName, user?.username)
+                )}
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <p className="text-[13px] font-black text-slate-900 truncate leading-tight w-full">
+                  {user?.fullName || user?.username}
+                </p>
+                <div className="text-[10px] truncate w-full mt-0.5">
+                  {user?.verificationLevel !== undefined && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-100 text-blue-800">
+                      Cấp {user.verificationLevel} - {user?.subscriptionTier || "Free"}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* 2 Action Buttons */}
+            <div className="flex items-center gap-1.5 w-full">
+              <button
+                onClick={() => {
+                  navigate("/");
+                  if (window.innerWidth < 768) setSidebarOpen(false);
+                }}
+                className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-white border border-slate-200 rounded text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm truncate"
+              >
+                <Home className="size-3.5 shrink-0" />
+                <span className="truncate">Trang chủ</span>
+              </button>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  if (window.innerWidth < 768) setSidebarOpen(false);
+                }}
+                className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-rose-50 border border-rose-100 rounded text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-colors shadow-sm truncate"
+              >
+                <LogOut className="size-3.5 shrink-0" />
+                <span className="truncate">Đăng xuất</span>
+              </button>
+            </div>
+          </div>
         </div>
       </aside>
 
       {/* Main Content Area - Glass Canvas */}
-      <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative z-10 flex flex-col h-screen md:mt-0 mt-16">
-        {/* Top Navbar Blur Effect */}
-        <div className="sticky top-0 h-10 bg-gradient-to-b from-white to-transparent pointer-events-none z-30 opacity-60" />
-
+      <div className="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar relative z-10 flex flex-col h-screen pt-14 md:pt-0">
         <div className="flex-1 w-full flex flex-col">
-          <main className="max-w-[1400px] w-full mx-auto px-3 sm:px-6 md:px-12 pt-8 pb-20 flex-1">
+          <main className="max-w-[1400px] w-full mx-auto px-3 sm:px-6 md:px-12 pt-6 pb-20 flex-1">
             <AnimatePresence mode="wait">{renderContent()}</AnimatePresence>
           </main>
         </div>
