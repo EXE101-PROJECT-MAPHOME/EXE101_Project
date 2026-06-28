@@ -528,61 +528,61 @@ export function AdminPage() {
       <div className="absolute inset-0 z-0 bg-gradient-to-tr from-[#f0f9f5] via-white to-[#f0f2f9] pointer-events-none" />
 
       {/* Mobile Header - Only visible on small screens */}
-      <div className="fixed top-0 left-0 right-0 h-16 md:hidden bg-white border-b border-slate-100 flex items-center px-4 z-40">
+      <div className="fixed top-0 left-0 right-0 h-14 md:hidden bg-white/90 backdrop-blur-md border-b border-slate-100 flex items-center px-4 z-40 shadow-sm">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+          className="p-1.5 hover:bg-slate-100 rounded-md transition-colors"
         >
           {sidebarOpen ? (
-            <XIcon className="size-6 text-slate-900" />
+            <XIcon className="size-5 text-slate-900" />
           ) : (
-            <Menu className="size-6 text-slate-900" />
+            <Menu className="size-5 text-slate-900" />
           )}
         </button>
         <div 
           onClick={() => navigate("/")}
           className="ml-4 flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
-          <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-lg">
+          <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-1.5 rounded-lg shadow-sm">
             <Home className="size-4 text-white" />
           </div>
-          <h1 className="font-black text-lg text-slate-900">MapHome</h1>
+          <h1 className="font-black text-[15px] text-slate-900">MapHome</h1>
         </div>
       </div>
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          className="fixed inset-0 bg-black/60 z-30 md:hidden transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar Navigation - Responsive */}
-      <aside className={`fixed md:static w-80 h-[100dvh] bg-white/70 backdrop-blur-3xl border-r border-white/40 flex-shrink-0 overflow-hidden flex flex-col z-40 shadow-[4px_0_30px_rgba(0,0,0,0.02)] transition-transform duration-300 ${
+      <aside className={`fixed md:static w-[240px] h-[100dvh] bg-white/70 backdrop-blur-3xl border-r border-slate-200/40 flex-shrink-0 overflow-hidden flex flex-col z-40 shadow-[4px_0_30px_rgba(0,0,0,0.02)] transition-transform duration-300 ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       }`}>
         {/* Logo Section */}
-        <div className="p-10">
+        <div className="p-3 border-b border-slate-100">
           <div
-            className="flex items-center gap-4 px-2 hover:scale-105 transition-transform cursor-pointer"
+            className="flex items-center gap-2.5 cursor-pointer group"
             onClick={() => navigate("/")}
           >
-            <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-3 rounded-[20px] shadow-2xl shadow-blue-100">
-              <Home className="size-8 text-white" />
+            <div className="bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 p-2 rounded-xl shadow-lg shadow-blue-100 group-hover:shadow-blue-200 transition-all">
+              <Home className="size-5 text-white" />
             </div>
             <div>
-              <h1 className="font-black text-2xl bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 bg-clip-text text-transparent tracking-tighter leading-none">
+              <h1 className="font-black text-lg bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 bg-clip-text text-transparent tracking-tighter leading-none">
                 MapHome
               </h1>
-              <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mt-2 inline-block shadow-sm">
+              <span className="text-[8px] font-black uppercase tracking-[0.2em] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 inline-block shadow-sm">
                 Admin Panel
               </span>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 py-4 px-6 space-y-8 overflow-y-auto no-scrollbar">
+        <nav className="flex-1 py-3 px-2 space-y-4 overflow-y-auto custom-scrollbar">
           {/* NAVIGATION SECTIONS */}
           {[
             {
@@ -657,40 +657,40 @@ export function AdminPage() {
             },
           ].map((section, sIdx) => (
             <div key={section.title}>
-              <div className="px-4 mb-4 text-[10px] font-black uppercase text-indigo-500/70 tracking-[0.2em]">
+              <div className="px-3 mb-2 text-[9px] font-black uppercase text-indigo-500/70 tracking-[0.2em]">
                 {section.title}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {section.items.map((item) => {
                   const isActive = activeView === item.id;
                   const Icon = item.icon;
                   return (
                     <motion.button
                       key={item.id}
-                      whileHover={{ scale: 1.02, x: 5 }}
+                      whileHover={{ scale: 1.01, x: 2 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         setActiveView(item.id as any);
                         setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center gap-4 px-5 py-4 rounded-[22px] text-sm font-black tracking-tight transition-all relative group ${
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold tracking-tight transition-all relative group overflow-hidden ${
                         isActive
-                          ? "bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white shadow-[0_15px_35px_rgba(59,130,246,0.2)]"
+                          ? "bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/20"
                           : "text-slate-500 hover:text-indigo-600 hover:bg-indigo-50/50"
                       }`}
                     >
                       <div
-                        className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? "text-white" : ""}`}
+                        className={`transition-transform duration-300 ${isActive ? "text-white" : ""}`}
                       >
-                        <Icon className="size-5 flex-shrink-0" />
+                        <Icon className="size-[18px] flex-shrink-0" />
                       </div>
-                      <span>{item.label}</span>
+                      <span className="truncate flex-1 text-left">{item.label}</span>
                       {item.count !== undefined && (
                         <span
-                          className={`ml-auto px-2 py-0.5 rounded-lg text-[9px] font-black ${
+                          className={`px-1.5 py-0.5 rounded font-black text-[9px] shrink-0 ${
                             isActive
                               ? "bg-white/20 text-white"
-                              : `bg-${item.color || "slate"}-50 text-${item.color || "slate"}-600`
+                              : `bg-${item.color || "slate"}-100 text-${item.color || "slate"}-600`
                           }`}
                         >
                           {item.count}
@@ -699,7 +699,7 @@ export function AdminPage() {
                       {isActive && (
                         <motion.div
                           layoutId="activeAdminTab"
-                          className="absolute right-4 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                          className="absolute right-2 w-1 h-1 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]"
                         />
                       )}
                     </motion.button>
@@ -710,11 +710,14 @@ export function AdminPage() {
           ))}
         </nav>
 
-        {/* User Card */}
-        <div className="p-6 mt-auto">
-          <div className="p-5 rounded-[32px] bg-white/50 border border-white/60 shadow-sm">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-[18px] border-2 border-white shadow-xl overflow-hidden bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 flex items-center justify-center text-white text-[11px] font-black shrink-0">
+        {/* Compact Account Card at Bottom */}
+        <motion.div
+          className="p-2 border-t border-slate-100 bg-slate-50/50 mt-auto w-full box-border"
+        >
+          <div className="flex flex-col gap-2 w-full">
+            {/* User Info */}
+            <div className="flex items-center gap-2 overflow-hidden w-full">
+              <div className="w-[30px] h-[30px] rounded-full border border-indigo-200 overflow-hidden bg-gradient-to-br from-emerald-500 via-blue-500 to-indigo-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                 {user?.avatar ? (
                   <img
                     src={getAvatarUrl(user.avatar) || ""}
@@ -725,36 +728,38 @@ export function AdminPage() {
                   getInitials(user?.fullName, user?.username)
                 )}
               </div>
-              <div className="flex-1 min-w-0 pr-1">
-                <div className="text-[13px] font-black text-slate-800 truncate">
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <p className="text-[13px] font-black text-slate-900 truncate leading-tight w-full">
                   {user?.fullName || user?.username || "Admin"}
-                </div>
-                <div className="text-[9px] text-indigo-600 font-black uppercase tracking-tight">
+                </p>
+                <div className="text-[9px] text-indigo-600 font-black uppercase tracking-tight truncate w-full mt-0.5">
                   System Administrator
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="ghost"
+            
+            {/* 2 Action Buttons */}
+            <div className="flex items-center gap-1.5 w-full">
+              <button
                 onClick={() => {
                   navigate("/");
                   setSidebarOpen(false);
                 }}
-                className="rounded-xl h-10 bg-slate-50 hover:bg-white text-slate-500 hover:text-indigo-600 font-black text-[10px] p-0"
+                className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-white border border-slate-200 rounded text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm truncate"
               >
-                <Home className="size-3.5 mr-1.5" /> Trang chủ
-              </Button>
-              <Button
-                variant="ghost"
+                <Home className="size-3.5 shrink-0" />
+                <span className="truncate">Trang chủ</span>
+              </button>
+              <button
                 onClick={handleLogout}
-                className="rounded-xl h-10 bg-rose-50 hover:bg-rose-100 text-rose-500 font-black text-[10px] p-0"
+                className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-rose-50 border border-rose-100 rounded text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-colors shadow-sm truncate"
               >
-                <LogOut className="size-3.5 mr-1.5" /> Đăng xuất
-              </Button>
+                <LogOut className="size-3.5 shrink-0" />
+                <span className="truncate">Đăng xuất</span>
+              </button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </aside>
 
       {/* Main Content Area */}
