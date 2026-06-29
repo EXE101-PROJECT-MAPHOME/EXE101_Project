@@ -28,6 +28,8 @@ import {
   Save,
   Bell,
   Trash2,
+  Edit2,
+  TrendingUp,
   MapPin,
   Clock,
   Home,
@@ -54,6 +56,7 @@ type AdminView =
   | "transactions"
   | "blogs"
   | "vouchers"
+  | "revenue"
   | "settings";
 
 const TABS = [
@@ -66,6 +69,7 @@ const TABS = [
   { id: "reports", label: "Báo cáo", icon: AlertTriangle },
   { id: "notifications", label: "Thông báo", icon: Bell },
   { id: "transactions", label: "Giao dịch", icon: CreditCard },
+  { id: "revenue", label: "Doanh thu", icon: TrendingUp },
   { id: "blogs", label: "Blog", icon: Newspaper },
   { id: "vouchers", label: "Voucher", icon: Ticket },
   { id: "settings", label: "Cài đặt", icon: Settings },
@@ -96,9 +100,10 @@ const EmptyState = ({ icon, title, desc }: { icon: React.ReactNode; title: strin
 
 // --- TAB COMPONENTS ---
 
-const DashboardTab = () => {
+const DashboardTab = ({ setView }: { setView: (view: AdminView) => void }) => {
   const [stats, setStats] = useState<any>(null);
   const [weeklyData, setWeeklyData] = useState<any[]>([]);
+  const [recentReviews, setRecentReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [chartRange, setChartRange] = useState("week");
@@ -106,12 +111,29 @@ const DashboardTab = () => {
   const [isChartLoading, setIsChartLoading] = useState(false);
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
 
-  // Fetch KPI Stats
+  // Fetch KPI Stats & Reviews
   useEffect(() => {
-    api.get("/api/admin/stats")
-      .then((res) => setStats(res.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    const fetchDashboardData = async () => {
+      try {
+        const [statsRes, reviewsRes] = await Promise.allSettled([
+          api.get("/api/admin/stats"),
+          api.get("/api/admin/reviews")
+        ]);
+        
+        if (statsRes.status === "fulfilled") {
+          setStats(statsRes.value.data);
+        }
+        if (reviewsRes.status === "fulfilled") {
+          setRecentReviews(reviewsRes.value.data?.slice(0, 3) || []);
+        }
+      } catch (err) {
+        console.log("Error loading dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
   }, []);
 
   // Fetch Dynamic Chart Data
@@ -271,6 +293,38 @@ const DashboardTab = () => {
             </View>
           </View>
         </ScrollView>
+      </View>
+
+      {/* Recent Reviews Section */}
+      <View className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm mt-6">
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-sm font-black uppercase text-indigo-600 tracking-widest">Đánh giá gần đây</Text>
+          <TouchableOpacity onPress={() => setView("reviews")}>
+            <Text className="text-xs font-black text-slate-400 uppercase tracking-wider">Xem tất cả</Text>
+          </TouchableOpacity>
+        </View>
+
+        {recentReviews.length === 0 ? (
+          <View className="items-center justify-center py-6">
+            <Text className="text-xs text-slate-400 font-bold">Chưa có đánh giá nào</Text>
+          </View>
+        ) : (
+          recentReviews.map((r, idx) => (
+            <View key={r._id} className={`py-4 ${idx !== recentReviews.length - 1 ? 'border-b border-slate-50' : ''}`}>
+              <View className="flex-row justify-between items-start mb-2">
+                <View className="flex-1 pr-4">
+                  <Text className="font-black text-slate-800 text-[13px]" numberOfLines={1}>{r.propertyId?.name}</Text>
+                  <Text className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">Bởi: {r.userId?.username || "Ẩn danh"}</Text>
+                </View>
+                <View className="flex-row items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg">
+                  <Star size={10} color="#f59e0b" fill="#f59e0b" />
+                  <Text className="text-[10px] font-black text-amber-600">{r.rating}</Text>
+                </View>
+              </View>
+              <Text className="text-xs text-slate-500 italic font-medium">"{r.comment}"</Text>
+            </View>
+          ))
+        )}
       </View>
     </ScrollView>
   );
@@ -908,12 +962,40 @@ const VouchersTab = () => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
+  const fetchVouchers = () => {
+    setLoading(true);
     api.get("/api/vouchers")
       .then((res) => setVouchers(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchVouchers();
   }, []);
+
+  const handleDeleteVoucher = (id: string, code: string) => {
+    Alert.alert(
+      "Xác nhận xóa",
+      `Bạn có chắc chắn muốn xóa mã giảm giá ${code}?`,
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Xóa",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await api.delete(`/api/vouchers/${id}`);
+              Alert.alert("Thành công", "Đã xóa mã giảm giá thành công.");
+              fetchVouchers();
+            } catch (error) {
+              Alert.alert("Lỗi", "Không thể xóa mã giảm giá.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   if (loading) return <LoadingState />;
 
@@ -931,7 +1013,7 @@ const VouchersTab = () => {
       ) : (
         vouchers.map((v) => (
           <View key={v._id} className="bg-white p-5 rounded-[28px] border border-slate-100 mb-4 shadow-sm flex-row items-center justify-between">
-            <View className="flex-1">
+            <View className="flex-1 mr-3">
               <View className="flex-row items-center gap-2 mb-1">
                 <Text className="font-black text-emerald-600 text-lg uppercase">{v.code}</Text>
                 <View className={`px-2 py-0.5 rounded-md ${v.isActive ? "bg-emerald-50" : "bg-rose-50"}`}>
@@ -941,9 +1023,131 @@ const VouchersTab = () => {
               <Text className="text-xs text-slate-600 font-medium mb-1">Giảm {v.discountPercentage}%</Text>
               <Text className="text-[10px] text-slate-400 font-bold uppercase">HSD: {formatDate(v.endDate)}</Text>
             </View>
+            <View className="flex-row items-center gap-2">
+              <TouchableOpacity 
+                onPress={() => router.push({ pathname: "/admin-voucher-add", params: { id: v._id } })}
+                className="w-10 h-10 rounded-xl bg-blue-50 items-center justify-center"
+              >
+                <Edit2 size={16} color="#3b82f6" />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => handleDeleteVoucher(v._id, v.code)}
+                className="w-10 h-10 rounded-xl bg-rose-50 items-center justify-center"
+              >
+                <Trash2 size={16} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
           </View>
         ))
       )}
+    </ScrollView>
+  );
+};
+
+const RevenueTab = () => {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/api/admin/stats/revenue")
+      .then((res) => setStats(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <LoadingState />;
+
+  return (
+    <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 40 }}>
+      <View className="mb-4 px-2">
+        <Text className="text-lg font-black text-slate-800 tracking-tight">Doanh thu</Text>
+        <Text className="text-xs text-slate-400 font-bold mt-1">Phân tích dòng tiền & hiệu quả kinh doanh</Text>
+      </View>
+
+      {/* KPI Cards Grid */}
+      <View className="flex-row flex-wrap justify-between mb-6">
+        <View className="w-[48%] bg-white p-4 rounded-3xl border border-slate-100 shadow-sm mb-4">
+          <Text className="text-xl">💰</Text>
+          <Text className="text-[10px] font-bold text-slate-400 uppercase mt-2">Tổng doanh thu</Text>
+          <Text className="text-base font-black text-slate-800 mt-1">{(stats?.totalRevenue || 0).toLocaleString()}đ</Text>
+          <Text className="text-[10px] font-black text-emerald-600 mt-1">{stats?.revenueChange || "+0.0%"}</Text>
+        </View>
+        <View className="w-[48%] bg-white p-4 rounded-3xl border border-slate-100 shadow-sm mb-4">
+          <Text className="text-xl">📈</Text>
+          <Text className="text-[10px] font-bold text-slate-400 uppercase mt-2">Lợi nhuận ròng</Text>
+          <Text className="text-base font-black text-slate-800 mt-1">{(stats?.totalRevenue || 0).toLocaleString()}đ</Text>
+          <Text className="text-[10px] font-black text-emerald-600 mt-1">{stats?.revenueChange || "+0.0%"}</Text>
+        </View>
+        <View className="w-[48%] bg-white p-4 rounded-3xl border border-slate-100 shadow-sm mb-4">
+          <Text className="text-xl">🗺️</Text>
+          <Text className="text-[10px] font-bold text-slate-400 uppercase mt-2">Phí Maps API</Text>
+          <Text className="text-base font-black text-slate-800 mt-1">{(stats?.mapsApiCost || 0).toLocaleString()}đ</Text>
+          <Text className="text-[10px] text-slate-400 font-bold mt-1">Phí tích lũy</Text>
+        </View>
+        <View className="w-[48%] bg-white p-4 rounded-3xl border border-slate-100 shadow-sm mb-4">
+          <Text className="text-xl">⏳</Text>
+          <Text className="text-[10px] font-bold text-slate-400 uppercase mt-2">Giao dịch chờ</Text>
+          <Text className="text-base font-black text-slate-800 mt-1">{stats?.pendingCount || 0} GD</Text>
+          <Text className="text-[10px] text-slate-400 font-bold mt-1">Cần xử lý</Text>
+        </View>
+      </View>
+
+      {/* Package Revenue Distribution */}
+      <View className="bg-white p-5 rounded-[28px] border border-slate-100 mb-6 shadow-sm">
+        <Text className="text-sm font-black text-slate-800 mb-4 uppercase tracking-wider">Phân bổ gói dịch vụ</Text>
+        
+        {Object.entries(stats?.revenueByPackage || {}).map(([key, val]: [string, any], idx) => {
+          const percentVal = stats?.totalRevenue ? ((val.amount / stats.totalRevenue) * 100) : 0;
+          const percentage = percentVal > 0 ? percentVal.toFixed(1) : "0";
+          return (
+            <View key={key} className="mb-4">
+              <View className="flex-row justify-between items-center mb-1">
+                <Text className="text-xs font-bold text-slate-600 capitalize">{key}</Text>
+                <Text className="text-xs font-black text-slate-800">{percentage}%</Text>
+              </View>
+              <View className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <View 
+                  style={{ width: `${percentVal}%` }} 
+                  className={`h-full rounded-full ${idx % 3 === 0 ? 'bg-emerald-500' : idx % 3 === 1 ? 'bg-indigo-500' : 'bg-amber-500'}`} 
+                />
+              </View>
+              <View className="flex-row justify-between items-center mt-1">
+                <Text className="text-[9px] text-slate-400 font-bold">{val.count} GD</Text>
+                <Text className="text-[9px] font-black text-emerald-600">{val.amount.toLocaleString()}đ</Text>
+              </View>
+            </View>
+          );
+        })}
+
+        {Object.keys(stats?.revenueByPackage || {}).length === 0 && (
+          <View className="items-center justify-center py-6">
+            <Text className="text-xs text-slate-400 font-bold">Chưa có dữ liệu phân bổ</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Recent Transactions */}
+      <View className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm">
+        <Text className="text-sm font-black text-slate-800 mb-4 uppercase tracking-wider">Lịch sử giao dịch</Text>
+        {(stats?.latestTransactions || []).map((t: any) => (
+          <View key={t._id} className="py-3 border-b border-slate-50 flex-row justify-between items-center">
+            <View className="flex-1 mr-3">
+              <Text className="text-xs font-black text-slate-800" numberOfLines={1}>{t.landlordId?.name || "Chủ trọ"}</Text>
+              <Text className="text-[9px] text-slate-400 font-bold uppercase mt-1">Gói: {t.packageType || "other"}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-xs font-black text-emerald-600">+{t.amount?.toLocaleString()}đ</Text>
+              <Text className="text-[9px] text-slate-400 font-bold mt-1">{formatDate(t.completedAt)}</Text>
+            </View>
+          </View>
+        ))}
+
+        {(stats?.latestTransactions || []).length === 0 && (
+          <View className="items-center justify-center py-6">
+            <Text className="text-xs text-slate-400 font-bold">Chưa có giao dịch nào hoàn thành</Text>
+          </View>
+        )}
+      </View>
     </ScrollView>
   );
 };
@@ -1124,7 +1328,7 @@ export default function AdminDashboardScreen() {
 
       {/* View Switcher */}
       <View className="flex-1">
-        {view === "dashboard" && <DashboardTab />}
+        {view === "dashboard" && <DashboardTab setView={setView} />}
         {view === "posts" && <PostsTab />}
         {view === "users" && <UsersTab />}
         {view === "verification" && <VerificationTab />}
@@ -1135,6 +1339,7 @@ export default function AdminDashboardScreen() {
         {view === "transactions" && <TransactionsTab />}
         {view === "blogs" && <BlogsTab />}
         {view === "vouchers" && <VouchersTab />}
+        {view === "revenue" && <RevenueTab />}
         {view === "settings" && <SettingsTab />}
       </View>
     </SafeAreaView>

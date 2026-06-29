@@ -11,6 +11,7 @@ const {
   saveVoucher,
   unsaveVoucher,
   getSavedVouchers,
+  bulkCreateVouchers,
 } = require("../controllers/voucherController");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 
@@ -18,6 +19,8 @@ const protect = authMiddleware;
 const admin = requireRole("admin");
 
 // Routes
+router.post("/bulk", protect, admin, bulkCreateVouchers);
+
 router.route("/")
   .post(protect, admin, createVoucher)
   .get(protect, admin, getVouchers);
