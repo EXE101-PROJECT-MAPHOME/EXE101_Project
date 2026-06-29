@@ -1001,6 +1001,7 @@ export function AdminPage() {
                       reports={reports}
                       verifications={verifications}
                       transactions={transactions}
+                      reviews={reviews}
                       onNavigate={(view) => setActiveView(view as any)}
                     />
                   )}
@@ -1170,6 +1171,7 @@ const DashboardView = forwardRef(function DashboardView(
     reports = [],
     verifications = [],
     transactions = [],
+    reviews = [],
     onNavigate,
   }: {
     stats: any;
@@ -1181,6 +1183,7 @@ const DashboardView = forwardRef(function DashboardView(
     reports?: any[];
     verifications?: any[];
     transactions?: any[];
+    reviews?: any[];
     onNavigate?: (view: string) => void;
   },
   ref: any,
@@ -1623,6 +1626,56 @@ const DashboardView = forwardRef(function DashboardView(
           </div>
         </motion.div>
       </motion.div>
+
+      {/* 5. Recent Reviews (Responsive Grid) */}
+      {reviews && reviews.length > 0 && (
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+          className="bg-white rounded-[32px] border border-slate-100 p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-sm font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-wider">
+                Đánh giá gần đây
+              </h3>
+              <p className="text-xs text-slate-400 font-semibold mt-1">Các phản hồi mới nhất từ khách hàng</p>
+            </div>
+            <button
+              onClick={() => onNavigate && onNavigate("reviews")}
+              className="text-xs font-black text-indigo-500 hover:text-indigo-600 transition-colors uppercase tracking-wider flex items-center gap-1"
+            >
+              Xem tất cả &rarr;
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {reviews.slice(0, 3).map((r: any) => (
+              <div
+                key={r._id}
+                className="bg-slate-50 border border-slate-100/50 rounded-2xl p-5 hover:border-indigo-100 transition-all flex flex-col justify-between group hover:bg-slate-100/30"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="min-w-0 pr-2">
+                    <h4 className="font-black text-slate-800 text-[13px] truncate">
+                      {r.propertyId?.name || "Tin đăng"}
+                    </h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+                      Bởi: <span className="text-indigo-600">{r.userId?.username || "Ẩn danh"}</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 shrink-0">
+                    <Star className="size-3 text-amber-500 fill-amber-500" />
+                    <span className="text-[10px] font-black text-amber-600">{r.rating}</span>
+                  </div>
+                </div>
+                <div className="p-4 bg-white rounded-xl border border-slate-100 italic text-xs text-slate-600 leading-relaxed min-h-[60px] flex items-center justify-center relative font-medium">
+                  "{r.comment || "Không có nội dung."}"
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 });
@@ -3199,7 +3252,7 @@ const ReviewsView = forwardRef(function ReviewsView(
       }}
       className="space-y-6"
     >
-      <div className="flex items-center justify-between mb-4 px-2">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center mb-4 px-2">
         <div>
           <h3 className="text-lg font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent tracking-tight uppercase">
             Cộng đồng đánh giá
@@ -3208,7 +3261,7 @@ const ReviewsView = forwardRef(function ReviewsView(
             Quản lý các phản hồi và xếp hạng từ người dùng
           </p>
         </div>
-        <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest px-3 py-1 bg-indigo-50/80 rounded-lg border border-indigo-100 shadow-sm shadow-indigo-50">
+        <div className="text-[10px] font-black text-indigo-500 uppercase tracking-widest px-3 py-1 bg-indigo-50/80 rounded-lg border border-indigo-100 shadow-sm shadow-indigo-50 self-start sm:self-auto">
           {reviews.length} NHẬN XÉT
         </div>
       </div>

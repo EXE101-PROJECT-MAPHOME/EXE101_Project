@@ -361,6 +361,52 @@ const getSavedVouchers = async (req, res) => {
   }
 };
 
+// @desc    Bulk create vouchers
+// @route   POST /api/vouchers/bulk
+// @access  Private/Admin
+const bulkCreateVouchers = async (req, res) => {
+  try {
+    const { vouchers } = req.body;
+
+    if (!vouchers || !Array.isArray(vouchers)) {
+      return res.status(400).json({ message: "Dữ liệu vouchers không hợp lệ hoặc thiếu." });
+    }
+
+    // Insert vouchers to DB. Using ordered: false ensures that if some vouchers fail (e.g. duplicate key),
+    // the rest are still inserted.
+    let insertedCount = 0;
+    let failedCount = 0;
+    let errorDetails = [];
+
+    try {
+      const result = await Voucher.insertMany(vouchers, { ordered: false });
+      insertedCount = result.length;
+    } catch (insertError) {
+      insertedCount = insertError.insertedDocs ? insertError.insertedDocs.length : 0;
+      if (insertError.writeErrors) {
+        failedCount = insertError.writeErrors.length;
+        errorDetails = insertError.writeErrors.map(err => ({
+          index: err.index,
+          code: err.op ? err.op.code : "N/A",
+          message: err.errmsg || "Lỗi trùng lặp mã hoặc lỗi dữ liệu"
+        }));
+      } else {
+        throw insertError;
+      }
+    }
+
+    res.status(201).json({
+      message: `Đã xử lý xong. Nhập thành công: ${insertedCount} mã. Thất bại (trùng lặp hoặc lỗi): ${failedCount} mã.`,
+      insertedCount,
+      failedCount,
+      errorDetails
+    });
+  } catch (error) {
+    console.error("Bulk create vouchers error:", error);
+    res.status(500).json({ message: "Lỗi máy chủ khi import hàng loạt voucher", error: error.message });
+  }
+};
+
 module.exports = {
   createVoucher,
   getVouchers,
@@ -372,4 +418,5 @@ module.exports = {
   saveVoucher,
   unsaveVoucher,
   getSavedVouchers,
+  bulkCreateVouchers,
 };
