@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { LineChart, PieChart } from "react-native-gifted-charts";
 import ROUTES, { navigateTo, safeBack } from "@/constants/routes";
 import {
   ArrowLeft,
@@ -321,7 +322,7 @@ const DashboardTab = ({ setView }: { setView: (view: AdminView) => void }) => {
                   <Text className="text-[10px] font-black text-amber-600">{r.rating}</Text>
                 </View>
               </View>
-              <Text className="text-xs text-slate-500 italic font-medium">"{r.comment}"</Text>
+              <Text className="text-xs text-slate-500 italic font-medium">&quot;{r.comment}&quot;</Text>
             </View>
           ))
         )}
@@ -1046,23 +1047,61 @@ const VouchersTab = () => {
 
 const RevenueTab = () => {
   const [stats, setStats] = useState<any>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chartRange, setChartRange] = useState<'day'|'week'|'month'|'quarter'|'year'>('month');
 
   useEffect(() => {
-    api.get("/api/admin/stats/revenue")
-      .then((res) => setStats(res.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+    setLoading(true);
+    Promise.all([
+      api.get(`/api/admin/stats/revenue?range=${chartRange}`),
+      api.get(`/api/admin/stats/chart?range=${chartRange}`)
+    ])
+    .then(([statsRes, chartRes]) => {
+      setStats(statsRes.data);
+      setChartData(chartRes.data);
+    })
+    .catch(() => {})
+    .finally(() => setLoading(false));
+  }, [chartRange]);
 
   if (loading) return <LoadingState />;
 
+  const lineData = chartData.map((d: any) => ({
+    value: d.revenue || 0,
+    label: d.label
+  }));
+
+  const pieColors = ['#10b981', '#6366f1', '#f59e0b', '#ec4899'];
+  const pieData = Object.entries(stats?.revenueByPackage || {}).map(([key, val]: [string, any], idx) => ({
+    value: val.amount,
+    color: pieColors[idx % pieColors.length],
+    text: `${((val.amount / (stats?.totalRevenue || 1)) * 100).toFixed(0)}%`,
+    label: key
+  }));
+
   return (
     <ScrollView className="flex-1 p-4" contentContainerStyle={{ paddingBottom: 40 }}>
-      <View className="mb-4 px-2">
-        <Text className="text-lg font-black text-slate-800 tracking-tight">Doanh thu</Text>
-        <Text className="text-xs text-slate-400 font-bold mt-1">Phân tích dòng tiền & hiệu quả kinh doanh</Text>
+      <View className="mb-4 px-2 flex-row justify-between items-center">
+        <View>
+          <Text className="text-lg font-black text-slate-800 tracking-tight">Doanh thu</Text>
+          <Text className="text-xs text-slate-400 font-bold mt-1">Phân tích dòng tiền & hiệu quả</Text>
+        </View>
       </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-6 px-2">
+        {(['day', 'week', 'month', 'quarter', 'year'] as const).map((filter) => (
+          <TouchableOpacity
+            key={filter}
+            onPress={() => setChartRange(filter)}
+            className={`px-4 py-1.5 rounded-full mr-2 ${chartRange === filter ? "bg-slate-800" : "bg-slate-100"}`}
+          >
+            <Text className={`text-[10px] font-bold uppercase ${chartRange === filter ? "text-white" : "text-slate-500"}`}>
+              {filter === 'day' ? 'Hôm nay' : filter === 'week' ? 'Tuần' : filter === 'month' ? 'Tháng' : filter === 'quarter' ? 'Quý' : 'Năm'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {/* KPI Cards Grid */}
       <View className="flex-row flex-wrap justify-between mb-6">
@@ -1092,34 +1131,70 @@ const RevenueTab = () => {
         </View>
       </View>
 
+      {/* Line Chart */}
+      <View className="bg-white p-5 rounded-[28px] border border-slate-100 mb-6 shadow-sm overflow-hidden">
+        <Text className="text-sm font-black text-slate-800 mb-6 uppercase tracking-wider">Tăng trưởng doanh thu</Text>
+        {lineData.length > 0 ? (
+          <View className="ml-[-10]">
+            <LineChart
+              areaChart
+              data={lineData}
+              width={300}
+              height={200}
+              hideDataPoints
+              spacing={40}
+              color="#10b981"
+              thickness={2}
+              startFillColor="#10b981"
+              endFillColor="#10b981"
+              startOpacity={0.3}
+              endOpacity={0}
+              initialSpacing={0}
+              noOfSections={4}
+              yAxisTextStyle={{color: '#94a3b8', fontSize: 9}}
+              xAxisLabelTextStyle={{color: '#94a3b8', fontSize: 9}}
+              yAxisColor="#f1f5f9"
+              xAxisColor="#f1f5f9"
+              rulesColor="#f1f5f9"
+              rulesType="solid"
+            />
+          </View>
+        ) : (
+          <View className="items-center justify-center py-10 h-[200px]">
+            <Text className="text-xs text-slate-400 font-bold">Không có dữ liệu biểu đồ</Text>
+          </View>
+        )}
+      </View>
+
       {/* Package Revenue Distribution */}
       <View className="bg-white p-5 rounded-[28px] border border-slate-100 mb-6 shadow-sm">
-        <Text className="text-sm font-black text-slate-800 mb-4 uppercase tracking-wider">Phân bổ gói dịch vụ</Text>
+        <Text className="text-sm font-black text-slate-800 mb-4 uppercase tracking-wider">Phân bổ nguồn thu</Text>
         
-        {Object.entries(stats?.revenueByPackage || {}).map(([key, val]: [string, any], idx) => {
-          const percentVal = stats?.totalRevenue ? ((val.amount / stats.totalRevenue) * 100) : 0;
-          const percentage = percentVal > 0 ? percentVal.toFixed(1) : "0";
-          return (
-            <View key={key} className="mb-4">
-              <View className="flex-row justify-between items-center mb-1">
-                <Text className="text-xs font-bold text-slate-600 capitalize">{key}</Text>
-                <Text className="text-xs font-black text-slate-800">{percentage}%</Text>
-              </View>
-              <View className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <View 
-                  style={{ width: `${percentVal}%` }} 
-                  className={`h-full rounded-full ${idx % 3 === 0 ? 'bg-emerald-500' : idx % 3 === 1 ? 'bg-indigo-500' : 'bg-amber-500'}`} 
-                />
-              </View>
-              <View className="flex-row justify-between items-center mt-1">
-                <Text className="text-[9px] text-slate-400 font-bold">{val.count} GD</Text>
-                <Text className="text-[9px] font-black text-emerald-600">{val.amount.toLocaleString()}đ</Text>
-              </View>
+        {pieData.length > 0 ? (
+          <View className="items-center py-4">
+            <PieChart
+              data={pieData}
+              donut
+              innerRadius={50}
+              radius={80}
+              showText
+              textColor="white"
+              textSize={10}
+              textBackgroundRadius={12}
+            />
+            <View className="w-full mt-6 flex-row flex-wrap justify-between">
+              {pieData.map((d, i) => (
+                <View key={i} className="flex-row items-center w-[48%] mb-3">
+                  <View className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: d.color }} />
+                  <View>
+                    <Text className="text-[10px] font-bold text-slate-600 capitalize">{d.label}</Text>
+                    <Text className="text-[10px] font-black text-slate-800">{d.value.toLocaleString()}đ</Text>
+                  </View>
+                </View>
+              ))}
             </View>
-          );
-        })}
-
-        {Object.keys(stats?.revenueByPackage || {}).length === 0 && (
+          </View>
+        ) : (
           <View className="items-center justify-center py-6">
             <Text className="text-xs text-slate-400 font-bold">Chưa có dữ liệu phân bổ</Text>
           </View>
