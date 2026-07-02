@@ -455,14 +455,40 @@ const deleteReview = async (req, res) => {
 // @route   GET /api/admin/revenue-stats
 const getRevenueStats = async (req, res) => {
   try {
-    const { month, year } = req.query;
+    const { month, year, range } = req.query;
     const matchQuery = { status: "completed" };
+    const today = new Date();
 
-    if (month && year) {
+    if (range) {
+      if (range === "day") {
+         const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+         matchQuery.completedAt = { $gte: start };
+      } else if (range === "week") {
+         const start = new Date(today);
+         start.setDate(today.getDate() - 6);
+         start.setHours(0,0,0,0);
+         matchQuery.completedAt = { $gte: start };
+      } else if (range === "month") {
+         const start = new Date(today);
+         start.setDate(today.getDate() - 29);
+         start.setHours(0,0,0,0);
+         matchQuery.completedAt = { $gte: start };
+      } else if (range === "quarter") {
+         const start = new Date(today);
+         start.setMonth(today.getMonth() - 2);
+         start.setDate(1);
+         start.setHours(0,0,0,0);
+         matchQuery.completedAt = { $gte: start };
+      } else if (range === "year") {
+         const start = new Date(today.getFullYear(), 0, 1);
+         matchQuery.completedAt = { $gte: start };
+      }
+    } else if (month && year) {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59, 999);
       matchQuery.completedAt = { $gte: startDate, $lte: endDate };
     }
+
 
     const completedVerifications = await VerificationRequest.find(matchQuery);
 
