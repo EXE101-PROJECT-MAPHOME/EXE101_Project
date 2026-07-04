@@ -2,7 +2,6 @@ const Property = require("../models/Property");
 const User = require("../models/User");
 const Review = require("../models/Review");
 const SystemSetting = require("../models/SystemSetting");
-const axios = require("axios");
 
 const haversineKm = (lat1, lon1, lat2, lon2) => {
   const toRad = (v) => (v * Math.PI) / 180;
@@ -175,8 +174,9 @@ const getNearbyLandmarks = async (propertyLocation) => {
 
     const url = `https://rsapi.goong.io/Place/NearbySearch?location=${lat},${lng}&radius=${radius}&type=${types}&api_key=${GOONG_API_KEY}`;
 
-    const response = await axios.get(url);
-    const places = response.data.results || [];
+    const response = await fetch(url);
+    const responseData = await response.json();
+    const places = responseData.results || [];
 
     return places
       .slice(0, 10)

@@ -1,4 +1,4 @@
-const axios = require("axios");
+
 
 /**
  * Sends SMS via eSMS.vn API
@@ -73,30 +73,31 @@ const sendSMS = async (phone, message) => {
       );
 
       try {
-        const response = await axios.get(
-          `http://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_get`,
-          { params },
+        const urlParams = new URLSearchParams(params);
+        const res = await fetch(
+          `http://rest.esms.vn/MainService.svc/json/SendMultipleMessage_V4_get?${urlParams.toString()}`
         );
+        const responseData = await res.json();
 
         console.log(
           `📊 eSMS Response:`,
-          JSON.stringify(response.data, null, 2),
+          JSON.stringify(responseData, null, 2),
         );
 
         // 100 is the success code for eSMS
-        if (response.data.CodeResult === "100") {
+        if (responseData.CodeResult === "100") {
           console.log(
             `✅ SMS sent successfully using SmsType ${config.SmsType} ${brandnameLog}`,
           );
           console.log(
-            `   MessageID: ${response.data.MessageID || "N/A"}, RequestID: ${response.data.RequestID || "N/A"}`,
+            `   MessageID: ${responseData.MessageID || "N/A"}, RequestID: ${responseData.RequestID || "N/A"}`,
           );
-          return response.data;
+          return responseData;
         } else {
           console.log(
-            `⚠️ Attempt failed: ${response.data.ErrorMessage} (Code: ${response.data.CodeResult})`,
+            `⚠️ Attempt failed: ${responseData.ErrorMessage} (Code: ${responseData.CodeResult})`,
           );
-          lastError = response.data;
+          lastError = responseData;
         }
       } catch (e) {
         console.log(`⚠️ Request failed: ${e.message}`);

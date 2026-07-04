@@ -11,9 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@payos/node": "^2.0.5",
-    "axios": "^1.15.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.9.0",
     "cookie-parser": "^1.4.7",
@@ -24,18 +22,15 @@
     "express-validator": "^7.3.2",
     "firebase-admin": "^14.0.0",
     "google-auth-library": "^10.6.2",
-    "groq-sdk": "^1.1.2",
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^7.5.0",
     "multer": "^2.0.2",
     "node-cache": "^5.1.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.7",
-    "openai": "^6.33.0",
     "socket.io": "^4.8.0",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
-    "twilio": "^6.0.2"
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
