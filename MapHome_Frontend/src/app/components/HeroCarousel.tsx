@@ -1,12 +1,9 @@
-import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
 import { useNavigate } from "react-router";
 import { Button } from "@/app/components/ui/button";
-import { MapPin, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
 import api from "@/app/utils/api";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/app/components/ui/carousel";
 
 const defaultSlides = [
   {
@@ -43,37 +40,10 @@ const defaultSlides = [
   },
 ];
 
-// Custom Arrow Components
-function NextArrow(props: any) {
-  const { onClick } = props;
-  return (
-    <button
-      onClick={onClick}
-      className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 z-50 bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full p-2 md:p-3 transition-all duration-300 group"
-      aria-label="Next slide"
-    >
-      <ChevronRight className="size-6 md:size-8 text-white group-hover:scale-110 transition-transform" />
-    </button>
-  );
-}
-
-function PrevArrow(props: any) {
-  const { onClick } = props;
-  return (
-    <button
-      onClick={onClick}
-      className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 z-50 bg-black/20 hover:bg-black/40 backdrop-blur-sm rounded-full p-2 md:p-3 transition-all duration-300 group"
-      aria-label="Previous slide"
-    >
-      <ChevronLeft className="size-6 md:size-8 text-white group-hover:scale-110 transition-transform" />
-    </button>
-  );
-}
-
 export function HeroCarousel() {
   const navigate = useNavigate();
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [slides, setSlides] = useState<any[]>(defaultSlides);
+  const [apiRef, setApiRef] = useState<CarouselApi>();
 
   useEffect(() => {
     const fetchBanners = async () => {
@@ -100,34 +70,26 @@ export function HeroCarousel() {
     fetchBanners();
   }, []);
 
-  const settings = {
-    dots: true,
-    infinite: true,
-    arrows: false,
-    speed: 800,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 5000,
-    pauseOnHover: true,
-    swipeToSlide: true,
-    beforeChange: (_current: number, next: number) => setCurrentSlide(next),
-    appendDots: (dots: any) => (
-      <div className="bottom-6 md:bottom-8">
-        <ul className="flex justify-center gap-2"> {dots} </ul>
-      </div>
-    ),
-    customPaging: () => (
-      <button className="w-3 h-3 rounded-full bg-white/50 hover:bg-white transition-all duration-300" />
-    ),
-  };
+  useEffect(() => {
+    if (!apiRef) return;
+    
+    const intervalId = setInterval(() => {
+      if (apiRef.canScrollNext()) {
+        apiRef.scrollNext();
+      } else {
+        apiRef.scrollTo(0);
+      }
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [apiRef]);
 
   return (
     <div className="hero-carousel-wrapper relative -mt-4 md:-mt-6">
-      <Slider {...settings}>
-        {slides.map((slide) => (
-          <div key={slide.id} className="relative">
-            <div className="relative h-[350px] sm:h-[450px] md:h-[600px] lg:h-[700px] overflow-hidden bg-slate-800">
+      <Carousel setApi={setApiRef} opts={{ loop: true }} className="w-full">
+        <CarouselContent className="-ml-0">
+          {slides.map((slide) => (
+            <CarouselItem key={slide.id} className="pl-0 h-[350px] sm:h-[450px] md:h-[600px] lg:h-[700px] relative overflow-hidden bg-slate-800">
               {/* Background Image */}
               <div
                 className="absolute inset-0 bg-cover bg-center"
@@ -163,10 +125,10 @@ export function HeroCarousel() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        ))}
-      </Slider>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+      </Carousel>
     </div>
   );
 }
