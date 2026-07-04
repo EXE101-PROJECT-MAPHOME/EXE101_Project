@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Ticket, Calendar as CalendarIcon, Check, X, ShieldCheck } from 'lucide-react-native';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import ROUTES, { safeBack } from "@/constants/routes";
@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AdminVoucherAddScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
   const { user, isAuthenticated } = useAuth();
   
   const [code, setCode] = useState('');
@@ -28,12 +29,48 @@ export default function AdminVoucherAddScreen() {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [datePickerType, setDatePickerType] = useState<'start' | 'end'>('start');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fetchingDetail, setFetchingDetail] = useState(false);
+
+  React.useEffect(() => {
+    if (id) {
+      setFetchingDetail(true);
+      api.get(`/api/vouchers/${id}`)
+        .then((res) => {
+          const v = res.data;
+          setCode(v.code || "");
+          setDiscountPercentage(v.discountPercentage ? v.discountPercentage.toString() : "");
+          setMaxUses(v.maxUses ? v.maxUses.toString() : "");
+          setTitle(v.title || "");
+          setDescription(v.description || "");
+          setBannerImage(v.bannerImage || "");
+          setShowOnHome(v.showOnHome || false);
+          setStartDate(v.startDate ? new Date(v.startDate) : new Date());
+          setEndDate(v.endDate ? new Date(v.endDate) : new Date());
+          setIsActive(v.isActive !== undefined ? v.isActive : true);
+        })
+        .catch((err) => {
+          Alert.alert("Lỗi", "Không thể tải chi tiết mã giảm giá.");
+        })
+        .finally(() => {
+          setFetchingDetail(false);
+        });
+    }
+  }, [id]);
 
   // Check auth
   if (!isAuthenticated || user?.role !== 'admin') {
     return (
       <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center p-6">
         <Text className="text-emerald-700 font-black text-xl text-center mb-3">Truy cập bị từ chối</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (fetchingDetail) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center p-6">
+        <ActivityIndicator size="large" color="#059669" />
+        <Text className="text-slate-500 font-bold mt-3">Đang tải thông tin...</Text>
       </SafeAreaView>
     );
   }
@@ -73,12 +110,19 @@ export default function AdminVoucherAddScreen() {
         showOnHome,
       };
 
-      await api.post("/api/vouchers", payload);
-      Alert.alert("Thành công", "Tạo voucher thành công!", [
-        { text: "OK", onPress: () => safeBack(router, ROUTES.ADMIN_DASHBOARD) }
-      ]);
+      if (id) {
+        await api.put(`/api/vouchers/${id}`, payload);
+        Alert.alert("Thành công", "Cập nhật voucher thành công!", [
+          { text: "OK", onPress: () => safeBack(router, ROUTES.ADMIN_DASHBOARD) }
+        ]);
+      } else {
+        await api.post("/api/vouchers", payload);
+        Alert.alert("Thành công", "Tạo voucher thành công!", [
+          { text: "OK", onPress: () => safeBack(router, ROUTES.ADMIN_DASHBOARD) }
+        ]);
+      }
     } catch (error: any) {
-      Alert.alert("Lỗi", error.response?.data?.message || "Không thể tạo voucher");
+      Alert.alert("Lỗi", error.response?.data?.message || (id ? "Không thể cập nhật voucher" : "Không thể tạo voucher"));
     } finally {
       setIsSubmitting(false);
     }
@@ -100,8 +144,8 @@ export default function AdminVoucherAddScreen() {
             <ArrowLeft size={18} color="white" />
           </TouchableOpacity>
           <View>
-            <Text className="text-xl font-black text-white">Thêm Mã Giảm Giá</Text>
-            <Text className="text-xs text-emerald-100 font-bold">Thiết lập khuyến mãi mới</Text>
+            <Text className="text-xl font-black text-white">{id ? "Cập nhật Mã Giảm Giá" : "Thêm Mã Giảm Giá"}</Text>
+            <Text className="text-xs text-emerald-100 font-bold">{id ? "Chỉnh sửa thông tin khuyến mãi" : "Thiết lập khuyến mãi mới"}</Text>
           </View>
         </LinearGradient>
 
@@ -240,7 +284,7 @@ export default function AdminVoucherAddScreen() {
           ) : (
             <>
               <Ticket size={18} color="white" />
-              <Text className="text-white font-black text-lg ml-2">Lưu Voucher</Text>
+              <Text className="text-white font-black text-lg ml-2">{id ? "Cập nhật Voucher" : "Lưu Voucher"}</Text>
             </>
           )}
         </TouchableOpacity>

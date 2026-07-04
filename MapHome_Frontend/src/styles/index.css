@@ -240,6 +240,27 @@
   scrollbar-width: none;
 }
 
+/* Custom Sidebar Scrollbar — thin, elegant, brand-colored */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #10b981, #3b82f6, #6366f1);
+  border-radius: 9999px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #059669, #2563eb, #4f46e5);
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #6366f1 transparent;
+}
+
 /* Custom horizontal scrollbar - independent from vertical */
 .custom-h-scrollbar::-webkit-scrollbar {
   height: 8px;

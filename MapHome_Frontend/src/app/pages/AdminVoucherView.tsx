@@ -10,15 +10,19 @@ import {
   XCircle,
   Save,
   Clock,
+  FileSpreadsheet,
+  Edit2,
 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { toast } from "sonner";
 import api from "@/app/utils/api";
+import * as XLSX from "xlsx";
 
 export function AdminVoucherView() {
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newVoucher, setNewVoucher] = useState({
     code: "",
     discountPercentage: "",
@@ -54,7 +58,7 @@ export function AdminVoucherView() {
       return;
     }
     try {
-      await api.post("/api/vouchers", {
+      const voucherData = {
         code: newVoucher.code,
         discountPercentage: Number(newVoucher.discountPercentage),
         startDate: new Date(newVoucher.startDate).toISOString(),
@@ -65,9 +69,18 @@ export function AdminVoucherView() {
         description: newVoucher.description,
         bannerImage: newVoucher.bannerImage,
         showOnHome: newVoucher.showOnHome,
-      });
-      toast.success("Tạo voucher thành công!");
+      };
+
+      if (editingId) {
+        await api.put(`/api/vouchers/${editingId}`, voucherData);
+        toast.success("Cập nhật voucher thành công!");
+      } else {
+        await api.post("/api/vouchers", voucherData);
+        toast.success("Tạo voucher thành công!");
+      }
+
       setIsCreating(false);
+      setEditingId(null);
       setNewVoucher({
         code: "",
         discountPercentage: "",
@@ -82,7 +95,7 @@ export function AdminVoucherView() {
       });
       fetchVouchers();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Lỗi khi tạo voucher");
+      toast.error(error.response?.data?.message || (editingId ? "Lỗi khi cập nhật voucher" : "Lỗi khi tạo voucher"));
     }
   };
 
@@ -98,13 +111,195 @@ export function AdminVoucherView() {
     }
   };
 
+  const handleEditClick = (voucher: any) => {
+    const formatDateTimeLocal = (dateStr: string) => {
+      if (!dateStr) return "";
+      const d = new Date(dateStr);
+      const tzOffset = d.getTimezoneOffset() * 60000;
+      return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+    };
+
+    setEditingId(voucher._id);
+    setNewVoucher({
+      code: voucher.code,
+      discountPercentage: voucher.discountPercentage.toString(),
+      startDate: formatDateTimeLocal(voucher.startDate),
+      endDate: formatDateTimeLocal(voucher.endDate),
+      maxUses: voucher.maxUses ? voucher.maxUses.toString() : "",
+      isActive: voucher.isActive,
+      title: voucher.title || "",
+      description: voucher.description || "",
+      bannerImage: voucher.bannerImage || "",
+      showOnHome: voucher.showOnHome || false,
+    });
+    setIsCreating(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    e.target.value = "";
+
+    const reader = new FileReader();
+    const loadingToast = toast.loading("Đang đọc và xử lý file Excel...");
+    
+    reader.onload = async (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        const jsonData = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1 });
+        
+        if (jsonData.length < 3) {
+          toast.dismiss(loadingToast);
+          toast.error("File Excel không đúng cấu trúc hoặc không có dữ liệu.");
+          return;
+        }
+
+        const vouchers: any[] = [];
+        
+        for (let i = 2; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length === 0) continue;
+
+          const voucherCode = row[1];
+          if (!voucherCode) continue;
+
+          const voucherCodeStr = voucherCode.toString().trim();
+          if (
+            voucherCodeStr === "" || 
+            voucherCodeStr.toLowerCase() === "mã voucher" || 
+            voucherCodeStr.includes("—") || 
+            voucherCodeStr.includes("MÃ")
+          ) {
+            continue;
+          }
+
+          const title = row[2] ? row[2].toString().trim() : "";
+          const targetUser = row[3] ? row[3].toString().trim() : "";
+          const discountRaw = row[4];
+          const startDateRaw = row[5];
+          const endDateRaw = row[6];
+          const maxUsesRaw = row[7];
+          const type = row[8] ? row[8].toString().trim() : "";
+
+          let discountPercentage = 0;
+          if (discountRaw !== undefined && discountRaw !== null && discountRaw !== "-") {
+            if (typeof discountRaw === "number") {
+              discountPercentage = discountRaw <= 1 ? Math.round(discountRaw * 100) : discountRaw;
+            } else {
+              discountPercentage = parseInt(discountRaw.toString().replace("%", "")) || 0;
+            }
+          }
+
+          const parseExcelDate = (dateVal: any) => {
+            if (!dateVal) return null;
+            
+            if (typeof dateVal === "number") {
+              const date = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+              return date.toISOString();
+            }
+
+            if (dateVal instanceof Date) {
+              return dateVal.toISOString();
+            }
+
+            const strVal = dateVal.toString().trim();
+            const parts = strVal.split("/");
+            if (parts.length === 3) {
+              const day = parts[0].padStart(2, "0");
+              const month = parts[1].padStart(2, "0");
+              
+              const yearPart = parts[2].trim();
+              const yearSubParts = yearPart.split(/\s+/);
+              const year = yearSubParts[0];
+              const time = yearSubParts[1] || "00:00:00";
+              
+              return new Date(`${year}-${month}-${day}T${time}`).toISOString();
+            }
+
+            return new Date(dateVal).toISOString();
+          };
+
+          let startDate: string | null = null;
+          let endDate: string | null = null;
+
+          try {
+            startDate = parseExcelDate(startDateRaw);
+            endDate = parseExcelDate(endDateRaw);
+          } catch (dateErr) {
+            console.error("Lỗi parse ngày:", dateErr);
+          }
+
+          if (!startDate || !endDate) {
+            continue;
+          }
+
+          let maxUses = null;
+          if (maxUsesRaw !== undefined && maxUsesRaw !== null) {
+            const maxUsesStr = maxUsesRaw.toString().trim();
+            if (maxUsesStr !== "Vô hạn" && maxUsesStr !== "" && maxUsesStr !== "-") {
+              maxUses = parseInt(maxUsesStr) || null;
+            }
+          }
+
+          vouchers.push({
+            code: voucherCodeStr.toUpperCase(),
+            discountPercentage,
+            startDate,
+            endDate,
+            maxUses,
+            title,
+            description: `Đối tượng: ${targetUser} | Loại: ${type}`,
+            isActive: true,
+            showOnHome: false
+          });
+        }
+
+        if (vouchers.length === 0) {
+          toast.dismiss(loadingToast);
+          toast.error("Không tìm thấy mã giảm giá hợp lệ nào để import.");
+          return;
+        }
+
+        const res = await api.post("/api/vouchers/bulk", { vouchers });
+        toast.dismiss(loadingToast);
+        
+        const { insertedCount, failedCount } = res.data;
+        if (insertedCount > 0) {
+          toast.success(`Đã nhập thành công ${insertedCount} mã giảm giá!`);
+        }
+        if (failedCount > 0) {
+          toast.warning(`Có ${failedCount} mã bị bỏ qua (có thể do trùng lặp mã).`);
+        }
+
+        fetchVouchers();
+      } catch (err: any) {
+        toast.dismiss(loadingToast);
+        console.error("Import error:", err);
+        toast.error(err.response?.data?.message || "Lỗi khi xử lý file và lưu voucher.");
+      }
+    };
+
+    reader.onerror = () => {
+      toast.dismiss(loadingToast);
+      toast.error("Lỗi khi đọc file Excel.");
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-10"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h3 className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-blue-600 to-indigo-700 bg-clip-text text-transparent tracking-tighter">
             Quản trị Mã Giảm Giá
@@ -113,13 +308,46 @@ export function AdminVoucherView() {
             Thiết lập và quản lý các chiến dịch khuyến mãi hệ thống
           </p>
         </div>
-        <Button
-          onClick={() => setIsCreating(!isCreating)}
-          className="bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 hover:scale-105 transition-all text-white rounded-[22px] h-14 px-10 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-none shadow-xl shadow-blue-200/50"
-        >
-          {isCreating ? <XCircle className="size-5" /> : <Plus className="size-5" />}
-          {isCreating ? "Hủy bỏ" : "Tạo Voucher mới"}
-        </Button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+          <input
+            type="file"
+            id="excel-upload"
+            accept=".xlsx, .xls"
+            onChange={handleImportExcel}
+            className="hidden"
+          />
+          <Button
+            onClick={() => document.getElementById("excel-upload")?.click()}
+            className="bg-white hover:bg-slate-50 border-2 border-indigo-100 hover:scale-105 transition-all text-indigo-600 rounded-[22px] h-14 px-8 text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-indigo-50/50 w-full sm:w-auto justify-center"
+          >
+            <FileSpreadsheet className="size-5" />
+            Nhập từ Excel
+          </Button>
+          <Button
+            onClick={() => {
+              if (isCreating) {
+                setEditingId(null);
+                setNewVoucher({
+                  code: "",
+                  discountPercentage: "",
+                  startDate: "",
+                  endDate: "",
+                  maxUses: "",
+                  isActive: true,
+                  title: "",
+                  description: "",
+                  bannerImage: "",
+                  showOnHome: false,
+                });
+              }
+              setIsCreating(!isCreating);
+            }}
+            className="bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-600 hover:scale-105 transition-all text-white rounded-[22px] h-14 px-10 text-xs font-black uppercase tracking-widest flex items-center gap-2 border-none shadow-xl shadow-blue-200/50 w-full sm:w-auto justify-center"
+          >
+            {isCreating ? <XCircle className="size-5" /> : <Plus className="size-5" />}
+            {isCreating ? "Hủy bỏ" : "Tạo Voucher mới"}
+          </Button>
+        </div>
       </div>
 
       {isCreating && (
@@ -131,7 +359,7 @@ export function AdminVoucherView() {
         >
           <h3 className="text-lg font-black text-indigo-900 mb-6 flex items-center tracking-tight">
             <Ticket className="size-6 mr-3 text-indigo-500" />
-            Tạo mã giảm giá mới
+            {editingId ? `Chỉnh sửa mã giảm giá: ${newVoucher.code}` : "Tạo mã giảm giá mới"}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
             <div>
@@ -272,7 +500,7 @@ export function AdminVoucherView() {
               onClick={handleCreateVoucher}
               className="bg-emerald-500 hover:bg-emerald-600 hover:scale-105 transition-all text-white rounded-[22px] h-12 px-8 font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-200/50"
             >
-              <Save className="size-4 mr-2" /> Lưu Voucher
+              <Save className="size-4 mr-2" /> {editingId ? "Cập nhật Voucher" : "Lưu Voucher"}
             </Button>
           </div>
         </motion.div>
@@ -350,11 +578,18 @@ export function AdminVoucherView() {
                   </div>
                 </div>
 
-                <div className="p-5 border-t border-slate-50 bg-slate-50/50 flex justify-end">
+                <div className="p-5 border-t border-slate-50 bg-slate-50/50 flex flex-col sm:flex-row justify-end gap-3">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleEditClick(voucher)}
+                    className="text-blue-500 hover:text-white hover:bg-blue-500 rounded-2xl px-5 py-2.5 h-auto text-[11px] font-black uppercase tracking-widest transition-all w-full sm:w-auto justify-center"
+                  >
+                    <Edit2 className="size-4 mr-2" /> Sửa mã
+                  </Button>
                   <Button
                     variant="ghost"
                     onClick={() => handleDelete(voucher._id)}
-                    className="text-rose-500 hover:text-white hover:bg-rose-500 rounded-2xl px-5 py-2.5 h-auto text-[11px] font-black uppercase tracking-widest transition-all"
+                    className="text-rose-500 hover:text-white hover:bg-rose-500 rounded-2xl px-5 py-2.5 h-auto text-[11px] font-black uppercase tracking-widest transition-all w-full sm:w-auto justify-center"
                   >
                     <Trash2 className="size-4 mr-2" /> Xóa mã
                   </Button>

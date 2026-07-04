@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Search, TrendingUp, DollarSign, Calendar, Download, ArrowUpRight, ArrowDownRight, Activity, PieChart } from 'lucide-react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { Search, TrendingUp, Calendar, Download, ArrowUpRight, Activity, PieChart } from 'lucide-react';
+import { motion, Variants } from 'framer-motion';
 import api from '@/app/utils/api';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend } from 'recharts';
 
 export function RevenueView() {
-  const [activeTimeFilter, setActiveTimeFilter] = useState<'today' | 'week' | 'month' | 'quarter' | 'year'>('month');
+  const [activeTimeFilter, setActiveTimeFilter] = useState<'day' | 'week' | 'month' | 'quarter' | 'year'>('month');
   const [stats, setStats] = useState<any>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchRevenueData = async () => {
       try {
         setLoading(true);
-        const res = await api.get("/api/admin/stats/revenue");
-        if (res.status === 200) {
-          setStats(res.data);
-        }
+        const [statsRes, chartRes] = await Promise.all([
+          api.get(`/api/admin/stats/revenue?range=${activeTimeFilter}`),
+          api.get(`/api/admin/stats/chart?range=${activeTimeFilter}`)
+        ]);
+        
+        if (statsRes.status === 200) setStats(statsRes.data);
+        if (chartRes.status === 200) setChartData(chartRes.data);
       } catch (err) {
         console.error("Failed to fetch revenue stats:", err);
       } finally {
@@ -24,7 +29,7 @@ export function RevenueView() {
     };
 
     fetchRevenueData();
-  }, []);
+  }, [activeTimeFilter]);
 
   if (loading) {
     return (
@@ -39,14 +44,6 @@ export function RevenueView() {
       </div>
     );
   }
-
-  const monthlyTrends = stats?.monthlyTrends || [];
-  const revenueData = monthlyTrends.length > 0 
-    ? monthlyTrends.map((t: any) => t.revenue) 
-    : [0, 0, 0, 0, 0, 0];
-  const months = monthlyTrends.length > 0
-    ? monthlyTrends.map((t: any) => `T${t._id.month}`)
-    : ['T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
   
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -64,6 +61,33 @@ export function RevenueView() {
     show: { opacity: 1, y: 0, transition: { type: "spring", bounce: 0.3 } }
   };
 
+  const pieColors = ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6'];
+  const pieData = Object.entries(stats?.revenueByPackage || {}).map(([key, val]: [string, any]) => ({
+    name: key,
+    value: val.amount,
+    count: val.count
+  }));
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-xl shadow-xl border border-slate-100">
+          <p className="text-xs font-bold text-slate-500 mb-2">{label}</p>
+          <div className="flex flex-col gap-1">
+            {payload.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.fill }} />
+                <span className="text-xs font-semibold text-slate-600 capitalize">{entry.name}:</span>
+                <span className="text-xs font-black text-slate-900">{entry.value.toLocaleString()}đ</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <motion.div 
       variants={containerVariants}
@@ -71,7 +95,7 @@ export function RevenueView() {
       animate="show"
       className="space-y-8"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
         <div>
           <h2 className="text-xl font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent capitalize tracking-tight">Báo cáo Doanh thu</h2>
           <p className="text-xs text-slate-400 font-semibold mt-1">Phân tích hiệu quả kinh doanh và dòng tiền hệ thống</p>
@@ -79,7 +103,7 @@ export function RevenueView() {
         
         {/* Modern Filter Bar */}
         <div className="flex items-center gap-2 bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
-          {(['month', 'quarter', 'year'] as const).map((filter) => (
+          {(['day', 'week', 'month', 'quarter', 'year'] as const).map((filter) => (
             <button
               key={filter}
               onClick={() => setActiveTimeFilter(filter)}
@@ -94,14 +118,16 @@ export function RevenueView() {
                   transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                 />
               )}
-              <span className="relative z-10 capitalize">{filter === 'month' ? 'Tháng' : filter === 'quarter' ? 'Quý' : 'Năm'}</span>
+              <span className="relative z-10 capitalize">
+                {filter === 'day' ? 'Hôm nay' : filter === 'week' ? 'Tuần' : filter === 'month' ? 'Tháng' : filter === 'quarter' ? 'Quý' : 'Năm'}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <RevenueKPICard
           icon="💰"
           label="Tổng doanh thu"
@@ -133,7 +159,7 @@ export function RevenueView() {
       </div>
 
       {/* Main Stats Row */}
-      <div className="grid grid-cols-[1.6fr_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
         {/* Left - Revenue Chart */}
         <motion.div 
           variants={itemVariants}
@@ -150,73 +176,61 @@ export function RevenueView() {
             </div>
           </div>
 
-          <div className="relative h-[220px] px-2 mb-4">
-             <svg className="w-full h-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-                {/* Horizontal Grid */}
-                {[20, 40, 60, 80].map(y => (
-                  <line key={y} x1="0" y1={y} x2="100%" y2={y} stroke="#f1f5f9" strokeWidth="0.5" strokeDasharray="4 4" />
-                ))}
-
-                {/* Animated Path */}
-                <motion.path
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ pathLength: 1, opacity: 1 }}
-                  transition={{ duration: 1.5, ease: "easeInOut", delay: 0.5 }}
-                  d={revenueData.reduce((acc: string, val: number, idx: number) => {
-                    const x = (idx / Math.max(1, revenueData.length - 1)) * 100;
-                    const y = 100 - Math.min(90, Math.max(10, (val / (Math.max(...revenueData) || 1)) * 80));
-                    return acc + (idx === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-                  }, "")}
-                  fill="none"
-                  stroke="url(#revGradient)"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                <defs>
-                  <linearGradient id="revGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#10b981" />
-                    <stop offset="100%" stopColor="#34d399" />
-                  </linearGradient>
-                </defs>
-
-                {/* Data Points */}
-                {revenueData.map((val: number, idx: number) => {
-                  const x = (idx / Math.max(1, revenueData.length - 1)) * 100;
-                  const y = 100 - Math.min(90, Math.max(10, (val / (Math.max(...revenueData) || 1)) * 80));
-                  return (
-                    <motion.circle
-                      key={idx}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.1 * idx + 1 }}
-                      cx={x}
-                      cy={y}
-                      r="3.5"
-                      fill="white"
-                      stroke="#10b981"
-                      strokeWidth="2.5"
-                      className="cursor-pointer hover:r-[5] transition-all"
-                    />
-                  );
-                })}
-             </svg>
-             
-             {/* X-axis Labels */}
-             <div className="absolute -bottom-2 left-0 right-0 flex justify-between px-2">
-                {months.map((m, i) => (
-                  <span key={i} className="text-[10px] font-black text-slate-400 uppercase">{m}</span>
-                ))}
-             </div>
+          <div className="h-[280px] w-full">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="label" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
+                    dy={10} 
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
+                    dx={-10}
+                    tickFormatter={(val) => {
+                      if (val === 0) return "0";
+                      if (val < 1000) return `${val}đ`;
+                      return `${val / 1000}k`;
+                    }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    name="Doanh thu"
+                    stroke="#10b981" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorRevenue)" 
+                    activeDot={{ r: 6, strokeWidth: 0, fill: "#10b981" }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <span className="text-xs font-bold text-slate-400">Không có dữ liệu biểu đồ</span>
+              </div>
+            )}
           </div>
           
           <div className="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
              <div className="flex items-center gap-6">
                 <div>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trung bình/Tháng</p>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Trung bình/Kỳ</p>
                    <p className="text-lg font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
-                     {Math.round((stats?.totalRevenue || 0) / Math.max(1, revenueData.length)).toLocaleString()}đ
+                     {Math.round((stats?.totalRevenue || 0) / Math.max(1, chartData.length)).toLocaleString()}đ
                    </p>
                 </div>
                 <div className="w-px h-8 bg-slate-100" />
@@ -241,33 +255,39 @@ export function RevenueView() {
             <Activity className="size-5 text-indigo-500" />
           </div>
 
-          <div className="flex-1 space-y-6">
-            {Object.entries(stats?.revenueByPackage || {}).map(([key, value]: [string, any], idx) => (
-              <div key={key} className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${idx === 0 ? 'bg-emerald-500' : idx === 1 ? 'bg-indigo-500' : 'bg-amber-500'}`} />
-                    <span className="font-bold text-slate-600 capitalize">{key}</span>
-                  </div>
-                  <span className="font-black text-slate-900">{((value.amount / (stats.totalRevenue || 1)) * 100).toFixed(1)}%</span>
-                </div>
-                <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${(value.amount / (stats.totalRevenue || 1)) * 100}%` }}
-                    transition={{ duration: 1, delay: 0.8 + (idx * 0.1) }}
-                    className={`absolute inset-y-0 left-0 rounded-full ${idx === 0 ? 'bg-emerald-500' : idx === 1 ? 'bg-indigo-500' : 'bg-amber-500'}`}
-                  />
-                </div>
-                <div className="flex justify-between items-center text-[10px]">
-                   <span className="text-slate-400 font-bold">{value.count} giao dịch</span>
-                   <span className="text-emerald-600 font-black">{value.amount.toLocaleString()}đ</span>
-                </div>
+          <div className="flex-1">
+            {pieData.length > 0 ? (
+              <div className="h-[220px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RePieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36} 
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: "11px", fontWeight: 600, color: "#64748b" }}
+                      formatter={(value, entry: any) => (
+                        <span className="capitalize">{value}</span>
+                      )}
+                    />
+                  </RePieChart>
+                </ResponsiveContainer>
               </div>
-            ))}
-            
-            {Object.keys(stats?.revenueByPackage || {}).length === 0 && (
-               <div className="flex flex-col items-center justify-center py-10 text-slate-300">
+            ) : (
+               <div className="flex flex-col items-center justify-center py-10 h-[220px] text-slate-300">
                   <PieChart className="size-12 opacity-20 mb-2" />
                   <p className="text-[11px] font-bold uppercase tracking-widest">Chưa có dữ liệu phân bổ</p>
                </div>
@@ -291,22 +311,22 @@ export function RevenueView() {
         variants={itemVariants}
         className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden"
       >
-        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-white">
+        <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row gap-4 justify-between md:items-center bg-white">
           <div>
             <h3 className="text-sm font-black bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent uppercase tracking-widest">Lịch sử giao dịch</h3>
             <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">10 Giao dịch gần nhất</p>
           </div>
           
-          <div className="flex items-center gap-3">
-             <div className="relative group">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+             <div className="relative group w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                 <input 
                   type="text" 
                   placeholder="Tìm mã GD, tên..." 
-                  className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl text-xs focus:border-emerald-500 outline-none w-64 transition-all"
+                  className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-2xl text-xs focus:border-emerald-500 outline-none w-full transition-all"
                 />
              </div>
-             <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-2xl text-[11px] font-black hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">
+             <button className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-2xl text-[11px] font-black hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200 w-full sm:w-auto">
                <Download className="size-4" /> Xuất file CSV
              </button>
           </div>

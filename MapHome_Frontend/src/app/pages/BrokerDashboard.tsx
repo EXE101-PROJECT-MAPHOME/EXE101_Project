@@ -248,108 +248,133 @@ export function BrokerDashboard() {
   }
 
   const SidebarContent = ({ mobile = false }: { mobile?: boolean }) => (
-    <>
+    <div className="flex flex-col h-full w-full">
       {/* Logo */}
       <motion.div
         initial={mobile ? { opacity: 0, x: -16 } : false}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.1 }}
-        className="flex items-center gap-3 mb-8 cursor-pointer group"
+        className="flex items-center gap-2.5 p-3 border-b border-slate-100 cursor-pointer group"
         onClick={() => navigate("/")}
       >
         <div className="relative">
-          <div className="p-2.5 bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600 rounded-2xl shadow-lg shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-all duration-300">
-            <Sparkles className="size-5 text-white" />
+          <div className="p-2 bg-gradient-to-br from-violet-500 via-indigo-500 to-blue-600 rounded-xl shadow-md shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-all duration-300">
+            <Sparkles className="size-4 text-white" />
           </div>
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-white animate-pulse" />
+          <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-white animate-pulse" />
         </div>
         <div>
           <h1 className="text-lg font-black text-slate-900 leading-tight">MapHome</h1>
           <p className="text-[9px] font-black bg-gradient-to-r from-violet-600 to-indigo-500 bg-clip-text text-transparent uppercase tracking-[0.2em]">
-            Môi giới Console
+            Broker
           </p>
         </div>
       </motion.div>
 
       {/* Nav */}
-      <nav className="space-y-1 flex-1">
-        {menuItems.map((item, i) => {
-          const Icon = item.icon;
-          const active = activeTab === item.id;
-          return (
-            <motion.button
-              key={item.id}
-              initial={mobile ? { opacity: 0, x: -20 } : false}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.12 + i * 0.06 }}
-              whileHover={{ x: active ? 0 : 4 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => { setActiveTab(item.id); if (mobile) setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 relative overflow-hidden ${active
-                  ? "text-white shadow-lg shadow-violet-500/25"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-            >
-              {active && (
-                <motion.div
-                  layoutId="activeNav"
-                  className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-500 rounded-2xl"
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                />
-              )}
-              <div className="relative z-10 flex items-center gap-3.5 w-full">
-                <Icon className={`size-[18px] shrink-0 ${active ? "text-white" : "text-slate-400"}`} />
-                <div className="flex-1 text-left">
-                  <span className="block leading-tight">{item.label}</span>
-                  <span className={`text-[10px] font-medium leading-none ${active ? "text-violet-100" : "text-slate-400"}`}>
-                    {item.description}
-                  </span>
+      <nav className="flex-1 px-2 py-3 overflow-y-auto custom-scrollbar">
+        <div className="space-y-1">
+          {menuItems.map((item, i) => {
+            const Icon = item.icon;
+            const active = activeTab === item.id;
+            return (
+              <motion.button
+                key={item.id}
+                initial={mobile ? { opacity: 0, x: -20 } : false}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.12 + i * 0.06 }}
+                whileHover={{ x: active ? 0 : 4 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { setActiveTab(item.id); if (mobile) setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold tracking-tight transition-all duration-300 relative overflow-hidden ${active
+                    ? "text-white shadow-md shadow-violet-500/25"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+              >
+                {active && (
+                  <motion.div
+                    layoutId="activeNav"
+                    className="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-500 rounded-lg"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <div className="relative z-10 flex items-center gap-3 w-full">
+                  <Icon className={`size-[18px] shrink-0 ${active ? "text-white" : "text-slate-400"}`} />
+                  <div className="flex-1 text-left">
+                    <span className="block leading-tight">{item.label}</span>
+                  </div>
                 </div>
-                {active && <ChevronRight className="size-3.5 text-white/60 shrink-0" />}
-              </div>
-            </motion.button>
-          );
-        })}
+              </motion.button>
+            );
+          })}
+        </div>
       </nav>
 
-      {/* User section */}
+      {/* Compact Account Card at Bottom */}
       <motion.div
         initial={mobile ? { opacity: 0, y: 12 } : false}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.45 }}
-        className="pt-5 border-t border-slate-200/60 space-y-2"
+        className="p-2 border-t border-slate-100 bg-slate-50/50 mt-auto w-full box-border"
       >
-        <div className="flex items-center gap-3 p-3 bg-gradient-to-br from-slate-50 to-violet-50/50 rounded-2xl border border-slate-200/60">
-          <div className="w-10 h-10 rounded-xl overflow-hidden bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-            {user?.avatar ? (
-              <img src={getAvatarUrl(user.avatar)} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span>{getInitials(user?.fullName, user?.username)}</span>
-            )}
+        <div className="flex flex-col gap-2 w-full">
+          {/* User Info */}
+          <div className="flex items-center gap-2 overflow-hidden w-full">
+            <div className="w-[30px] h-[30px] rounded-full border border-violet-200 overflow-hidden bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+              {user?.avatar ? (
+                <img
+                  src={getAvatarUrl(user.avatar)}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                getInitials(user?.fullName, user?.username)
+              )}
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
+              <p className="text-[13px] font-black text-slate-900 truncate leading-tight w-full">
+                {user?.fullName || user?.username}
+              </p>
+              <div className="text-[10px] truncate w-full mt-0.5">
+                {(() => {
+                  const tier = user?.subscriptionTier || "Free";
+                  const isFree = tier.toLowerCase() === "free";
+                  return (
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${isFree ? "bg-slate-100 text-slate-500" : "bg-violet-100 text-violet-800"}`}>
+                      Cấp {user?.verificationLevel || 1} - {tier}
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-black text-slate-900 truncate">{user?.fullName || user?.username}</p>
-            {(() => {
-              const tier = user?.subscriptionTier || "Free";
-              const isFree = tier.toLowerCase() === "free";
-              return (
-                <span className={`text-[9px] font-black uppercase tracking-wider ${isFree ? "text-slate-500" : "text-amber-600"}`}>
-                  ✦ Môi giới {isFree ? "Thường" : tier}
-                </span>
-              );
-            })()}
+          
+          {/* 2 Action Buttons */}
+          <div className="flex items-center gap-1.5 w-full">
+            <button
+              onClick={() => {
+                navigate("/");
+                if (mobile) setSidebarOpen(false);
+              }}
+              className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-white border border-slate-200 rounded text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm truncate"
+            >
+              <Home className="size-3.5 shrink-0" />
+              <span className="truncate">Trang chủ</span>
+            </button>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/");
+              }}
+              className="flex-1 flex justify-center items-center gap-1 py-1.5 px-1 bg-rose-50 border border-rose-100 rounded text-[11px] font-bold text-rose-600 hover:bg-rose-100 transition-colors shadow-sm truncate"
+            >
+              <LogOut className="size-3.5 shrink-0" />
+              <span className="truncate">Đăng xuất</span>
+            </button>
           </div>
         </div>
-
-        <button
-          onClick={() => { logout(); navigate("/"); }}
-          className="w-full flex items-center gap-2.5 px-4 py-2.5 rounded-2xl text-red-500 hover:bg-red-50 hover:text-red-600 text-sm font-semibold transition-all duration-200"
-        >
-          <LogOut className="size-4" />
-          Đăng xuất
-        </button>
       </motion.div>
-    </>
+    </div>
   );
 
   return (
@@ -358,27 +383,27 @@ export function BrokerDashboard() {
 
       <div className="flex flex-1 relative z-10">
         {/* ─── Desktop Sidebar ─── */}
-        <aside className="hidden md:flex flex-col w-72 bg-white/70 backdrop-blur-xl border-r border-slate-200/40 p-6 shrink-0 h-screen sticky top-0">
+        <aside className="hidden md:flex flex-col w-[240px] bg-white/70 backdrop-blur-xl border-r border-slate-200/40 p-0 shrink-0 h-screen sticky top-0">
           <SidebarContent />
         </aside>
 
         {/* ─── Mobile Header ─── */}
-        <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-xl border-b border-slate-200/40 flex items-center justify-between px-4 z-40">
+        <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white/80 backdrop-blur-xl border-b border-slate-200/40 flex items-center justify-between px-4 z-40">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate("/")}>
-            <div className="p-2 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl shadow-md shadow-violet-500/20">
+            <div className="p-1.5 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg shadow-md shadow-violet-500/20">
               <Sparkles className="size-4 text-white" />
             </div>
             <div>
               <span className="font-black text-slate-900 text-sm tracking-tight">MapHome</span>
-              <span className="text-[8px] font-black text-violet-600 block uppercase tracking-widest leading-none">Môi giới</span>
+              <span className="text-[8px] font-black text-violet-600 block uppercase tracking-widest leading-none">Broker</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => fetchData(true)}
-              className="p-2 hover:bg-slate-100 rounded-xl"
+              className="p-1.5 hover:bg-slate-100 rounded-lg"
             >
               <motion.div animate={isRefreshing ? { rotate: 360 } : { rotate: 0 }} transition={{ duration: 0.8, repeat: isRefreshing ? Infinity : 0 }}>
                 <RefreshCw className="size-4 text-slate-500" />
@@ -387,7 +412,7 @@ export function BrokerDashboard() {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-slate-100 rounded-xl"
+              className="p-1.5 hover:bg-slate-100 rounded-lg"
             >
               <AnimatePresence mode="wait">
                 <motion.div key={sidebarOpen ? "x" : "menu"} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
@@ -403,14 +428,14 @@ export function BrokerDashboard() {
           {sidebarOpen && (
             <>
               <motion.div
-                initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} exit={{ opacity: 0 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 onClick={() => setSidebarOpen(false)}
-                className="fixed inset-0 bg-slate-900 z-30 md:hidden"
+                className="fixed inset-0 bg-black/60 z-30 md:hidden"
               />
               <motion.aside
                 initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
                 transition={{ type: "spring", stiffness: 320, damping: 32 }}
-                className="fixed top-0 bottom-0 left-0 w-72 bg-white/95 backdrop-blur-xl z-40 p-6 flex flex-col md:hidden shadow-2xl shadow-slate-900/20"
+                className="fixed top-0 bottom-0 left-0 w-[240px] bg-white/95 backdrop-blur-xl z-40 p-0 flex flex-col md:hidden shadow-2xl shadow-slate-900/20"
               >
                 <SidebarContent mobile />
               </motion.aside>
