@@ -2,7 +2,31 @@ import { useState, useEffect, forwardRef, useRef } from 'react';
 import { Search, TrendingUp, Calendar, Download, ArrowUpRight, Activity, PieChart } from 'lucide-react';
 import { motion, Variants, AnimatePresence } from 'framer-motion';
 import api from '@/app/utils/api';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend } from 'recharts';
+import {
+  AreaChart as _AreaChart,
+  Area as _Area,
+  XAxis as _XAxis,
+  YAxis as _YAxis,
+  CartesianGrid as _CartesianGrid,
+  Tooltip as _Tooltip,
+  ResponsiveContainer as _ResponsiveContainer,
+  PieChart as _PieChart,
+  Pie as _Pie,
+  Cell as _Cell,
+  Legend as _Legend,
+} from 'recharts';
+
+const AreaChart = _AreaChart as any;
+const Area = _Area as any;
+const XAxis = _XAxis as any;
+const YAxis = _YAxis as any;
+const CartesianGrid = _CartesianGrid as any;
+const Tooltip = _Tooltip as any;
+const ResponsiveContainer = _ResponsiveContainer as any;
+const RePieChart = _PieChart as any;
+const Pie = _Pie as any;
+const Cell = _Cell as any;
+const Legend = _Legend as any;
 
 export function RevenueView() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
