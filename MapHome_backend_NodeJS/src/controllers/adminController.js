@@ -490,12 +490,21 @@ const getRevenueStats = async (req, res) => {
     }
 
 
+    const Transaction = require("../models/Transaction");
+
     const completedVerifications = await VerificationRequest.find(matchQuery);
 
-    const totalRevenue = completedVerifications.reduce(
-      (sum, v) => sum + (v.amount || 0),
-      0,
-    );
+    const transMatch = { status: "success" };
+    if (matchQuery.completedAt) {
+      transMatch.createdAt = matchQuery.completedAt;
+    }
+
+    const trans = await Transaction.aggregate([
+      { $match: transMatch },
+      { $group: { _id: null, total: { $sum: "$amount" } } }
+    ]);
+
+    const totalRevenue = trans.length > 0 ? trans[0].total : 0;
 
     // Group by packageType
     const revenueByPackage = completedVerifications.reduce((acc, v) => {
@@ -517,18 +526,18 @@ const getRevenueStats = async (req, res) => {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
 
-    const monthlyTrends = await VerificationRequest.aggregate([
+    const monthlyTrends = await Transaction.aggregate([
       {
         $match: {
-          status: "completed",
-          completedAt: { $gte: sixMonthsAgo },
+          status: "success",
+          createdAt: { $gte: sixMonthsAgo },
         },
       },
       {
         $group: {
           _id: {
-            year: { $year: "$completedAt" },
-            month: { $month: "$completedAt" },
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
           },
           revenue: { $sum: "$amount" },
         },
