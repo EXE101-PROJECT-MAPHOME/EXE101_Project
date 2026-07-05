@@ -516,10 +516,10 @@ const getRevenueStats = async (req, res) => {
     }, {});
 
     // Last 10 transactions
-    const latestTransactions = await VerificationRequest.find(matchQuery)
-      .sort({ completedAt: -1 })
+    const latestTransactions = await Transaction.find(transMatch)
+      .sort({ createdAt: -1 })
       .limit(10)
-      .populate("landlordId", "name");
+      .populate("userId", "name");
 
     // Last 6 months trends
     const sixMonthsAgo = new Date();
@@ -636,45 +636,77 @@ const getChartStats = async (req, res) => {
   try {
     const Transaction = require("../models/Transaction");
     const User = require("../models/User");
-    const { range = "week" } = req.query;
+    const { range = "week", month, year } = req.query;
 
     const today = new Date();
     today.setHours(23, 59, 59, 999);
     const stats = [];
     let startDate;
+    let endDate = today;
 
     const formatLocalDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-    if (range === "day") {
-      startDate = new Date(today);
-      startDate.setHours(0, 0, 0, 0);
-      for (let i = 0; i < 24; i++) {
-        const hourStr = `${String(i).padStart(2, "0")}:00`;
-        stats.push({ label: hourStr, revenue: 0, transactions: 0, users: 0, matchKey: i });
+    if (month && year) {
+      const m = parseInt(month);
+      const y = parseInt(year);
+      
+      if (m === 0 && y === 0) {
+        // Tất cả thời gian (giả sử từ 2024 đến hiện tại)
+        startDate = new Date(2024, 0, 1);
+        const endYear = today.getFullYear();
+        for (let i = 2024; i <= endYear; i++) {
+          stats.push({ label: `${i}`, revenue: 0, transactions: 0, users: 0, matchKey: i });
+        }
+      } else if (m === 0 && y > 0) {
+        // Cả năm cụ thể
+        startDate = new Date(y, 0, 1);
+        endDate = new Date(y, 11, 31, 23, 59, 59, 999);
+        for (let i = 0; i < 12; i++) {
+          stats.push({ label: `Th${i + 1}`, revenue: 0, transactions: 0, users: 0, matchKey: i });
+        }
+      } else if (m > 0 && y > 0) {
+        // Tháng cụ thể
+        startDate = new Date(y, m - 1, 1);
+        endDate = new Date(y, m, 0, 23, 59, 59, 999);
+        const numDays = endDate.getDate();
+        for (let i = 0; i < numDays; i++) {
+          const d = new Date(startDate);
+          d.setDate(d.getDate() + i);
+          stats.push({ label: `${d.getDate()}/${d.getMonth()+1}`, revenue: 0, transactions: 0, users: 0, matchKey: formatLocalDate(d) });
+        }
       }
-    } else if (range === "week") {
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - 6);
-      startDate.setHours(0, 0, 0, 0);
-      const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(startDate);
-        d.setDate(d.getDate() + i);
-        stats.push({ label: days[d.getDay()], revenue: 0, transactions: 0, users: 0, matchKey: formatLocalDate(d) });
-      }
-    } else if (range === "month") {
-      startDate = new Date(today);
-      startDate.setDate(today.getDate() - 29);
-      startDate.setHours(0, 0, 0, 0);
-      for (let i = 0; i < 30; i++) {
-        const d = new Date(startDate);
-        d.setDate(d.getDate() + i);
-        stats.push({ label: `${d.getDate()}/${d.getMonth()+1}`, revenue: 0, transactions: 0, users: 0, matchKey: formatLocalDate(d) });
-      }
-    } else if (range === "year") {
-      startDate = new Date(today.getFullYear(), 0, 1);
-      for (let i = 0; i < 12; i++) {
-        stats.push({ label: `Th${i + 1}`, revenue: 0, transactions: 0, users: 0, matchKey: i });
+    } else {
+      if (range === "day") {
+        startDate = new Date(today);
+        startDate.setHours(0, 0, 0, 0);
+        for (let i = 0; i < 24; i++) {
+          const hourStr = `${String(i).padStart(2, "0")}:00`;
+          stats.push({ label: hourStr, revenue: 0, transactions: 0, users: 0, matchKey: i });
+        }
+      } else if (range === "week") {
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 6);
+        startDate.setHours(0, 0, 0, 0);
+        const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(startDate);
+          d.setDate(d.getDate() + i);
+          stats.push({ label: days[d.getDay()], revenue: 0, transactions: 0, users: 0, matchKey: formatLocalDate(d) });
+        }
+      } else if (range === "month") {
+        startDate = new Date(today);
+        startDate.setDate(today.getDate() - 29);
+        startDate.setHours(0, 0, 0, 0);
+        for (let i = 0; i < 30; i++) {
+          const d = new Date(startDate);
+          d.setDate(d.getDate() + i);
+          stats.push({ label: `${d.getDate()}/${d.getMonth()+1}`, revenue: 0, transactions: 0, users: 0, matchKey: formatLocalDate(d) });
+        }
+      } else if (range === "year") {
+        startDate = new Date(today.getFullYear(), 0, 1);
+        for (let i = 0; i < 12; i++) {
+          stats.push({ label: `Th${i + 1}`, revenue: 0, transactions: 0, users: 0, matchKey: i });
+        }
       }
     }
 
@@ -685,7 +717,16 @@ const getChartStats = async (req, res) => {
 
     transactions.forEach(t => {
       const d = new Date(t.createdAt);
-      let matchKey = range === "day" ? d.getHours() : range === "year" ? d.getMonth() : formatLocalDate(d);
+      let matchKey;
+      if (month && year) {
+        const m = parseInt(month);
+        const y = parseInt(year);
+        if (m === 0 && y === 0) matchKey = d.getFullYear();
+        else if (m === 0 && y > 0) matchKey = d.getMonth();
+        else matchKey = formatLocalDate(d);
+      } else {
+        matchKey = range === "day" ? d.getHours() : range === "year" ? d.getMonth() : formatLocalDate(d);
+      }
 
       const statObj = stats.find(s => s.matchKey === matchKey);
       if (statObj) {
@@ -698,7 +739,16 @@ const getChartStats = async (req, res) => {
 
     users.forEach(u => {
       const d = new Date(u.createdAt);
-      let matchKey = range === "day" ? d.getHours() : range === "year" ? d.getMonth() : formatLocalDate(d);
+      let matchKey;
+      if (month && year) {
+        const m = parseInt(month);
+        const y = parseInt(year);
+        if (m === 0 && y === 0) matchKey = d.getFullYear();
+        else if (m === 0 && y > 0) matchKey = d.getMonth();
+        else matchKey = formatLocalDate(d);
+      } else {
+        matchKey = range === "day" ? d.getHours() : range === "year" ? d.getMonth() : formatLocalDate(d);
+      }
 
       const statObj = stats.find(s => s.matchKey === matchKey);
       if (statObj) {
