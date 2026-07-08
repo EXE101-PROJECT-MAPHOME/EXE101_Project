@@ -22,6 +22,7 @@ import { RoleBadge } from "@/app/components/RoleBadge";
 import NotificationCenter from "@/app/components/NotificationCenter";
 
 export function Navbar() {
+  const apkUrl = `${window.location.origin}/MapHome.apk`;
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
@@ -121,14 +122,14 @@ export function Navbar() {
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl p-4 hidden group-hover/download:flex flex-col items-center gap-2.5 z-50">
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1.5 w-3 h-3 bg-white rotate-45 border-t border-l border-gray-100" />
                   <img 
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk" 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(apkUrl)}`} 
                     alt="QR APK" 
                     className="w-28 h-28 object-contain"
                   />
                   <p className="text-[10px] text-gray-500 font-bold text-center">Quét camera để tải nhanh lên điện thoại</p>
                   <div className="w-full h-px bg-gray-100" />
                   <a 
-                    href="https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk" 
+                    href={apkUrl} 
                     download="MapHome.apk"
                     className="text-xs font-black text-emerald-600 hover:underline flex items-center gap-1"
                   >
@@ -326,13 +327,13 @@ export function Navbar() {
 
                 {/* Mobile Download APK Link */}
                 <a
-                  href="https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk"
+                  href={apkUrl}
                   download="MapHome.apk"
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-emerald-600 hover:bg-emerald-50 transition-all border border-dashed border-emerald-300 mt-2"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-emerald-500 to-green-600 shadow-md shadow-emerald-500/20 active:scale-95 transition-all mt-3"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <Download className="size-5 flex-shrink-0 animate-pulse" />
-                  <span>Tải Ứng Dụng (APK)</span>
+                  <Download className="size-4 flex-shrink-0" />
+                  <span>Tải Ứng Dụng MapHome APK</span>
                 </a>
               </div>
 

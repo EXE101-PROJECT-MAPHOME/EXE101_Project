@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { Home, Mail, FileText, MessageCircle, Facebook, Twitter, Instagram, Shield } from 'lucide-react';
 
 export function Footer() {
+  const apkUrl = `${window.location.origin}/MapHome.apk`;
   return (
     <footer className="bg-gray-900 text-gray-300 w-full">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-8 md:py-10 w-full">
@@ -98,7 +99,7 @@ export function Footer() {
               {/* QR Code - Hidden on Mobile */}
               <div className="hidden md:flex flex-col items-center p-2 bg-white rounded-xl w-32 border border-gray-800">
                 <img 
-                  src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk" 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(apkUrl)}`} 
                   alt="QR Code APK"
                   className="w-24 h-24 object-contain"
                 />
@@ -106,7 +107,7 @@ export function Footer() {
               </div>
               {/* Download Button */}
               <a 
-                href="https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk"
+                href={apkUrl}
                 download="MapHome.apk"
                 className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold rounded-lg text-xs transition-all active:scale-95 shadow-md shadow-green-900/20 w-32 text-center"
               >
