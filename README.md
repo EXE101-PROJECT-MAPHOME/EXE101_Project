@@ -9,6 +9,7 @@
 Nếu bạn không thuộc ngành lập trình hoặc muốn xem nhanh cách hoạt động của hệ thống, hãy truy cập và trải nghiệm trực tiếp các đường link đã triển khai (deploy) dưới đây:
 
 * **🔗 Website MapHome (Dành cho Máy tính & Điện thoại):** [https://exe201-maphome-app.vercel.app](https://exe201-maphome-app.vercel.app)
+* **📱 Bản cài đặt Mobile App (file APK cho Android):** Tải trực tiếp hoặc quét QR Code tại đầu trang/chân trang của Website MapHome.
 * **🔗 Cổng kết nối dữ liệu (Backend API Server):** [https://exe101project-maphome-api.up.railway.app](https://exe101project-maphome-api.up.railway.app)
 * **📖 Tài liệu kỹ thuật tự động (Swagger UI):** [https://exe101project-maphome-api.up.railway.app/api-docs](https://exe101project-maphome-api.up.railway.app/api-docs)
 
@@ -107,6 +108,10 @@ Nếu bạn không thuộc ngành lập trình hoặc muốn xem nhanh cách ho�
 - [x] Trang Blog, Liên hệ, Chính sách
 - [x] Onboarding cho người dùng mới
 - [x] Thông báo trong app
+- [x] Phân phối file APK: Tải trực tiếp trên di động + quét mã QR trên máy tính
+- [x] Tự động phát hiện và cảnh báo In-App Browser (Zalo, Facebook, TikTok) để mở bằng trình duyệt ngoài tải file APK
+- [x] Popup hướng dẫn cài đặt file APK từng bước (Unknown Sources) trực quan trên mobile
+
 
 #### 🌐 Deploy & Vận hành
 - [x] Backend deploy lên **Railway** (tự động từ GitHub Actions)

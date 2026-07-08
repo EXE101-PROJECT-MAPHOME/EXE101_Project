@@ -15,7 +15,7 @@ Tài liệu hướng dẫn phát triển và cấu trúc mã nguồn giao diện
 #### 📄 Trang (Pages — 26 files)
 | Trang | Mô tả |
 |:------|:------|
-| `HomePage.tsx` | Trang chủ: slider ảnh, thống kê thực, phòng nổi bật, voucher khuyến mãi, blog, testimonials |
+| `HomePage.tsx` | Trang chủ: slider ảnh, thống kê thực, phòng nổi bật, voucher khuyến mãi, blog, testimonials, Section quảng bá Mobile App kèm khung mockup giả lập |
 | `MapPage.tsx` | Bản đồ Goong Maps tương tác với marker phòng trọ, bộ lọc nâng cao |
 | `RoomDetailPage.tsx` | Chi tiết phòng trọ: ảnh slideshow, bản đồ nhỏ, tiện ích xung quanh, đặt lịch hẹn |
 | `PostRoomPage.tsx` | Đăng / chỉnh sửa tin phòng trọ với ghim bản đồ và upload ảnh đám mây |
@@ -43,8 +43,9 @@ Tài liệu hướng dẫn phát triển và cấu trúc mã nguồn giao diện
 | `MaintenancePage.tsx` | Trang bảo trì hệ thống |
 
 #### 🧩 Components nổi bật
-- [x] `Navbar.tsx` — Thanh điều hướng responsive (Desktop + Mobile Web)
-- [x] `Footer.tsx` — Footer đầy đủ thông tin
+- [x] `Navbar.tsx` — Thanh điều hướng responsive (Desktop + Mobile Web) tích hợp nút Tải App APK và QR Code popover
+- [x] `Footer.tsx` — Footer đầy đủ thông tin tích hợp mã QR Code và nút Tải APK
+- [x] `ApkDownloadBanner.tsx` — Banner thông minh dưới Mobile nhận diện in-app browser (Facebook/Zalo) và hướng dẫn cài đặt file APK
 - [x] `HeroCarousel.tsx` — Slider ảnh trang chủ tự động
 - [x] `PropertyCard.tsx` — Card hiển thị phòng trọ (hỗ trợ Green Badge)
 - [x] `FilterPanel.tsx` — Bộ lọc tìm kiếm nâng cao

@@ -8,8 +8,9 @@ interface ApkDownloadBannerProps {
 }
 
 export function ApkDownloadBanner({ 
-  apkUrl = "https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk" 
+  apkUrl
 }: ApkDownloadBannerProps) {
+  const finalApkUrl = apkUrl || `${window.location.origin}/MapHome.apk`;
   const [isMobile, setIsMobile] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
@@ -65,7 +66,7 @@ export function ApkDownloadBanner({
     } else {
       // Trigger the browser's download
       const link = document.createElement("a");
-      link.href = apkUrl;
+      link.href = finalApkUrl;
       link.download = "MapHome.apk";
       document.body.appendChild(link);
       link.click();
@@ -220,11 +221,15 @@ export function ApkDownloadBanner({
                       <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-sm flex-shrink-0 shadow-md shadow-emerald-500/20">
                         1
                       </div>
-                      <div className="space-y-0.5">
+                      <div className="space-y-1.5 flex-1">
                         <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Đợi tải xuống</h4>
                         <p className="text-xs text-slate-600 leading-relaxed">
                           Nhìn vào thanh trạng thái tải của trình duyệt. File tải về có định dạng <strong>MapHome.apk</strong>.
                         </p>
+                        {/* Pulse progress bar simulation */}
+                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden relative">
+                          <div className="absolute top-0 left-0 h-full w-[60%] bg-emerald-500 rounded-full animate-pulse" />
+                        </div>
                       </div>
                     </div>
 
@@ -233,10 +238,10 @@ export function ApkDownloadBanner({
                       <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-sm flex-shrink-0 shadow-md shadow-emerald-500/20">
                         2
                       </div>
-                      <div className="space-y-0.5">
+                      <div className="space-y-1 flex-1">
                         <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Cho phép cài đặt</h4>
                         <p className="text-xs text-slate-600 leading-relaxed">
-                          Mở file vừa tải. Nếu máy báo bảo mật, hãy vào <strong>Cài đặt</strong> → bật <strong>"Cho phép nguồn không xác định"</strong> (Allow from this source).
+                          Mở file vừa tải. Nếu hệ thống hiển thị cảnh báo bảo mật, hãy vào <strong className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px]">Cài đặt (Settings)</strong> → Kích hoạt <strong className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[10px]">"Cho phép từ nguồn này"</strong> (Allow from this source).
                         </p>
                       </div>
                     </div>
@@ -246,10 +251,10 @@ export function ApkDownloadBanner({
                       <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-sm flex-shrink-0 shadow-md shadow-emerald-500/20">
                         3
                       </div>
-                      <div className="space-y-0.5">
+                      <div className="space-y-0.5 flex-1">
                         <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Bắt đầu trải nghiệm</h4>
                         <p className="text-xs text-slate-600 leading-relaxed">
-                          Nhấn <strong>Cài đặt (Install)</strong>, sau đó mở ứng dụng MapHome và đăng nhập để tìm trọ.
+                          Bấm nút <strong>Cài đặt (Install)</strong> trong hộp thoại của điện thoại, sau đó mở ứng dụng MapHome.
                         </p>
                       </div>
                     </div>
@@ -257,7 +262,7 @@ export function ApkDownloadBanner({
 
                   <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
                     <a
-                      href={apkUrl}
+                      href={finalApkUrl}
                       className="flex items-center justify-center gap-2 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-center text-sm shadow-md transition-all active:scale-98"
                     >
                       <Download className="size-4" /> Tải lại file APK

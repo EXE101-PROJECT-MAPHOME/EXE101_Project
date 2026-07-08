@@ -153,6 +153,7 @@ const HCMC_DISTRICTS = [
 // ─── Main Component ──────────────────────────────────────────
 
 export function HomePage() {
+  const apkUrl = `${window.location.origin}/MapHome.apk`;
   const navigate = useNavigate();
   const propertySliderRef = useRef<Slider>(null);
   const testimonialSliderRef = useRef<Slider>(null);
@@ -1097,7 +1098,7 @@ export function HomePage() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
                 <a
-                  href="https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk"
+                  href={apkUrl}
                   download="MapHome.apk"
                   className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black rounded-2xl shadow-xl shadow-emerald-950/40 flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-98"
                 >
@@ -1109,7 +1110,7 @@ export function HomePage() {
 
                 <div className="hidden sm:flex items-center gap-3 bg-white/5 backdrop-blur-sm border border-white/10 p-2.5 rounded-2xl">
                   <img
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk"
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(apkUrl)}`}
                     alt="QR APK"
                     className="w-16 h-16 object-contain bg-white p-1 rounded-lg"
                   />
