@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   X as XIcon,
+  Download,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -108,6 +109,33 @@ export function Navbar() {
                   <span className="hidden lg:inline">{label}</span>
                 </Button>
               ))}
+
+              {/* Tải App APK Button (with hover QR Code tooltip) */}
+              <div className="relative group/download ml-1 hidden lg:block">
+                <Button variant="ghost" size="sm" className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
+                  <Download className="size-3.5 lg:size-4 mr-1" />
+                  <span>Tải App APK</span>
+                </Button>
+                
+                {/* Popover Tooltip */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl p-4 hidden group-hover/download:flex flex-col items-center gap-2.5 z-50">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1.5 w-3 h-3 bg-white rotate-45 border-t border-l border-gray-100" />
+                  <img 
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk" 
+                    alt="QR APK" 
+                    className="w-28 h-28 object-contain"
+                  />
+                  <p className="text-[10px] text-gray-500 font-bold text-center">Quét camera để tải nhanh lên điện thoại</p>
+                  <div className="w-full h-px bg-gray-100" />
+                  <a 
+                    href="https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk" 
+                    download="MapHome.apk"
+                    className="text-xs font-black text-emerald-600 hover:underline flex items-center gap-1"
+                  >
+                    Tải trực tiếp file APK
+                  </a>
+                </div>
+              </div>
 
               {isAuthenticated && (user?.role === "landlord" || user?.role === "broker") && (
                 <>
@@ -295,6 +323,17 @@ export function Navbar() {
                     </button>
                   </>
                 )}
+
+                {/* Mobile Download APK Link */}
+                <a
+                  href="https://maphome-app.s3.ap-southeast-1.amazonaws.com/MapHome.apk"
+                  download="MapHome.apk"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-emerald-600 hover:bg-emerald-50 transition-all border border-dashed border-emerald-300 mt-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Download className="size-5 flex-shrink-0 animate-pulse" />
+                  <span>Tải Ứng Dụng (APK)</span>
+                </a>
               </div>
 
               {/* User Actions */}
