@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const { Province, District, Ward } = require('../models/Location');
 const path = require('path');
-const axios = require('axios');
 
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
@@ -12,9 +11,10 @@ const seedLocations = async () => {
     console.log('MongoDB connected for seeding locations...');
 
     console.log('Fetching data from provinces.open-api.vn...');
-    const response = await axios.get('https://provinces.open-api.vn/api/?depth=3');
+    const response = await fetch('https://provinces.open-api.vn/api/?depth=3');
+    const responseData = await response.json();
     // Chỉ lấy Thành phố Hồ Chí Minh (Code: 79)
-    const data = response.data.filter(p => p.name.includes('Hồ Chí Minh'));
+    const data = responseData.filter(p => p.name.includes('Hồ Chí Minh'));
 
     console.log('Clearing old location data...');
     await Province.deleteMany();

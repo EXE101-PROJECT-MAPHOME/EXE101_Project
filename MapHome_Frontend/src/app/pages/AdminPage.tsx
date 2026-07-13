@@ -1,24 +1,40 @@
-import { useState, useEffect, forwardRef, ReactNode } from "react";
+import React, { useState, useEffect, forwardRef, ReactNode, FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/app/contexts/AuthContext";
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  Legend,
-  ComposedChart,
-  Line,
+  AreaChart as _AreaChart,
+  Area as _Area,
+  XAxis as _XAxis,
+  YAxis as _YAxis,
+  CartesianGrid as _CartesianGrid,
+  Tooltip as _Tooltip,
+  ResponsiveContainer as _ResponsiveContainer,
+  PieChart as _PieChart,
+  Pie as _Pie,
+  Cell as _Cell,
+  BarChart as _BarChart,
+  Bar as _Bar,
+  Legend as _Legend,
+  ComposedChart as _ComposedChart,
+  Line as _Line,
 } from "recharts";
+
+const AreaChart = _AreaChart as any;
+const Area = _Area as any;
+const XAxis = _XAxis as any;
+const YAxis = _YAxis as any;
+const CartesianGrid = _CartesianGrid as any;
+const Tooltip = _Tooltip as any;
+const ResponsiveContainer = _ResponsiveContainer as any;
+const PieChart = _PieChart as any;
+const Pie = _Pie as any;
+const Cell = _Cell as any;
+const BarChart = _BarChart as any;
+const Bar = _Bar as any;
+const Legend = _Legend as any;
+const ComposedChart = _ComposedChart as any;
+const Line = _Line as any;
 import api from "@/app/utils/api";
 import { getAvatarUrl, getInitials } from "@/app/utils/avatarUtils";
 import { formatDateVietnamese, getDaysLeftText } from "@/app/utils/dateUtils";
@@ -156,7 +172,6 @@ export function AdminPage() {
       if (showRefresh) setIsRefreshing(true);
       setLoading(!showRefresh);
 
-      // Parallel fetch for dashboard data
       const [
         statsRes,
         searchRes,
@@ -172,7 +187,7 @@ export function AdminPage() {
         plansRes,
         blogsRes,
       ] = await Promise.all([
-        api.get(`/api/admin/stats?month=${selectedMonth}&year=${selectedYear}`),
+        api.get(`/api/admin/stats?${selectedMonth ? `month=${selectedMonth}` : ''}${selectedMonth && selectedYear ? '&' : ''}${selectedYear ? `year=${selectedYear}` : ''}`),
         api.get("/api/admin/stats/chart"),
         api.get("/api/admin/stats/top-rooms"),
         api.get("/api/admin/properties"),
@@ -886,7 +901,7 @@ export function AdminPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4 bg-white/60 backdrop-blur-xl border border-white/40 p-2 rounded-[28px] shadow-2xl shadow-slate-200/50 w-full md:w-auto overflow-x-auto no-scrollbar">
+            <div className="flex items-center flex-wrap gap-2 sm:gap-4 bg-white/60 backdrop-blur-xl border border-white/40 p-2 rounded-[28px] shadow-2xl shadow-slate-200/50 w-full md:w-auto">
               <motion.button
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
@@ -921,7 +936,10 @@ export function AdminPage() {
                     }`}
                 >
                   <Calendar className="size-4" />
-                  {`Tháng ${selectedMonth}, ${selectedYear}`}
+                  {selectedMonth === 0 && selectedYear === 0 ? "Tất cả thời gian" : 
+                   selectedMonth === 0 ? `Năm ${selectedYear}` :
+                   selectedYear === 0 ? `Tháng ${selectedMonth}` :
+                   `Tháng ${selectedMonth}, ${selectedYear}`}
                 </motion.button>
 
                 <AnimatePresence>
@@ -1341,7 +1359,7 @@ const DashboardView = forwardRef(function DashboardView(
           <div className="flex w-full sm:w-auto items-center gap-2">
             <select
               value={chartMetric}
-              onChange={(e) => setChartMetric(e.target.value)}
+              onChange={(e) => setChartMetric((e.target as any).value)}
               className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
             >
               <option value="revenue">Doanh thu</option>
@@ -1350,7 +1368,7 @@ const DashboardView = forwardRef(function DashboardView(
             </select>
             <select
               value={chartRange}
-              onChange={(e) => setChartRange(e.target.value)}
+              onChange={(e) => setChartRange((e.target as any).value)}
               className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 outline-none focus:border-emerald-400 transition-colors cursor-pointer"
             >
               <option value="day">Hôm nay</option>
@@ -1885,7 +1903,7 @@ function ExpiredPostsView({
               type="text"
               placeholder="Tìm tên phòng, địa chỉ..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery((e.target as any).value)}
               className="pl-10 pr-4 py-2 bg-white border border-slate-100 rounded-2xl text-sm focus:border-amber-500 outline-none w-64 transition-all shadow-sm"
             />
           </div>
@@ -2145,7 +2163,7 @@ function PostsView({
               type="text"
               placeholder="Tìm tên phòng, địa chỉ..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery((e.target as any).value)}
               className="pl-10 pr-4 py-2 bg-white border border-slate-100 rounded-2xl text-sm focus:border-emerald-500 outline-none w-64 transition-all shadow-sm"
             />
           </div>
@@ -2522,7 +2540,7 @@ function UsersView({
             type="text"
             placeholder="Tìm tên, email..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery((e.target as any).value)}
             className="w-full pl-10 pr-4 py-2 bg-white border border-slate-100 rounded-2xl text-sm focus:border-blue-500 outline-none transition-all shadow-sm"
           />
         </div>
@@ -3392,12 +3410,21 @@ const MonthYearPicker = forwardRef(function MonthYearPicker(
             <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 px-1">
               Chọn năm
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => onSelect(selectedMonth, 0)}
+                className={`flex-1 min-w-[60px] py-2 rounded-xl text-xs font-bold transition-all ${selectedYear === 0
+                    ? "bg-indigo-500 text-white shadow-lg shadow-indigo-200"
+                    : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                  }`}
+              >
+                Tất cả
+              </button>
               {years.map((y) => (
                 <button
                   key={y}
                   onClick={() => onSelect(selectedMonth, y)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${selectedYear === y
+                  className={`flex-1 min-w-[60px] py-2 rounded-xl text-xs font-bold transition-all ${selectedYear === y
                       ? "bg-indigo-500 text-white shadow-lg shadow-indigo-200"
                       : "bg-slate-50 text-slate-500 hover:bg-slate-100"
                     }`}
@@ -3413,6 +3440,15 @@ const MonthYearPicker = forwardRef(function MonthYearPicker(
               Chọn tháng
             </div>
             <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => onSelect(0, selectedYear)}
+                className={`py-2 rounded-xl text-[11px] font-bold transition-all ${selectedMonth === 0
+                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200"
+                    : "bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600"
+                  }`}
+              >
+                Tất cả
+              </button>
               {months.map((m, idx) => (
                 <button
                   key={m}
@@ -3835,7 +3871,7 @@ function NotificationsManagementView({
                 type="text"
                 value={formData.title}
                 onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
+                  setFormData({ ...formData, title: (e.target as any).value })
                 }
                 placeholder="Nhập tiêu đề thông báo..."
                 className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
@@ -3850,7 +3886,7 @@ function NotificationsManagementView({
                 <select
                   value={formData.type}
                   onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value })
+                    setFormData({ ...formData, type: (e.target as any).value })
                   }
                   className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all cursor-pointer"
                 >
@@ -3867,7 +3903,7 @@ function NotificationsManagementView({
                 <select
                   value={formData.targetRole}
                   onChange={(e) =>
-                    setFormData({ ...formData, targetRole: e.target.value })
+                    setFormData({ ...formData, targetRole: (e.target as any).value })
                   }
                   className="w-full px-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-600 focus:ring-2 focus:ring-blue-500/50 outline-none transition-all cursor-pointer"
                 >
@@ -3885,7 +3921,7 @@ function NotificationsManagementView({
               <textarea
                 value={formData.message}
                 onChange={(e) =>
-                  setFormData({ ...formData, message: e.target.value })
+                  setFormData({ ...formData, message: (e.target as any).value })
                 }
                 placeholder="Nhập nội dung thông báo chi tiết..."
                 rows={4}
@@ -3903,7 +3939,7 @@ function NotificationsManagementView({
                   type="text"
                   value={formData.link}
                   onChange={(e) =>
-                    setFormData({ ...formData, link: e.target.value })
+                    setFormData({ ...formData, link: (e.target as any).value })
                   }
                   placeholder="https://..."
                   className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-blue-500/50 transition-all outline-none"
@@ -4655,7 +4691,7 @@ const PlanEditorDialog = ({
                   <input
                     value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
+                      setFormData({ ...formData, name: (e.target as any).value })
                     }
                     className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
                     placeholder="VD: Premium, Platinum..."
@@ -4671,7 +4707,7 @@ const PlanEditorDialog = ({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        price: Number(e.target.value),
+                        price: Number((e.target as any).value),
                       })
                     }
                     className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
@@ -4690,7 +4726,7 @@ const PlanEditorDialog = ({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        yearlyPrice: Number(e.target.value),
+                        yearlyPrice: Number((e.target as any).value),
                       })
                     }
                     className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
@@ -4703,7 +4739,7 @@ const PlanEditorDialog = ({
                   <input
                     value={formData.planId}
                     onChange={(e) =>
-                      setFormData({ ...formData, planId: e.target.value })
+                      setFormData({ ...formData, planId: (e.target as any).value })
                     }
                     className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
                     placeholder="v.d: gold-2026"
@@ -4718,7 +4754,7 @@ const PlanEditorDialog = ({
                 <select
                   value={formData.targetRole}
                   onChange={(e) =>
-                    setFormData({ ...formData, targetRole: e.target.value })
+                    setFormData({ ...formData, targetRole: (e.target as any).value })
                   }
                   className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[22px] px-6 text-sm font-black text-slate-700 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all"
                 >
@@ -4735,7 +4771,7 @@ const PlanEditorDialog = ({
                 <textarea
                   value={formData.description}
                   onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
+                    setFormData({ ...formData, description: (e.target as any).value })
                   }
                   className="w-full h-24 bg-slate-50 border border-slate-100 rounded-[22px] p-6 text-sm font-bold text-slate-600 focus:ring-2 ring-emerald-500/20 focus:border-emerald-500 focus:bg-white outline-none transition-all resize-none"
                   placeholder="Mô tả tóm tắt quyền lợi của gói..."
@@ -4752,7 +4788,7 @@ const PlanEditorDialog = ({
                       className="h-10 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold"
                       placeholder="Tính năng mới..."
                       value={newFeature}
-                      onChange={(e) => setNewFeature(e.target.value)}
+                      onChange={(e) => setNewFeature((e.target as any).value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -4791,11 +4827,11 @@ const PlanEditorDialog = ({
                           onChange={(e) => {
                             const newFeatures = [...formData.features];
                             if (typeof newFeatures[idx] === "string") {
-                              newFeatures[idx] = e.target.value;
+                              newFeatures[idx] = (e.target as any).value;
                             } else {
                               newFeatures[idx] = {
                                 ...newFeatures[idx],
-                                text: e.target.value,
+                                text: (e.target as any).value,
                               };
                             }
                             setFormData({ ...formData, features: newFeatures });
@@ -5086,7 +5122,7 @@ const PricingCard = ({
               <input
                 type="number"
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(e) => onChange((e.target as any).value)}
                 className={`w-full h-14 bg-slate-50/50 hover:bg-white border-2 border-slate-100 rounded-[20px] px-6 text-xl font-black ${theme.text} focus:ring-4 ${theme.ring} focus:bg-white outline-none transition-all shadow-inner`}
               />
               <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-slate-300 uppercase pointer-events-none bg-white px-2 py-1 rounded-lg border border-slate-100 shadow-sm">

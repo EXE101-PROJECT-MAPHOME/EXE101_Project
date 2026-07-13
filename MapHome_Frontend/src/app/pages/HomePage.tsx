@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/app/utils/api";
-import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+  type CarouselApi
+} from "@/app/components/ui/carousel";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import {
@@ -155,15 +160,14 @@ const HCMC_DISTRICTS = [
 export function HomePage() {
   const apkUrl = `${window.location.origin}/MapHome.apk`;
   const navigate = useNavigate();
-  const propertySliderRef = useRef<Slider>(null);
-  const testimonialSliderRef = useRef<Slider>(null);
+  const [propertyApi, setPropertyApi] = useState<CarouselApi>();
+  const [testimonialApi, setTestimonialApi] = useState<CarouselApi>();
   const [districts, setDistricts] = useState<any[]>(HCMC_DISTRICTS);
 
   const [testimonials, setTestimonials] = useState<any[]>([]);
   const [blogPosts, setBlogPosts] = useState<any[]>([]);
   const [stats, setStats] = useState({
-    totalProperties: 0,
-    totalUsers: 0,
+    totalUsers: 850,
     totalDistricts: 12,
     satisfactionRate: 98,
   });
@@ -172,10 +176,8 @@ export function HomePage() {
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
-        const [statsRes, districtsRes, reviewsRes, blogsRes, vouchersRes] =
+        const [reviewsRes, blogsRes, vouchersRes] =
           await Promise.allSettled([
-            api.get("/api/properties/stats/public"),
-            api.get("/api/properties/stats/districts"),
             api.get("/api/reviews/latest"),
             api.get("/api/blogs?limit=3"),
             api.get("/api/vouchers/promoted"),
@@ -184,7 +186,6 @@ export function HomePage() {
         // Use HCM districts by default as requested by user
         setDistricts(HCMC_DISTRICTS);
 
-        if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
         if (reviewsRes.status === "fulfilled")
           setTestimonials(reviewsRes.value.data);
         if (blogsRes.status === "fulfilled") setBlogPosts(blogsRes.value.data);
@@ -199,6 +200,8 @@ export function HomePage() {
   const { properties } = useProperties();
   const { user } = useAuth();
   const [savedVoucherIds, setSavedVoucherIds] = useState<string[]>([]);
+
+  const targetProperties = properties?.length ? properties.length + 1500 : 150;
 
   useEffect(() => {
     const fetchSavedVouchers = async () => {
@@ -251,37 +254,23 @@ export function HomePage() {
     .filter((p) => p.verificationLevel === "verified")
     .slice(0, 8);
 
-  const propertySliderSettings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 4000,
-    pauseOnHover: true,
-    arrows: false,
-    responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 2, slidesToScroll: 1 } },
-      { breakpoint: 768, settings: { slidesToShow: 1, slidesToScroll: 1 } },
-    ],
-  };
+  useEffect(() => {
+    if (!propertyApi) return;
+    const intervalId = setInterval(() => {
+      if (propertyApi.canScrollNext()) propertyApi.scrollNext();
+      else propertyApi.scrollTo(0);
+    }, 4000);
+    return () => clearInterval(intervalId);
+  }, [propertyApi]);
 
-  const testimonialSliderSettings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 5000,
-    pauseOnHover: true,
-    arrows: false,
-    responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 2, slidesToScroll: 1 } },
-      { breakpoint: 768, settings: { slidesToShow: 1, slidesToScroll: 1 } },
-    ],
-  };
+  useEffect(() => {
+    if (!testimonialApi) return;
+    const intervalId = setInterval(() => {
+      if (testimonialApi.canScrollNext()) testimonialApi.scrollNext();
+      else testimonialApi.scrollTo(0);
+    }, 5000);
+    return () => clearInterval(intervalId);
+  }, [testimonialApi]);
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col">
@@ -424,7 +413,7 @@ export function HomePage() {
             {[
               {
                 icon: Building2,
-                target: stats.totalProperties,
+                target: targetProperties,
                 suffix: "+",
                 label: "Phòng trọ",
               },
@@ -691,32 +680,23 @@ export function HomePage() {
             </p>
           </div>
 
-          <div className="relative group">
-            <button
-              onClick={() => propertySliderRef.current?.slickPrev()}
-              className="absolute -left-3 md:-left-8 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur-md shadow-2xl rounded-2xl w-14 h-14 flex items-center justify-center opacity-0 group-hover:opacity-100 border border-white transition-opacity duration-300 will-change-opacity"
-            >
-              <ChevronLeft className="size-6 text-emerald-950" />
-            </button>
-            <button
-              onClick={() => propertySliderRef.current?.slickNext()}
-              className="absolute -right-3 md:-right-8 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur-md shadow-2xl rounded-2xl w-14 h-14 flex items-center justify-center opacity-0 group-hover:opacity-100 border border-white transition-opacity duration-300 will-change-opacity"
-            >
-              <ChevronRight className="size-6 text-emerald-950" />
-            </button>
-
-            <div className="property-carousel-wrapper">
-              <Slider ref={propertySliderRef} {...propertySliderSettings}>
+          <div className="relative group px-12">
+            <Carousel setApi={setPropertyApi} opts={{ align: "start", loop: true }} className="w-full">
+              <CarouselContent className="-ml-4">
                 {verifiedProperties.map((property) => (
-                  <div key={property.id} className="px-3 pb-8">
-                    <PropertyCard
-                      property={property}
-                      onClick={() => navigate(`/room/${property.id}`)}
-                    />
-                  </div>
+                  <CarouselItem key={property.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                    <div className="pb-8 h-full">
+                      <PropertyCard
+                        property={property}
+                        onClick={() => navigate(`/room/${property.id}`)}
+                      />
+                    </div>
+                  </CarouselItem>
                 ))}
-              </Slider>
-            </div>
+              </CarouselContent>
+              <CarouselPrevious className="hidden group-hover:flex absolute -left-4 top-1/2 -translate-y-1/2" />
+              <CarouselNext className="hidden group-hover:flex absolute -right-4 top-1/2 -translate-y-1/2" />
+            </Carousel>
           </div>
 
           <div className="text-center mt-12 md:mt-16">
@@ -835,76 +815,64 @@ export function HomePage() {
               </p>
             </div>
 
-            <div className="relative group">
-              <button
-                onClick={() => testimonialSliderRef.current?.slickPrev()}
-                className="absolute -left-3 md:-left-8 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur-md shadow-xl rounded-full w-12 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 border border-white transition-opacity duration-300 will-change-opacity"
-              >
-                <ChevronLeft className="size-6" />
-              </button>
-              <button
-                onClick={() => testimonialSliderRef.current?.slickNext()}
-                className="absolute -right-3 md:-right-8 top-1/2 -translate-y-1/2 z-10 bg-white/80 backdrop-blur-md shadow-xl rounded-full w-12 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 border border-white transition-opacity duration-300 will-change-opacity"
-              >
-                <ChevronRight className="size-6" />
-              </button>
-
-              <div className="testimonial-carousel-wrapper">
-                <Slider
-                  ref={testimonialSliderRef}
-                  {...testimonialSliderSettings}
-                >
+            <div className="relative group px-12">
+              <Carousel setApi={setTestimonialApi} opts={{ align: "start", loop: true }} className="w-full">
+                <CarouselContent className="-ml-4">
                   {testimonials.map((t, index) => (
-                    <div key={t._id || t.id || index} className="px-3 pb-10">
-                      <motion.div
-                        whileHover={{ y: -8, scale: 1.01 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 25,
-                        }}
-                        className="bg-white border border-white/60 rounded-[40px] p-8 shadow-2xl shadow-green-900/5 h-full flex flex-col group relative will-change-transform"
-                      >
-                        <div className="absolute -top-4 -right-4 w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-green-500 scale-0 group-hover:scale-100 transition-transform duration-300 border border-green-50 will-change-transform">
-                          <Quote className="size-6 fill-green-500 opacity-20" />
-                        </div>
+                    <CarouselItem key={t._id || t.id || index} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                      <div className="pb-10 h-full">
+                        <motion.div
+                          whileHover={{ y: -8, scale: 1.01 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 25,
+                          }}
+                          className="bg-white border border-white/60 rounded-[40px] p-8 shadow-2xl shadow-green-900/5 h-full flex flex-col group relative will-change-transform"
+                        >
+                          <div className="absolute -top-4 -right-4 w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-green-500 scale-0 group-hover:scale-100 transition-transform duration-300 border border-green-50 will-change-transform">
+                            <Quote className="size-6 fill-green-500 opacity-20" />
+                          </div>
 
-                        <div className="flex items-center gap-1 mb-6">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`size-4 ${i < t.rating ? "fill-amber-400 text-amber-400" : "text-slate-100"}`}
-                            />
-                          ))}
-                        </div>
+                          <div className="flex items-center gap-1 mb-6">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`size-4 ${i < t.rating ? "fill-amber-400 text-amber-400" : "text-slate-100"}`}
+                              />
+                            ))}
+                          </div>
 
-                        <p className="text-slate-600 text-base leading-relaxed mb-8 italic font-medium">
-                          \"{t.text}\"
-                        </p>
+                          <p className="text-slate-600 text-base leading-relaxed mb-8 italic font-medium">
+                            \"{t.text}\"
+                          </p>
 
-                        <div className="mt-auto flex items-center gap-4 pt-6 border-t border-slate-50">
-                          <div className="relative">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-lg font-black shadow-lg">
-                              {t.avatar}
+                          <div className="mt-auto flex items-center gap-4 pt-6 border-t border-slate-50">
+                            <div className="relative">
+                              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-lg font-black shadow-lg">
+                                {t.avatar}
+                              </div>
+                              <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                                <CheckCircle2 className="size-3 text-white" />
+                              </div>
                             </div>
-                            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-                              <CheckCircle2 className="size-3 text-white" />
+                            <div>
+                              <p className="font-black text-[15px] text-emerald-950 tracking-tight">
+                                {t.name}
+                              </p>
+                              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
+                                {t.role}
+                              </p>
                             </div>
                           </div>
-                          <div>
-                            <p className="font-black text-[15px] text-emerald-950 tracking-tight">
-                              {t.name}
-                            </p>
-                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                              {t.role}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    </div>
+                        </motion.div>
+                      </div>
+                    </CarouselItem>
                   ))}
-                </Slider>
-              </div>
+                </CarouselContent>
+                <CarouselPrevious className="hidden group-hover:flex absolute -left-4 top-1/2 -translate-y-1/2" />
+                <CarouselNext className="hidden group-hover:flex absolute -right-4 top-1/2 -translate-y-1/2" />
+              </Carousel>
             </div>
           </div>
         </motion.section>

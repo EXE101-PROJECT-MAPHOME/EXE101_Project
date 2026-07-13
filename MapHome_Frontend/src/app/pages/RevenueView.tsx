@@ -1,11 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useRef } from 'react';
 import { Search, TrendingUp, Calendar, Download, ArrowUpRight, Activity, PieChart } from 'lucide-react';
-import { motion, Variants } from 'framer-motion';
+import { motion, Variants, AnimatePresence } from 'framer-motion';
 import api from '@/app/utils/api';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend } from 'recharts';
+import {
+  AreaChart as _AreaChart,
+  Area as _Area,
+  XAxis as _XAxis,
+  YAxis as _YAxis,
+  CartesianGrid as _CartesianGrid,
+  Tooltip as _Tooltip,
+  ResponsiveContainer as _ResponsiveContainer,
+  PieChart as _PieChart,
+  Pie as _Pie,
+  Cell as _Cell,
+  Legend as _Legend,
+} from 'recharts';
+
+const AreaChart = _AreaChart as any;
+const Area = _Area as any;
+const XAxis = _XAxis as any;
+const YAxis = _YAxis as any;
+const CartesianGrid = _CartesianGrid as any;
+const Tooltip = _Tooltip as any;
+const ResponsiveContainer = _ResponsiveContainer as any;
+const RePieChart = _PieChart as any;
+const Pie = _Pie as any;
+const Cell = _Cell as any;
+const Legend = _Legend as any;
 
 export function RevenueView() {
-  const [activeTimeFilter, setActiveTimeFilter] = useState<'day' | 'week' | 'month' | 'quarter' | 'year'>('month');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   const [stats, setStats] = useState<any>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,9 +41,17 @@ export function RevenueView() {
     const fetchRevenueData = async () => {
       try {
         setLoading(true);
+        const queryParams = new URLSearchParams();
+        if (selectedMonth > 0) queryParams.append("month", selectedMonth.toString());
+        if (selectedYear > 0) queryParams.append("year", selectedYear.toString());
+        const qs = queryParams.toString();
+        
+        const statsUrl = `/api/admin/stats/revenue${qs ? `?${qs}` : ''}`;
+        const chartUrl = `/api/admin/stats/chart${qs ? `?${qs}` : ''}`;
+
         const [statsRes, chartRes] = await Promise.all([
-          api.get(`/api/admin/stats/revenue?range=${activeTimeFilter}`),
-          api.get(`/api/admin/stats/chart?range=${activeTimeFilter}`)
+          api.get(statsUrl),
+          api.get(chartUrl)
         ]);
         
         if (statsRes.status === 200) setStats(statsRes.data);
@@ -29,7 +64,18 @@ export function RevenueView() {
     };
 
     fetchRevenueData();
-  }, [activeTimeFilter]);
+  }, [selectedMonth, selectedYear]);
+
+  // Click outside listener for Date Picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setIsDatePickerOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   if (loading) {
     return (
@@ -101,28 +147,32 @@ export function RevenueView() {
           <p className="text-xs text-slate-400 font-semibold mt-1">Phân tích hiệu quả kinh doanh và dòng tiền hệ thống</p>
         </div>
         
-        {/* Modern Filter Bar */}
-        <div className="flex items-center gap-2 bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
-          {(['day', 'week', 'month', 'quarter', 'year'] as const).map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setActiveTimeFilter(filter)}
-              className={`relative px-4 py-1.5 text-xs font-bold transition-all rounded-xl ${
-                activeTimeFilter === filter ? "text-emerald-700" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              {activeTimeFilter === filter && (
-                <motion.div
-                  layoutId="activeRevTabPill"
-                  className="absolute inset-0 bg-white rounded-xl shadow-sm border border-slate-200/50"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-              <span className="relative z-10 capitalize">
-                {filter === 'day' ? 'Hôm nay' : filter === 'week' ? 'Tuần' : filter === 'month' ? 'Tháng' : filter === 'quarter' ? 'Quý' : 'Năm'}
-              </span>
-            </button>
-          ))}
+        {/* Date Picker Trigger */}
+        <div className="relative" ref={datePickerRef}>
+          <button
+            onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <Calendar className="w-4 h-4 text-emerald-600" />
+            <span className="text-sm font-bold text-slate-700 uppercase tracking-widest">
+              {selectedMonth === 0 && selectedYear === 0 ? "Tất cả thời gian" : `${selectedMonth === 0 ? "Cả năm" : `Tháng ${selectedMonth}`} / ${selectedYear === 0 ? "Tất cả" : selectedYear}`}
+            </span>
+          </button>
+
+          <AnimatePresence>
+            {isDatePickerOpen && (
+              <MonthYearPicker
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                onSelect={(m, y) => {
+                  setSelectedMonth(m);
+                  setSelectedYear(y);
+                  setIsDatePickerOpen(false);
+                }}
+                onClose={() => setIsDatePickerOpen(false)}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -353,14 +403,14 @@ export function RevenueView() {
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-black shadow-sm group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                        {tx.landlordId?.name?.substring(0, 1).toUpperCase() || "L"}
+                        {tx.userId?.name?.substring(0, 1).toUpperCase() || "U"}
                       </div>
-                      <span className="text-xs font-bold text-slate-700">{tx.landlordId?.name || "Landlord"}</span>
+                      <span className="text-xs font-bold text-slate-700">{tx.userId?.name || "Người dùng"}</span>
                     </div>
                   </td>
                   <td className="px-8 py-5">
                     <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                      {tx.packageType || "Dịch vụ"}
+                      {tx.description || "Dịch vụ"}
                     </span>
                   </td>
                   <td className="px-8 py-5">
@@ -370,7 +420,7 @@ export function RevenueView() {
                      <div className="flex items-center gap-2 text-slate-400">
                         <Calendar className="size-3.5" />
                         <span className="text-[11px] font-bold">
-                          {tx.completedAt ? new Date(tx.completedAt).toLocaleDateString() : "---"}
+                          {tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : "---"}
                         </span>
                      </div>
                   </td>
@@ -396,6 +446,114 @@ export function RevenueView() {
     </motion.div>
   );
 }
+
+const MonthYearPicker = forwardRef(function MonthYearPicker(
+  {
+    selectedMonth,
+    selectedYear,
+    onSelect,
+    onClose,
+  }: {
+    selectedMonth: number;
+    selectedYear: number;
+    onSelect: (m: number, y: number) => void;
+    onClose: () => void;
+  },
+  ref: any,
+) {
+  const months = [
+    "Tháng 1",
+    "Tháng 2",
+    "Tháng 3",
+    "Tháng 4",
+    "Tháng 5",
+    "Tháng 6",
+    "Tháng 7",
+    "Tháng 8",
+    "Tháng 9",
+    "Tháng 10",
+    "Tháng 11",
+    "Tháng 12",
+  ];
+  const years = [2024, 2025, 2026];
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+        ref={ref}
+        className="absolute top-12 right-0 w-80 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 p-5 z-50 backdrop-blur-xl"
+      >
+        <div className="space-y-4">
+          <div>
+            <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 px-1">
+              Chọn năm
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => onSelect(selectedMonth, 0)}
+                className={`flex-1 min-w-[60px] py-2 rounded-xl text-xs font-bold transition-all ${
+                  selectedYear === 0
+                    ? "bg-indigo-500 text-white shadow-lg shadow-indigo-200"
+                    : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                }`}
+              >
+                Tất cả
+              </button>
+              {years.map((y) => (
+                <button
+                  key={y}
+                  onClick={() => onSelect(selectedMonth, y)}
+                  className={`flex-1 min-w-[60px] py-2 rounded-xl text-xs font-bold transition-all ${
+                    selectedYear === y
+                      ? "bg-indigo-500 text-white shadow-lg shadow-indigo-200"
+                      : "bg-slate-50 text-slate-500 hover:bg-slate-100"
+                  }`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-3 px-1">
+              Chọn tháng
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => onSelect(0, selectedYear)}
+                className={`py-2 rounded-xl text-[11px] font-bold transition-all ${
+                  selectedMonth === 0
+                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200"
+                    : "bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600"
+                }`}
+              >
+                Tất cả
+              </button>
+              {months.map((m, idx) => (
+                <button
+                  key={m}
+                  onClick={() => onSelect(idx + 1, selectedYear)}
+                  className={`py-2 rounded-xl text-[11px] font-bold transition-all ${
+                    selectedMonth === idx + 1
+                      ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200"
+                      : "bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </>
+  );
+});
 
 function RevenueKPICard({ icon, label, value, change, color }: { icon: string; label: string; value: string; change: string; color: string }) {
   const gradientStyles = {

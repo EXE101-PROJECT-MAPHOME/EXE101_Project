@@ -1,4 +1,3 @@
-const axios = require("axios");
 const NodeCache = require("node-cache");
 
 // Cache TTL: 24 hours (86400 seconds)
@@ -113,14 +112,15 @@ const reverseGeocode = async (req, res, next) => {
 
     const url = `https://rsapi.goong.io/Geocode?latlng=${lat},${lng}&api_key=${GOONG_API_KEY}`;
 
-    const response = await axios.get(url);
+    const response = await fetch(url);
+    const responseData = await response.json();
 
     if (
-      response.data &&
-      response.data.results &&
-      response.data.results.length > 0
+      responseData &&
+      responseData.results &&
+      responseData.results.length > 0
     ) {
-      const result = response.data.results[0];
+      const result = responseData.results[0];
       const normalizedResult = {
         ...result,
         formatted_address: result.formatted_address || "",
@@ -162,8 +162,9 @@ const autocomplete = async (req, res, next) => {
     const radiusBias = 20000;
     const url = `https://rsapi.goong.io/Place/Autocomplete?input=${encodeURIComponent(input)}&location=${locationBias}&radius=${radiusBias}&api_key=${GOONG_API_KEY}`;
 
-    const response = await axios.get(url);
-    const predictions = response.data.predictions || [];
+    const response = await fetch(url);
+    const responseData = await response.json();
+    const predictions = responseData.predictions || [];
 
     mapCache.set(cacheKey, predictions);
     res.status(200).json(predictions);
@@ -191,10 +192,11 @@ const getPlaceDetail = async (req, res, next) => {
 
     const url = `https://rsapi.goong.io/Place/Detail?place_id=${place_id}&api_key=${GOONG_API_KEY}`;
 
-    const response = await axios.get(url);
+    const response = await fetch(url);
+    const responseData = await response.json();
 
-    if (response.data && response.data.result) {
-      const result = response.data.result;
+    if (responseData && responseData.result) {
+      const result = responseData.result;
 
       // Debug logging
       console.log("[Goong Place Detail] Raw result:", {

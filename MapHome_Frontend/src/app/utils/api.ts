@@ -1,73 +1,100 @@
-import axios from "axios";
-
 const useLocalBackend = (import.meta as any).env?.VITE_USE_LOCAL_BACKEND === "true";
 const localUrl = "http://localhost:5000";
 const deployedUrl = (import.meta as any).env?.VITE_API_BASE || "https://exe101project-maphome-api.up.railway.app";
 
 export const API_BASE = useLocalBackend ? localUrl : deployedUrl;
 
-const api = axios.create({
-  baseURL: API_BASE,
-  withCredentials: true, // Crucial for sending/receiving cookies
-});
-
-// Request Interceptor: Attach Token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
-
-// Response Interceptor: Handle Global Errors & Token Refresh
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    // If error is 401 and we haven't tried refreshing yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        // Attempt to get a new access token using the refresh token cookie
-        const res = await axios.get(`${API_BASE}/api/auth/refresh`, {
-          withCredentials: true,
-        });
-
-        if (res.status === 200) {
-          const { token } = res.data;
-          localStorage.setItem("token", token);
-
-          // Retry the original request with the new token
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        console.error("Session expired. Please login again.");
-        localStorage.removeItem("token");
-        localStorage.removeItem("auth");
-        if (logoutCallback) {
-          logoutCallback();
-        }
-        // Redirect logic can be added here or handled by AuthContext
-        return Promise.reject(refreshError);
-      }
-    }
-
-    return Promise.reject(error);
-  },
-);
-
 let logoutCallback: (() => void) | null = null;
 export const registerLogoutCallback = (callback: () => void) => {
   logoutCallback = callback;
+};
+
+// Simplified fetch wrapper replacing axios
+const fetchWrapper = async (method: string, url: string, data?: any, config?: any) => {
+  const token = localStorage.getItem("token");
+  const headers: Record<string, string> = {
+    ...config?.headers,
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  if (data && !(data instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const fullUrl = url.startsWith("http") ? url : `${API_BASE}${url}`;
+  
+  let options: RequestInit = {
+    method,
+    headers,
+  };
+
+  // For withCredentials equivalent
+  options.credentials = "include";
+
+  if (data) {
+    options.body = data instanceof FormData ? data : JSON.stringify(data);
+  }
+
+  try {
+    let res = await fetch(fullUrl, options);
+
+    // Basic interceptor logic for 401
+    if (res.status === 401 && !config?._retry) {
+      try {
+        const refreshRes = await fetch(`${API_BASE}/api/auth/refresh`, {
+          method: "GET",
+          credentials: "include"
+        });
+
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          localStorage.setItem("token", refreshData.token);
+          
+          // Retry the original request
+          headers["Authorization"] = `Bearer ${refreshData.token}`;
+          options.headers = headers;
+          res = await fetch(fullUrl, options);
+        } else {
+          throw new Error("Refresh failed");
+        }
+      } catch (err) {
+        console.error("Session expired. Please login again.");
+        localStorage.removeItem("token");
+        localStorage.removeItem("auth");
+        if (logoutCallback) logoutCallback();
+        return Promise.reject(err);
+      }
+    }
+
+    const responseData = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      return Promise.reject({
+        response: {
+          status: res.status,
+          data: responseData
+        },
+        message: responseData?.message || res.statusText
+      });
+    }
+
+    return {
+      status: res.status,
+      data: responseData
+    };
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+const api = {
+  get: (url: string, config?: any) => fetchWrapper("GET", url, undefined, config),
+  post: (url: string, data?: any, config?: any) => fetchWrapper("POST", url, data, config),
+  put: (url: string, data?: any, config?: any) => fetchWrapper("PUT", url, data, config),
+  delete: (url: string, config?: any) => fetchWrapper("DELETE", url, undefined, config),
 };
 
 export default api;

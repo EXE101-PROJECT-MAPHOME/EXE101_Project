@@ -112,12 +112,22 @@ const DashboardTab = ({ setView }: { setView: (view: AdminView) => void }) => {
   const [isChartLoading, setIsChartLoading] = useState(false);
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
 
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
   // Fetch KPI Stats & Reviews
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        const queryParams = [];
+        if (selectedMonth > 0) queryParams.push(`month=${selectedMonth}`);
+        if (selectedYear > 0) queryParams.push(`year=${selectedYear}`);
+        const qs = queryParams.join('&');
+        const statsUrl = `/api/admin/stats${qs ? `?${qs}` : ''}`;
+        
         const [statsRes, reviewsRes] = await Promise.allSettled([
-          api.get("/api/admin/stats"),
+          api.get(statsUrl),
           api.get("/api/admin/reviews")
         ]);
         
@@ -135,7 +145,7 @@ const DashboardTab = ({ setView }: { setView: (view: AdminView) => void }) => {
     };
     
     fetchDashboardData();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   // Fetch Dynamic Chart Data
   useEffect(() => {
@@ -190,6 +200,15 @@ const DashboardTab = ({ setView }: { setView: (view: AdminView) => void }) => {
       <View className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm mt-2">
         <View className="flex-row items-center justify-between mb-4">
           <Text className="text-sm font-black uppercase text-emerald-600 tracking-widest">Biểu đồ thống kê</Text>
+          <TouchableOpacity 
+            onPress={() => setIsDatePickerOpen(true)}
+            className="flex-row items-center bg-slate-100 px-3 py-1.5 rounded-xl"
+          >
+            <CalendarDays size={14} color="#64748b" />
+            <Text className="text-xs font-bold text-slate-600 ml-1">
+              {selectedMonth === 0 && selectedYear === 0 ? "Tất cả" : `${selectedMonth === 0 ? "Cả năm" : `Tháng ${selectedMonth}`}/${selectedYear === 0 ? "Tất cả" : selectedYear}`}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Metric Selector */}
@@ -227,73 +246,61 @@ const DashboardTab = ({ setView }: { setView: (view: AdminView) => void }) => {
           ))}
         </ScrollView>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="h-56 relative min-w-full mt-6">
-            {/* Background Grid Lines */}
-            <View className="absolute inset-0 justify-between pb-8 pointer-events-none" style={{ zIndex: 0 }}>
-              {[1, 2, 3, 4, 5].map((_, i) => (
-                <View key={i} className="w-full border-t border-slate-100" style={{ borderStyle: 'dashed', borderWidth: 1, borderColor: '#f1f5f9' }} />
-              ))}
-            </View>
-
-            <View className="flex-row items-end justify-between px-2 pb-8 h-full" style={{ zIndex: 10 }}>
-              {isChartLoading ? (
-                <View className="w-full h-full flex items-center justify-center">
-                  <Text className="text-xs font-bold text-slate-400">Đang tải...</Text>
-                </View>
-              ) : weeklyData.length > 0 ? weeklyData.map((item, i) => {
-                const value = item[chartMetric] || 0;
-                // Max height 85% to reserve space for tooltip
-                const barHeightPct = maxChartValue === 0 ? 0 : (value / maxChartValue) * 85;
-                
-                let barColor = "bg-emerald-400";
-                let tooltipBg = "bg-emerald-600";
-                if (chartMetric === "users") {
-                  barColor = "bg-blue-400";
-                  tooltipBg = "bg-blue-600";
-                } else if (chartMetric === "transactions") {
-                  barColor = "bg-amber-400";
-                  tooltipBg = "bg-amber-500";
-                }
-                
-                const isSelected = selectedBarIndex === i;
-                const displayValue = chartMetric === "revenue" ? `${value.toLocaleString("vi-VN")}đ` : value.toLocaleString("vi-VN");
-
-                return (
-                  <TouchableOpacity 
-                    key={i} 
-                    activeOpacity={0.8}
-                    onPress={() => setSelectedBarIndex(isSelected ? null : i)}
-                    className="items-center mx-1.5 h-full justify-end" 
-                    style={{ width: chartRange === "month" ? 24 : 32 }}
-                  >
-                    <View className="flex-row w-full justify-center items-end flex-1 gap-0.5 relative">
-                      {/* Tooltip */}
-                      {isSelected && (
-                        <View className="absolute -top-10 items-center z-50 shadow-sm" style={{ elevation: 5 }}>
-                          <View className={`px-2 py-1 rounded-md ${tooltipBg}`}>
-                            <Text className="text-[10px] text-white font-black">{displayValue}</Text>
-                          </View>
-                          <View className={`w-2 h-2 rotate-45 -mt-1 ${tooltipBg}`} />
-                        </View>
-                      )}
-                      
-                      <View 
-                        className={`flex-1 w-full rounded-t-lg ${barColor} ${isSelected ? 'opacity-100' : 'opacity-70'}`} 
-                        style={{ height: `${barHeightPct}%` }} 
-                      />
+        <View className="mt-4 flex-row items-center justify-center min-h-[220px]">
+          {isChartLoading ? (
+            <ActivityIndicator size="small" color="#10b981" />
+          ) : weeklyData.length > 0 ? (
+            <LineChart
+              data={weeklyData.map(d => ({
+                value: d[chartMetric] || 0,
+                label: d.label,
+                labelTextStyle: { color: '#94a3b8', fontSize: 10, fontWeight: 'bold' }
+              }))}
+              width={300}
+              height={180}
+              thickness={3}
+              color={chartMetric === "users" ? "#3b82f6" : chartMetric === "transactions" ? "#f59e0b" : "#10b981"}
+              maxValue={maxChartValue * 1.2}
+              noOfSections={4}
+              areaChart
+              yAxisTextStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 'bold' }}
+              xAxisLabelTextStyle={{ color: '#94a3b8', fontSize: 10, fontWeight: 'bold' }}
+              startFillColor={chartMetric === "users" ? "#3b82f6" : chartMetric === "transactions" ? "#f59e0b" : "#10b981"}
+              endFillColor={chartMetric === "users" ? "#3b82f6" : chartMetric === "transactions" ? "#f59e0b" : "#10b981"}
+              startOpacity={0.2}
+              endOpacity={0.0}
+              spacing={chartRange === "month" ? 30 : 50}
+              backgroundColor="transparent"
+              rulesColor="#f1f5f9"
+              rulesType="dashed"
+              initialSpacing={10}
+              yAxisColor="transparent"
+              xAxisColor="#f1f5f9"
+              pointerConfig={{
+                pointerStripHeight: 160,
+                pointerStripColor: 'lightgray',
+                pointerStripWidth: 2,
+                pointerColor: 'lightgray',
+                radius: 6,
+                pointerLabelWidth: 100,
+                pointerLabelHeight: 90,
+                activatePointersOnLongPress: true,
+                autoAdjustPointerLabelPosition: true,
+                pointerLabelComponent: (items: any) => {
+                  return (
+                    <View className="bg-slate-800 px-3 py-2 rounded-xl shadow-lg -ml-12 mt-2">
+                      <Text className="text-white text-xs font-black text-center">
+                        {chartMetric === "revenue" ? `${items[0].value.toLocaleString("vi-VN")}đ` : items[0].value.toLocaleString("vi-VN")}
+                      </Text>
                     </View>
-                    <Text className={`text-[9px] font-bold mt-2 ${isSelected ? 'text-slate-700' : 'text-slate-400'}`} numberOfLines={1}>{item.label}</Text>
-                  </TouchableOpacity>
-                );
-              }) : (
-                <View className="w-full h-full flex items-center justify-center">
-                  <Text className="text-xs font-bold text-slate-400">Không có dữ liệu</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        </ScrollView>
+                  );
+                },
+              }}
+            />
+          ) : (
+            <Text className="text-xs font-bold text-slate-400">Không có dữ liệu</Text>
+          )}
+        </View>
       </View>
 
       {/* Recent Reviews Section */}
@@ -327,6 +334,60 @@ const DashboardTab = ({ setView }: { setView: (view: AdminView) => void }) => {
           ))
         )}
       </View>
+
+      {/* Month/Year Picker Modal */}
+      <Modal visible={isDatePickerOpen} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 justify-center items-center p-4">
+          <View className="bg-white rounded-3xl w-full p-6 shadow-xl">
+            <Text className="text-lg font-black text-slate-800 mb-4 text-center">Chọn thời gian</Text>
+            
+            <Text className="text-xs font-bold text-slate-500 mb-2">Tháng</Text>
+            <View className="flex-row flex-wrap gap-2 mb-4">
+              <TouchableOpacity
+                onPress={() => setSelectedMonth(0)}
+                className={`px-3 py-2 rounded-xl border ${selectedMonth === 0 ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-200"}`}
+              >
+                <Text className={`text-[11px] font-bold ${selectedMonth === 0 ? "text-white" : "text-slate-600"}`}>Tất cả</Text>
+              </TouchableOpacity>
+              {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
+                <TouchableOpacity
+                  key={m}
+                  onPress={() => setSelectedMonth(m)}
+                  className={`px-3 py-2 rounded-xl border ${selectedMonth === m ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-200"}`}
+                >
+                  <Text className={`text-[11px] font-bold ${selectedMonth === m ? "text-white" : "text-slate-600"}`}>Tháng {m}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text className="text-xs font-bold text-slate-500 mb-2">Năm</Text>
+            <View className="flex-row flex-wrap gap-2 mb-6">
+              <TouchableOpacity
+                onPress={() => setSelectedYear(0)}
+                className={`px-3 py-2 rounded-xl border ${selectedYear === 0 ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-200"}`}
+              >
+                <Text className={`text-[11px] font-bold ${selectedYear === 0 ? "text-white" : "text-slate-600"}`}>Tất cả</Text>
+              </TouchableOpacity>
+              {[2024, 2025, 2026, 2027].map(y => (
+                <TouchableOpacity
+                  key={y}
+                  onPress={() => setSelectedYear(y)}
+                  className={`px-3 py-2 rounded-xl border ${selectedYear === y ? "bg-emerald-500 border-emerald-500" : "bg-white border-slate-200"}`}
+                >
+                  <Text className={`text-[11px] font-bold ${selectedYear === y ? "text-white" : "text-slate-600"}`}>{y}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity 
+              onPress={() => setIsDatePickerOpen(false)}
+              className="bg-slate-800 w-full py-3 rounded-2xl items-center"
+            >
+              <Text className="text-white font-black">Xác nhận</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
