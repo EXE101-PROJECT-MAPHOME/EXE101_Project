@@ -11,9 +11,9 @@ function initSocket(server) {
         const allowedOrigins = Array.from(new Set([process.env.FRONTEND_URL, ...envList].filter(Boolean)));
         const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
         const isVercel = /^https?:\/\/.*\.vercel\.app$/.test(origin);
-        const isRailway = /^https?:\/\/.*\.up\.railway\.app$/.test(origin);
+        const isRender = /^https?:\/\/.*\.onrender\.com$/.test(origin);
         
-        if (allowedOrigins.includes(origin) || isLocalhost || isVercel || isRailway) {
+        if (allowedOrigins.includes(origin) || isLocalhost || isVercel || isRender) {
           return callback(null, true);
         }
         callback(new Error(`CORS blocked for origin: ${origin}`));
