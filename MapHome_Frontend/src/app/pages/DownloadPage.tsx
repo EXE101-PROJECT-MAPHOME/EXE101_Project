@@ -50,7 +50,8 @@ export function DownloadPage() {
                 <div className="w-full space-y-3 pt-4">
                   <a
                     href={apkUrl}
-                    download="MapHome.apk"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/30 active:scale-95 transition-all"
                   >
                     <Download className="size-5" />

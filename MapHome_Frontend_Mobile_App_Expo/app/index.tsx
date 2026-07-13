@@ -104,7 +104,7 @@ export default function IntroScreen() {
     <View className="flex-1 bg-white items-center justify-center">
       <Animated.View style={[styles.logoContainer, animatedStyle]}>
         <Image
-          source={require("../assets/images/MapHome_logo_2.png")}
+          source={require("../assets/images/MapHome_logo_2.jpg")}
           style={{ width: 250, height: 250, resizeMode: "contain" }}
         />
       </Animated.View>

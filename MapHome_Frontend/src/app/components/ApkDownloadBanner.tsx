@@ -64,13 +64,8 @@ export function ApkDownloadBanner({
       // If inside in-app browser, we shouldn't trigger direct download, just let user know
       setShowGuideModal(true);
     } else {
-      // Trigger the browser's download
-      const link = document.createElement("a");
-      link.href = finalApkUrl;
-      link.download = "MapHome.apk";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Open the expo download page in a new tab
+      window.open(finalApkUrl, '_blank');
 
       // Open the step-by-step installation guide
       setShowGuideModal(true);

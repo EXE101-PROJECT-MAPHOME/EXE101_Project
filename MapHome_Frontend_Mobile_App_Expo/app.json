@@ -26,12 +26,11 @@
       },
       "package": "com.maphome.app",
       "edgeToEdgeEnabled": true,
-      "navigationBarHidden": false,
       "softwareKeyboardLayoutMode": "pan",
       "backgroundColor": "#ffffff",
-      "statusBarTranslucent": true,
-      "orientationLock": "portrait",
-      "usesCleartextTraffic": false
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -66,7 +65,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "2df91873-3b5d-4f31-9d44-e1af23b6de9f"
+        "projectId": "3325aad5-c9a1-48f5-85b9-b07da94cb49f"
       }
     }
   }

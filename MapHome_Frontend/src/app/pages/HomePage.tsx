@@ -1067,7 +1067,8 @@ export function HomePage() {
               <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
                 <a
                   href={apkUrl}
-                  download="MapHome.apk"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black rounded-2xl shadow-xl shadow-emerald-950/40 flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-98"
                 >
                   <Download className="size-5" />
