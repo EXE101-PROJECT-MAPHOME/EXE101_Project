@@ -10,7 +10,7 @@ interface ApkDownloadBannerProps {
 export function ApkDownloadBanner({ 
   apkUrl
 }: ApkDownloadBannerProps) {
-  const finalApkUrl = apkUrl || `${window.location.origin}/MapHome.apk`;
+  const finalApkUrl = apkUrl || "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/86ebb301-1ccf-4ef5-a89c-38c822e7e70d";
   const [isMobile, setIsMobile] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
