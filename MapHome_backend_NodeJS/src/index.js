@@ -52,7 +52,10 @@ app.use(
       // Cho phép BẤT KỲ tên miền nào kết thúc bằng .up.railway.app (cho Swagger UI trên API)
       const isRailway = /^https?:\/\/.*\.up\.railway\.app$/.test(origin);
 
-      if (allowedOrigins.includes(origin) || isLocalhost || isVercel || isRailway) {
+      // Cho phép BẤT KỲ tên miền nào kết thúc bằng .onrender.com
+      const isRender = /^https?:\/\/.*\.onrender\.com$/.test(origin);
+
+      if (allowedOrigins.includes(origin) || isLocalhost || isVercel || isRailway || isRender) {
         return callback(null, true);
       }
 

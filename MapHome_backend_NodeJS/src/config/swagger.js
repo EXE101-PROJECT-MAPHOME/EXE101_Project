@@ -14,7 +14,7 @@ const options = {
     },
     servers: [
       {
-        url: process.env.API_URL || "https://exe101project-maphome-api.up.railway.app",
+        url: process.env.BACKEND_URL || "https://exe101-project.onrender.com",
         description: "Development Server",
       },
     ],

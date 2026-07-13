@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const useLocalBackend = env.VITE_USE_LOCAL_BACKEND === 'true';
   const backendTarget = useLocalBackend
     ? 'http://localhost:5000'
-    : (env.VITE_API_BASE || 'https://exe101project-maphome-api.up.railway.app');
+    : (env.VITE_API_BASE || 'https://exe101-project.onrender.com');
 
   return {
     plugins: [
