@@ -29,7 +29,13 @@
       "softwareKeyboardLayoutMode": "pan",
       "backgroundColor": "#ffffff",
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET"
       ]
     },
     "web": {
@@ -55,6 +61,12 @@
         "expo-image-picker",
         {
           "photosPermission": "Ứng dụng cần quyền truy cập thư viện ảnh để bạn có thể chọn avatar và đăng ảnh phòng trọ."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Ứng dụng cần cấp quyền truy cập vị trí để hỗ trợ bạn tìm kiếm và đăng phòng trọ chính xác nhất."
         }
       ]
     ],
