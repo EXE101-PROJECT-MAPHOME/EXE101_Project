@@ -37,13 +37,13 @@ export default function IntroScreen() {
 
   useEffect(() => {
     // Start smooth animation
-    opacity.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.cubic) });
-    scale.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.back(1.5)) });
-    translateY.value = withTiming(0, { duration: 1200, easing: Easing.out(Easing.cubic) });
+    opacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
+    scale.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.back(1.5)) });
+    translateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
 
     const timer = setTimeout(() => {
       setAnimationDone(true);
-    }, 2800);
+    }, 1000);
     
     return () => clearTimeout(timer);
   }, []);
