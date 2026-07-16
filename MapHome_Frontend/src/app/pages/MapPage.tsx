@@ -511,6 +511,7 @@ export function MapPage() {
                     handleAutocompleteInput(target.value);
                   } else {
                     setSearchTerm(target.value);
+                    setShowDropdown(true);
                   }
                 }}
                 onKeyDown={(e) => {
@@ -521,9 +522,10 @@ export function MapPage() {
                       performSearch(searchTerm);
                     }
                     setPredictions([]);
+                    setShowDropdown(false);
                   }
                 }}
-                onFocus={() => { if (searchMode === 'address') setShowDropdown(true) }}
+                onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                 className="flex-1 h-14 bg-transparent px-3 text-emerald-950 font-medium placeholder:text-emerald-950/30 outline-none border-none rounded-r-2xl"
               />
@@ -559,7 +561,7 @@ export function MapPage() {
 
               {/* Suggestions Dropdown */}
               <AnimatePresence>
-                {showDropdown && predictions.length > 0 && (
+                {showDropdown && searchMode === 'address' && predictions.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -592,7 +594,7 @@ export function MapPage() {
               </AnimatePresence>
 
               <AnimatePresence>
-                {showDropdown && searchPropertySuggestions.length > 0 && (
+                {showDropdown && searchMode === 'name' && searchPropertySuggestions.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
