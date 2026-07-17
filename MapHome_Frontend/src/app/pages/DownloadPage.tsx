@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useEffect } from "react";
 
 export function DownloadPage() {
-  const apkUrl = "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/86ebb301-1ccf-4ef5-a89c-38c822e7e70d";
+  const apkUrl = "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/c3db9dfb-61c7-461b-9a76-7b122fbc825d";
 
   useEffect(() => {
     window.scrollTo(0, 0);

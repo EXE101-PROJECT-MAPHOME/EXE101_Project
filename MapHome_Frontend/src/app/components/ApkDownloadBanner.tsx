@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, X, Smartphone, ArrowRight, ShieldCheck, Settings, AlertTriangle, ExternalLink } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
@@ -10,7 +10,7 @@ interface ApkDownloadBannerProps {
 export function ApkDownloadBanner({ 
   apkUrl
 }: ApkDownloadBannerProps) {
-  const finalApkUrl = apkUrl || "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/86ebb301-1ccf-4ef5-a89c-38c822e7e70d";
+  const finalApkUrl = apkUrl || "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/c3db9dfb-61c7-461b-9a76-7b122fbc825d";
   const [isMobile, setIsMobile] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);

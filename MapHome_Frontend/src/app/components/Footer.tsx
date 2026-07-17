@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { Home, Mail, FileText, MessageCircle, Facebook, Twitter, Instagram, Shield } from 'lucide-react';
 
 export function Footer() {
-  const apkUrl = "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/86ebb301-1ccf-4ef5-a89c-38c822e7e70d";
+  const apkUrl = "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/c3db9dfb-61c7-461b-9a76-7b122fbc825d";
   return (
     <footer className="bg-gray-900 text-gray-300 w-full">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-8 md:py-10 w-full">
