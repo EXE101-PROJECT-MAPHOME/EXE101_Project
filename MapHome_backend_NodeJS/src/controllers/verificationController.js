@@ -61,7 +61,15 @@ const createVerification = async (req, res) => {
       }
     }
 
-    const verification = await VerificationRequest.create(req.body);
+    // Auto-populate requester info if missing
+    const verificationData = {
+      ...req.body,
+      requesterId: req.body.requesterId || (req.user ? req.user._id : "unknown"),
+      requesterName: req.body.requesterName || (req.user ? (req.user.fullName || req.user.username) : "unknown"),
+      requesterType: req.body.requesterType || (req.user && req.user.role === "user" ? "user" : "landlord"),
+    };
+
+    const verification = await VerificationRequest.create(verificationData);
     res.status(201).json(verification);
   } catch (error) {
     res.status(400).json({ message: error.message });
