@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   X as XIcon,
+  Download,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +22,7 @@ import { RoleBadge } from "@/app/components/RoleBadge";
 import NotificationCenter from "@/app/components/NotificationCenter";
 
 export function Navbar() {
+  const apkUrl = "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/86ebb301-1ccf-4ef5-a89c-38c822e7e70d";
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
@@ -108,6 +110,14 @@ export function Navbar() {
                   <span className="hidden lg:inline">{label}</span>
                 </Button>
               ))}
+
+              {/* Tải App APK Button */}
+              <div className="relative ml-1 hidden lg:block">
+                <Button variant="ghost" size="sm" onClick={() => navigate("/download")} className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
+                  <Download className="size-3.5 lg:size-4 mr-1" />
+                  <span>Tải App APK</span>
+                </Button>
+              </div>
 
               {isAuthenticated && (user?.role === "landlord" || user?.role === "broker") && (
                 <>
@@ -295,6 +305,18 @@ export function Navbar() {
                     </button>
                   </>
                 )}
+
+                {/* Mobile Download APK Link */}
+                <button
+                  onClick={() => {
+                    navigate("/download");
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-emerald-500 to-green-600 shadow-md shadow-emerald-500/20 active:scale-95 transition-all mt-3"
+                >
+                  <Download className="size-4 flex-shrink-0" />
+                  <span>Tải Ứng Dụng MapHome APK</span>
+                </button>
               </div>
 
               {/* User Actions */}

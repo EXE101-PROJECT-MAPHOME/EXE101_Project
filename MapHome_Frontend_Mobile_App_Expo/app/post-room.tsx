@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as Location from "expo-location";
 import * as ImagePicker from "expo-image-picker";
-import MapView, { Marker } from "react-native-maps";
+import { WebView } from "react-native-webview";
 import {
   Wifi,
   Car,
@@ -837,24 +837,84 @@ export default function PostRoomScreen() {
           {step === "pin-map" && (
             <Animated.View entering={FadeInRight} exiting={FadeOutLeft}>
               <View className="bg-white rounded-[24px] overflow-hidden shadow-sm border border-slate-100 h-[500px]">
-                <MapView
+                <WebView
+                  source={{ html: `
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                      <meta charset="utf-8" />
+                      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                      <script src="https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@1.0.9/dist/goong-js.js"></script>
+                      <link href="https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@1.0.9/dist/goong-js.css" rel="stylesheet" />
+                      <style>
+                          body { margin: 0; padding: 0; overflow: hidden; }
+                          #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+                          .custom-marker {
+                            width: 32px;
+                            height: 32px;
+                            background-color: #4f46e5;
+                            border-radius: 50%;
+                            border: 3px solid white;
+                            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                          }
+                          .custom-marker::after {
+                            content: '';
+                            width: 12px;
+                            height: 12px;
+                            background-color: white;
+                            border-radius: 50%;
+                          }
+                      </style>
+                  </head>
+                  <body>
+                      <div id="map"></div>
+                      <script>
+                          goongjs.accessToken = '${process.env.EXPO_PUBLIC_GOONG_MAPTILES_KEY ?? "zkJufOSOzrjhp0HuujejyHhJ2S3G2O6SkK56wiSF"}';
+                          var map = new goongjs.Map({
+                              container: 'map',
+                              style: 'https://tiles.goong.io/assets/goong_map_web.json',
+                              center: [106.660172, 10.762622],
+                              zoom: 12,
+                              attributionControl: false
+                          });
+
+                          var currentMarker = null;
+
+                          map.on('click', function(e) {
+                              if (currentMarker) {
+                                  currentMarker.remove();
+                              }
+                              var el = document.createElement("div");
+                              el.className = "custom-marker";
+                              currentMarker = new goongjs.Marker(el)
+                                  .setLngLat(e.lngLat)
+                                  .addTo(map);
+                              
+                              window.ReactNativeWebView.postMessage(JSON.stringify({
+                                  type: 'MAP_CLICK',
+                                  coordinate: {
+                                      latitude: e.lngLat.lat,
+                                      longitude: e.lngLat.lng
+                                  }
+                              }));
+                          });
+                      </script>
+                  </body>
+                  </html>
+                  ` }}
                   style={{ flex: 1 }}
-                  initialRegion={{
-                    latitude: 10.762622,
-                    longitude: 106.660172,
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
+                  onMessage={(event) => {
+                    try {
+                      const data = JSON.parse(event.nativeEvent.data);
+                      if (data.type === 'MAP_CLICK') {
+                        setPinnedLocation(data.coordinate);
+                      }
+                    } catch(e){}
                   }}
-                  onPress={(e) => setPinnedLocation(e.nativeEvent.coordinate)}
-                >
-                  {pinnedLocation && (
-                    <Marker coordinate={pinnedLocation}>
-                      <View className="w-12 h-12 bg-indigo-100 rounded-full items-center justify-center border-2 border-indigo-600 shadow-lg">
-                        <MapPin size={24} color="#4f46e5" />
-                      </View>
-                    </Marker>
-                  )}
-                </MapView>
+                />
                 <View className="absolute bottom-6 left-6 right-6 bg-white p-4 rounded-2xl shadow-lg border border-slate-100">
                   <View className="flex-row items-center mb-2">
                     <Info size={20} color="#4f46e5" className="mr-2" />

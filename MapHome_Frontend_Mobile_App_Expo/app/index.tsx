@@ -37,13 +37,13 @@ export default function IntroScreen() {
 
   useEffect(() => {
     // Start smooth animation
-    opacity.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.cubic) });
-    scale.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.back(1.5)) });
-    translateY.value = withTiming(0, { duration: 1200, easing: Easing.out(Easing.cubic) });
+    opacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.cubic) });
+    scale.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.back(1.5)) });
+    translateY.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.cubic) });
 
     const timer = setTimeout(() => {
       setAnimationDone(true);
-    }, 2800);
+    }, 1000);
     
     return () => clearTimeout(timer);
   }, []);
@@ -104,7 +104,7 @@ export default function IntroScreen() {
     <View className="flex-1 bg-white items-center justify-center">
       <Animated.View style={[styles.logoContainer, animatedStyle]}>
         <Image
-          source={require("../assets/images/MapHome_logo_2.png")}
+          source={require("../assets/images/MapHome_logo_2.jpg")}
           style={{ width: 250, height: 250, resizeMode: "contain" }}
         />
       </Animated.View>

@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { Home, Mail, FileText, MessageCircle, Facebook, Twitter, Instagram, Shield } from 'lucide-react';
 
 export function Footer() {
+  const apkUrl = "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/c3db9dfb-61c7-461b-9a76-7b122fbc825d";
   return (
     <footer className="bg-gray-900 text-gray-300 w-full">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-8 md:py-10 w-full">
@@ -31,7 +32,7 @@ export function Footer() {
           </div>
 
           {/* Quick Links */}
-          <div className="w-[45%] md:w-[22%]">
+          <div className="w-[45%] md:w-[15%]">
             <h4 className="font-semibold text-white mb-2.5 sm:mb-3 text-sm">Liên kết nhanh</h4>
             <ul className="space-y-1 sm:space-y-1.5 text-[11px] sm:text-xs">
               <li>
@@ -58,7 +59,7 @@ export function Footer() {
           </div>
 
           {/* Resources */}
-          <div className="w-[45%] md:w-[22%]">
+          <div className="w-[45%] md:w-[15%]">
             <h4 className="font-semibold text-white mb-2.5 sm:mb-3 text-sm">Tài nguyên</h4>
             <ul className="space-y-1 sm:space-y-1.5 text-[11px] sm:text-xs">
               <li>
@@ -89,6 +90,31 @@ export function Footer() {
                 <span>Số 1, Đại Cồ Việt, Hai Bà Trưng, Hà Nội</span>
               </li>
             </ul>
+          </div>
+
+          {/* Mobile App Download */}
+          <div className="w-[45%] md:w-[20%] space-y-3">
+            <h4 className="font-semibold text-white mb-2.5 sm:mb-3 text-sm">Ứng dụng di động</h4>
+            <div className="flex flex-col gap-2.5">
+              {/* QR Code - Hidden on Mobile */}
+              <div className="hidden md:flex flex-col items-center p-2 bg-white rounded-xl w-32 border border-gray-800">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(apkUrl)}`} 
+                  alt="QR Code APK"
+                  className="w-24 h-24 object-contain"
+                />
+                <span className="text-[9px] text-gray-600 mt-1 font-bold text-center">Quét tải APK</span>
+              </div>
+              {/* Download Button */}
+              <a 
+                href={apkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold rounded-lg text-xs transition-all active:scale-95 shadow-md shadow-green-900/20 w-32 text-center"
+              >
+                Tải file APK
+              </a>
+            </div>
           </div>
         </div>
 

@@ -25,6 +25,7 @@ import { PaymentSuccessPage } from "@/app/pages/PaymentSuccessPage";
 import { PaymentFailurePage } from "@/app/pages/PaymentFailurePage";
 import { ExpiryWarningDemo } from "@/app/pages/ExpiryWarningDemo";
 import { MaintenancePage } from "@/app/pages/MaintenancePage";
+import { DownloadPage } from "@/app/pages/DownloadPage";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AIChatAssistant } from "@/app/components/AIChatAssistant";
 import { Toaster } from "@/app/components/ui/sonner";
@@ -116,6 +117,7 @@ const router = createBrowserRouter([
       { path: "/blog/:id", Component: BlogDetailPage },
       { path: "/policy", Component: PolicyPage },
       { path: "/contact", Component: ContactPage },
+      { path: "/download", Component: DownloadPage },
       { path: "/login", Component: LoginPage },
       { path: "/forgot-password", Component: ForgotPasswordPage },
       { path: "/admin/login", Component: LoginPage },

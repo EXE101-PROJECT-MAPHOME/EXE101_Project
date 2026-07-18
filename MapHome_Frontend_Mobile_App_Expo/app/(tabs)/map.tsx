@@ -79,7 +79,7 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
         goongjs.accessToken = '${key}';
         var map = new goongjs.Map({
             container: 'map',
-            style: 'https://tiles.goong.io/assets/goong_map_web.json',
+            style: 'https://tiles.goong.io/assets/goong_map_web.json?api_key=${key}',
             center: [106.7009, 10.7769],
             zoom: 13,
             attributionControl: false
@@ -107,7 +107,7 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
                 : "";
 
             el.innerHTML = 
-                '<div style="position: relative;">' +
+                '<div style="position: relative; top: -16px;">' +
                 verifiedBadge +
                 '<div style="background-color: ' + color + '; width: 32px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 6px 12px rgba(20,82,49,0.2); display: flex; align-items: center; justify-content: center; opacity: 0.95;">' +
                     '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="white" style="transform: rotate(45deg);"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>' +
@@ -133,7 +133,7 @@ const buildMapHtml = (tint: string, text: string, key: string) => `
             }
 
             el.innerHTML = 
-                '<div style="position: relative;">' +
+                '<div style="position: relative; top: -21px;">' +
                 '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 64px; height: 64px; border-radius: 50%; background: ' + glowColor + '; animation: pin-glow 2s infinite;"></div>' +
                 '<div style="background: ' + gradient + '; width: 42px; height: 42px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 8px 16px rgba(20,82,49,0.3); display: flex; align-items: center; justify-content: center; position: relative; z-index: 2;">' +
                     '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="white" style="transform: rotate(45deg);">' +
@@ -234,9 +234,21 @@ export default function MapScreen() {
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
+      // Thử lấy vị trí với Timeout 5 giây để tránh bị treo vĩnh viễn trên máy ảo
+      const fetchLocation = async () => {
+        let loc = await Location.getLastKnownPositionAsync({});
+        if (!loc) {
+          loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+        }
+        return loc;
+      };
+
+      const location = (await Promise.race([
+        fetchLocation(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000))
+      ])) as Location.LocationObject;
 
       const { latitude, longitude } = location.coords;
       
@@ -570,6 +582,7 @@ export default function MapScreen() {
             source={{ html: buildMapHtml(tint, text, GOONG_MAPTILES_KEY) }}
             originWhitelist={["*"]}
             javaScriptEnabled={true}
+            androidLayerType="hardware"
             onMessage={(event) => {
               try {
                 const data = JSON.parse(event.nativeEvent.data);

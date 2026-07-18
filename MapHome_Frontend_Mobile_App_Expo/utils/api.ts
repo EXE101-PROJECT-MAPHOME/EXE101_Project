@@ -8,7 +8,7 @@ const useLocalBackend = process.env.EXPO_PUBLIC_USE_LOCAL_BACKEND === 'true';
 const defaultLocalUrl = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
 const localUrl = process.env.EXPO_PUBLIC_LOCAL_API_URL || defaultLocalUrl;
 
-const deployedUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://exe101project-maphome-api.up.railway.app';
+const deployedUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://exe101-project.onrender.com';
 
 const API_BASE = useLocalBackend ? localUrl : deployedUrl;
 

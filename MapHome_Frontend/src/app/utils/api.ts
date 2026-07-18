@@ -1,6 +1,6 @@
-const useLocalBackend = (import.meta as any).env?.VITE_USE_LOCAL_BACKEND === "true";
+const useLocalBackend = (import.meta as any).env?.DEV && (import.meta as any).env?.VITE_USE_LOCAL_BACKEND === "true";
 const localUrl = "http://localhost:5000";
-const deployedUrl = (import.meta as any).env?.VITE_API_BASE || "https://exe101project-maphome-api.up.railway.app";
+const deployedUrl = (import.meta as any).env?.VITE_API_BASE || "https://exe101-project.onrender.com";
 
 export const API_BASE = useLocalBackend ? localUrl : deployedUrl;
 
