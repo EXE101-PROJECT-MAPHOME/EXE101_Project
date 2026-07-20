@@ -116,7 +116,8 @@ Nếu bạn không thuộc ngành lập trình hoặc muốn xem nhanh cách ho�
 #### 🌐 Deploy & Vận hành
 - [x] Backend deploy lên **Railway** (tự động từ GitHub Actions)
 - [x] Web Frontend deploy lên **Vercel** (tự động từ GitHub)
-- [x] Biến môi trường phân tách rõ ràng (Local / Deploy) qua `VITE_USE_LOCAL_BACKEND` và `EXPO_PUBLIC_USE_LOCAL_BACKEND`
+- [x] AI Service deploy lên **Vercel** (kết nối trực tiếp từ Web/App không qua Node.js để tối ưu tốc độ streaming).
+- [x] Biến môi trường phân tách rõ ràng (Local / Deploy) qua `VITE_USE_LOCAL_BACKEND` và `EXPO_PUBLIC_USE_LOCAL_BACKEND` tự động switch cả API lẫn AI.
 - [x] Swagger UI tự động tại `/api-docs`
 - [x] Dữ liệu thống kê trang chủ cập nhật theo thời gian thực từ API Railway
 
@@ -273,7 +274,7 @@ EXE101_Project/ (Thư mục gốc)
    ```
 3. Tạo file cấu hình môi trường `.env` từ file mẫu:
    ```dotenv
-   # true = dùng localhost:5000 | false = dùng VITE_API_BASE (Railway deploy)
+   # true = dùng localhost:5000 (Node.js) & localhost:8000 (Python AI) | false = dùng bản Deploy
    VITE_USE_LOCAL_BACKEND=true
    VITE_API_BASE=https://exe101project-maphome-api.up.railway.app
    VITE_GOOGLE_CLIENT_ID=817734182215-ijh0r2a1fbcsm5u5nams9e92obh5cmck.apps.googleusercontent.com
@@ -299,7 +300,7 @@ EXE101_Project/ (Thư mục gốc)
    ```
 3. Tạo file `.env` tại thư mục gốc của mobile app:
    ```dotenv
-   # true = kết nối localhost backend | false = kết nối Railway deploy
+   # true = kết nối localhost backend & AI | false = kết nối Railway & Vercel AI deploy
    EXPO_PUBLIC_USE_LOCAL_BACKEND=false
    EXPO_PUBLIC_API_URL=https://exe101project-maphome-api.up.railway.app
    EXPO_PUBLIC_LOCAL_API_URL=

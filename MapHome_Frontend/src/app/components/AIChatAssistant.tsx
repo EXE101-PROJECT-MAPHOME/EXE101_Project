@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { MessageSquare, Send, X, Bot, Loader2, Sparkles } from "lucide-react";
-import api, { API_BASE } from "@/app/utils/api";
+import api, { API_BASE, AI_URL } from "@/app/utils/api";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -107,7 +107,7 @@ export const AIChatAssistant: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const response = await fetch(`${API_BASE}/api/ai/chat`, {
+      const response = await fetch(`${AI_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
