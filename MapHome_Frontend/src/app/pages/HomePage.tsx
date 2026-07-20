@@ -158,7 +158,7 @@ const HCMC_DISTRICTS = [
 // ─── Main Component ──────────────────────────────────────────
 
 export function HomePage() {
-  const apkUrl = `${window.location.origin}/MapHome.apk`;
+  const apkUrl = "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/86ebb301-1ccf-4ef5-a89c-38c822e7e70d";
   const navigate = useNavigate();
   const [propertyApi, setPropertyApi] = useState<CarouselApi>();
   const [testimonialApi, setTestimonialApi] = useState<CarouselApi>();
@@ -1067,7 +1067,8 @@ export function HomePage() {
               <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
                 <a
                   href={apkUrl}
-                  download="MapHome.apk"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-black rounded-2xl shadow-xl shadow-emerald-950/40 flex items-center justify-center gap-2.5 transition-all duration-300 hover:-translate-y-0.5 active:scale-98"
                 >
                   <Download className="size-5" />

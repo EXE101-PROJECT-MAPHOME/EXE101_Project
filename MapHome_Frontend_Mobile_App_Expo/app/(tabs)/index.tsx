@@ -364,7 +364,7 @@ export default function HomePage() {
           <View className="flex-row items-center">
             <View className="w-10 h-10 bg-white rounded-xl items-center justify-center mr-2 border border-slate-100/50 shadow-md overflow-hidden">
               <Image
-                source={require("../../assets/images/MapHome_logo_2.png")}
+                source={require("../../assets/images/MapHome_logo_2.jpg")}
                 className="w-[120%] h-[120%]"
                 resizeMode="cover"
               />

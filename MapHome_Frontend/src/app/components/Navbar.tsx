@@ -22,7 +22,7 @@ import { RoleBadge } from "@/app/components/RoleBadge";
 import NotificationCenter from "@/app/components/NotificationCenter";
 
 export function Navbar() {
-  const apkUrl = `${window.location.origin}/MapHome.apk`;
+  const apkUrl = "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/86ebb301-1ccf-4ef5-a89c-38c822e7e70d";
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useNavigate } from "react-router-dom";
@@ -120,6 +120,7 @@ export function MapPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
+  const [searchMode, setSearchMode] = useState<"address" | "name">("address");
   const [filters, setFilters] = useState<RentalFilters>(defaultFilters);
   const [searchLocations, setSearchLocations] = useState<SearchLocation[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -484,18 +485,49 @@ export function MapPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center w-full">
-            <div className="relative w-full sm:flex-1 group">
-              <div className="absolute inset-0 bg-emerald-100/50 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 size-5 text-emerald-950/40" />
-              <Input
+            <div className="relative w-full sm:flex-1 group flex bg-white/60 border border-emerald-900/10 rounded-2xl shadow-sm focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300 z-10">
+              <div className="absolute inset-0 bg-emerald-100/50 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 -z-10" />
+              
+              <select 
+                value={searchMode}
+                onChange={(e) => setSearchMode((e.target as HTMLSelectElement).value as "address" | "name")}
+                className="h-14 bg-transparent pl-4 pr-2 text-sm font-bold text-emerald-700 outline-none border-r border-emerald-900/10 cursor-pointer rounded-l-2xl hover:bg-emerald-50/50 transition-colors"
+              >
+                <option value="address">Địa chỉ</option>
+                <option value="name">Tên trọ</option>
+              </select>
+
+              <div className="flex items-center pl-3">
+                <Search className="size-5 text-emerald-950/40" />
+              </div>
+
+              <input
                 type="text"
-                placeholder="Tìm kiếm theo tên hoặc địa chỉ..."
+                placeholder={searchMode === 'address' ? "Nhập tên đường, phường, quận..." : "Nhập tên phòng trọ..."}
                 value={searchTerm}
-                onChange={(e) => handleAutocompleteInput(e.target.value)}
-                onKeyDown={handleKeyDown}
+                onChange={(e) => {
+                  const target = e.target as HTMLInputElement;
+                  if (searchMode === 'address') {
+                    handleAutocompleteInput(target.value);
+                  } else {
+                    setSearchTerm(target.value);
+                    setShowDropdown(true);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    if (searchMode === 'address' && predictions.length > 0) {
+                      handleSelectPrediction(predictions[0]);
+                    } else {
+                      performSearch(searchTerm);
+                    }
+                    setPredictions([]);
+                    setShowDropdown(false);
+                  }
+                }}
                 onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                className="pl-12 h-14 bg-white/50 border-white/20 rounded-2xl text-emerald-950 font-medium placeholder:text-emerald-950/30 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all duration-300 shadow-sm relative z-10"
+                className="flex-1 h-14 bg-transparent px-3 text-emerald-950 font-medium placeholder:text-emerald-950/30 outline-none border-none rounded-r-2xl"
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 z-20">
                 {(isSearching || isGeocoding) && (
@@ -529,7 +561,7 @@ export function MapPage() {
 
               {/* Suggestions Dropdown */}
               <AnimatePresence>
-                {showDropdown && predictions.length > 0 && (
+                {showDropdown && searchMode === 'address' && predictions.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -562,7 +594,7 @@ export function MapPage() {
               </AnimatePresence>
 
               <AnimatePresence>
-                {showDropdown && searchPropertySuggestions.length > 0 && (
+                {showDropdown && searchMode === 'name' && searchPropertySuggestions.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}

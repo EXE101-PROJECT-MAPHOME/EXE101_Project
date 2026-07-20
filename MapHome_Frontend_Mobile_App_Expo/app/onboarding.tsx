@@ -28,19 +28,19 @@ const SLIDES = [
     id: "1",
     title: "Khám phá dễ dàng",
     description: "Tìm kiếm phòng trọ, căn hộ qua bản đồ trực quan với thông tin chính xác nhất.",
-    image: require("../assets/images/onboarding_map.png"),
+    image: require("../assets/images/onboarding_map.jpg"),
   },
   {
     id: "2",
     title: "Kết nối trực tiếp",
     description: "Liên hệ nhanh chóng với chủ nhà hoặc người thuê mà không qua trung gian.",
-    image: require("../assets/images/onboarding_connect.png"),
+    image: require("../assets/images/onboarding_connect.jpg"),
   },
   {
     id: "3",
     title: "Bắt đầu hành trình",
     description: "Tìm tổ ấm mơ ước của bạn ngay hôm nay cùng MapHome.",
-    image: require("../assets/images/onboarding_journey.png"),
+    image: require("../assets/images/onboarding_journey.jpg"),
   },
 ];
 

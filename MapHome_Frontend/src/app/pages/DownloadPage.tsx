@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useEffect } from "react";
 
 export function DownloadPage() {
-  const apkUrl = `${window.location.origin}/MapHome.apk`;
+  const apkUrl = "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/c3db9dfb-61c7-461b-9a76-7b122fbc825d";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -50,7 +50,8 @@ export function DownloadPage() {
                 <div className="w-full space-y-3 pt-4">
                   <a
                     href={apkUrl}
-                    download="MapHome.apk"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/30 active:scale-95 transition-all"
                   >
                     <Download className="size-5" />

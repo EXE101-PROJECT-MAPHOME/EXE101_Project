@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, X, Smartphone, ArrowRight, ShieldCheck, Settings, AlertTriangle, ExternalLink } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
@@ -10,7 +10,7 @@ interface ApkDownloadBannerProps {
 export function ApkDownloadBanner({ 
   apkUrl
 }: ApkDownloadBannerProps) {
-  const finalApkUrl = apkUrl || `${window.location.origin}/MapHome.apk`;
+  const finalApkUrl = apkUrl || "https://expo.dev/accounts/dang_thanh_tu/projects/maphome/builds/c3db9dfb-61c7-461b-9a76-7b122fbc825d";
   const [isMobile, setIsMobile] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
@@ -64,13 +64,8 @@ export function ApkDownloadBanner({
       // If inside in-app browser, we shouldn't trigger direct download, just let user know
       setShowGuideModal(true);
     } else {
-      // Trigger the browser's download
-      const link = document.createElement("a");
-      link.href = finalApkUrl;
-      link.download = "MapHome.apk";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Open the expo download page in a new tab
+      window.open(finalApkUrl, '_blank');
 
       // Open the step-by-step installation guide
       setShowGuideModal(true);
