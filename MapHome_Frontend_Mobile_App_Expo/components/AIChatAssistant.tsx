@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import EventSource from 'react-native-sse';
-import { API_BASE } from '../utils/api';
+import { API_BASE, AI_URL } from '../utils/api';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePathname } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -74,7 +74,7 @@ export default function AIChatAssistant() {
     const history = messages.filter((_, idx) => idx > 0).map(m => ({ role: m.role, content: m.content }));
     const token = await AsyncStorage.getItem('token');
 
-    const es = new EventSource(`${API_BASE}/api/ai/chat`, {
+    const es = new EventSource(`${AI_URL}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -4,6 +4,11 @@ const deployedUrl = (import.meta as any).env?.VITE_API_BASE || "https://exe101-p
 
 export const API_BASE = useLocalBackend ? localUrl : deployedUrl;
 
+const defaultLocalAiUrl = "http://localhost:8000";
+const localAiUrl = (import.meta as any).env?.VITE_LOCAL_AI_URL || defaultLocalAiUrl;
+const deployedAiUrl = (import.meta as any).env?.VITE_AI_URL || "https://maphome-chatbot.vercel.app";
+export const AI_URL = useLocalBackend ? localAiUrl : deployedAiUrl;
+
 let logoutCallback: (() => void) | null = null;
 export const registerLogoutCallback = (callback: () => void) => {
   logoutCallback = callback;

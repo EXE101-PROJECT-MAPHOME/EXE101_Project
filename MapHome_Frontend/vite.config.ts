@@ -11,6 +11,10 @@ export default defineConfig(({ mode }) => {
     ? 'http://localhost:5000'
     : (env.VITE_API_BASE || 'https://exe101-project.onrender.com');
 
+  const aiTarget = useLocalBackend
+    ? 'http://localhost:8000'
+    : 'https://maphome-chatbot.vercel.app';
+
   return {
     plugins: [
       // The React and Tailwind plugins are both required for Make, even if
@@ -33,6 +37,12 @@ export default defineConfig(({ mode }) => {
           target: backendTarget,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api-proxy/, '/api'),
+        },
+        // Proxy cho AI Service
+        '/api/ai': {
+          target: aiTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/ai/, ''),
         },
       },
     },
