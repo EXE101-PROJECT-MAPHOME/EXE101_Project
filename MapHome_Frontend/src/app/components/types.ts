@@ -28,6 +28,7 @@ export interface VerificationRequest {
   scheduledTime: string; // e.g., "14:00"
   notes?: string;
   status: 'pending' | 'approved' | 'awaiting_photos' | 'photos_submitted' | 'completed' | 'rejected';
+  paymentStatus?: 'unpaid' | 'paid' | 'refunded';
   requestedAt: string;
   completedAt?: string;
   badgeAwarded?: GreenBadgeLevel;

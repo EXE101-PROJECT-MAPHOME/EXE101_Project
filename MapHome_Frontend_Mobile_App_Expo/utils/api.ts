@@ -10,7 +10,7 @@ const localUrl = process.env.EXPO_PUBLIC_LOCAL_API_URL || defaultLocalUrl;
 
 const deployedUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://exe101-project.onrender.com';
 
-const API_BASE = useLocalBackend ? localUrl : deployedUrl;
+export const API_BASE = useLocalBackend ? localUrl : deployedUrl;
 
 const api = axios.create({
   baseURL: API_BASE,
