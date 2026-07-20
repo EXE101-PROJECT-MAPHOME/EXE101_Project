@@ -4984,7 +4984,7 @@ const GlobalPricingView = ({ onRefresh }: { onRefresh: () => void }) => {
         />
 
         <PricingCard
-          title="Xác thực Thực địa"
+          title="Xác thực Thực tế"
           icon={<ShieldCheck className="size-6" />}
           color="amber"
           value={settings.pricing.premiumVerification}

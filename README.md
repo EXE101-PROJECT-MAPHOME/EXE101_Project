@@ -211,11 +211,13 @@ Hệ thống được tổ chức dưới dạng mono-repo gồm 3 thư mục t�
 EXE101_Project/ (Thư mục gốc)
 ├── MapHome_backend_NodeJS/                  # Hệ thống API Server (Express + MongoDB)
 ├── MapHome_Frontend/                        # Ứng dụng Web (React + Vite + TailwindCSS v4)
-└── MapHome_Frontend_Mobile_App_Expo/       # Ứng dụng Di động (React Native + Expo SDK 54)
+├── MapHome_Frontend_Mobile_App_Expo/        # Ứng dụng Di động (React Native + Expo SDK 54)
+└── MapHome_AI_Service_Python/               # AI Trợ lý ảo & Tư vấn (FastAPI + Groq LLM)
 ```
 
 ### 🛠️ Công nghệ sử dụng
-- **Backend:** Node.js, Express, MongoDB Atlas & Mongoose, Swagger API Docs, SMTP Gmail (Nodemailer), Groq AI SDK, Cloudinary, VNPay, PayOS.
+- **Backend (Node.js):** Node.js, Express, MongoDB Atlas & Mongoose, Swagger API Docs, SMTP Gmail (Nodemailer), Cloudinary, VNPay, PayOS.
+- **Backend (AI Python):** Python, FastAPI, Uvicorn, Groq AI LLM.
 - **Web Frontend:** React 18, Vite, TypeScript, TailwindCSS v4, Goong Maps JS SDK, Framer Motion, FullCalendar, Material UI v7.
 - **Mobile App:** React Native, Expo SDK 54, NativeWind (Tailwind v3), React Native Maps, Expo Image Picker, Expo Location, Firebase Auth.
 
@@ -315,9 +317,32 @@ EXE101_Project/ (Thư mục gốc)
 
 ---
 
+### Bước 4: Khởi Chạy AI Service (Python FastAPI)
+1. Mở một terminal mới và di chuyển vào thư mục AI:
+   ```bash
+   cd MapHome_AI_Service_Python
+   ```
+2. Cài đặt các thư viện Python:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Tạo file `.env` chứa khóa API (Groq) và chuỗi kết nối MongoDB:
+   ```dotenv
+   GROQ_API_KEY=your_groq_api_key
+   MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?appName=Cluster1
+   ```
+4. Khởi chạy server FastAPI:
+   ```bash
+   uvicorn main:app --reload --port 8000
+   ```
+   *AI Service sẽ chạy tại `http://localhost:8000`.*
+
+---
+
 ## 📖 Hướng Dẫn Kỹ Thuật Chuyên Sâu Từng Phần
 
 Để tìm hiểu sâu hơn về kiến trúc mã nguồn của từng dự án thành phần, vui lòng đọc các hướng dẫn chuyên biệt dưới đây:
 - 💻 **Backend Developer Guide:** Xem [MapHome_backend_NodeJS/README.md](./MapHome_backend_NodeJS/README.md) để tìm hiểu cấu trúc Schemas, logic tính toán Haversine và phân quyền endpoint.
 - 🌐 **Web Frontend Developer Guide:** Xem [MapHome_Frontend/README.md](./MapHome_Frontend/README.md) để biết cơ chế chia sẻ State của Context API và tích hợp Goong Maps.
 - 📱 **Mobile App Developer Guide:** Xem [MapHome_Frontend_Mobile_App_Expo/README.md](./MapHome_Frontend_Mobile_App_Expo/README.md) để biết cách Expo Router hoạt động, tích hợp WebView thanh toán và lưu trữ local storage.
+- 🤖 **AI Service Developer Guide:** Xem [MapHome_AI_Service_Python/README.md](./MapHome_AI_Service_Python/README.md) để xem hướng dẫn tích hợp Prompt AI, Query MongoDB và deploy Vercel.
