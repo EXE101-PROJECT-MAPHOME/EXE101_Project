@@ -27,6 +27,24 @@ interface Message {
 
 export default function AIChatAssistant() {
   const [modalVisible, setModalVisible] = useState(false);
+  const [provider, setProvider] = useState<'auto' | 'gemini' | 'groq' | 'openrouter'>('auto');
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+
+  // Danh sách model có thể chọn
+  const modelOptions: { value: 'auto' | 'gemini' | 'groq' | 'openrouter'; label: string; desc: string; icon: string }[] = [
+    { value: 'auto',       label: 'Auto',       desc: 'Tự động chọn AI tốt nhất',       icon: '✨' },
+    { value: 'gemini',     label: 'Gemini',     desc: 'Google Gemini (tự động chọn phiên bản)',  icon: '🔵' },
+    { value: 'openrouter', label: 'OpenRouter', desc: 'Gemini Flash Free via OpenRouter', icon: '🟢' },
+    { value: 'groq',       label: 'Llama 3.3',  desc: 'Meta Llama 3.3-70B via Groq',     icon: '🟡' },
+  ];
+  const currentModel = modelOptions.find((o) => o.value === provider) ?? modelOptions[0];
+  // Map provider → model name cụ thể để gửi lên backend
+  const providerModelMap: Record<string, string> = {
+    auto: '',
+    gemini: 'gemini-2.5-flash',
+    groq: 'llama-3.3-70b-versatile',
+    openrouter: 'openrouter/free',
+  };
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -78,11 +96,14 @@ export default function AIChatAssistant() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        'x-api-key': 'maphome_secret_key_123', // API Key bảo vệ server Python
       },
       body: JSON.stringify({
         message: userMessage,
         propertyId: currentPropertyId,
+        provider: provider,
+        model: providerModelMap[provider] || undefined,
         history: history,
       }),
     });
@@ -173,18 +194,67 @@ export default function AIChatAssistant() {
               colors={['#8b5cf6', '#a855f7']}
               style={styles.header}
             >
-              <View style={styles.headerLeft}>
-                <View style={styles.headerIconBg}>
-                  <Ionicons name="hardware-chip" size={20} color="#8b5cf6" />
+              <View style={styles.headerTop}>
+                <View style={styles.headerLeft}>
+                  <View style={styles.headerIconBg}>
+                    <Ionicons name="hardware-chip" size={20} color="#8b5cf6" />
+                  </View>
+                  <View>
+                    <Text style={styles.headerTitle}>MapHome AI</Text>
+                    <Text style={styles.headerSubtitle}>• TRỢ LÝ ẢO THÔNG MINH</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.headerTitle}>MapHome AI</Text>
-                  <Text style={styles.headerSubtitle}>• TRỢ LÝ ẢO THÔNG MINH</Text>
-                </View>
+                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                  <Ionicons name="close" size={24} color="#fff" />
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color="#fff" />
+
+              {/* Model Selector Dropdown */}
+              <TouchableOpacity
+                style={styles.modelDropdownTrigger}
+                onPress={() => setIsModelDropdownOpen(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.modelDropdownIcon}>{currentModel.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.modelDropdownLabel}>{currentModel.icon} {currentModel.label}</Text>
+                  <Text style={styles.modelDropdownDesc}>{currentModel.desc}</Text>
+                </View>
+                <Ionicons name="chevron-down" size={14} color="rgba(255,255,255,0.7)" />
               </TouchableOpacity>
+
+              {/* Dropdown Modal */}
+              <Modal
+                visible={isModelDropdownOpen}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setIsModelDropdownOpen(false)}
+              >
+                <TouchableOpacity
+                  style={styles.dropdownOverlay}
+                  activeOpacity={1}
+                  onPress={() => setIsModelDropdownOpen(false)}
+                >
+                  <View style={styles.dropdownMenu}>
+                    <Text style={styles.dropdownTitle}>Chọn AI Model</Text>
+                    {modelOptions.map((opt) => (
+                      <TouchableOpacity
+                        key={opt.value}
+                        style={[styles.dropdownItem, provider === opt.value && styles.dropdownItemActive]}
+                        onPress={() => { setProvider(opt.value); setIsModelDropdownOpen(false); }}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.dropdownItemIcon}>{opt.icon}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.dropdownItemLabel, provider === opt.value && styles.dropdownItemLabelActive]}>{opt.label}</Text>
+                          <Text style={styles.dropdownItemDesc}>{opt.desc}</Text>
+                        </View>
+                        {provider === opt.value && <Ionicons name="checkmark" size={16} color="#8b5cf6" />}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              </Modal>
             </LinearGradient>
 
             <FlatList
@@ -264,11 +334,96 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   header: {
+    padding: 16,
+    paddingTop: 20,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 20,
+  },
+  modelDropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    gap: 8,
+  },
+  modelDropdownIcon: {
+    fontSize: 16,
+  },
+  modelDropdownLabel: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  modelDropdownDesc: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 10,
+    marginTop: 1,
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  dropdownMenu: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    width: '100%',
+    paddingVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  dropdownTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6b7280',
+    textAlign: 'center',
+    paddingVertical: 12,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    marginBottom: 4,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  dropdownItemActive: {
+    backgroundColor: '#f5f3ff',
+    borderLeftWidth: 3,
+    borderLeftColor: '#8b5cf6',
+  },
+  dropdownItemIcon: {
+    fontSize: 22,
+  },
+  dropdownItemLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  dropdownItemLabelActive: {
+    color: '#7c3aed',
+  },
+  dropdownItemDesc: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 2,
   },
   headerLeft: {
     flexDirection: 'row',
