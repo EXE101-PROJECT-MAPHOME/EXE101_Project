@@ -97,7 +97,7 @@ export default function AIChatAssistant() {
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        'x-api-key': 'maphome_secret_key_123', // API Key bảo vệ server Python
+        'x-api-key': process.env.EXPO_PUBLIC_MAPHOME_AI_API_KEY || 'maphome_secret_key_123', // API Key bảo vệ server Python
       },
       body: JSON.stringify({
         message: userMessage,

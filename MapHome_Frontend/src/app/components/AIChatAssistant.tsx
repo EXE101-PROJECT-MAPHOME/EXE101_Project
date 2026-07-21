@@ -131,7 +131,7 @@ export const AIChatAssistant: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          "x-api-key": "maphome_secret_key_123", // API Key bảo vệ server Python
+          "x-api-key": (import.meta as any).env?.VITE_MAPHOME_AI_API_KEY || "maphome_secret_key_123", // API Key bảo vệ server Python
         },
         body: JSON.stringify({
           message: userMessage,
