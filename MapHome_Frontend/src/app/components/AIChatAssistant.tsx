@@ -45,6 +45,25 @@ export const AIChatAssistant: React.FC = () => {
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [provider, setProvider] = useState<"auto" | "gemini" | "groq" | "openrouter">("auto");
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+
+  // Danh sách model có thể chọn
+  const modelOptions: { value: "auto" | "gemini" | "groq" | "openrouter"; label: string; desc: string; icon: string }[] = [
+    { value: "auto",        label: "✨ Auto",       desc: "Tự động chọn AI tốt nhất",       icon: "✨" },
+    { value: "gemini",      label: "🔵 Gemini",     desc: "Google Gemini (tự động chọn phiên bản)",  icon: "🔵" },
+    { value: "openrouter",  label: "🟢 OpenRouter", desc: "Gemini Flash Free via OpenRouter", icon: "🟢" },
+    { value: "groq",        label: "🟡 Llama 3.3",  desc: "Meta Llama 3.3-70B via Groq",     icon: "🟡" },
+  ];
+  const currentModel = modelOptions.find((o) => o.value === provider) ?? modelOptions[0];
+
+  // Map provider → model name cụ thể để gửi lên backend
+  const providerModelMap: Record<string, string> = {
+    auto: "",
+    gemini: "gemini-2.5-flash",
+    groq: "llama-3.3-70b-versatile",
+    openrouter: "openrouter/free",
+  };
   const [currentPropertyId, setCurrentPropertyId] = useState<string | null>(
     null,
   );
@@ -112,10 +131,13 @@ export const AIChatAssistant: React.FC = () => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "x-api-key": "maphome_secret_key_123", // API Key bảo vệ server Python
         },
         body: JSON.stringify({
           message: userMessage,
           propertyId: currentPropertyId,
+          provider: provider,
+          model: providerModelMap[provider] || undefined,
           history: messages
             .filter((_, idx) => idx > 0)
             .map((m) => ({
@@ -223,6 +245,49 @@ export const AIChatAssistant: React.FC = () => {
               >
                 <X size={20} />
               </button>
+
+              {/* Model Selector Dropdown */}
+              <div className="relative mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModelDropdownOpen((v) => !v)}
+                  className="w-full flex items-center justify-between gap-2 bg-black/20 hover:bg-black/30 border border-white/15 rounded-xl px-3 py-2 transition-all backdrop-blur-md"
+                >
+                  <span className="text-[12px] font-bold text-white">{currentModel.label}</span>
+                  <span className="text-white/70 text-[10px]">{currentModel.desc}</span>
+                  <svg className={cn("w-3 h-3 text-white/70 transition-transform", isModelDropdownOpen && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <AnimatePresence>
+                  {isModelDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 overflow-hidden"
+                    >
+                      {modelOptions.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => { setProvider(opt.value); setIsModelDropdownOpen(false); }}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-indigo-50",
+                            provider === opt.value ? "bg-indigo-50 border-l-2 border-indigo-500" : ""
+                          )}
+                        >
+                          <span className="text-base">{opt.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className={cn("text-[13px] font-bold truncate", provider === opt.value ? "text-indigo-700" : "text-gray-800")}>{opt.label.replace(opt.icon + " ", "")}</p>
+                            <p className="text-[11px] text-gray-400 truncate">{opt.desc}</p>
+                          </div>
+                          {provider === opt.value && <span className="text-indigo-500">✓</span>}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             {/* Messages Area - Clean & Spaced */}

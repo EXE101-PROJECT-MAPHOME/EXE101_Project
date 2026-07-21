@@ -5,7 +5,7 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
 exports.chatWithAI = async (req, res) => {
     try {
-        const { message, history, propertyId } = req.body;
+        const { message, history, propertyId, provider, model } = req.body;
 
         if (!message) {
             return res.status(400).json({ error: "Vui lòng cung cấp 'message'" });
@@ -32,7 +32,9 @@ exports.chatWithAI = async (req, res) => {
             body: JSON.stringify({
                 message,
                 history: history || [],
-                propertyContext
+                propertyContext,
+                provider: provider || 'auto',
+                model: model || null
             })
         });
 
@@ -46,10 +48,8 @@ exports.chatWithAI = async (req, res) => {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
-        // If frontend needs CORS access to these headers (though express cors usually handles it)
         res.flushHeaders();
 
-        // Node.js fetch body is a ReadableStream (Web API)
         if (!resFetch.body) {
              return res.status(500).json({ error: "No response body from AI" });
         }
