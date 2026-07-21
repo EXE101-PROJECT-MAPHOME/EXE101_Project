@@ -72,9 +72,13 @@ Nếu bạn không thuộc ngành lập trình hoặc muốn xem nhanh cách ho�
 - [x] Lịch sử giao dịch (Transactions)
 - [x] Cảnh báo tin sắp hết hạn
 
-#### 🤖 Trợ lý AI
-- [x] Chatbot tư vấn phòng trọ và pháp lý (Groq LLM)
-- [x] Giao diện chat nổi trên mọi trang Web
+#### 🤖 Trợ lý AI Đa Mô Hình (Multi-Model AI Chatbot)
+- [x] Chatbot tư vấn phòng trọ và pháp lý chuyên sâu (Tích hợp Google Gemini 2.5 Flash, Groq Llama 3.3, OpenRouter).
+- [x] Giao diện chat nổi trên Website & Mobile App với menu chọn model AI mượt mà.
+- [x] Cơ chế Auto-Routing & Fallback thông minh (Tự động chuyển đổi AI dự phòng nếu model chính bị lỗi hoặc hết quota).
+- [x] Database Function Calling (AI tự động gọi lệnh tìm kiếm phòng trọ trong Database theo yêu cầu người dùng).
+- [x] Native Gemini API streaming siêu tốc (Không qua trung gian).
+- [x] Hệ thống bảo mật API Key (`x-api-key`) độc lập bảo vệ AI Service khỏi truy cập trái phép.
 
 #### 📰 Blog & Nội dung
 - [x] Trang Blog cẩm nang thuê trọ
