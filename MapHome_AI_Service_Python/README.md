@@ -4,7 +4,7 @@ Dự án này là API cho trợ lý ảo AI của MapHome, được viết bằn
 Phiên bản mới nhất đã được nâng cấp mạnh mẽ với kiến trúc Đa Mô Hình (Multi-Model AI) và bảo mật chuyên sâu.
 
 ## 🌟 Các tính năng nổi bật:
-- Hỗ trợ đa nền tảng AI: **Google Gemini (Native REST API)**, **Groq Llama 3.3**, **OpenRouter**.
+- Hỗ trợ đa nền tảng AI: **Google Gemini (Native REST API)**, **Groq Llama 3.3**, **OpenRouter**, **Monica AI**, **GitHub Models**, **SambaNova Cloud**.
 - **Auto-Routing & Fallback**: Tự động chuyển đổi sang AI dự phòng nếu model chính gặp lỗi 404/429 (hết quota, bị giới hạn, v.v.).
 - **Function Calling**: AI tự động gọi xuống Database (`search_properties`) để tra cứu phòng trọ theo yêu cầu thực tế của khách hàng.
 - **Bảo mật API Key độc lập**: Bảo vệ toàn bộ endpoint `/chat` bằng hệ thống `x-api-key`.
@@ -21,3 +21,6 @@ Khi deploy lên Render/Railway, bạn cần khai báo các biến sau:
 - `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`: Các API Key của Google Gemini.
 - `OPENROUTER_API_KEY`: API Key của OpenRouter (nếu dùng).
 - `GROQ_API_KEY`: API Key của Groq (nếu dùng).
+- `MONICA_API_KEY`: API Key của Monica AI (GPT-4o).
+- `GITHUB_API_KEY`: Personal Access Token của GitHub để dùng GitHub Models (cần cấp quyền Models: Read-only).
+- `SAMBANOVA_API_KEY`: API Key của SambaNova Cloud để chạy Llama 3.3 siêu tốc.

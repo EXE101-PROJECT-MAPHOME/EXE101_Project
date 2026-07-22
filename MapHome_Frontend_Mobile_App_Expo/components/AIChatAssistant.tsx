@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import EventSource from 'react-native-sse';
 import { API_BASE, AI_URL } from '../utils/api';
 import { LinearGradient } from 'expo-linear-gradient';
-import { usePathname } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Message {
@@ -27,20 +27,26 @@ interface Message {
 
 export default function AIChatAssistant() {
   const [modalVisible, setModalVisible] = useState(false);
-  const [provider, setProvider] = useState<'auto' | 'gemini' | 'groq' | 'openrouter'>('auto');
+  const [provider, setProvider] = useState<'auto' | 'gemini' | 'groq' | 'openrouter' | 'monica' | 'github' | 'sambanova'>('auto');
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
 
   // Danh sách model có thể chọn
-  const modelOptions: { value: 'auto' | 'gemini' | 'groq' | 'openrouter'; label: string; desc: string; icon: string }[] = [
+  const modelOptions: { value: 'auto' | 'gemini' | 'groq' | 'openrouter' | 'monica' | 'github' | 'sambanova'; label: string; desc: string; icon: string }[] = [
     { value: 'auto',       label: 'Auto',       desc: 'Tự động chọn AI tốt nhất',       icon: '✨' },
+    { value: 'github',     label: 'GitHub',     desc: 'GitHub Models (GPT-4o)',         icon: '🐙' },
+    { value: 'sambanova',  label: 'SambaNova',  desc: 'Llama 3.1 70B (Siêu nhanh)',     icon: '🚀' },
     { value: 'gemini',     label: 'Gemini',     desc: 'Google Gemini (tự động chọn phiên bản)',  icon: '🔵' },
     { value: 'openrouter', label: 'OpenRouter', desc: 'Gemini Flash Free via OpenRouter', icon: '🟢' },
     { value: 'groq',       label: 'Llama 3.3',  desc: 'Meta Llama 3.3-70B via Groq',     icon: '🟡' },
+    { value: 'monica',     label: 'Monica',     desc: 'Monica AI (GPT-4o/Claude)',      icon: '🟣' },
   ];
   const currentModel = modelOptions.find((o) => o.value === provider) ?? modelOptions[0];
   // Map provider → model name cụ thể để gửi lên backend
   const providerModelMap: Record<string, string> = {
     auto: '',
+    github: 'gpt-4o',
+    sambanova: 'Meta-Llama-3.3-70B-Instruct',
+    monica: 'gpt-4o',
     gemini: 'gemini-2.5-flash',
     groq: 'llama-3.3-70b-versatile',
     openrouter: 'openrouter/free',
@@ -57,7 +63,16 @@ export default function AIChatAssistant() {
   const flatListRef = useRef<FlatList>(null);
   
   const pathname = usePathname();
+  const router = useRouter();
   const [currentPropertyId, setCurrentPropertyId] = useState<string | null>(null);
+
+  const startNewChat = () => {
+    setMessages([{
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: 'Chào bạn! Mình là MapHome AI, mình có thể giúp gì cho bạn hôm nay?',
+    }]);
+  };
 
   useEffect(() => {
     // Extract property ID from pathname (e.g., /room/66a123...)
@@ -146,8 +161,48 @@ export default function AIChatAssistant() {
     });
   };
 
-  const renderMessage = ({ item }: { item: Message }) => {
+  const renderMessage = ({ item, index }: { item: Message, index: number }) => {
     const isUser = item.role === 'user';
+    
+    // Welcome State if only 1 message
+    if (index === 0 && messages.length === 1 && !isUser) {
+      return (
+        <View style={styles.welcomeContainer}>
+          <LinearGradient
+            colors={['#4f46e5', '#9333ea']}
+            style={styles.welcomeIconContainer}
+          >
+            <Ionicons name="sparkles" size={32} color="#fff" />
+          </LinearGradient>
+          <Text style={styles.welcomeTitle}>Xin chào!</Text>
+          <Text style={styles.welcomeDesc}>Tôi là trợ lý AI. Tôi có thể giúp gì cho bạn?</Text>
+          
+          <View style={styles.suggestionGrid}>
+            {[
+              { icon: 'search', title: 'Tìm phòng', prompt: 'Gợi ý phòng trọ sinh viên giá rẻ', color: '#6366f1' },
+              { icon: 'document-text', title: 'Hợp đồng', prompt: 'Lưu ý khi ký hợp đồng thuê nhà', color: '#10b981' },
+              { icon: 'home', title: 'Kinh nghiệm', prompt: 'Mẹo tìm phòng an toàn không bị lừa', color: '#f59e0b' },
+              { icon: 'location', title: 'Khu vực', prompt: 'Đánh giá an ninh khu vực Quận 7', color: '#8b5cf6' }
+            ].map((sug, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.suggestionCard}
+                onPress={() => setInputText(sug.prompt)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.suggestionIconBg, { borderColor: sug.color + '20' }]}>
+                  <Ionicons name={sug.icon as any} size={16} color={sug.color} />
+                </View>
+                <Text style={styles.suggestionText}>{sug.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      );
+    }
+
+    if (index === 0 && messages.length > 1 && !isUser) return null; // Hide the initial welcome message when chatting
+
     return (
       <View style={[styles.messageWrapper, isUser ? styles.messageWrapperUser : styles.messageWrapperBot]}>
         {!isUser && (
@@ -204,9 +259,23 @@ export default function AIChatAssistant() {
                     <Text style={styles.headerSubtitle}>• TRỢ LÝ ẢO THÔNG MINH</Text>
                   </View>
                 </View>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                  <Ionicons name="close" size={24} color="#fff" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity onPress={startNewChat} style={styles.headerIconButton}>
+                    <Ionicons name="add" size={22} color="#fff" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={() => {
+                      setModalVisible(false);
+                      router.push('/chat' as any);
+                    }} 
+                    style={styles.headerIconButton}
+                  >
+                    <Ionicons name="time-outline" size={20} color="#fff" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                    <Ionicons name="close" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Model Selector Dropdown */}
@@ -342,6 +411,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerIconButton: {
+    padding: 4,
+  },
   modelDropdownTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -449,6 +521,73 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+  },
+  welcomeContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    minHeight: 250,
+  },
+  welcomeIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    shadowColor: '#4f46e5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  welcomeTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  welcomeDesc: {
+    fontSize: 12,
+    color: '#64748b',
+    marginBottom: 24,
+    fontWeight: '500',
+  },
+  suggestionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 8,
+  },
+  suggestionCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  suggestionIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  suggestionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#334155',
   },
   messageList: {
     padding: 16,

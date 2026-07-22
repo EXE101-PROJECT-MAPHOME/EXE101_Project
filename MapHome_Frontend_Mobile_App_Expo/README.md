@@ -115,7 +115,7 @@ Tài liệu hướng dẫn phát triển và cấu trúc ứng dụng di động
 ### 🤖 5. Trợ lý AI (Multi-Model AI Chatbot)
 - **Cơ chế hoạt động:**
   - Component [AIChatAssistant.tsx](./components/AIChatAssistant.tsx) sử dụng React Native Modal để tạo giao diện chat nổi mượt mà.
-  - Hỗ trợ đổi mô hình AI (Google Gemini, Groq, OpenRouter) trực tiếp từ điện thoại.
+  - Hỗ trợ đổi mô hình AI (Google Gemini, Groq, OpenRouter, Monica AI, GitHub Models, SambaNova) trực tiếp từ điện thoại.
   - Tích hợp package `react-native-sse` để nhận luồng chữ chạy (Server-Sent Events) từ API Python một cách trơn tru trên thiết bị di động.
   - Kèm theo API Key (`EXPO_PUBLIC_MAPHOME_AI_API_KEY`) trong mọi request để chống spam trái phép.
 

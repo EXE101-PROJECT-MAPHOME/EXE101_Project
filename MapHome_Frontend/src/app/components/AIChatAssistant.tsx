@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { MessageSquare, Send, X, Bot, Loader2, Sparkles } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { MessageSquare, Send, X, Bot, Loader2, Sparkles, Plus, History, Search, Home, FileText, MapPin } from "lucide-react";
 import api, { API_BASE, AI_URL } from "@/app/utils/api";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,43 +23,40 @@ interface Message {
 
 export const AIChatAssistant: React.FC = () => {
   const location = useLocation();
-
-  // Excluded paths where AI Chat should not appear
-  const excludedPaths = [
-    "/login",
-    "/register",
-    "/forgot-password",
-    "/admin/login",
-  ];
-  const isExcludedPage = excludedPaths.includes(location.pathname);
-
-  if (isExcludedPage) return null;
+  const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      text: "Xin chào! Tôi là trợ lý ảo MapHome. Tôi có thể giúp gì cho bạn hôm nay?",
-      role: "assistant",
-      timestamp: new Date(),
-    },
-  ]);
+  
+  const initialMessage: Message = {
+    text: "Xin chào! Tôi là trợ lý ảo MapHome. Tôi có thể giúp gì cho bạn hôm nay?",
+    role: "assistant",
+    timestamp: new Date(),
+  };
+
+  const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [isLoading, setIsLoading] = useState(false);
-  const [provider, setProvider] = useState<"auto" | "gemini" | "groq" | "openrouter">("auto");
+  const [provider, setProvider] = useState<"auto" | "gemini" | "groq" | "openrouter" | "monica" | "github" | "sambanova">("auto");
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
 
   // Danh sách model có thể chọn
-  const modelOptions: { value: "auto" | "gemini" | "groq" | "openrouter"; label: string; desc: string; icon: string }[] = [
+  const modelOptions: { value: "auto" | "gemini" | "groq" | "openrouter" | "monica" | "github" | "sambanova"; label: string; desc: string; icon: string }[] = [
     { value: "auto",        label: "✨ Auto",       desc: "Tự động chọn AI tốt nhất",       icon: "✨" },
+    { value: "github",      label: "🐙 GitHub",     desc: "GitHub Models (GPT-4o)",         icon: "🐙" },
+    { value: "sambanova",   label: "🚀 SambaNova",  desc: "Llama 3.1 70B (Siêu nhanh)",     icon: "🚀" },
     { value: "gemini",      label: "🔵 Gemini",     desc: "Google Gemini (tự động chọn phiên bản)",  icon: "🔵" },
     { value: "openrouter",  label: "🟢 OpenRouter", desc: "Gemini Flash Free via OpenRouter", icon: "🟢" },
     { value: "groq",        label: "🟡 Llama 3.3",  desc: "Meta Llama 3.3-70B via Groq",     icon: "🟡" },
+    { value: "monica",      label: "🟣 Monica",     desc: "Monica AI (GPT-4o/Claude)",      icon: "🟣" },
   ];
   const currentModel = modelOptions.find((o) => o.value === provider) ?? modelOptions[0];
 
   // Map provider → model name cụ thể để gửi lên backend
   const providerModelMap: Record<string, string> = {
     auto: "",
+    github: "gpt-4o",
+    sambanova: "Meta-Llama-3.3-70B-Instruct",
+    monica: "gpt-4o",
     gemini: "gemini-2.5-flash",
     groq: "llama-3.3-70b-versatile",
     openrouter: "openrouter/free",
@@ -98,6 +95,27 @@ export const AIChatAssistant: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Excluded paths where AI Chat should not appear
+  const excludedPaths = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/admin/login",
+    "/chat",
+  ];
+  const isExcludedPage = excludedPaths.includes(location.pathname);
+
+  if (isExcludedPage) return null;
+
+  const handleNewChat = () => {
+    setMessages([{ ...initialMessage, timestamp: new Date() }]);
+  };
+
+  const handleHistory = () => {
+    setIsOpen(false);
+    navigate("/chat");
+  };
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -218,7 +236,7 @@ export const AIChatAssistant: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] h-[580px] max-h-[calc(100vh-140px)] rounded-[32px] shadow-[0_20px_50px_rgba(79,70,229,0.15)] border border-white/40 bg-white/90 backdrop-blur-2xl overflow-hidden flex flex-col"
+            className="fixed bottom-24 right-6 z-50 w-[420px] max-w-[calc(100vw-48px)] h-[680px] max-h-[calc(100vh-140px)] rounded-[32px] shadow-[0_20px_50px_rgba(79,70,229,0.15)] border border-white/40 bg-white/90 backdrop-blur-2xl overflow-hidden flex flex-col"
           >
             {/* Header - Vibrant Gradient */}
             <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 p-6 text-white relative shrink-0">
@@ -239,12 +257,41 @@ export const AIChatAssistant: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="absolute top-6 right-6 p-2 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
+              
+              <div className="absolute top-5 right-5 flex items-center gap-1">
+                <button
+                  onClick={handleHistory}
+                  title="Lịch sử chat (Mở trang chat lớn)"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors flex items-center gap-1 group relative"
+                >
+                  <History size={18} />
+                  {/* Tooltip */}
+                  <span className="absolute -bottom-8 right-0 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity">
+                    Xem lịch sử
+                  </span>
+                </button>
+
+                <button
+                  onClick={handleNewChat}
+                  title="Đoạn chat mới"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors flex items-center gap-1 group relative"
+                >
+                  <Plus size={20} />
+                  <span className="absolute -bottom-8 right-0 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity">
+                    Chat mới
+                  </span>
+                </button>
+
+                <div className="w-px h-4 bg-white/20 mx-1"></div>
+
+                <button
+                  onClick={() => setIsOpen(false)}
+                  title="Đóng"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
               {/* Model Selector Dropdown */}
               <div className="relative mt-4">
@@ -290,35 +337,93 @@ export const AIChatAssistant: React.FC = () => {
               </div>
             </div>
 
-            {/* Messages Area - Clean & Spaced */}
+            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 scroll-smooth no-scrollbar">
-              {messages.map((msg, idx) => (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={idx}
-                  className={cn(
-                    "flex flex-col",
-                    msg.role === "user" ? "items-end" : "items-start",
-                  )}
-                >
-                  <div
+              {messages.length === 1 && messages[0].text === initialMessage.text ? (
+                <div className="flex flex-col items-center justify-center py-4 min-h-full">
+                  <motion.div 
+                    initial={{ scale: 0.8, opacity: 0, y: 10 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-16 h-16 bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-4"
+                  >
+                    <Sparkles size={28} className="text-white" />
+                  </motion.div>
+                  
+                  <motion.h3 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.1 }}
+                    className="text-lg font-black bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-1 text-center"
+                  >
+                    Xin chào!
+                  </motion.h3>
+                  
+                  <motion.p 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
+                    className="text-slate-500 text-xs text-center font-medium px-4 mb-6"
+                  >
+                    Tôi là trợ lý AI. Tôi có thể giúp gì cho bạn?
+                  </motion.p>
+
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.3 }}
+                    className="grid grid-cols-2 gap-3 w-full"
+                  >
+                    {[
+                      { icon: <Search size={16} className="text-indigo-500" />, title: "Tìm phòng", prompt: "Gợi ý phòng trọ sinh viên" },
+                      { icon: <FileText size={16} className="text-emerald-500" />, title: "Hợp đồng", prompt: "Lưu ý ký hợp đồng thuê" },
+                      { icon: <Home size={16} className="text-amber-500" />, title: "Kinh nghiệm", prompt: "Mẹo tìm phòng an toàn" },
+                      { icon: <MapPin size={16} className="text-purple-500" />, title: "Khu vực", prompt: "An ninh khu vực Q7" }
+                    ].map((item, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setMessage(item.prompt);
+                        }}
+                        className="flex flex-col items-start p-3 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-500/5 transition-all text-left group"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform mb-2 border border-slate-100">
+                          {item.icon}
+                        </div>
+                        <span className="font-bold text-slate-700 text-[11px] leading-tight">{item.title}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                </div>
+              ) : (
+                messages.map((msg, idx) => (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={idx}
                     className={cn(
-                      "max-w-[85%] px-5 py-3.5 rounded-[24px] text-sm leading-relaxed shadow-sm",
-                      msg.role === "user"
-                        ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
-                        : "bg-white border border-slate-100 text-slate-700 rounded-tl-none font-medium",
+                      "flex flex-col",
+                      msg.role === "user" ? "items-end" : "items-start",
                     )}
-                    dangerouslySetInnerHTML={renderMarkdown(msg.text)}
-                  />
-                  <span className="text-[10px] text-slate-400 mt-2 font-bold px-2">
-                    {msg.timestamp.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </motion.div>
-              ))}
+                  >
+                    <div
+                      className={cn(
+                        "max-w-[85%] px-5 py-3.5 rounded-[24px] text-sm leading-relaxed shadow-sm",
+                        msg.role === "user"
+                          ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
+                          : "bg-white border border-slate-100 text-slate-700 rounded-tl-none font-medium",
+                      )}
+                      dangerouslySetInnerHTML={renderMarkdown(msg.text)}
+                    />
+                    <span className="text-[10px] text-slate-400 mt-2 font-bold px-2">
+                      {msg.timestamp.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </motion.div>
+                ))
+              )}
 
               {isLoading && (
                 <div className="flex flex-col items-start animate-pulse">

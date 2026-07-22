@@ -35,6 +35,8 @@ import {
   Copy,
   Smartphone,
   Download,
+  Bot,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProperties } from "@/app/contexts/useProperties";
@@ -278,6 +280,41 @@ export function HomePage() {
       <HeroCarousel />
 
       <main className="flex-1 w-full">
+        {/* ━━━ AI Chat Banner ━━━ */}
+        <section className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 py-6 relative overflow-hidden">
+          {/* Decorative shapes */}
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/3 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/3 w-48 h-48 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none"></div>
+          
+          <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 md:p-8 shadow-xl shadow-indigo-900/20">
+              <div className="flex items-center gap-5 md:gap-6">
+                <div className="w-14 h-14 md:w-16 md:h-16 shrink-0 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner">
+                  <Bot size={32} className="text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">Trợ lý AI MapHome</h2>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase border border-emerald-500/30">Mới</span>
+                  </div>
+                  <p className="text-indigo-100 text-sm md:text-base font-medium max-w-xl">
+                    Tìm phòng trọ thông minh, tư vấn hợp đồng, hỏi đáp khu vực trực tiếp với AI. Không còn phải tự mò mẫm!
+                  </p>
+                </div>
+              </div>
+              
+              <Button
+                onClick={() => navigate("/chat")}
+                className="w-full md:w-auto shrink-0 bg-white hover:bg-slate-50 text-indigo-700 font-bold px-6 py-6 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all group flex items-center gap-2"
+              >
+                <Sparkles size={18} className="text-indigo-600 group-hover:animate-pulse" />
+                <span>Trải nghiệm ngay</span>
+                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </div>
+          </div>
+        </section>
+
         {/* ━━━ Promoted Vouchers ━━━ */}
         {user?.role === "landlord" && promotedVouchers.length > 0 && (
           <section className="bg-slate-50 py-8 border-b border-slate-100">
