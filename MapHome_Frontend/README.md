@@ -117,7 +117,7 @@ Tài liệu hướng dẫn phát triển và cấu trúc mã nguồn giao diện
 ### 🤖 6. Trợ lý AI (Multi-Model AI Chatbot)
 - **Cơ chế hoạt động:**
   - Trang web tích hợp [AIChatAssistant.tsx](./src/app/components/AIChatAssistant.tsx) là một giao diện chat nổi.
-  - Người dùng có thể chọn Model AI (Google Gemini, Groq Llama 3.3, OpenRouter) thông qua menu xổ xuống mượt mà.
+  - Người dùng có thể chọn Model AI (Google Gemini, Groq Llama 3.3, OpenRouter, Monica AI, GitHub Models, SambaNova) thông qua menu xổ xuống mượt mà.
   - Khi gửi câu hỏi, Frontend truyền kèm API Key bảo mật (`VITE_MAPHOME_AI_API_KEY`) qua header `x-api-key` xuống Server Python.
   - AI phản hồi bằng Server-Sent Events (SSE) để hiển thị chữ chạy thời gian thực (typing effect). Nếu người dùng yêu cầu tra cứu phòng trọ, AI sẽ tự động gọi hàm xuống CSDL và trả về kết quả ngay trong ô chat.
 

@@ -43,6 +43,8 @@ import {
   AlertTriangle,
   Tag,
   Copy,
+  Bot,
+  Sparkles,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import * as Clipboard from 'expo-clipboard';
@@ -383,6 +385,44 @@ export default function HomePage() {
         </Animated.View>
 
         <HeroCarousel />
+
+        {/* AI Chat Banner */}
+        <Animated.View entering={FadeInDown.delay(100).springify()} className="px-4 mt-6 mb-2">
+          <TouchableOpacity 
+            onPress={() => router.push('/chat' as any)}
+            activeOpacity={0.9}
+            className="rounded-3xl overflow-hidden shadow-lg shadow-indigo-500/30"
+          >
+            <LinearGradient
+              colors={['#4f46e5', '#7c3aed', '#c026d3']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="p-5 relative"
+            >
+              {/* Decorative background circle */}
+              <View className="absolute -right-8 -top-12 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+              
+              <View className="flex-row items-center justify-between z-10">
+                <View className="flex-1 pr-4">
+                  <View className="flex-row items-center gap-2 mb-2">
+                    <Sparkles size={16} color="#fcd34d" />
+                    <Text className="text-white/90 font-bold text-xs tracking-widest uppercase">Trải nghiệm mới</Text>
+                  </View>
+                  <Text className="text-white font-black text-xl tracking-tight mb-1">
+                    MapHome AI Chat
+                  </Text>
+                  <Text className="text-white/80 font-medium text-sm leading-snug">
+                    Trợ lý ảo thông minh giúp bạn tìm phòng, xem phong thủy và giải đáp mọi thắc mắc 24/7.
+                  </Text>
+                </View>
+                
+                <View className="w-14 h-14 bg-white/20 rounded-2xl items-center justify-center border border-white/30 backdrop-blur-md">
+                  <Bot size={28} color="#fff" />
+                </View>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        </Animated.View>
 
         {/* ━━━ Promoted Vouchers ━━━ */}
         {user && promotedVouchers.length > 0 && (

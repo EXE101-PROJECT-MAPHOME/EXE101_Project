@@ -26,6 +26,7 @@ import { PaymentFailurePage } from "@/app/pages/PaymentFailurePage";
 import { ExpiryWarningDemo } from "@/app/pages/ExpiryWarningDemo";
 import { MaintenancePage } from "@/app/pages/MaintenancePage";
 import { DownloadPage } from "@/app/pages/DownloadPage";
+import { ChatPage } from "@/app/pages/ChatPage";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AIChatAssistant } from "@/app/components/AIChatAssistant";
 import { Toaster } from "@/app/components/ui/sonner";
@@ -126,6 +127,7 @@ const router = createBrowserRouter([
       { path: "/broker/dashboard", Component: BrokerDashboard },
       { path: "/user/dashboard", Component: UserDashboard },
       { path: "/maintenance", Component: MaintenancePage },
+      { path: "/chat", Component: ChatPage },
     ]
   }
 ]);

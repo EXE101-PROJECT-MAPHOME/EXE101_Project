@@ -15,6 +15,7 @@ import {
   Menu,
   X as XIcon,
   Download,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -61,6 +62,7 @@ export function Navbar() {
     { path: "/", label: "Trang chủ", icon: Home },
     { path: "/map", label: "Tìm trọ", icon: MapPin },
     { path: "/blog", label: "Blog", icon: MessageCircle },
+    { path: "/chat", label: "AI Chat", icon: Sparkles },
     { path: "/policy", label: "Chính sách", icon: FileText },
     { path: "/contact", label: "Liên hệ", icon: Mail },
   ];

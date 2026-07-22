@@ -64,23 +64,33 @@ def call_gemini_native_api(api_key: str, system_instruction: str, history: list,
         }
         
     payload["tools"] = [{
-        "functionDeclarations": [{
-            "name": "search_properties",
-            "description": "Tìm kiếm phòng trọ trong hệ thống MapHome dựa trên địa điểm (quận/huyện) và mức giá tối đa.",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "district": {
-                        "type": "STRING",
-                        "description": "Tên quận, huyện (VD: 'Gò Vấp', 'Quận 7')"
-                    },
-                    "max_price": {
-                        "type": "INTEGER",
-                        "description": "Mức giá tối đa mong muốn tính bằng VNĐ (VD: 4000000)"
+        "functionDeclarations": [
+            {
+                "name": "search_properties",
+                "description": "Tìm kiếm phòng trọ trong hệ thống MapHome dựa trên địa điểm (quận/huyện) và mức giá tối đa.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "district": {
+                            "type": "STRING",
+                            "description": "Tên quận, huyện (VD: 'Gò Vấp', 'Quận 7')"
+                        },
+                        "max_price": {
+                            "type": "INTEGER",
+                            "description": "Mức giá tối đa mong muốn tính bằng VNĐ (VD: 4000000)"
+                        }
                     }
                 }
+            },
+            {
+                "name": "count_properties",
+                "description": "Đếm và trả về tổng số lượng phòng trọ/căn trọ hiện đang có mặt trên toàn hệ thống MapHome.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {}
+                }
             }
-        }]
+        ]
     }]
     
     def send_req(current_payload):
@@ -98,13 +108,17 @@ def call_gemini_native_api(api_key: str, system_instruction: str, history: list,
         for part in parts:
             if "functionCall" in part:
                 fc = part["functionCall"]
-                if fc.get("name") == "search_properties":
+                func_name = fc.get("name")
+                if func_name in ["search_properties", "count_properties"]:
                     args = fc.get("args", {})
-                    district = args.get("district")
-                    max_price = args.get("max_price")
                     
                     # Gọi hàm Python tương ứng
-                    db_result = search_properties_db(district, max_price)
+                    if func_name == "search_properties":
+                        district = args.get("district")
+                        max_price = args.get("max_price")
+                        db_result = search_properties_db(district, max_price)
+                    else:
+                        db_result = count_properties_db()
                     
                     # Nối lịch sử để gửi request thứ 2
                     payload["contents"].append({
@@ -115,7 +129,7 @@ def call_gemini_native_api(api_key: str, system_instruction: str, history: list,
                         "role": "function",
                         "parts": [{
                             "functionResponse": {
-                                "name": "search_properties",
+                                "name": func_name,
                                 "response": {"result": db_result}
                             }
                         }]
@@ -245,6 +259,36 @@ if OPENROUTER_API_KEY and OpenAI is not None:
 elif OPENROUTER_API_KEY:
     print("[OpenRouter] Cần thư viện 'openai' để dùng OpenRouter. Chạy: pip install openai")
 
+# Monica Client setup
+MONICA_API_KEY = os.getenv("MONICA_API_KEY")
+monica_client = None
+if MONICA_API_KEY and OpenAI is not None:
+    monica_client = OpenAI(
+        api_key=MONICA_API_KEY,
+        base_url="https://openapi.monica.im/v1"
+    )
+    print(f"[Monica] Đã kết nối Monica thành công.")
+
+# GitHub Client setup
+GITHUB_API_KEY = os.getenv("GITHUB_API_KEY")
+github_client = None
+if GITHUB_API_KEY and OpenAI is not None:
+    github_client = OpenAI(
+        api_key=GITHUB_API_KEY,
+        base_url="https://models.inference.ai.azure.com"
+    )
+    print(f"[GitHub] Đã kết nối GitHub Models thành công.")
+
+# SambaNova Client setup
+SAMBANOVA_API_KEY = os.getenv("SAMBANOVA_API_KEY")
+sambanova_client = None
+if SAMBANOVA_API_KEY and OpenAI is not None:
+    sambanova_client = OpenAI(
+        api_key=SAMBANOVA_API_KEY,
+        base_url="https://api.sambanova.ai/v1"
+    )
+    print(f"[SambaNova] Đã kết nối SambaNova thành công.")
+
 # MongoDB Connection
 MONGO_URI = os.getenv("MONGO_URI")
 try:
@@ -277,6 +321,15 @@ def search_properties_db(district: str = None, max_price: int = None):
             return f"Lỗi khi tìm kiếm dữ liệu: {str(e)}"
     return "Tính năng tìm kiếm phòng hiện đang bảo trì."
 
+def count_properties_db():
+    if properties_collection is not None:
+        try:
+            total = properties_collection.count_documents({})
+            return f"Hiện tại hệ thống MapHome đang có tổng cộng {total} căn trọ/phòng trọ."
+        except Exception as e:
+            return f"Lỗi khi đếm dữ liệu: {str(e)}"
+    return "Tính năng đếm số lượng phòng hiện đang bảo trì."
+
 tools = [
     {
         "type": "function",
@@ -295,6 +348,17 @@ tools = [
                         "description": "Mức giá tối đa mong muốn tính bằng VNĐ (VD: 4000000)"
                     }
                 }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "count_properties",
+            "description": "Đếm và trả về tổng số lượng phòng trọ/căn trọ hiện đang có mặt trên toàn hệ thống MapHome.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
             }
         }
     }
@@ -365,10 +429,11 @@ async def chat_endpoint(request: Request, api_key: str = Depends(verify_api_key)
         "4. **Không gượng ép**: TUYỆT ĐỐI không lái câu chuyện về phòng trọ khi người dùng đang hỏi chủ đề khác.\n"
         "5. **Tôn trọng ranh giới**: Với câu hỏi nhạy cảm (chính trị, tôn giáo gây chia rẽ), hãy trả lời trung lập và tôn trọng.\n\n"
 
-        "# KHI NGƯỜI DÙNG TÌM PHÒNG TRỌ / NHỜ TƯ VẤN NƠI Ở\n"
-        "- BẮT BUỘC gọi hàm `search_properties` để lấy dữ liệu phòng thật từ Database.\n"
-        "- Giới thiệu nhiệt tình, tự nhiên như người bạn đang giúp tìm nhà: 'Để mình tìm thử cho bạn nha! 🔍'\n"
-        "- Sau khi có kết quả: 'Oke mình vừa tìm được mấy căn khá ưng cho bạn luôn nè! Bạn lướt qua thử nhé:'\n"
+        "# HƯỚNG DẪN GỌI HÀM (FUNCTION CALLING)\n"
+        "- Hệ thống đã cung cấp cho bạn 2 công cụ (tools): `search_properties` (tìm phòng) và `count_properties` (đếm số phòng).\n"
+        "- Khi cần tìm phòng hoặc đếm phòng, BẠN PHẢI SỬ DỤNG TÍNH NĂNG FUNCTION CALLING ngầm của hệ thống.\n"
+        "- TUYỆT ĐỐI KHÔNG tự viết tên hàm, tham số (như search_properties, district...) ra văn bản trả lời cho người dùng.\n"
+        "- Trước và sau khi gọi hàm, hãy giữ thái độ nhiệt tình, tự nhiên: 'Để mình tìm thử cho bạn nha! 🔍'\n"
     )
     
     if property_context:
@@ -396,16 +461,22 @@ async def chat_endpoint(request: Request, api_key: str = Depends(verify_api_key)
     async def generate():
         providers_to_try = []
         if preferred_provider == "gemini":
-            providers_to_try = ["gemini", "openrouter", "groq"]
+            providers_to_try = ["gemini", "github", "sambanova", "openrouter", "groq", "monica"]
         elif preferred_provider == "groq":
-            providers_to_try = ["groq", "openrouter", "gemini"]
+            providers_to_try = ["groq", "github", "sambanova", "openrouter", "gemini", "monica"]
         elif preferred_provider == "openrouter":
-            providers_to_try = ["openrouter", "groq", "gemini"]
+            providers_to_try = ["openrouter", "github", "sambanova", "groq", "gemini", "monica"]
+        elif preferred_provider == "monica":
+            providers_to_try = ["monica", "github", "sambanova", "gemini", "openrouter", "groq"]
+        elif preferred_provider == "github":
+            providers_to_try = ["github", "sambanova", "gemini", "openrouter", "groq", "monica"]
+        elif preferred_provider == "sambanova":
+            providers_to_try = ["sambanova", "github", "gemini", "openrouter", "groq", "monica"]
         else: # "auto"
             if gemini_manager.has_keys():
-                providers_to_try = ["gemini", "openrouter", "groq"]
+                providers_to_try = ["github", "gemini", "sambanova", "openrouter", "groq", "monica"]
             else:
-                providers_to_try = ["openrouter", "groq", "gemini"]
+                providers_to_try = ["github", "sambanova", "openrouter", "groq", "gemini", "monica"]
 
         active_client = None
         active_model = None
@@ -468,6 +539,45 @@ async def chat_endpoint(request: Request, api_key: str = Depends(verify_api_key)
                 except Exception as e:
                     print(f"[OpenRouter Error] OpenRouter gặp lỗi: {e}")
 
+            elif provider == "monica" and monica_client:
+                try:
+                    mo_model = requested_model if (requested_model and provider == preferred_provider) else "gpt-4o"
+                    print(f"[Monica] Thử gọi model: {mo_model}")
+                    res = create_chat_completion(monica_client, mo_model, messages, tools_list=tools, stream=False)
+                    active_client = monica_client
+                    active_model = mo_model
+                    initial_response = res
+                    print(f"[Monica] Gọi THÀNH CÔNG với model {mo_model}!")
+                    break
+                except Exception as mo_sub_e:
+                    print(f"[Monica Error] Model {mo_model} gặp lỗi: {mo_sub_e}")
+
+            elif provider == "github" and github_client:
+                try:
+                    gh_model = requested_model if (requested_model and provider == preferred_provider) else "gpt-4o"
+                    print(f"[GitHub] Thử gọi model: {gh_model}")
+                    res = create_chat_completion(github_client, gh_model, messages, tools_list=tools, stream=False)
+                    active_client = github_client
+                    active_model = gh_model
+                    initial_response = res
+                    print(f"[GitHub] Gọi THÀNH CÔNG với model {gh_model}!")
+                    break
+                except Exception as gh_sub_e:
+                    print(f"[GitHub Error] Model {gh_model} gặp lỗi: {gh_sub_e}")
+
+            elif provider == "sambanova" and sambanova_client:
+                try:
+                    sb_model = requested_model if (requested_model and provider == preferred_provider) else "Meta-Llama-3.3-70B-Instruct"
+                    print(f"[SambaNova] Thử gọi model: {sb_model}")
+                    res = create_chat_completion(sambanova_client, sb_model, messages, tools_list=tools, stream=False)
+                    active_client = sambanova_client
+                    active_model = sb_model
+                    initial_response = res
+                    print(f"[SambaNova] Gọi THÀNH CÔNG với model {sb_model}!")
+                    break
+                except Exception as sb_sub_e:
+                    print(f"[SambaNova Error] Model {sb_model} gặp lỗi: {sb_sub_e}")
+
             elif provider == "groq" and groq_client:
                 try:
                     model = requested_model if (requested_model and "llama" in requested_model) else "llama-3.3-70b-versatile"
@@ -502,17 +612,21 @@ async def chat_endpoint(request: Request, api_key: str = Depends(verify_api_key)
                 messages.append(response_message)
                 
                 for tool_call in response_message.tool_calls:
-                    if tool_call.function.name == "search_properties":
+                    func_name = tool_call.function.name
+                    if func_name in ["search_properties", "count_properties"]:
                         args = json.loads(tool_call.function.arguments) if isinstance(tool_call.function.arguments, str) else tool_call.function.arguments
-                        district = args.get("district")
-                        max_price = args.get("max_price")
                         
-                        tool_result = search_properties_db(district, max_price)
+                        if func_name == "search_properties":
+                            district = args.get("district")
+                            max_price = args.get("max_price")
+                            tool_result = search_properties_db(district, max_price)
+                        else:
+                            tool_result = count_properties_db()
                         
                         messages.append({
                             "role": "tool",
                             "tool_call_id": tool_call.id,
-                            "name": "search_properties",
+                            "name": func_name,
                             "content": tool_result
                         })
                 
