@@ -16,6 +16,7 @@ import {
   X as XIcon,
   Download,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,6 +30,18 @@ export function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigation = (path: string, name?: string) => {
+    if (location.pathname === path) return;
+    setIsNavigating(true);
+    // Giả lập thanh loading chạy trong 600ms trước khi chuyển trang
+    setTimeout(() => {
+      setIsNavigating(false);
+      navigate(path);
+    }, 600);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,17 +57,17 @@ export function Navbar() {
     if (isAuthenticated && user) {
       // Redirect based on role
       if (user.role === "admin") {
-        navigate("/admin/dashboard");
+        handleNavigation("/admin/dashboard", "Bảng điều khiển Admin");
       } else if (user.role === "landlord") {
-        navigate("/landlord/dashboard");
+        handleNavigation("/landlord/dashboard", "Bảng điều khiển");
       } else if (user.role === "broker") {
-        navigate("/broker/dashboard");
+        handleNavigation("/broker/dashboard", "Bảng điều khiển");
       } else {
         // For regular users, go to user dashboard
-        navigate("/user/dashboard");
+        handleNavigation("/user/dashboard", "Trang cá nhân");
       }
     } else {
-      navigate("/login");
+      handleNavigation("/login", "Đăng nhập");
     }
   };
 
@@ -69,6 +82,19 @@ export function Navbar() {
 
   return (
     <>
+      {/* Thanh tiến trình Loading chạy ngang (giống YouTube) */}
+      <AnimatePresence>
+        {isNavigating && (
+          <motion.div
+            initial={{ width: "0%", opacity: 1 }}
+            animate={{ width: "100%", opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            className="fixed top-0 left-0 h-1 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500 z-[99999] shadow-[0_0_10px_rgba(16,185,129,0.7)]"
+          />
+        )}
+      </AnimatePresence>
+
       <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -84,7 +110,7 @@ export function Navbar() {
             {/* Logo */}
             <div
               className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer group flex-shrink-0"
-              onClick={() => navigate("/")}
+              onClick={() => handleNavigation("/", "Trang chủ")}
             >
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-white shadow-md border border-gray-100/50 flex items-center justify-center overflow-hidden shrink-0 group-hover:shadow-lg transition-all duration-300 group-hover:-translate-y-0.5">
                 <img
@@ -105,7 +131,7 @@ export function Navbar() {
                   key={path}
                   variant={isActive(path) ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => navigate(path)}
+                  onClick={() => handleNavigation(path, label)}
                   className={isActive(path) ? "bg-green-600 hover:bg-green-700" : ""}
                 >
                   <Icon className="size-3.5 lg:size-4 mr-1" />
@@ -115,7 +141,7 @@ export function Navbar() {
 
               {/* Tải App APK Button */}
               <div className="relative ml-1 hidden lg:block">
-                <Button variant="ghost" size="sm" onClick={() => navigate("/download")} className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
+                <Button variant="ghost" size="sm" onClick={() => handleNavigation("/download", "Tải App APK")} className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
                   <Download className="size-3.5 lg:size-4 mr-1" />
                   <span>Tải App APK</span>
                 </Button>
@@ -126,7 +152,7 @@ export function Navbar() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate("/post-room")}
+                    onClick={() => handleNavigation("/post-room", "Đăng tin trọ")}
                     className="ml-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 bg-white"
                   >
                     <PenSquare className="size-3.5 lg:size-4 mr-1" />
@@ -135,7 +161,7 @@ export function Navbar() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate("/pricing")}
+                    onClick={() => handleNavigation("/pricing", "Nâng cấp gói")}
                     className="ml-1 border-blue-500 text-blue-600 hover:bg-blue-50 bg-white"
                   >
                     <UserPlus className="size-3.5 lg:size-4 mr-1" />
@@ -156,7 +182,7 @@ export function Navbar() {
                     }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                    onClick={() => navigate("/login")}
+                    onClick={() => handleNavigation("/login", "Đăng nhập")}
                     className="relative group overflow-hidden px-3 sm:px-6 py-2 sm:py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black shadow-lg will-change-transform hidden sm:flex items-center gap-1 sm:gap-2 whitespace-nowrap"
                   >
                     <div className="absolute inset-0 w-1/4 h-full bg-white/20 -skew-x-[30deg] -translate-x-[150%] group-hover:translate-x-[400%] transition-transform duration-700 ease-in-out will-change-transform" />
@@ -203,7 +229,7 @@ export function Navbar() {
                       size="sm"
                       onClick={() => {
                         logout();
-                        navigate("/");
+                        handleNavigation("/", "Trang chủ");
                       }}
                     >
                       <LogOut className="size-3.5 lg:size-4" />
@@ -269,7 +295,7 @@ export function Navbar() {
                   <button
                     key={path}
                     onClick={() => {
-                      navigate(path);
+                      handleNavigation(path, label);
                       setMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all ${
@@ -287,7 +313,7 @@ export function Navbar() {
                   <>
                     <button
                       onClick={() => {
-                        navigate("/post-room");
+                        handleNavigation("/post-room", "Đăng tin trọ");
                         setMobileMenuOpen(false);
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all text-emerald-600 bg-emerald-50 hover:bg-emerald-100 mt-2"
@@ -297,7 +323,7 @@ export function Navbar() {
                     </button>
                     <button
                       onClick={() => {
-                        navigate("/pricing");
+                        handleNavigation("/pricing", "Nâng cấp gói");
                         setMobileMenuOpen(false);
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black transition-all text-blue-600 bg-blue-50 hover:bg-blue-100 mt-1"
@@ -311,7 +337,7 @@ export function Navbar() {
                 {/* Mobile Download APK Link */}
                 <button
                   onClick={() => {
-                    navigate("/download");
+                    handleNavigation("/download", "Tải App APK");
                     setMobileMenuOpen(false);
                   }}
                   className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-emerald-500 to-green-600 shadow-md shadow-emerald-500/20 active:scale-95 transition-all mt-3"
@@ -338,7 +364,7 @@ export function Navbar() {
                     <button
                       onClick={() => {
                         logout();
-                        navigate("/");
+                        handleNavigation("/", "Trang chủ");
                         setMobileMenuOpen(false);
                       }}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-red-600 hover:bg-red-50 transition-all"
@@ -350,7 +376,7 @@ export function Navbar() {
                 ) : (
                   <button
                     onClick={() => {
-                      navigate("/login");
+                      handleNavigation("/login", "Đăng nhập");
                       setMobileMenuOpen(false);
                     }}
                     className="w-full flex items-center justify-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-black text-white bg-green-600 shadow-md hover:bg-green-700 transition-all"
