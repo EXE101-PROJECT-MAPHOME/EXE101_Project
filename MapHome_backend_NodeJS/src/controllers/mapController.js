@@ -1,4 +1,5 @@
 const NodeCache = require("node-cache");
+const Property = require("../models/Property");
 
 // Cache TTL: 24 hours (86400 seconds)
 const mapCache = new NodeCache({ stdTTL: 86400, checkperiod: 600 });
@@ -254,8 +255,63 @@ const getPlaceDetail = async (req, res, next) => {
   }
 };
 
+// @desc    Get properties inside a GeoJSON Polygon (Isochrone support)
+// @route   POST /api/map/properties-in-polygon
+const getPropertiesInPolygon = async (req, res, next) => {
+  try {
+    const { polygon } = req.body;
+
+    // Validate polygon payload
+    // Expected format: Array of coordinate pairs [[lng, lat], [lng, lat], ...]
+    if (!polygon || !Array.isArray(polygon) || polygon.length < 4) {
+      return res.status(400).json({ 
+        message: "Invalid polygon coordinates. Must be a valid GeoJSON LinearRing (array of at least 4 coordinate pairs)." 
+      });
+    }
+
+    // Ensure the polygon is closed (first and last coordinate must be identical)
+    const firstCoord = polygon[0];
+    const lastCoord = polygon[polygon.length - 1];
+    if (firstCoord[0] !== lastCoord[0] || firstCoord[1] !== lastCoord[1]) {
+      polygon.push([...firstCoord]); // Close it
+    }
+
+    // Perform geospatial query using MongoDB $geoWithin
+    const properties = await Property.find({
+      location: {
+        $geoWithin: {
+          $geometry: {
+            type: "Polygon",
+            coordinates: [polygon], // Polygon needs an array of rings
+          },
+        },
+      },
+      status: "approved", // Only show approved properties
+      available: true
+    }).populate("landlordId", "name avatar phone");
+
+    const formattedProperties = properties.map(p => {
+      const prop = typeof p.toObject === 'function' ? p.toObject() : { ...p };
+      if (prop.location && prop.location.coordinates) {
+        prop.location = prop.location.coordinates;
+      }
+      return prop;
+    });
+
+    res.status(200).json({
+      success: true,
+      count: formattedProperties.length,
+      data: formattedProperties,
+    });
+  } catch (error) {
+    console.error("[MapController] getPropertiesInPolygon Error:", error);
+    next(error);
+  }
+};
+
 module.exports = {
   reverseGeocode,
   autocomplete,
   getPlaceDetail,
+  getPropertiesInPolygon,
 };

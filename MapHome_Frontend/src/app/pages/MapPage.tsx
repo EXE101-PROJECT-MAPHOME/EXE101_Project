@@ -25,6 +25,7 @@ import {
   Loader2,
   MapPin,
   Lock,
+  Navigation,
 } from "lucide-react";
 import { FilterPanel } from "@/app/components/FilterPanel";
 import { defaultFilters } from "@/app/utils/filterConstants";
@@ -855,8 +856,9 @@ export function MapPage() {
                       <div className="flex items-baseline gap-1 relative z-10">
                         <p className="text-3xl font-black text-white tracking-tighter">
                           {formatDistance(
+                            (selectedProperty as any).distance ||
                             propertiesWithDistance.find(
-                              (p) => p.id === selectedProperty.id,
+                              (p) => p.id === selectedProperty.id || (p._id && p._id === selectedProperty._id),
                             )?.distance || 0,
                           )}
                         </p>
@@ -869,15 +871,32 @@ export function MapPage() {
                     </div>
 
                     {/* View Detail Button */}
-                    <motion.button
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="mt-8 w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-black text-sm uppercase tracking-widest h-14 rounded-2xl shadow-xl shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 will-change-transform"
-                      onClick={() => navigate(`/room/${selectedProperty.id}`)}
-                    >
-                      Chi tiết đầy đủ
-                      <ArrowLeft className="size-4 rotate-180" />
-                    </motion.button>
+                    <div className="flex flex-col gap-3 mt-8">
+                      <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-black text-sm uppercase tracking-widest h-14 rounded-2xl shadow-xl shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 will-change-transform"
+                        onClick={() => navigate(`/room/${selectedProperty.id}`)}
+                      >
+                        Chi tiết đầy đủ
+                        <ArrowLeft className="size-4 rotate-180" />
+                      </motion.button>
+
+                      {/* Direction Button */}
+                      <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-black text-sm uppercase tracking-widest h-14 rounded-2xl shadow-xl shadow-indigo-900/20 transition-all flex items-center justify-center gap-2 will-change-transform"
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('AI_TRIGGER_ROUTE', {
+                            detail: { location: selectedProperty.address }
+                          }));
+                        }}
+                      >
+                        <Navigation className="size-4" />
+                        Xem đường đi
+                      </motion.button>
+                    </div>
                   </motion.div>
                 </motion.div>
               )}

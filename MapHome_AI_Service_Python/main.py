@@ -89,6 +89,38 @@ def call_gemini_native_api(api_key: str, system_instruction: str, history: list,
                     "type": "OBJECT",
                     "properties": {}
                 }
+            },
+            {
+                "name": "trigger_isochrone_map",
+                "description": "Dùng khi người dùng yêu cầu TÌM TRỌ DỰA TRÊN THỜI GIAN DI CHUYỂN (ví dụ: 'tìm phòng cách ĐHBK 15 phút đi xe'). Hàm này sẽ điều khiển bản đồ ở phía Frontend để vẽ vùng đẳng thời.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "minutes": {
+                            "type": "INTEGER",
+                            "description": "Số phút di chuyển (VD: 15, 10, 20)"
+                        },
+                        "location": {
+                            "type": "STRING",
+                            "description": "Tên địa điểm làm tâm để tính thời gian di chuyển (VD: 'Đại học Bách Khoa', 'Quận 7', 'Đường Nguyễn Huệ')"
+                        }
+                    },
+                    "required": ["minutes", "location"]
+                }
+            },
+            {
+                "name": "trigger_route_map",
+                "description": "Dùng khi người dùng yêu cầu CHỈ ĐƯỜNG, HƯỚNG DẪN ĐƯỜNG ĐI, hoặc TÌM KHOẢNG CÁCH từ vị trí của họ đến một địa điểm/phòng trọ cụ thể (ví dụ: 'chỉ đường tới Landmark 81', 'từ đây tới phòng trọ đó bao xa'). Hàm này sẽ điều khiển bản đồ vẽ lộ trình.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "location": {
+                            "type": "STRING",
+                            "description": "Tên địa điểm, địa chỉ đích đến hoặc tên phòng trọ (VD: 'Landmark 81', '123 Lê Lợi, Gò Vấp')"
+                        }
+                    },
+                    "required": ["location"]
+                }
             }
         ]
     }]
@@ -117,8 +149,16 @@ def call_gemini_native_api(api_key: str, system_instruction: str, history: list,
                         district = args.get("district")
                         max_price = args.get("max_price")
                         db_result = search_properties_db(district, max_price)
-                    else:
+                    elif func_name == "count_properties":
                         db_result = count_properties_db()
+                    elif func_name == "trigger_isochrone_map":
+                        minutes = args.get("minutes", 15)
+                        location = args.get("location", "")
+                        # Return special token that frontend will parse
+                        db_result = f"[ACTION_ISOCHRONE|{minutes}|{location}] Đang xử lý yêu cầu tìm phòng trong {minutes} phút từ {location}..."
+                    elif func_name == "trigger_route_map":
+                        location = args.get("location", "")
+                        db_result = f"[ACTION_DRAW_ROUTE|{location}] Đang vẽ đường đi tới {location}..."
                     
                     # Nối lịch sử để gửi request thứ 2
                     payload["contents"].append({
@@ -361,6 +401,44 @@ tools = [
                 "properties": {}
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "trigger_isochrone_map",
+            "description": "Dùng khi người dùng yêu cầu TÌM TRỌ DỰA TRÊN THỜI GIAN DI CHUYỂN (ví dụ: 'tìm phòng cách ĐHBK 15 phút đi xe'). Hàm này sẽ điều khiển bản đồ ở phía Frontend để vẽ vùng đẳng thời.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "minutes": {
+                        "type": "integer",
+                        "description": "Số phút di chuyển (VD: 15, 10, 20)"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Tên địa điểm làm tâm để tính thời gian di chuyển (VD: 'Đại học Bách Khoa', 'Quận 7', 'Đường Nguyễn Huệ')"
+                    }
+                },
+                "required": ["minutes", "location"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "trigger_route_map",
+            "description": "Dùng khi người dùng yêu cầu CHỈ ĐƯỜNG, HƯỚNG DẪN ĐƯỜNG ĐI, hoặc TÌM KHOẢNG CÁCH từ vị trí của họ đến một địa điểm/phòng trọ cụ thể (ví dụ: 'chỉ đường tới Landmark 81', 'từ đây tới phòng trọ đó bao xa'). Hàm này sẽ điều khiển bản đồ vẽ lộ trình.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "Tên địa điểm, địa chỉ đích đến hoặc tên phòng trọ (VD: 'Landmark 81', '123 Lê Lợi, Gò Vấp')"
+                    }
+                },
+                "required": ["location"]
+            }
+        }
     }
 ]
 
@@ -430,8 +508,9 @@ async def chat_endpoint(request: Request, api_key: str = Depends(verify_api_key)
         "5. **Tôn trọng ranh giới**: Với câu hỏi nhạy cảm (chính trị, tôn giáo gây chia rẽ), hãy trả lời trung lập và tôn trọng.\n\n"
 
         "# HƯỚNG DẪN GỌI HÀM (FUNCTION CALLING)\n"
-        "- Hệ thống đã cung cấp cho bạn 2 công cụ (tools): `search_properties` (tìm phòng) và `count_properties` (đếm số phòng).\n"
-        "- Khi cần tìm phòng hoặc đếm phòng, BẠN PHẢI SỬ DỤNG TÍNH NĂNG FUNCTION CALLING ngầm của hệ thống.\n"
+        "- Hệ thống đã cung cấp cho bạn 4 công cụ (tools): `search_properties` (tìm phòng), `count_properties` (đếm số phòng), `trigger_isochrone_map` (tìm theo thời gian) và `trigger_route_map` (chỉ đường).\n"
+        "- Khi người dùng nói muốn tìm phòng theo thời gian (vd: 'cách Hutech 15 phút', 'đi bộ 10 phút tới trường'), BẠN PHẢI GỌI HÀM `trigger_isochrone_map`.\n"
+        "- Khi người dùng hỏi đường đi hoặc khoảng cách (vd: 'chỉ đường tới đó', 'cách đây bao xa'), BẠN PHẢI GỌI HÀM `trigger_route_map`.\n"
         "- TUYỆT ĐỐI KHÔNG tự viết tên hàm, tham số (như search_properties, district...) ra văn bản trả lời cho người dùng.\n"
         "- Trước và sau khi gọi hàm, hãy giữ thái độ nhiệt tình, tự nhiên: 'Để mình tìm thử cho bạn nha! 🔍'\n"
     )
@@ -613,15 +692,23 @@ async def chat_endpoint(request: Request, api_key: str = Depends(verify_api_key)
                 
                 for tool_call in response_message.tool_calls:
                     func_name = tool_call.function.name
-                    if func_name in ["search_properties", "count_properties"]:
+                    if func_name in ["search_properties", "count_properties", "trigger_isochrone_map", "trigger_route_map"]:
                         args = json.loads(tool_call.function.arguments) if isinstance(tool_call.function.arguments, str) else tool_call.function.arguments
                         
                         if func_name == "search_properties":
                             district = args.get("district")
                             max_price = args.get("max_price")
                             tool_result = search_properties_db(district, max_price)
-                        else:
+                        elif func_name == "count_properties":
                             tool_result = count_properties_db()
+                        elif func_name == "trigger_isochrone_map":
+                            minutes = args.get("minutes", 15)
+                            location = args.get("location", "")
+                            # Return special token that frontend will parse
+                            tool_result = f"[ACTION_ISOCHRONE|{minutes}|{location}] Đang vẽ vùng {minutes} phút quanh {location} trên bản đồ..."
+                        elif func_name == "trigger_route_map":
+                            location = args.get("location", "")
+                            tool_result = f"[ACTION_DRAW_ROUTE|{location}] Đang vẽ đường đi tới {location} trên bản đồ..."
                         
                         messages.append({
                             "role": "tool",
