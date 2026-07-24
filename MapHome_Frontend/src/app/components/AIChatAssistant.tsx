@@ -98,6 +98,8 @@ export const AIChatAssistant: React.FC = () => {
 
   // Excluded paths where AI Chat should not appear
   const excludedPaths = [
+    "/",
+    "/map",
     "/login",
     "/register",
     "/forgot-password",
@@ -269,7 +271,7 @@ export const AIChatAssistant: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed bottom-24 right-6 z-50 w-[420px] max-w-[calc(100vw-48px)] h-[680px] max-h-[calc(100vh-140px)] rounded-[32px] shadow-[0_20px_50px_rgba(79,70,229,0.15)] border border-white/40 bg-white/90 backdrop-blur-2xl overflow-hidden flex flex-col"
+            className="fixed bottom-20 md:bottom-24 right-4 md:right-6 z-50 w-[calc(100vw-32px)] md:w-[420px] h-[75vh] md:h-[680px] max-h-[calc(100vh-100px)] md:max-h-[calc(100vh-140px)] rounded-[24px] md:rounded-[32px] shadow-[0_20px_50px_rgba(79,70,229,0.15)] border border-white/40 bg-white/90 backdrop-blur-2xl overflow-hidden flex flex-col"
           >
             {/* Header - Vibrant Gradient */}
             <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 p-6 text-white relative shrink-0">
@@ -516,7 +518,7 @@ export const AIChatAssistant: React.FC = () => {
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center z-[100] group transition-all duration-300",
+          "fixed bottom-4 md:bottom-6 right-4 md:right-6 w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl flex items-center justify-center z-[100] group transition-all duration-300",
           isOpen
             ? "bg-slate-800 text-white shadow-slate-900/40"
             : "bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-indigo-500/40 hover:shadow-indigo-500/60",
