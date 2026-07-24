@@ -111,7 +111,7 @@ app.use("/api/vouchers", require("./routes/voucherRoutes"));
 app.use("/api/locations", require("./routes/locationRoutes"));
 app.use("/api/ai", require("./routes/ai.routes"));
 app.use("/api/chat", require("./routes/chatRoutes"));
-
+app.use("/api/traffic", require("./routes/trafficRoutes"));
 app.get("/", (req, res) => res.send("API is running..."));
 
 // Health check (includes MongoDB connection status)

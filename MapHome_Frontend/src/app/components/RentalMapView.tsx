@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useMotionValue } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import goongjs from "@goongmaps/goong-js";
 import "@goongmaps/goong-js/dist/goong-js.css";
 import { RentalProperty, LandlordProfile } from "./types";
 import { SearchLocation } from "./SearchByWorkplace";
 import { Button } from "@/app/components/ui/button";
-import { Layers, Navigation, Globe, Info } from "lucide-react";
+import { Layers, Navigation, Globe, Info, Clock } from "lucide-react";
 import {
   getGoongStyleUrl,
   getGoongAttribution,
@@ -14,6 +14,8 @@ import {
   GOONG_MAP_STYLES,
   GOONG_MAPTILES_KEY,
   getGoongTransformRequest,
+  autocompletePlaces,
+  geocodeByPlaceId
 } from "@/app/utils/goongApi";
 
 interface RentalMapViewProps {
@@ -123,7 +125,17 @@ export function RentalMapView({
   const [showLegend, setShowLegend] = useState(true);
   const [mapStyle, setMapStyle] = useState<GoongMapStyle>("light");
   const [showStyleSwitcher, setShowStyleSwitcher] = useState(false);
+  const [isochronePolygon, setIsochronePolygon] = useState<any>(null);
+  const [isLoadingIsochrone, setIsLoadingIsochrone] = useState(false);
+  const [isochroneMinutes, setIsochroneMinutes] = useState(15);
+  const [isochroneProperties, setIsochroneProperties] = useState<RentalProperty[] | null>(null);
+  const [routeData, setRouteData] = useState<any>(null);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+  const [routeStats, setRouteStats] = useState<{distance: number, durationDriving: number, durationWalking?: number, durationCycling?: number, destinationName: string} | null>(null);
   const parentRef = useRef<HTMLDivElement>(null);
+
+  // Use either isochrone filtered properties or default properties
+  const displayProperties = isochroneProperties || properties;
 
   // Sync Legend show state on window resize (Web vs Mobile mode transition)
   useEffect(() => {
@@ -137,6 +149,11 @@ export function RentalMapView({
 
   const defaultCenter: [number, number] = [10.7769, 106.7009];
   const effectiveCenter = searchCenter || defaultCenter;
+
+  const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+  const BACKEND_URL = import.meta.env.VITE_USE_LOCAL_BACKEND === "true" 
+    ? (import.meta.env.VITE_LOCAL_BACKEND_URL || "http://localhost:5000") 
+    : import.meta.env.VITE_API_BASE;
 
   // 1. Initialize Map (One-time)
   useEffect(() => {
@@ -199,10 +216,10 @@ export function RentalMapView({
     // Add Property Markers
     console.log(
       "RentalMapView rendering properties:",
-      properties.length,
-      properties,
+      displayProperties.length,
+      displayProperties,
     );
-    properties.forEach((property) => {
+    displayProperties.forEach((property) => {
       console.log(
         "Adding marker for property:",
         property.name,
@@ -287,7 +304,7 @@ export function RentalMapView({
     } else {
       userMarkerRef.current.setLngLat([effectiveCenter[1], effectiveCenter[0]]);
     }
-  }, [properties, searchLocations, effectiveCenter]);
+  }, [displayProperties, searchLocations, effectiveCenter]);
 
   // Track the style that is actually loaded to avoid redundant setStyle calls
   const loadedStyleRef = useRef<string>(mapStyle);
@@ -339,10 +356,322 @@ export function RentalMapView({
       const newStyleUrl = getGoongStyleUrl(mapStyle);
       mapRef.current.setStyle(newStyleUrl);
       loadedStyleRef.current = mapStyle;
+      
+      // Need to re-add layers after style change if they exist
+      if (isochronePolygon) {
+        drawIsochrone(isochronePolygon);
+      }
+      if (routeData) {
+        drawRoute(routeData);
+      }
     }
   }, [mapStyle]);
 
-  // 4. Selection Updates
+  // 5. Draw Isochrone Polygon
+  const drawIsochrone = (polygon: any) => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!map.isStyleLoaded()) {
+      map.once("styledata", () => drawIsochrone(polygon));
+      return;
+    }
+    
+    // Remove if exists
+    if (map.getLayer("isochrone-layer")) map.removeLayer("isochrone-layer");
+    if (map.getLayer("isochrone-outline")) map.removeLayer("isochrone-outline");
+    if (map.getSource("isochrone")) map.removeSource("isochrone");
+
+    map.addSource("isochrone", {
+      type: "geojson",
+      data: polygon,
+    });
+
+    map.addLayer({
+      id: "isochrone-layer",
+      type: "fill",
+      source: "isochrone",
+      paint: {
+        "fill-color": "#10b981", // Emerald 500
+        "fill-opacity": 0.2,
+      },
+    });
+
+    map.addLayer({
+      id: "isochrone-outline",
+      type: "line",
+      source: "isochrone",
+      paint: {
+        "line-color": "#059669", // Emerald 600
+        "line-width": 3,
+        "line-dasharray": [2, 2],
+      },
+    });
+  };
+
+  useEffect(() => {
+    if (isochronePolygon) {
+      drawIsochrone(isochronePolygon);
+    } else {
+      const map = mapRef.current;
+      if (map) {
+        if (map.getLayer("isochrone-layer")) map.removeLayer("isochrone-layer");
+        if (map.getLayer("isochrone-outline")) map.removeLayer("isochrone-outline");
+        if (map.getSource("isochrone")) map.removeSource("isochrone");
+      }
+    }
+  }, [isochronePolygon]);
+
+  // Handle Fetch Isochrone
+  const handleFetchIsochrone = async (customCenter?: [number, number], customMinutes?: number) => {
+    // If no params and already active, turn it off
+    if (!customCenter && !customMinutes && isochroneProperties) {
+      setIsochronePolygon(null);
+      setIsochroneProperties(null);
+      setIsochroneMinutes(15);
+      return;
+    }
+
+    if (!MAPBOX_TOKEN) {
+      alert("Vui lòng cấu hình VITE_MAPBOX_TOKEN trong file .env!");
+      return;
+    }
+
+    const centerToUse = customCenter || effectiveCenter;
+    const minutesToUse = customMinutes || isochroneMinutes;
+
+    setIsLoadingIsochrone(true);
+    try {
+      const lng = centerToUse[1];
+      const lat = centerToUse[0];
+      
+      // 1. Fetch N-min driving polygon from Mapbox
+      const mapboxUrl = `https://api.mapbox.com/isochrone/v1/mapbox/driving/${lng},${lat}?contours_minutes=${minutesToUse}&polygons=true&access_token=${MAPBOX_TOKEN}`;
+      const res = await fetch(mapboxUrl);
+      const data = await res.json();
+      
+      if (!data.features || data.features.length === 0) {
+        throw new Error("Không lấy được vùng đẳng thời");
+      }
+      
+      const polygonFeature = data.features[0];
+      setIsochronePolygon(polygonFeature);
+      setIsochroneMinutes(minutesToUse);
+
+      // 2. Extract coordinates ring to send to backend
+      const coordinates = polygonFeature.geometry.coordinates[0]; // Get outer ring
+      
+      const backendRes = await fetch(`${BACKEND_URL}/api/map/properties-in-polygon`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ polygon: coordinates })
+      });
+
+      const backendData = await backendRes.json();
+      if (backendData.success) {
+        setIsochroneProperties(backendData.data);
+      } else {
+        alert("Có lỗi khi lấy danh sách phòng trọ từ server.");
+      }
+
+      // 3. Zoom map to fit polygon
+      if (mapRef.current) {
+        // Calculate bounding box rough estimate
+        const lats = coordinates.map((c: number[]) => c[1]);
+        const lngs = coordinates.map((c: number[]) => c[0]);
+        const sw = [Math.min(...lngs), Math.min(...lats)];
+        const ne = [Math.max(...lngs), Math.max(...lats)];
+        mapRef.current.fitBounds([sw, ne] as any, { padding: 40 });
+      }
+
+    } catch (error) {
+      console.error("Isochrone Error:", error);
+      alert(`Đã xảy ra lỗi khi tính toán vùng ${minutesToUse} phút!`);
+    } finally {
+      setIsLoadingIsochrone(false);
+    }
+  };
+
+  // Draw Route Line
+  const drawRoute = (geojson: any) => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!map.isStyleLoaded()) {
+      map.once("styledata", () => drawRoute(geojson));
+      return;
+    }
+    
+    if (map.getLayer("route-layer")) map.removeLayer("route-layer");
+    if (map.getSource("route")) map.removeSource("route");
+
+    map.addSource("route", {
+      type: "geojson",
+      data: geojson,
+    });
+
+    map.addLayer({
+      id: "route-layer",
+      type: "line",
+      source: "route",
+      layout: {
+        "line-join": "round",
+        "line-cap": "round"
+      },
+      paint: {
+        "line-color": "#3b82f6", // Blue 500
+        "line-width": 5,
+        "line-opacity": 0.9
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (routeData) {
+      drawRoute(routeData);
+    } else {
+      const map = mapRef.current;
+      if (map) {
+        if (map.getLayer("route-layer")) map.removeLayer("route-layer");
+        if (map.getSource("route")) map.removeSource("route");
+      }
+    }
+  }, [routeData]);
+
+  const handleFetchRoute = async (destLat: number, destLng: number, destName: string) => {
+    if (!MAPBOX_TOKEN) {
+      alert("Vui lòng cấu hình VITE_MAPBOX_TOKEN trong file .env!");
+      return;
+    }
+
+    setIsLoadingRoute(true);
+    try {
+      const startLng = effectiveCenter[1];
+      const startLat = effectiveCenter[0];
+      
+      const mapboxUrl = `https://api.mapbox.com/directions/v5/mapbox/driving/${startLng},${startLat};${destLng},${destLat}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+      const res = await fetch(mapboxUrl);
+      const data = await res.json();
+      
+      if (!data.routes || data.routes.length === 0) {
+        throw new Error("Không tìm thấy đường đi");
+      }
+      
+      const route = data.routes[0];
+      const routeGeoJSON = {
+        type: "Feature",
+        properties: {},
+        geometry: route.geometry
+      };
+      
+      // Fetch other modes silently
+      let durationWalking = undefined;
+      let durationCycling = undefined;
+      try {
+        const [walkRes, cycRes] = await Promise.all([
+          fetch(`https://api.mapbox.com/directions/v5/mapbox/walking/${startLng},${startLat};${destLng},${destLat}?access_token=${MAPBOX_TOKEN}`),
+          fetch(`https://api.mapbox.com/directions/v5/mapbox/cycling/${startLng},${startLat};${destLng},${destLat}?access_token=${MAPBOX_TOKEN}`)
+        ]);
+        const walkData = await walkRes.json();
+        const cycData = await cycRes.json();
+        durationWalking = walkData.routes?.[0]?.duration;
+        durationCycling = cycData.routes?.[0]?.duration;
+      } catch (e) {
+        console.log("Failed to fetch other modes", e);
+      }
+      
+      setRouteData(routeGeoJSON);
+      setRouteStats({
+        distance: route.distance, // in meters
+        durationDriving: route.duration, // in seconds
+        durationWalking,
+        durationCycling,
+        destinationName: destName
+      });
+
+      // Zoom to fit route
+      if (mapRef.current) {
+        const coordinates = route.geometry.coordinates;
+        const lats = coordinates.map((c: number[]) => c[1]);
+        const lngs = coordinates.map((c: number[]) => c[0]);
+        const sw = [Math.min(...lngs), Math.min(...lats)];
+        const ne = [Math.max(...lngs), Math.max(...lats)];
+        mapRef.current.fitBounds([sw, ne] as any, { padding: 60 });
+      }
+
+    } catch (error) {
+      console.error("Routing Error:", error);
+      alert(`Đã xảy ra lỗi khi tìm đường!`);
+    } finally {
+      setIsLoadingRoute(false);
+    }
+  };
+
+  // 6. Listen to AI Triggers
+  useEffect(() => {
+    const handleAITrigger = async (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { minutes, location } = customEvent.detail;
+      
+      if (location && location !== "") {
+        setIsLoadingIsochrone(true);
+        try {
+          // Geocode location
+          const predictions = await autocompletePlaces(location);
+          if (predictions && predictions.length > 0) {
+            const geo = await geocodeByPlaceId(predictions[0].place_id);
+            if (geo) {
+              const newCenter: [number, number] = [geo.lat, geo.lng];
+              await handleFetchIsochrone(newCenter, minutes);
+              return;
+            }
+          }
+          alert(`AI không tìm thấy tọa độ của: ${location}`);
+          setIsLoadingIsochrone(false);
+        } catch (err) {
+          console.error("Geocoding failed for AI trigger", err);
+          setIsLoadingIsochrone(false);
+        }
+      } else {
+        // Just use current center
+        await handleFetchIsochrone(effectiveCenter, minutes);
+      }
+    };
+
+    const handleRouteTrigger = async (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { location } = customEvent.detail;
+      
+      if (location && location !== "") {
+        setIsLoadingRoute(true);
+        try {
+          // Geocode location
+          const predictions = await autocompletePlaces(location);
+          if (predictions && predictions.length > 0) {
+            const geo = await geocodeByPlaceId(predictions[0].place_id);
+            if (geo) {
+              await handleFetchRoute(geo.lat, geo.lng, location);
+              return;
+            }
+          }
+          alert(`AI không tìm thấy tọa độ đích đến: ${location}`);
+          setIsLoadingRoute(false);
+        } catch (err) {
+          console.error("Geocoding failed for AI Route trigger", err);
+          setIsLoadingRoute(false);
+        }
+      }
+    };
+
+    window.addEventListener('AI_TRIGGER_ISOCHRONE', handleAITrigger);
+    window.addEventListener('AI_TRIGGER_ROUTE', handleRouteTrigger);
+    return () => {
+      window.removeEventListener('AI_TRIGGER_ISOCHRONE', handleAITrigger);
+      window.removeEventListener('AI_TRIGGER_ROUTE', handleRouteTrigger);
+    };
+  }, [effectiveCenter, handleFetchIsochrone]);
+
+  // 7. Selection Updates
   useEffect(() => {
     if (selectedProperty && mapRef.current) {
       mapRef.current.flyTo({
@@ -364,6 +693,15 @@ export function RentalMapView({
 
   const pinnedCount = properties.filter((p) => p.pinInfo).length;
   const regularCount = properties.length - pinnedCount;
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.round(seconds / 60);
+    if (mins < 60) return <>{mins} <span className="text-sm font-medium">phút</span></>;
+    const hours = Math.floor(mins / 60);
+    const remainingMins = mins % 60;
+    if (remainingMins === 0) return <>{hours} <span className="text-sm font-medium">giờ</span></>;
+    return <span className="text-base font-black">{hours} <span className="text-xs font-medium">giờ</span> {remainingMins} <span className="text-xs font-medium">phút</span></span>;
+  };
 
   return (
     <div ref={parentRef} className="relative h-full w-full">
@@ -420,6 +758,79 @@ export function RentalMapView({
                   Chưa ghim vị trí ({regularCount})
                 </div>
               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Isochrone "15 Mins" FAB */}
+      <button
+        onClick={() => handleFetchIsochrone()}
+        disabled={isLoadingIsochrone}
+        className={`absolute top-4 right-20 md:top-8 md:right-28 z-10 h-10 md:h-14 px-4 font-bold text-white rounded-xl md:rounded-2xl shadow-lg flex items-center justify-center transition-all ${
+          isochroneProperties 
+            ? "bg-rose-500 hover:bg-rose-600" 
+            : "bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400"
+        } ${isLoadingIsochrone ? "opacity-70 cursor-not-allowed" : ""}`}
+      >
+        <Clock className="size-5 md:size-6 mr-2" />
+        {isLoadingIsochrone 
+          ? "Đang vẽ vùng..." 
+          : isochroneProperties 
+            ? "Hủy tìm quanh tôi"
+            : "Tìm trọ quanh tôi"}
+      </button>
+
+      {/* Route Info Panel */}
+      <AnimatePresence>
+        {routeStats && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute top-[210px] left-4 md:top-[240px] md:left-8 z-10 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-indigo-100 p-4 w-[280px]"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h4 className="font-bold text-slate-800 text-sm line-clamp-1">{routeStats.destinationName}</h4>
+              <button 
+                onClick={() => {
+                  setRouteData(null);
+                  setRouteStats(null);
+                }}
+                className="text-slate-400 hover:text-rose-500 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <div className="bg-blue-50 rounded-xl p-2 flex flex-col items-center justify-center">
+                <span className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">Quãng đường</span>
+                <span className="text-blue-700 font-black text-lg">
+                  {(routeStats.distance / 1000).toFixed(1)} <span className="text-sm font-medium">km</span>
+                </span>
+              </div>
+              <div className="bg-emerald-50 rounded-xl p-2 flex flex-col items-center justify-center">
+                <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider mb-1">🚗 Ô tô/Xe máy</span>
+                <span className="text-emerald-700 font-black text-lg">
+                  {formatDuration(routeStats.durationDriving)}
+                </span>
+              </div>
+              {routeStats.durationWalking && (
+                <div className="bg-orange-50 rounded-xl p-2 flex flex-col items-center justify-center">
+                  <span className="text-[10px] text-orange-500 font-bold uppercase tracking-wider mb-1">🚶 Đi bộ</span>
+                  <span className="text-orange-700 font-black text-lg text-center leading-tight">
+                    {formatDuration(routeStats.durationWalking)}
+                  </span>
+                </div>
+              )}
+              {routeStats.durationCycling && (
+                <div className="bg-purple-50 rounded-xl p-2 flex flex-col items-center justify-center">
+                  <span className="text-[10px] text-purple-500 font-bold uppercase tracking-wider mb-1">🚲 Xe đạp</span>
+                  <span className="text-purple-700 font-black text-lg text-center leading-tight">
+                    {formatDuration(routeStats.durationCycling)}
+                  </span>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

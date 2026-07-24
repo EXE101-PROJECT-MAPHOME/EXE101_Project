@@ -84,4 +84,36 @@ router.get("/autocomplete", autocompleteRules, validate, mapController.autocompl
  */
 router.get("/place-detail", placeDetailRules, validate, mapController.getPlaceDetail);
 
+/**
+ * @swagger
+ * /api/map/properties-in-polygon:
+ *   post:
+ *     summary: Get properties inside a GeoJSON Polygon
+ *     tags:
+ *       - Map API
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - polygon
+ *             properties:
+ *               polygon:
+ *                 type: array
+ *                 items:
+ *                   type: array
+ *                   items:
+ *                     type: number
+ *                 description: Array of coordinate pairs [[lng, lat], [lng, lat], ...]
+ *                 example: [[106.6, 10.7], [106.7, 10.7], [106.7, 10.8], [106.6, 10.7]]
+ *     responses:
+ *       200:
+ *         description: List of properties inside the polygon
+ *       400:
+ *         description: Invalid polygon
+ */
+router.post("/properties-in-polygon", mapController.getPropertiesInPolygon);
+
 module.exports = router;

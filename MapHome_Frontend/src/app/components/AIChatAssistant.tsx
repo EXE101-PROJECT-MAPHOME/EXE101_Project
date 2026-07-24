@@ -194,13 +194,46 @@ export const AIChatAssistant: React.FC = () => {
               const data = JSON.parse(dataStr);
               if (data.content) {
                 accumulatedText += data.content;
+                
+                // Intercept ACTION_ISOCHRONE
+                const isochroneMatch = accumulatedText.match(/\[ACTION_ISOCHRONE\|(\d+)\|([^\]]+)\]/);
+                const routeMatch = accumulatedText.match(/\[ACTION_DRAW_ROUTE\|([^\]]+)\]/);
+                let displayText = accumulatedText;
+                
+                if (isochroneMatch) {
+                  const minutes = parseInt(isochroneMatch[1], 10);
+                  const loc = isochroneMatch[2];
+                  
+                  if (!accumulatedText.includes("__DISPATCHED__")) {
+                    accumulatedText += "__DISPATCHED__";
+                    window.dispatchEvent(new CustomEvent('AI_TRIGGER_ISOCHRONE', {
+                      detail: { minutes, location: loc }
+                    }));
+                  }
+                  
+                  displayText = displayText.replace(/\[ACTION_ISOCHRONE\|\d+\|[^\]]+\]__DISPATCHED__/, "");
+                  displayText = displayText.replace(/\[ACTION_ISOCHRONE\|\d+\|[^\]]+\]/, "");
+                } else if (routeMatch) {
+                  const loc = routeMatch[1];
+                  
+                  if (!accumulatedText.includes("__DISPATCHED__")) {
+                    accumulatedText += "__DISPATCHED__";
+                    window.dispatchEvent(new CustomEvent('AI_TRIGGER_ROUTE', {
+                      detail: { location: loc }
+                    }));
+                  }
+                  
+                  displayText = displayText.replace(/\[ACTION_DRAW_ROUTE\|[^\]]+\]__DISPATCHED__/, "");
+                  displayText = displayText.replace(/\[ACTION_DRAW_ROUTE\|[^\]]+\]/, "");
+                }
+
                 // Update the last message (the assistant's placeholder)
                 setMessages((prev) => {
                   const newMsgs = [...prev];
                   const lastIdx = newMsgs.length - 1;
                   newMsgs[lastIdx] = {
                     ...newMsgs[lastIdx],
-                    text: accumulatedText,
+                    text: displayText,
                   };
                   return newMsgs;
                 });
