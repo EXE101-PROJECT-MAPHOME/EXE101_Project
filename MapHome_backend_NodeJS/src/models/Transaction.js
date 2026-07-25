@@ -40,6 +40,10 @@ const TransactionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Booking",
     },
+    verificationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "VerificationRequest",
+    },
   },
   { timestamps: true },
 );

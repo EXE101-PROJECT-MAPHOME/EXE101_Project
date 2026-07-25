@@ -10,7 +10,12 @@ const localUrl = process.env.EXPO_PUBLIC_LOCAL_API_URL || defaultLocalUrl;
 
 const deployedUrl = process.env.EXPO_PUBLIC_API_URL ?? 'https://exe101-project.onrender.com';
 
-const API_BASE = useLocalBackend ? localUrl : deployedUrl;
+export const API_BASE = useLocalBackend ? localUrl : deployedUrl;
+
+const defaultLocalAiUrl = Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+const localAiUrl = process.env.EXPO_PUBLIC_LOCAL_AI_URL || defaultLocalAiUrl;
+const deployedAiUrl = process.env.EXPO_PUBLIC_AI_URL ?? 'https://maphome-chatbot.vercel.app';
+export const AI_URL = useLocalBackend ? localAiUrl : deployedAiUrl;
 
 const api = axios.create({
   baseURL: API_BASE,

@@ -329,6 +329,16 @@ export function LandlordDashboardV2() {
     fetchData();
   }, [isAuthenticated, user, navigate, activeTab]);
 
+  // Handle URL params for payment callbacks
+  useEffect(() => {
+    if (searchParams.get("payment") === "cancelled") {
+      toast.warning("Bạn đã huỷ thanh toán. Yêu cầu xác thực vẫn được lưu ở trạng thái Chờ thanh toán.");
+      const params = new URLSearchParams(searchParams);
+      params.delete("payment");
+      setSearchParams(params, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   // Real-time notifications via Socket.IO
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "landlord") return;
@@ -1035,7 +1045,7 @@ export function LandlordDashboardV2() {
                     <p className="text-green-50 text-lg font-medium opacity-90 leading-relaxed">
                       Chuyên viên sẽ đến kiểm tra thực trạng phòng trọ • Chỉ với{" "}
                       <span className="underline font-black">
-                        {verificationPricing.basicVerification.toLocaleString()}
+                        {verificationPricing.premiumVerification.toLocaleString()}
                         đ
                       </span>{" "}
                       • Tăng 5x tỉ lệ khách thuê.
@@ -1079,7 +1089,9 @@ export function LandlordDashboardV2() {
                                 ? "bg-blue-100 text-blue-700 border border-blue-200"
                                 : req.status === "rejected"
                                   ? "bg-rose-100 text-rose-700 border border-rose-200"
-                                  : "bg-orange-100 text-orange-700 border border-orange-200 animate-pulse"
+                                  : req.paymentStatus === "unpaid"
+                                    ? "bg-amber-100 text-amber-700 border border-amber-200"
+                                    : "bg-orange-100 text-orange-700 border border-orange-200 animate-pulse"
                           }`}
                         >
                           {req.status === "completed"
@@ -1088,7 +1100,9 @@ export function LandlordDashboardV2() {
                               ? "✓ Đã duyệt"
                               : req.status === "rejected"
                                 ? "✗ Từ chối"
-                                : "⏳ Đang xử lý"}
+                                : req.paymentStatus === "unpaid"
+                                  ? "⏳ Chờ thanh toán"
+                                  : "⏳ Đang xử lý"}
                         </span>
                       </div>
                       <h4 className="font-black text-2xl text-gray-900 mb-2 truncate">
@@ -1115,6 +1129,32 @@ export function LandlordDashboardV2() {
                             "{req.notes}"
                           </p>
                         </div>
+                      )}
+
+                      {req.paymentStatus === "unpaid" && req.status !== "rejected" && req.status !== "completed" && (
+                        <Button
+                          onClick={async () => {
+                            try {
+                              toast.loading("Đang tạo link thanh toán...", { id: "retry-payment" });
+                              const paymentRes = await api.post("/api/payments/create", {
+                                amount: verificationPricing.premiumVerification || 500000,
+                                description: "Phi xac thuc thuc te",
+                                planId: "premium_verification",
+                                verificationId: req._id || req.id,
+                                appReturnUrl: window.location.href,
+                              });
+                              if (paymentRes.status === 200 && paymentRes.data.url) {
+                                window.location.href = paymentRes.data.url;
+                              }
+                            } catch (err) {
+                              toast.error("Không thể tạo link thanh toán", { id: "retry-payment" });
+                            }
+                          }}
+                          className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all shadow-sm rounded-xl py-6 font-bold flex items-center justify-center gap-2 mb-4 border-none"
+                        >
+                          <ShieldCheck className="size-5" />
+                          Thanh toán ngay
+                        </Button>
                       )}
 
                       {req.status === "completed" && req.propertyId && (

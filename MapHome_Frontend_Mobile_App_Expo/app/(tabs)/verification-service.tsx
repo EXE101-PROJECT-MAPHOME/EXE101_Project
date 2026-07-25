@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import * as Linking from "expo-linking";
 import ROUTES, { safeBack } from "@/constants/routes";
 import {
   ArrowLeft,
@@ -104,11 +105,39 @@ export default function VerificationServiceScreen() {
       const res = await api.post("/api/verifications", payload);
 
       if (res.status === 200 || res.status === 201) {
-        Alert.alert(
-          "Thành công",
-          "Yêu cầu kiểm tra đã được gửi! Admin sẽ liên hệ với bạn sớm.",
-          [{ text: "OK", onPress: () => safeBack(router, ROUTES.USER_DASHBOARD) }],
-        );
+        const verificationId = res.data._id || res.data.id;
+        
+        try {
+          const appReturnUrl = Linking.createURL("/(tabs)/landlord-dashboard?tab=verification");
+          
+          const paymentRes = await api.post("/api/payments/create", {
+            amount: pricing.basicVerification || 119000,
+            description: "Phi xac thuc thuc te",
+            planId: "basic_verification",
+            verificationId,
+            appReturnUrl: appReturnUrl,
+          });
+
+          if (paymentRes.status === 200 && paymentRes.data.url) {
+            // Mở trang thanh toán của PayOS
+            Linking.openURL(paymentRes.data.url);
+            
+            Alert.alert(
+              "Đang chuyển hướng",
+              "Bạn sẽ được đưa tới cổng thanh toán PayOS. Nếu không thấy, vui lòng thử lại.",
+              [{ text: "OK", onPress: () => safeBack(router, ROUTES.USER_DASHBOARD) }]
+            );
+          } else {
+            throw new Error("Không thể tạo link thanh toán");
+          }
+        } catch (paymentErr: any) {
+          console.error(paymentErr);
+          Alert.alert(
+            "Lỗi thanh toán",
+            "Không thể kết nối với PayOS. Yêu cầu đã được lưu, vui lòng thử thanh toán lại trong Dashboard.",
+            [{ text: "OK", onPress: () => safeBack(router, ROUTES.USER_DASHBOARD) }]
+          );
+        }
       }
     } catch (error: any) {
       Alert.alert(

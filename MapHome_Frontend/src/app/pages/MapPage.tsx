@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { RentalMapView } from "@/app/components/RentalMapView";
 import { PropertyList } from "@/app/components/PropertyList";
 import { PropertyCard } from "@/app/components/PropertyCard";
@@ -25,6 +26,8 @@ import {
   Loader2,
   MapPin,
   Lock,
+  Navigation,
+  Sparkles,
 } from "lucide-react";
 import { FilterPanel } from "@/app/components/FilterPanel";
 import { defaultFilters } from "@/app/utils/filterConstants";
@@ -44,6 +47,9 @@ import {
   geocodeByPlaceId,
   type GoongPrediction,
 } from "@/app/utils/goongApi";
+import { AISearchBar } from "@/app/components/AISearchBar";
+import { parseFiltersWithAI } from "@/app/utils/aiFilterParser";
+import { toast } from "sonner";
 
 export function MapPage() {
   const navigate = useNavigate();
@@ -117,11 +123,19 @@ export function MapPage() {
 
   const [selectedProperty, setSelectedProperty] =
     useState<RentalProperty | null>(null);
+  const [isDetailExpanded, setIsDetailExpanded] = useState(false);
+
+  useEffect(() => {
+    if (selectedProperty) setIsDetailExpanded(false);
+  }, [selectedProperty]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
-  const [searchMode, setSearchMode] = useState<"address" | "name">("address");
+  const [searchMode, setSearchMode] = useState<"address" | "name" | "ai">("address");
   const [filters, setFilters] = useState<RentalFilters>(defaultFilters);
+
+
   const [searchLocations, setSearchLocations] = useState<SearchLocation[]>([]);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const { isFavorite, favoritesCount } = useFavorites();
@@ -130,6 +144,35 @@ export function MapPage() {
   const [predictions, setPredictions] = useState<GoongPrediction[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
+
+  const handleAISearch = async (query: string) => {
+    try {
+      setIsSearching(true);
+      
+      const aiPromise = parseFiltersWithAI(query, filters);
+      const delayPromise = new Promise((resolve) => setTimeout(resolve, 5000));
+      const [newFiltersResult] = await Promise.all([aiPromise, delayPromise]);
+      
+      const { keyword, ...newFilters } = newFiltersResult as any;
+
+      if (Object.keys(newFilters).length > 0 || keyword) {
+        if (Object.keys(newFilters).length > 0) {
+          setFilters((prev) => ({ ...prev, ...newFilters }));
+        }
+        if (keyword) {
+          setSearchTerm(keyword);
+        }
+        
+        toast.success("AI đã phân tích và áp dụng yêu cầu của bạn!");
+      } else {
+        toast.error("Không tìm thấy bộ lọc nào rõ ràng, vui lòng thử lại.");
+      }
+    } catch (error) {
+      toast.error("Lỗi kết nối AI, vui lòng thử lại sau.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
   const autocompleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -395,6 +438,25 @@ export function MapPage() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50 overflow-hidden">
+      {/* AI Processing Overlay */}
+      <AnimatePresence>
+        {isSearching && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99999] bg-white/90 backdrop-blur-md flex flex-col items-center justify-center"
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-emerald-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
+              <Sparkles className="relative w-16 h-16 text-emerald-600 animate-bounce mb-6" />
+            </div>
+            <h2 className="text-3xl font-black text-emerald-950 tracking-tight">AI đang phân tích...</h2>
+            <p className="text-emerald-700/70 font-medium mt-3 text-lg">Đang quét dữ liệu và tìm kiếm các phòng trọ phù hợp nhất</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <motion.header
         initial={{ y: -80, opacity: 0 }}
@@ -490,25 +552,37 @@ export function MapPage() {
               
               <select 
                 value={searchMode}
-                onChange={(e) => setSearchMode((e.target as HTMLSelectElement).value as "address" | "name")}
+                onChange={(e) => setSearchMode((e.target as HTMLSelectElement).value as "address" | "name" | "ai")}
                 className="h-14 bg-transparent pl-4 pr-2 text-sm font-bold text-emerald-700 outline-none border-r border-emerald-900/10 cursor-pointer rounded-l-2xl hover:bg-emerald-50/50 transition-colors"
               >
                 <option value="address">Địa chỉ</option>
                 <option value="name">Tên trọ</option>
+                <option value="ai">✨ AI Tìm kiếm</option>
               </select>
 
               <div className="flex items-center pl-3">
-                <Search className="size-5 text-emerald-950/40" />
+                {searchMode === 'ai' ? (
+                   <Sparkles className="size-5 text-emerald-600" />
+                ) : (
+                   <Search className="size-5 text-emerald-950/40" />
+                )}
               </div>
 
               <input
                 type="text"
-                placeholder={searchMode === 'address' ? "Nhập tên đường, phường, quận..." : "Nhập tên phòng trọ..."}
+                placeholder={
+                  searchMode === 'address' ? "Nhập tên đường, phường, quận..." : 
+                  searchMode === 'ai' ? (isSearching ? "AI đang phân tích..." : "Nhờ AI tìm (vd: có máy lạnh, dưới 3tr)") : 
+                  "Nhập tên phòng trọ..."
+                }
                 value={searchTerm}
+                disabled={searchMode === 'ai' && isSearching}
                 onChange={(e) => {
                   const target = e.target as HTMLInputElement;
                   if (searchMode === 'address') {
                     handleAutocompleteInput(target.value);
+                  } else if (searchMode === 'ai') {
+                    setSearchTerm(target.value);
                   } else {
                     setSearchTerm(target.value);
                     setShowDropdown(true);
@@ -518,6 +592,10 @@ export function MapPage() {
                   if (e.key === "Enter") {
                     if (searchMode === 'address' && predictions.length > 0) {
                       handleSelectPrediction(predictions[0]);
+                    } else if (searchMode === 'ai') {
+                      if (searchTerm.trim()) {
+                        handleAISearch(searchTerm);
+                      }
                     } else {
                       performSearch(searchTerm);
                     }
@@ -525,7 +603,9 @@ export function MapPage() {
                     setShowDropdown(false);
                   }
                 }}
-                onFocus={() => setShowDropdown(true)}
+                onFocus={() => {
+                  if (searchMode !== 'ai') setShowDropdown(true);
+                }}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                 className="flex-1 h-14 bg-transparent px-3 text-emerald-950 font-medium placeholder:text-emerald-950/30 outline-none border-none rounded-r-2xl"
               />
@@ -645,15 +725,15 @@ export function MapPage() {
               </AnimatePresence>
             </div>
 
-            <div className="flex gap-2 sm:gap-3 items-center w-full sm:w-auto">
-              <div className="flex-1 sm:flex-initial">
+            <div className="flex gap-2 sm:gap-3 items-center w-full sm:w-auto h-14">
+              <div className="flex-1 sm:flex-initial h-full">
                 <FilterPanel
                   filters={filters}
                   onFiltersChange={setFilters}
                   activeFiltersCount={activeFiltersCount}
                 />
               </div>
-              <div className="flex-1 sm:flex-initial">
+              <div className="flex-1 sm:flex-initial h-full">
                 <SearchByWorkplace
                   onSearch={setSearchLocations}
                   currentLocations={searchLocations}
@@ -708,12 +788,10 @@ export function MapPage() {
                   damping: 30,
                   delay: 0.5,
                 }}
-                className="absolute bottom-6 left-0 right-0 px-4 pointer-events-none flex justify-center z-[100]"
-                style={{
-                  left: selectedProperty ? "16px" : "0px",
-                  right: selectedProperty ? "416px" : "0px",
-                  padding: selectedProperty ? "0" : "0 16px",
-                }}
+                className={cn(
+                  "absolute left-0 px-4 pointer-events-none flex justify-center z-[100] transition-all duration-500",
+                  selectedProperty ? "hidden md:flex bottom-6 right-[416px]" : "bottom-6 right-0"
+                )}
               >
                 <div
                   className="bg-emerald-950/90 backdrop-blur-2xl border border-white/10 rounded-[30px] md:rounded-[40px] py-3 px-4 md:py-4 md:px-8 shadow-[0_32px_64px_-16px_rgba(6,78,59,0.5)] flex flex-col xl:flex-row xl:justify-between xl:items-center text-white gap-4 pointer-events-auto overflow-hidden w-full"
@@ -792,35 +870,80 @@ export function MapPage() {
             <AnimatePresence>
               {selectedProperty && (
                 <motion.div
-                  initial={{ x: "100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "100%" }}
-                  transition={{ type: "spring", damping: 28, stiffness: 220 }}
-                  className="absolute top-0 right-0 z-[120] h-full w-full max-w-[400px] bg-white border-l border-emerald-50 shadow-[-10px_0_40px_-10px_rgba(6,78,59,0.1)] overflow-y-auto will-change-transform"
+                  layout
+                  initial={{ opacity: 0, y: "100%" }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: "100%" }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  className={`absolute bottom-0 md:top-0 right-0 z-[120] w-full md:max-w-[420px] bg-white border-t md:border-t-0 md:border-l border-emerald-50 rounded-t-[32px] md:rounded-none shadow-[0_-20px_60px_-15px_rgba(6,78,59,0.2)] md:shadow-[-20px_0_60px_-15px_rgba(6,78,59,0.15)] flex flex-col overflow-hidden will-change-transform ${
+                    isDetailExpanded ? "h-[85vh] md:h-full" : "h-[220px] md:h-full"
+                  }`}
                 >
-                  <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-emerald-50 p-5 flex justify-between items-center z-10">
-                    <h2 className="text-xl font-black bg-gradient-to-r from-emerald-950 to-emerald-600 bg-clip-text text-transparent tracking-tight">
-                      Chi tiết phòng trọ
-                    </h2>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setSelectedProperty(null)}
-                      className="hover:rotate-90 transition-transform duration-200"
-                    >
-                      <X className="size-5" />
-                    </Button>
-                  </div>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="p-4 pb-36"
+                  {/* Drag Handle & Header - Clickable on mobile to expand */}
+                  <div 
+                    className="sticky top-0 bg-white/95 backdrop-blur-xl z-20 px-5 pt-3 pb-4 flex flex-col border-b border-emerald-50/80 cursor-pointer md:cursor-default shrink-0"
+                    onClick={() => setIsDetailExpanded(!isDetailExpanded)}
                   >
-                    <PropertyCard property={selectedProperty} />
-                    {/* Pin Info */}
-                    {selectedProperty.pinInfo && (
+                    <div className="w-12 h-1.5 bg-emerald-100 rounded-full mx-auto mb-4 md:hidden" />
+                    <div className="flex justify-between items-center w-full">
+                      <h2 className="text-xl font-black bg-gradient-to-r from-emerald-950 to-emerald-600 bg-clip-text text-transparent tracking-tight truncate pr-4">
+                        {isDetailExpanded ? "Chi tiết phòng trọ" : selectedProperty.name}
+                      </h2>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedProperty(null);
+                        }}
+                        className="hover:rotate-90 hover:bg-emerald-50 rounded-xl transition-all duration-300"
+                      >
+                        <X className="size-5 text-emerald-900/60" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className={`flex-1 custom-scrollbar relative ${!isDetailExpanded ? 'overflow-hidden md:overflow-y-auto' : 'overflow-y-auto'}`}>
+                    <div className="p-4 pb-36">
+                      {/* Responsive Property Info */}
+                      <div className="md:hidden">
+                        {isDetailExpanded ? (
+                          <PropertyCard property={selectedProperty} />
+                        ) : (
+                          <div className="flex gap-4">
+                            <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 shadow-sm relative">
+                              <img src={selectedProperty.images?.[0] || 'https://via.placeholder.com/150'} alt={selectedProperty.name} className="w-full h-full object-cover" />
+                              {selectedProperty.available && (
+                                <div className="absolute top-1 left-1 bg-emerald-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">
+                                  Còn phòng
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col flex-1 py-1">
+                              <h3 className="font-black text-emerald-950 text-base leading-tight line-clamp-1">{selectedProperty.name}</h3>
+                              <p className="text-emerald-950/50 text-[10px] mt-1 line-clamp-1 flex items-center gap-1">
+                                <MapPin className="size-3" /> {selectedProperty.address}
+                              </p>
+                              <div className="mt-auto flex items-end justify-between">
+                                <div>
+                                  <span className="text-emerald-600 font-black text-lg">{selectedProperty.price.toLocaleString('vi-VN')}đ</span>
+                                  <span className="text-[10px] text-emerald-900/40 uppercase font-bold ml-1">/tháng</span>
+                                </div>
+                                <div className="flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg">
+                                  <Heart className="size-3 text-emerald-600" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="hidden md:block">
+                        <PropertyCard property={selectedProperty} />
+                      </div>
+
+                      {/* Pin Info */}
+                      {selectedProperty.pinInfo && isDetailExpanded && (
                       <div className="mt-6 p-4 bg-emerald-50/50 rounded-3xl border border-emerald-100 shadow-sm relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-100/30 rounded-bl-full -mr-10 -mt-10" />
                         <div className="flex items-center gap-2 mb-2 relative z-10">
@@ -855,8 +978,9 @@ export function MapPage() {
                       <div className="flex items-baseline gap-1 relative z-10">
                         <p className="text-3xl font-black text-white tracking-tighter">
                           {formatDistance(
+                            (selectedProperty as any).distance ||
                             propertiesWithDistance.find(
-                              (p) => p.id === selectedProperty.id,
+                              (p) => p.id === selectedProperty.id || (p._id && p._id === selectedProperty._id),
                             )?.distance || 0,
                           )}
                         </p>
@@ -869,16 +993,44 @@ export function MapPage() {
                     </div>
 
                     {/* View Detail Button */}
-                    <motion.button
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="mt-8 w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-black text-sm uppercase tracking-widest h-14 rounded-2xl shadow-xl shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 will-change-transform"
-                      onClick={() => navigate(`/room/${selectedProperty.id}`)}
-                    >
-                      Chi tiết đầy đủ
-                      <ArrowLeft className="size-4 rotate-180" />
-                    </motion.button>
-                  </motion.div>
+                    <div className="flex flex-col gap-3 mt-8">
+                      <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-black text-sm uppercase tracking-widest h-14 rounded-2xl shadow-xl shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 will-change-transform"
+                        onClick={() => navigate(`/room/${selectedProperty.id}`)}
+                      >
+                        Chi tiết đầy đủ
+                        <ArrowLeft className="size-4 rotate-180" />
+                      </motion.button>
+
+                      {/* Direction Button */}
+                      <motion.button
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-black text-sm uppercase tracking-widest h-14 rounded-2xl shadow-xl shadow-indigo-900/20 transition-all flex items-center justify-center gap-2 will-change-transform"
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('AI_TRIGGER_ROUTE', {
+                            detail: { location: selectedProperty.address }
+                          }));
+                        }}
+                      >
+                        <Navigation className="size-4" />
+                        Xem đường đi
+                      </motion.button>
+                    </div>
+                    </div>
+                    {/* Fade overlay for unexpanded state on mobile */}
+                    {!isDetailExpanded && (
+                      <div 
+                        className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none md:hidden flex items-end justify-center pb-4"
+                      >
+                        <span className="text-emerald-600 font-bold text-sm bg-white/80 px-4 py-1.5 rounded-full shadow-sm backdrop-blur-sm pointer-events-auto cursor-pointer" onClick={() => setIsDetailExpanded(true)}>
+                          Kéo lên hoặc bấm để xem thêm
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

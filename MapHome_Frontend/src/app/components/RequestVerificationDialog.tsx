@@ -91,12 +91,30 @@ export function RequestVerificationDialog({
       const res = await api.post("/api/verifications", payload);
 
       if (res.status === 200 || res.status === 201) {
-        toast.success(
-          "Yêu cầu kiểm tra đã được gửi! ✅ Admin sẽ xem xét và liên hệ với bạn sớm.",
-        );
-        onClose();
-        // Reload is needed to show the new request in the dashboard
-        window.location.reload();
+        const verificationId = res.data._id || res.data.id;
+        
+        toast.loading("Đang chuyển hướng sang cổng thanh toán PayOS...");
+        
+        try {
+          const paymentRes = await api.post("/api/payments/create", {
+            amount: pricing.premiumVerification || 500000,
+            description: "Phi xac thuc thuc te",
+            planId: "premium_verification",
+            verificationId,
+            appReturnUrl: window.location.href, // Returns to LandlordDashboard
+          });
+
+          if (paymentRes.status === 200 && paymentRes.data.url) {
+            window.location.href = paymentRes.data.url;
+          } else {
+            throw new Error("Không thể tạo link thanh toán");
+          }
+        } catch (paymentErr: any) {
+          console.error(paymentErr);
+          toast.error("Không thể kết nối với PayOS. Vui lòng thử thanh toán lại trong Dashboard.");
+          onClose();
+          window.location.reload();
+        }
       } else {
         throw new Error("Gửi yêu cầu thất bại");
       }
@@ -291,7 +309,7 @@ export function RequestVerificationDialog({
               <li className="flex items-start gap-2 pt-2 border-t border-blue-100 mt-2">
                 <Award className="size-4 text-blue-600 flex-shrink-0" />
                 <span className="font-bold">
-                  Chi phí: {pricing.basicVerification.toLocaleString()}đ / lần
+                  Chi phí: {pricing.premiumVerification.toLocaleString()}đ / lần
                   kiểm tra
                 </span>
               </li>

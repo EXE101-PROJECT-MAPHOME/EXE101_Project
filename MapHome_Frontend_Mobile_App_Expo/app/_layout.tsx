@@ -19,6 +19,7 @@ import { AuthProvider } from "../contexts/AuthContext";
 import { PropertiesProvider } from "../contexts/PropertiesContext";
 import { CompareProvider } from "../contexts/CompareContext";
 import { LogBox, Text, TextInput } from "react-native";
+import AIChatAssistant from "../components/AIChatAssistant";
 
 LogBox.ignoreLogs([
   "[Reanimated] Reduced motion setting is enabled on this device.",
@@ -80,6 +81,7 @@ export default function RootLayout() {
                   options={{ presentation: "modal", title: "Modal", headerShown: true }}
                 />
               </Stack>
+              <AIChatAssistant />
             </ThemeProvider>
           </CompareProvider>
         </PropertiesProvider>

@@ -16,6 +16,8 @@ export function VerificationBadge({
   size = 'md',
   showText = true 
 }: VerificationBadgeProps) {
+  const normalizedLevel = level === 'verified' ? 'verified' : 'none';
+
   const config = {
     'verified': {
       icon: ShieldCheck,
@@ -35,7 +37,7 @@ export function VerificationBadge({
       borderColor: 'border-gray-400',
       description: 'Thông tin chưa được kiểm chứng',
     },
-  }[level];
+  }[normalizedLevel];
 
   const Icon = config.icon;
 

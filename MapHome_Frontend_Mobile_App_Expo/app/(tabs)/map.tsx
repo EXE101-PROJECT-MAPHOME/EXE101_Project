@@ -27,6 +27,7 @@ import {
   Check,
   Navigation as NavIcon,
   Loader2,
+  Sparkles,
 } from "lucide-react-native";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useAuth } from "../../contexts/AuthContext";
@@ -34,6 +35,7 @@ import {
   useProperties,
   type RentalProperty,
 } from "../../contexts/PropertiesContext";
+import { parseFiltersWithAI } from "../../utils/aiFilterParser";
 
 // Ho Chi Minh City Opera House area as central coordinate
 const HCM_REGION = {
@@ -384,6 +386,52 @@ export default function MapScreen() {
     });
   };
 
+  const [searchMode, setSearchMode] = useState<"name" | "ai">("name");
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleAISearch = async (query: string) => {
+    if (!query.trim()) return;
+    try {
+      setIsSearching(true);
+      const aiPromise = parseFiltersWithAI(query);
+      const delayPromise = new Promise((resolve) => setTimeout(resolve, 5000));
+      const [aiFilters] = await Promise.all([aiPromise, delayPromise]);
+
+      if (aiFilters.keyword !== undefined) {
+        setSearchTerm(aiFilters.keyword);
+      }
+      
+      const newPrice = aiFilters.priceFilter || "all";
+      const newArea = aiFilters.areaFilter || "all";
+      const newVerify = aiFilters.verifyFilter !== undefined ? aiFilters.verifyFilter : verifyFilter;
+      const newAmenities = { ...amenities, ...aiFilters.amenities };
+
+      setPriceFilter(newPrice);
+      setAreaFilter(newArea);
+      setVerifyFilter(newVerify);
+      setAmenities(newAmenities);
+      
+      setTempPriceFilter(newPrice);
+      setTempAreaFilter(newArea);
+      setTempVerifyFilter(newVerify);
+      setTempAmenities(newAmenities);
+      
+      setSelectedProperty(null);
+
+      performSearch(
+        aiFilters.keyword !== undefined ? aiFilters.keyword : searchTerm,
+        newPrice,
+        newArea,
+        newVerify,
+        newAmenities
+      );
+    } catch (error) {
+      console.error("AI Search Error:", error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   // Filtered Properties
   const filteredProperties = useMemo(() => {
     return properties.filter((property) => {
@@ -504,6 +552,17 @@ export default function MapScreen() {
 
   return (
     <View className="flex-1 bg-white">
+      {/* AI Processing Overlay */}
+      <Modal visible={isSearching} transparent={true} animationType="fade">
+        <View className="flex-1 bg-white/95 justify-center items-center px-6">
+          <View className="w-24 h-24 bg-emerald-100 rounded-full items-center justify-center mb-6 border-4 border-emerald-50 shadow-lg">
+            <Sparkles size={40} color="#16a34a" />
+          </View>
+          <Text className="text-3xl font-black text-emerald-950 text-center mb-3">AI đang phân tích...</Text>
+          <Text className="text-emerald-700/80 font-bold text-center text-base">Đang quét dữ liệu và tìm kiếm các phòng trọ phù hợp nhất cho bạn</Text>
+        </View>
+      </Modal>
+
       {/* Search and Header Section */}
       <SafeAreaView
         className="bg-white border-b border-slate-100 z-10 px-4 pb-3"
@@ -511,36 +570,37 @@ export default function MapScreen() {
       >
         <View className="flex-row items-center space-x-2 mt-2">
           {/* Search Box */}
-          <View className="flex-1 flex-row items-center bg-slate-50 border border-slate-200 h-12 rounded-2xl px-3 mr-2">
-            <Search size={18} color={icon} />
+          <View className="flex-1 flex-row items-center bg-slate-50 border border-slate-200 h-12 rounded-2xl px-2 mr-2">
+            <TouchableOpacity 
+              onPress={() => setSearchMode(searchMode === "name" ? "ai" : "name")} 
+              className={`p-1.5 rounded-xl mr-1 flex-row items-center justify-center transition-all ${searchMode === "ai" ? "bg-emerald-100 border border-emerald-200" : ""}`}
+            >
+              {searchMode === "ai" ? <Sparkles size={16} color="#16a34a" /> : <Search size={16} color={icon} />}
+            </TouchableOpacity>
             <TextInput
               value={searchTerm}
               onChangeText={setSearchTerm}
-              onSubmitEditing={() =>
-                performSearch(
-                  searchTerm,
-                  priceFilter,
-                  areaFilter,
-                  verifyFilter,
-                  amenities,
-                )
-              }
+              onSubmitEditing={() => {
+                if (searchMode === "ai") {
+                  handleAISearch(searchTerm);
+                } else {
+                  performSearch(searchTerm, priceFilter, areaFilter, verifyFilter, amenities);
+                }
+              }}
               returnKeyType="search"
-              placeholder="Nhập tên đường, quận..."
-              className="flex-1 ml-2 text-sm font-semibold text-slate-700 h-full"
+              placeholder={searchMode === "ai" ? "Nhờ AI tìm (máy lạnh, <3tr)..." : "Nhập tên đường, quận..."}
+              editable={!isSearching}
+              className="flex-1 ml-1 text-sm font-semibold text-slate-700 h-full"
             />
-            {searchTerm !== "" && (
+            {searchTerm !== "" && !isSearching && (
               <TouchableOpacity
                 onPress={() => {
                   setSearchTerm("");
-                  performSearch(
-                    "",
-                    priceFilter,
-                    areaFilter,
-                    verifyFilter,
-                    amenities,
-                  );
+                  if (searchMode === "name") {
+                    performSearch("", priceFilter, areaFilter, verifyFilter, amenities);
+                  }
                 }}
+                className="p-1"
               >
                 <X size={16} color={icon} />
               </TouchableOpacity>

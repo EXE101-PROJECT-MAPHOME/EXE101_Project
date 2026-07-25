@@ -72,9 +72,13 @@ Nếu bạn không thuộc ngành lập trình hoặc muốn xem nhanh cách ho�
 - [x] Lịch sử giao dịch (Transactions)
 - [x] Cảnh báo tin sắp hết hạn
 
-#### 🤖 Trợ lý AI
-- [x] Chatbot tư vấn phòng trọ và pháp lý (Groq LLM)
-- [x] Giao diện chat nổi trên mọi trang Web
+#### 🤖 Trợ lý AI Đa Mô Hình (Multi-Model AI Chatbot)
+- [x] Chatbot tư vấn phòng trọ và pháp lý chuyên sâu (Tích hợp Google Gemini 2.5 Flash, Groq Llama 3.3, OpenRouter).
+- [x] Giao diện chat nổi trên Website & Mobile App với menu chọn model AI mượt mà.
+- [x] Cơ chế Auto-Routing & Fallback thông minh (Tự động chuyển đổi AI dự phòng nếu model chính bị lỗi hoặc hết quota).
+- [x] Database Function Calling (AI tự động gọi lệnh tìm kiếm phòng trọ trong Database theo yêu cầu người dùng).
+- [x] Native Gemini API streaming siêu tốc (Không qua trung gian).
+- [x] Hệ thống bảo mật API Key (`x-api-key`) độc lập bảo vệ AI Service khỏi truy cập trái phép.
 
 #### 📰 Blog & Nội dung
 - [x] Trang Blog cẩm nang thuê trọ
@@ -116,7 +120,8 @@ Nếu bạn không thuộc ngành lập trình hoặc muốn xem nhanh cách ho�
 #### 🌐 Deploy & Vận hành
 - [x] Backend deploy lên **Railway** (tự động từ GitHub Actions)
 - [x] Web Frontend deploy lên **Vercel** (tự động từ GitHub)
-- [x] Biến môi trường phân tách rõ ràng (Local / Deploy) qua `VITE_USE_LOCAL_BACKEND` và `EXPO_PUBLIC_USE_LOCAL_BACKEND`
+- [x] AI Service deploy lên **Vercel** (kết nối trực tiếp từ Web/App không qua Node.js để tối ưu tốc độ streaming).
+- [x] Biến môi trường phân tách rõ ràng (Local / Deploy) qua `VITE_USE_LOCAL_BACKEND` và `EXPO_PUBLIC_USE_LOCAL_BACKEND` tự động switch cả API lẫn AI.
 - [x] Swagger UI tự động tại `/api-docs`
 - [x] Dữ liệu thống kê trang chủ cập nhật theo thời gian thực từ API Railway
 
@@ -211,11 +216,13 @@ Hệ thống được tổ chức dưới dạng mono-repo gồm 3 thư mục t�
 EXE101_Project/ (Thư mục gốc)
 ├── MapHome_backend_NodeJS/                  # Hệ thống API Server (Express + MongoDB)
 ├── MapHome_Frontend/                        # Ứng dụng Web (React + Vite + TailwindCSS v4)
-└── MapHome_Frontend_Mobile_App_Expo/       # Ứng dụng Di động (React Native + Expo SDK 54)
+├── MapHome_Frontend_Mobile_App_Expo/        # Ứng dụng Di động (React Native + Expo SDK 54)
+└── MapHome_AI_Service_Python/               # AI Trợ lý ảo & Tư vấn (FastAPI + Groq LLM)
 ```
 
 ### 🛠️ Công nghệ sử dụng
-- **Backend:** Node.js, Express, MongoDB Atlas & Mongoose, Swagger API Docs, SMTP Gmail (Nodemailer), Groq AI SDK, Cloudinary, VNPay, PayOS.
+- **Backend (Node.js):** Node.js, Express, MongoDB Atlas & Mongoose, Swagger API Docs, SMTP Gmail (Nodemailer), Cloudinary, VNPay, PayOS.
+- **Backend (AI Python):** Python, FastAPI, Uvicorn, Groq AI LLM.
 - **Web Frontend:** React 18, Vite, TypeScript, TailwindCSS v4, Goong Maps JS SDK, Framer Motion, FullCalendar, Material UI v7.
 - **Mobile App:** React Native, Expo SDK 54, NativeWind (Tailwind v3), React Native Maps, Expo Image Picker, Expo Location, Firebase Auth.
 
@@ -271,7 +278,7 @@ EXE101_Project/ (Thư mục gốc)
    ```
 3. Tạo file cấu hình môi trường `.env` từ file mẫu:
    ```dotenv
-   # true = dùng localhost:5000 | false = dùng VITE_API_BASE (Railway deploy)
+   # true = dùng localhost:5000 (Node.js) & localhost:8000 (Python AI) | false = dùng bản Deploy
    VITE_USE_LOCAL_BACKEND=true
    VITE_API_BASE=https://exe101project-maphome-api.up.railway.app
    VITE_GOOGLE_CLIENT_ID=817734182215-ijh0r2a1fbcsm5u5nams9e92obh5cmck.apps.googleusercontent.com
@@ -297,7 +304,7 @@ EXE101_Project/ (Thư mục gốc)
    ```
 3. Tạo file `.env` tại thư mục gốc của mobile app:
    ```dotenv
-   # true = kết nối localhost backend | false = kết nối Railway deploy
+   # true = kết nối localhost backend & AI | false = kết nối Railway & Vercel AI deploy
    EXPO_PUBLIC_USE_LOCAL_BACKEND=false
    EXPO_PUBLIC_API_URL=https://exe101project-maphome-api.up.railway.app
    EXPO_PUBLIC_LOCAL_API_URL=
@@ -315,9 +322,32 @@ EXE101_Project/ (Thư mục gốc)
 
 ---
 
+### Bước 4: Khởi Chạy AI Service (Python FastAPI)
+1. Mở một terminal mới và di chuyển vào thư mục AI:
+   ```bash
+   cd MapHome_AI_Service_Python
+   ```
+2. Cài đặt các thư viện Python:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Tạo file `.env` chứa khóa API (Groq) và chuỗi kết nối MongoDB:
+   ```dotenv
+   GROQ_API_KEY=your_groq_api_key
+   MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/?appName=Cluster1
+   ```
+4. Khởi chạy server FastAPI:
+   ```bash
+   uvicorn main:app --reload --port 8000
+   ```
+   *AI Service sẽ chạy tại `http://localhost:8000`.*
+
+---
+
 ## 📖 Hướng Dẫn Kỹ Thuật Chuyên Sâu Từng Phần
 
 Để tìm hiểu sâu hơn về kiến trúc mã nguồn của từng dự án thành phần, vui lòng đọc các hướng dẫn chuyên biệt dưới đây:
 - 💻 **Backend Developer Guide:** Xem [MapHome_backend_NodeJS/README.md](./MapHome_backend_NodeJS/README.md) để tìm hiểu cấu trúc Schemas, logic tính toán Haversine và phân quyền endpoint.
 - 🌐 **Web Frontend Developer Guide:** Xem [MapHome_Frontend/README.md](./MapHome_Frontend/README.md) để biết cơ chế chia sẻ State của Context API và tích hợp Goong Maps.
 - 📱 **Mobile App Developer Guide:** Xem [MapHome_Frontend_Mobile_App_Expo/README.md](./MapHome_Frontend_Mobile_App_Expo/README.md) để biết cách Expo Router hoạt động, tích hợp WebView thanh toán và lưu trữ local storage.
+- 🤖 **AI Service Developer Guide:** Xem [MapHome_AI_Service_Python/README.md](./MapHome_AI_Service_Python/README.md) để xem hướng dẫn tích hợp Prompt AI, Query MongoDB và deploy Vercel.

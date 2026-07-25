@@ -62,12 +62,29 @@ const createVerification = async (req, res) => {
     }
 
     // Auto-populate requester info if missing
+    const isLandlord = req.body.requesterType === "landlord" || (req.user && req.user.role === "landlord");
+    
+    let properLandlordId = req.body.landlordId;
+    if (isLandlord && req.user) {
+      const Landlord = require("../models/Landlord");
+      const landlord = await Landlord.findOne({ userId: req.user._id });
+      if (landlord) {
+        properLandlordId = landlord._id;
+      }
+    }
+
     const verificationData = {
       ...req.body,
+      landlordId: properLandlordId,
       requesterId: req.body.requesterId || (req.user ? req.user._id : "unknown"),
       requesterName: req.body.requesterName || (req.user ? (req.user.fullName || req.user.username) : "unknown"),
       requesterType: req.body.requesterType || (req.user && req.user.role === "user" ? "user" : "landlord"),
     };
+
+    if (isLandlord && !bookingId) {
+      verificationData.paymentStatus = "unpaid";
+      verificationData.packageType = "premium";
+    }
 
     const verification = await VerificationRequest.create(verificationData);
     res.status(201).json(verification);

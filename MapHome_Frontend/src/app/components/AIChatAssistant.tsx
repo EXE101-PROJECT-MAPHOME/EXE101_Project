@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { MessageSquare, Send, X, Bot, Loader2, Sparkles } from "lucide-react";
-import api, { API_BASE } from "@/app/utils/api";
+import { useLocation, useNavigate } from "react-router-dom";
+import { MessageSquare, Send, X, Bot, Loader2, Sparkles, Plus, History, Search, Home, FileText, MapPin } from "lucide-react";
+import api, { API_BASE, AI_URL } from "@/app/utils/api";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,28 +23,44 @@ interface Message {
 
 export const AIChatAssistant: React.FC = () => {
   const location = useLocation();
-
-  // Excluded paths where AI Chat should not appear
-  const excludedPaths = [
-    "/login",
-    "/register",
-    "/forgot-password",
-    "/admin/login",
-  ];
-  const isExcludedPage = excludedPaths.includes(location.pathname);
-
-  if (isExcludedPage) return null;
+  const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      text: "Xin chào! Tôi là trợ lý ảo MapHome. Tôi có thể giúp gì cho bạn hôm nay?",
-      role: "assistant",
-      timestamp: new Date(),
-    },
-  ]);
+  
+  const initialMessage: Message = {
+    text: "Xin chào! Tôi là trợ lý ảo MapHome. Tôi có thể giúp gì cho bạn hôm nay?",
+    role: "assistant",
+    timestamp: new Date(),
+  };
+
+  const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [isLoading, setIsLoading] = useState(false);
+  const [provider, setProvider] = useState<"auto" | "gemini" | "groq" | "openrouter" | "monica" | "github" | "sambanova">("auto");
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+
+  // Danh sách model có thể chọn
+  const modelOptions: { value: "auto" | "gemini" | "groq" | "openrouter" | "monica" | "github" | "sambanova"; label: string; desc: string; icon: string }[] = [
+    { value: "auto",        label: "✨ Auto",       desc: "Tự động chọn AI tốt nhất",       icon: "✨" },
+    { value: "github",      label: "🐙 GitHub",     desc: "GitHub Models (GPT-4o)",         icon: "🐙" },
+    { value: "sambanova",   label: "🚀 SambaNova",  desc: "Llama 3.1 70B (Siêu nhanh)",     icon: "🚀" },
+    { value: "gemini",      label: "🔵 Gemini",     desc: "Google Gemini (tự động chọn phiên bản)",  icon: "🔵" },
+    { value: "openrouter",  label: "🟢 OpenRouter", desc: "Gemini Flash Free via OpenRouter", icon: "🟢" },
+    { value: "groq",        label: "🟡 Llama 3.3",  desc: "Meta Llama 3.3-70B via Groq",     icon: "🟡" },
+    { value: "monica",      label: "🟣 Monica",     desc: "Monica AI (GPT-4o/Claude)",      icon: "🟣" },
+  ];
+  const currentModel = modelOptions.find((o) => o.value === provider) ?? modelOptions[0];
+
+  // Map provider → model name cụ thể để gửi lên backend
+  const providerModelMap: Record<string, string> = {
+    auto: "",
+    github: "gpt-4o",
+    sambanova: "Meta-Llama-3.3-70B-Instruct",
+    monica: "gpt-4o",
+    gemini: "gemini-2.5-flash",
+    groq: "llama-3.3-70b-versatile",
+    openrouter: "openrouter/free",
+  };
   const [currentPropertyId, setCurrentPropertyId] = useState<string | null>(
     null,
   );
@@ -80,6 +96,29 @@ export const AIChatAssistant: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Excluded paths where AI Chat should not appear
+  const excludedPaths = [
+    "/",
+    "/map",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/admin/login",
+    "/chat",
+  ];
+  const isExcludedPage = excludedPaths.includes(location.pathname);
+
+  if (isExcludedPage) return null;
+
+  const handleNewChat = () => {
+    setMessages([{ ...initialMessage, timestamp: new Date() }]);
+  };
+
+  const handleHistory = () => {
+    setIsOpen(false);
+    navigate("/chat");
+  };
+
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!message.trim() || isLoading) return;
@@ -107,15 +146,18 @@ export const AIChatAssistant: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const response = await fetch(`${API_BASE}/api/ai/chat`, {
+      const response = await fetch(`${AI_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "x-api-key": (import.meta as any).env?.VITE_MAPHOME_AI_API_KEY || "maphome_secret_key_123", // API Key bảo vệ server Python
         },
         body: JSON.stringify({
           message: userMessage,
           propertyId: currentPropertyId,
+          provider: provider,
+          model: providerModelMap[provider] || undefined,
           history: messages
             .filter((_, idx) => idx > 0)
             .map((m) => ({
@@ -154,13 +196,46 @@ export const AIChatAssistant: React.FC = () => {
               const data = JSON.parse(dataStr);
               if (data.content) {
                 accumulatedText += data.content;
+                
+                // Intercept ACTION_ISOCHRONE
+                const isochroneMatch = accumulatedText.match(/\[ACTION_ISOCHRONE\|(\d+)\|([^\]]+)\]/);
+                const routeMatch = accumulatedText.match(/\[ACTION_DRAW_ROUTE\|([^\]]+)\]/);
+                let displayText = accumulatedText;
+                
+                if (isochroneMatch) {
+                  const minutes = parseInt(isochroneMatch[1], 10);
+                  const loc = isochroneMatch[2];
+                  
+                  if (!accumulatedText.includes("__DISPATCHED__")) {
+                    accumulatedText += "__DISPATCHED__";
+                    window.dispatchEvent(new CustomEvent('AI_TRIGGER_ISOCHRONE', {
+                      detail: { minutes, location: loc }
+                    }));
+                  }
+                  
+                  displayText = displayText.replace(/\[ACTION_ISOCHRONE\|\d+\|[^\]]+\]__DISPATCHED__/, "");
+                  displayText = displayText.replace(/\[ACTION_ISOCHRONE\|\d+\|[^\]]+\]/, "");
+                } else if (routeMatch) {
+                  const loc = routeMatch[1];
+                  
+                  if (!accumulatedText.includes("__DISPATCHED__")) {
+                    accumulatedText += "__DISPATCHED__";
+                    window.dispatchEvent(new CustomEvent('AI_TRIGGER_ROUTE', {
+                      detail: { location: loc }
+                    }));
+                  }
+                  
+                  displayText = displayText.replace(/\[ACTION_DRAW_ROUTE\|[^\]]+\]__DISPATCHED__/, "");
+                  displayText = displayText.replace(/\[ACTION_DRAW_ROUTE\|[^\]]+\]/, "");
+                }
+
                 // Update the last message (the assistant's placeholder)
                 setMessages((prev) => {
                   const newMsgs = [...prev];
                   const lastIdx = newMsgs.length - 1;
                   newMsgs[lastIdx] = {
                     ...newMsgs[lastIdx],
-                    text: accumulatedText,
+                    text: displayText,
                   };
                   return newMsgs;
                 });
@@ -196,7 +271,7 @@ export const AIChatAssistant: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] h-[580px] max-h-[calc(100vh-140px)] rounded-[32px] shadow-[0_20px_50px_rgba(79,70,229,0.15)] border border-white/40 bg-white/90 backdrop-blur-2xl overflow-hidden flex flex-col"
+            className="fixed bottom-20 md:bottom-24 right-4 md:right-6 z-50 w-[calc(100vw-32px)] md:w-[420px] h-[75vh] md:h-[680px] max-h-[calc(100vh-100px)] md:max-h-[calc(100vh-140px)] rounded-[24px] md:rounded-[32px] shadow-[0_20px_50px_rgba(79,70,229,0.15)] border border-white/40 bg-white/90 backdrop-blur-2xl overflow-hidden flex flex-col"
           >
             {/* Header - Vibrant Gradient */}
             <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 p-6 text-white relative shrink-0">
@@ -217,43 +292,173 @@ export const AIChatAssistant: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="absolute top-6 right-6 p-2 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
+              
+              <div className="absolute top-5 right-5 flex items-center gap-1">
+                <button
+                  onClick={handleHistory}
+                  title="Lịch sử chat (Mở trang chat lớn)"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors flex items-center gap-1 group relative"
+                >
+                  <History size={18} />
+                  {/* Tooltip */}
+                  <span className="absolute -bottom-8 right-0 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity">
+                    Xem lịch sử
+                  </span>
+                </button>
+
+                <button
+                  onClick={handleNewChat}
+                  title="Đoạn chat mới"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors flex items-center gap-1 group relative"
+                >
+                  <Plus size={20} />
+                  <span className="absolute -bottom-8 right-0 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity">
+                    Chat mới
+                  </span>
+                </button>
+
+                <div className="w-px h-4 bg-white/20 mx-1"></div>
+
+                <button
+                  onClick={() => setIsOpen(false)}
+                  title="Đóng"
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Model Selector Dropdown */}
+              <div className="relative mt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModelDropdownOpen((v) => !v)}
+                  className="w-full flex items-center justify-between gap-2 bg-black/20 hover:bg-black/30 border border-white/15 rounded-xl px-3 py-2 transition-all backdrop-blur-md"
+                >
+                  <span className="text-[12px] font-bold text-white">{currentModel.label}</span>
+                  <span className="text-white/70 text-[10px]">{currentModel.desc}</span>
+                  <svg className={cn("w-3 h-3 text-white/70 transition-transform", isModelDropdownOpen && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                <AnimatePresence>
+                  {isModelDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/40 overflow-hidden"
+                    >
+                      {modelOptions.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => { setProvider(opt.value); setIsModelDropdownOpen(false); }}
+                          className={cn(
+                            "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-indigo-50",
+                            provider === opt.value ? "bg-indigo-50 border-l-2 border-indigo-500" : ""
+                          )}
+                        >
+                          <span className="text-base">{opt.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className={cn("text-[13px] font-bold truncate", provider === opt.value ? "text-indigo-700" : "text-gray-800")}>{opt.label.replace(opt.icon + " ", "")}</p>
+                            <p className="text-[11px] text-gray-400 truncate">{opt.desc}</p>
+                          </div>
+                          {provider === opt.value && <span className="text-indigo-500">✓</span>}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
-            {/* Messages Area - Clean & Spaced */}
+            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 scroll-smooth no-scrollbar">
-              {messages.map((msg, idx) => (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={idx}
-                  className={cn(
-                    "flex flex-col",
-                    msg.role === "user" ? "items-end" : "items-start",
-                  )}
-                >
-                  <div
+              {messages.length === 1 && messages[0].text === initialMessage.text ? (
+                <div className="flex flex-col items-center justify-center py-4 min-h-full">
+                  <motion.div 
+                    initial={{ scale: 0.8, opacity: 0, y: 10 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-16 h-16 bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-800 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-4"
+                  >
+                    <Sparkles size={28} className="text-white" />
+                  </motion.div>
+                  
+                  <motion.h3 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.1 }}
+                    className="text-lg font-black bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-1 text-center"
+                  >
+                    Xin chào!
+                  </motion.h3>
+                  
+                  <motion.p 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
+                    className="text-slate-500 text-xs text-center font-medium px-4 mb-6"
+                  >
+                    Tôi là trợ lý AI. Tôi có thể giúp gì cho bạn?
+                  </motion.p>
+
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.3 }}
+                    className="grid grid-cols-2 gap-3 w-full"
+                  >
+                    {[
+                      { icon: <Search size={16} className="text-indigo-500" />, title: "Tìm phòng", prompt: "Gợi ý phòng trọ sinh viên" },
+                      { icon: <FileText size={16} className="text-emerald-500" />, title: "Hợp đồng", prompt: "Lưu ý ký hợp đồng thuê" },
+                      { icon: <Home size={16} className="text-amber-500" />, title: "Kinh nghiệm", prompt: "Mẹo tìm phòng an toàn" },
+                      { icon: <MapPin size={16} className="text-purple-500" />, title: "Khu vực", prompt: "An ninh khu vực Q7" }
+                    ].map((item, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setMessage(item.prompt);
+                        }}
+                        className="flex flex-col items-start p-3 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-500/5 transition-all text-left group"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform mb-2 border border-slate-100">
+                          {item.icon}
+                        </div>
+                        <span className="font-bold text-slate-700 text-[11px] leading-tight">{item.title}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                </div>
+              ) : (
+                messages.map((msg, idx) => (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={idx}
                     className={cn(
-                      "max-w-[85%] px-5 py-3.5 rounded-[24px] text-sm leading-relaxed shadow-sm",
-                      msg.role === "user"
-                        ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
-                        : "bg-white border border-slate-100 text-slate-700 rounded-tl-none font-medium",
+                      "flex flex-col",
+                      msg.role === "user" ? "items-end" : "items-start",
                     )}
-                    dangerouslySetInnerHTML={renderMarkdown(msg.text)}
-                  />
-                  <span className="text-[10px] text-slate-400 mt-2 font-bold px-2">
-                    {msg.timestamp.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </motion.div>
-              ))}
+                  >
+                    <div
+                      className={cn(
+                        "max-w-[85%] px-5 py-3.5 rounded-[24px] text-sm leading-relaxed shadow-sm",
+                        msg.role === "user"
+                          ? "bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-none"
+                          : "bg-white border border-slate-100 text-slate-700 rounded-tl-none font-medium",
+                      )}
+                      dangerouslySetInnerHTML={renderMarkdown(msg.text)}
+                    />
+                    <span className="text-[10px] text-slate-400 mt-2 font-bold px-2">
+                      {msg.timestamp.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </motion.div>
+                ))
+              )}
 
               {isLoading && (
                 <div className="flex flex-col items-start animate-pulse">
@@ -313,7 +518,7 @@ export const AIChatAssistant: React.FC = () => {
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-2xl flex items-center justify-center z-[100] group transition-all duration-300",
+          "fixed bottom-4 md:bottom-6 right-4 md:right-6 w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl flex items-center justify-center z-[100] group transition-all duration-300",
           isOpen
             ? "bg-slate-800 text-white shadow-slate-900/40"
             : "bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-indigo-500/40 hover:shadow-indigo-500/60",

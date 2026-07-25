@@ -112,6 +112,13 @@ Tài liệu hướng dẫn phát triển và cấu trúc ứng dụng di động
   - Gắn sự kiện `onNavigationStateChange` vào WebView. Mỗi khi trang web chuyển hướng, ứng dụng kiểm tra địa chỉ URL hiện tại.
   - Khi phát hiện địa chỉ URL khớp với callback của backend, ứng dụng sẽ chặn hành vi tải trang, phân tích tham số kết quả giao dịch, tắt WebView và điều hướng người dùng về màn hình thông báo kết quả.
 
+### 🤖 5. Trợ lý AI (Multi-Model AI Chatbot)
+- **Cơ chế hoạt động:**
+  - Component [AIChatAssistant.tsx](./components/AIChatAssistant.tsx) sử dụng React Native Modal để tạo giao diện chat nổi mượt mà.
+  - Hỗ trợ đổi mô hình AI (Google Gemini, Groq, OpenRouter, Monica AI, GitHub Models, SambaNova) trực tiếp từ điện thoại.
+  - Tích hợp package `react-native-sse` để nhận luồng chữ chạy (Server-Sent Events) từ API Python một cách trơn tru trên thiết bị di động.
+  - Kèm theo API Key (`EXPO_PUBLIC_MAPHOME_AI_API_KEY`) trong mọi request để chống spam trái phép.
+
 ---
 
 ## 📂 Sơ Đồ Cấu Trúc Thư Mục (Directory Tree)
